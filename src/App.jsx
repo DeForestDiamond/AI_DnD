@@ -83,6 +83,10 @@ export default function App() {
   fullLogRef.current = fullLog;
 
   // ── Save/Load ──────────────────────────────────────────────────────────────
+  const isClericCharacter = (char) =>
+    char.cls?.name === 'Cleric' ||
+    (char.classLevels && Object.keys(char.classLevels).includes('Cleric'));
+
   const save = useSave({
     charRef,
     messages: fullLog,
@@ -91,13 +95,11 @@ export default function App() {
       loadCharacter(char);
       setFullLog(msgs);
       fullLogRef.current = msgs;
-      // Show only recent tail in the chat window; summary covers the rest
       const tail = summary ? msgs.slice(-KEEP_RECENT) : msgs;
       setMessages(tail);
       setStorySummary(summary);
       storySummaryRef.current = summary;
-      // Check if cleric needs deity selection
-      if (char._needsDeitySelection && char.cls?.name === 'Cleric') {
+      if (char._needsDeitySelection && isClericCharacter(char)) {
         setDeityModalContext('oldSave');
         setShowDeityModal(true);
       }
@@ -106,8 +108,7 @@ export default function App() {
     onLoadCharacter: (char) => {
       loadCharacter(char);
       setMessages([]); setFullLog([]); fullLogRef.current = [];
-      // Check if cleric needs deity selection
-      if (char._needsDeitySelection && char.cls?.name === 'Cleric') {
+      if (char._needsDeitySelection && isClericCharacter(char)) {
         setDeityModalContext('oldSave');
         setShowDeityModal(true);
       }
@@ -424,8 +425,27 @@ Generate a fresh specific location name that fits the setting. Set the scene and
         loadFromCode={save.loadFromCode}
         hasAutoSave={save.hasAutoSave}
         loadAutoSave={save.loadAutoSave}
-        onLoadFull={(char, msgs, summary = '') => { loadCharacter(char); setFullLog(msgs); fullLogRef.current = msgs; const tail = summary ? msgs.slice(-KEEP_RECENT) : msgs; setMessages(tail); setStorySummary(summary); storySummaryRef.current = summary; setPhase('playing'); }}
-        onLoadCharacter={(char) => { loadCharacter(char); setMessages([]); setFullLog([]); fullLogRef.current = []; setPhase('playing'); setTimeout(()=>startAdventure(char),100); }}
+        onLoadFull={(char, msgs, summary = '') => {
+          loadCharacter(char);
+          setFullLog(msgs); fullLogRef.current = msgs;
+          const tail = summary ? msgs.slice(-KEEP_RECENT) : msgs;
+          setMessages(tail); setStorySummary(summary); storySummaryRef.current = summary;
+          setPhase('playing');
+          if (char._needsDeitySelection && isClericCharacter(char)) {
+            setDeityModalContext('oldSave');
+            setShowDeityModal(true);
+          }
+        }}
+        onLoadCharacter={(char) => {
+          loadCharacter(char);
+          setMessages([]); setFullLog([]); fullLogRef.current = [];
+          setPhase('playing');
+          if (char._needsDeitySelection && isClericCharacter(char)) {
+            setDeityModalContext('oldSave');
+            setShowDeityModal(true);
+          }
+          setTimeout(()=>startAdventure(char),100);
+        }}
       />}
       <div style={{maxWidth:500,padding:40}}>
         <div style={{fontSize:64,marginBottom:16}}>🐉</div>
@@ -605,6 +625,10 @@ Generate a fresh specific location name that fits the setting. Set the scene and
           setStorySummary(summary);
           storySummaryRef.current = summary;
           setPhase('playing');
+          if (char._needsDeitySelection && isClericCharacter(char)) {
+            setDeityModalContext('oldSave');
+            setShowDeityModal(true);
+          }
           const spellcasters = ['Artificer','Cleric','Wizard'];
           const hasSpellClass = Object.keys(char.classLevels || {}).some(c => spellcasters.includes(c));
           const needsAbilities = hasSpellClass && (!char.abilities || (
@@ -618,6 +642,10 @@ Generate a fresh specific location name that fits the setting. Set the scene and
           loadCharacter(char);
           setMessages([]); setFullLog([]); fullLogRef.current = [];
           setPhase('playing');
+          if (char._needsDeitySelection && isClericCharacter(char)) {
+            setDeityModalContext('oldSave');
+            setShowDeityModal(true);
+          }
           const spellcasters = ['Artificer','Cleric','Wizard'];
           const hasSpellClass = Object.keys(char.classLevels || {}).some(c => spellcasters.includes(c));
           const needsAbilities = hasSpellClass && (!char.abilities || (
