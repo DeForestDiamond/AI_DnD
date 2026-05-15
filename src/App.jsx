@@ -643,12 +643,10 @@ Generate a fresh specific location name that fits the setting. Set the scene and
 
       {showDeityModal && (
         <DeityModal
-          character={character}
           context={deityModalContext}
           onSelectDeity={(deity) => {
-            const updatedChar = { ...character, deity, _needsDeitySelection: false };
             selectDeity(deity);
-            updateChar(updatedChar);
+            updateChar({ ...charRef.current, deity, _needsDeitySelection: false });
             setShowDeityModal(false);
           }}
         />

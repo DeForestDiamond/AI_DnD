@@ -145,8 +145,11 @@ export const migrateCharacter = (char) => {
     if (!c.abilities.infusions) c.abilities.infusions = [];
   }
   if (v < 8) {
-    // Add deity for clerics from old saves that don't have one
-    if (!c.deity && c.cls?.name === 'Cleric') {
+    // Add deity for clerics from old saves that don't have one.
+    // Check both primary class AND classLevels (catches multiclass clerics).
+    const hasClericLevels = c.cls?.name === 'Cleric' ||
+      (c.classLevels && Object.keys(c.classLevels).includes('Cleric'));
+    if (!c.deity && hasClericLevels) {
       c._needsDeitySelection = true;
       notes.push('Cleric needs to choose a deity — you will be prompted after load');
     }
