@@ -494,8 +494,11 @@ export function useGame({ charRef, apiKey }) {
     let rollResult = null;
 
     // Attack detection — only explicit combat actions
-    const attackWords = /\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|cut|slice|hack|kill|fight|engage|charge)\b/i;
-    if (attackWords.test(userMsg) && !/\b(don't|dont|not|no|avoid|retreat|run|flee|hide|sneak)\b/i.test(userMsg)) {
+    // Excluded: "cut" (cut a deal, cut through), "kill" (too ambiguous in dialogue/planning)
+    const attackWords = /\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge)\b/i;
+    // Don't trigger if the attack word is inside quotes (player is speaking dialogue, not acting)
+    const insideQuotes = /["'「][^"'「」]*\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge)\b[^"'「」]*["'」]/i;
+    if (attackWords.test(userMsg) && !insideQuotes.test(userMsg) && !/\b(don't|dont|not|no|avoid|retreat|run|flee|hide|sneak)\b/i.test(userMsg)) {
       const weapon = getMainWeapon(char.slots, char.stats, char.customItems || {});
       if (weapon) {
         const result = performAttack(weapon, char.stats, char.level);
