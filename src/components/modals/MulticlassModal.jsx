@@ -4,18 +4,19 @@ import { MULTICLASS_OPTIONS, getClassFeatures } from '../../constants/multiclass
 import { STAT_NAMES } from '../../constants/classes.js';
 import { modStr } from '../../hooks/useCharacter.js';
 
-export function MulticlassModal({ character, classLevels, onChooseClass, onChooseStat }) {
+export function MulticlassModal({ character, classLevels, onChooseClass, onChooseStat, deityPending }) {
   const [selectedClass, setSelectedClass] = useState(null);
 
   const availableClasses = Object.keys(MULTICLASS_OPTIONS);
 
+  // When a card is clicked, notify parent (triggers deity check if needed) then advance
   const handleClassSelect = (className) => {
+    onChooseClass(className);   // parent checks for Cleric + no deity, shows deity modal if needed
     setSelectedClass(className);
   };
 
-  const handleConfirmClass = () => {
-    if (selectedClass) onChooseClass(selectedClass);
-  };
+  // If deity selection is in progress, hide this modal entirely (deity modal is on top)
+  if (deityPending) return null;
 
   // Step 1 — choose class to advance
   if (!selectedClass) return (

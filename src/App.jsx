@@ -656,8 +656,8 @@ Generate a fresh specific location name that fits the setting. Set the scene and
         <MulticlassModal
           character={character}
           classLevels={character.classLevels || { [character.cls?.name]: character.level }}
+          deityPending={showDeityModal}
           onChooseClass={(cls) => {
-            // If multiclassing into Cleric, show deity selection first
             if (cls === 'Cleric' && !character.deity) {
               setDeityModalContext('multiclass');
               setShowDeityModal(true);
