@@ -23,7 +23,7 @@ export function useSave({ charRef, messages, storySummary, onLoadFull, onLoadCha
 
   const generateFullSave = () => {
     const state = buildState('fullsave');
-    downloadJSON(state, `jordan-fullsave-${Date.now()}.json`);
+    downloadJSON(state, `${charRef.current.name || 'character'}-fullsave-${Date.now()}.json`);
     // Also store in localStorage as backup
     try { localStorage.setItem('dnd-autosave', JSON.stringify(state)); } catch {}
     return state;
