@@ -195,15 +195,20 @@ export default function App() {
     try {
       const system = buildSystemPrompt(char);
       const seed = rollAdventureSeed();
-      const seedPrompt = `Begin the adventure with EXACTLY these parameters — do not deviate:
-Setting: ${seed.setting}
-Time of day: ${seed.time}
-Weather: ${seed.weather}
-Tone: ${seed.tone}
-Opening location: ${seed.location}
-Adventure hook: ${seed.hook}
-Antagonist (do not reveal yet, just set up): ${seed.antagonist}
-Generate a fresh specific location name that fits the setting. Set the scene and give the first choices.`;
+      const seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
+You MUST open the adventure using ALL of the following parameters exactly as given. This is not a suggestion. Do not substitute, reinterpret, or ignore any field.
+
+SETTING: ${seed.setting}
+TIME OF DAY: ${seed.time}
+WEATHER: ${seed.weather}
+TONE: ${seed.tone}
+OPENING LOCATION (the specific place the scene starts): ${seed.location}
+ADVENTURE HOOK (what draws the player in): ${seed.hook}
+ANTAGONIST (do NOT reveal or name yet — plant subtle setup only): ${seed.antagonist}
+
+REQUIRED: Invent a specific named location that fits the setting (e.g. "The Saltwind Docks of Port Calavar"). Ground the scene in physical details matching the weather and time. End with 2-3 clear choices for the player.
+
+NON-COMPLIANCE: If you open with anything other than the parameters above, you have failed your role as DM.`;
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
         system
