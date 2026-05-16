@@ -303,15 +303,8 @@ MONSTER VARIETY: Draw from the full breadth of D&D creatures. Do not default to 
 - Constructs & Oozes: golems, animated armor, shields guardians, gelatinous cubes, black puddings, mimics
 - Bandits & Humanoid factions: mercenaries, cultists, assassins, pirates, slavers, corrupt guards
 
-── OPENING SCENE ──
-Do NOT reference biography, companions, NPCs, or prior history in the opening scene. Set the scene fresh.
-BANNED starting location names: anything containing "Thorn" (Thornhallow, Thornwick, Thornvale, etc.), Millhaven, Ashford, Riverdale, Oakvale, Dunwall, Greystone, Blackwood. Do not use them.
-BANNED opening setting: do not always start in a small village at night. Vary the starting location every adventure.
-Draw from these starting location types: a busy city district, a coastal port, a roadside inn mid-journey, a wilderness camp, a moving caravan, a temple or monastery, a noble's manor, a dungeon entrance, a ship at sea, a festival or market, a battlefield aftermath, a prison or cell, a magic academy, a thieves guild safehouse, an underground city.
-Generate a fresh and specific location name that fits the setting — not generic fantasy filler.
 
-════════════════════════════════════════
-FEYWILD FACTIONS AND CREATURES
+── FEYWILD FACTIONS AND CREATURES
 ════════════════════════════════════════
 
 ── COURT BEHAVIOR GUIDELINES ──
