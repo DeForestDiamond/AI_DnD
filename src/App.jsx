@@ -230,32 +230,71 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     setLoading(false);
   };
 
-  const SUMMARIZE_AFTER = 20;  // summarize when history exceeds this many messages
-  const KEEP_RECENT     = 6;   // always keep this many recent messages verbatim
-  const lastSummarizedAt = useRef(0); // track last message count we summarized at
+  const SUMMARIZE_AFTER   = 20;    // append a new entry every N messages
+  const KEEP_RECENT       = 6;     // always keep this many recent messages verbatim
+  const COMPRESS_AFTER    = 6000;  // compress the full summary when it exceeds this many chars
+  const lastSummarizedAt  = useRef(0);
+
+  // Compress the full summary into one tight paragraph when it gets too long
+  const maybeCompressSummary = async (fullSummary, key) => {
+    if (fullSummary.length < COMPRESS_AFTER) return fullSummary;
+    log('[SUMMARY] Compressing — summary exceeds ' + COMPRESS_AFTER + ' chars');
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 1000,
+          system: `You are compressing a D&D campaign log. Multiple entries cover the same arc with overlapping detail. Merge them into ONE single coherent paragraph of 400-600 words. You MUST preserve without exception: every named NPC and their relationship to the player, all active quest threads and their current status, every named location, all items gained or lost, all gold and resource changes, every decision the player made and its consequence, any time-sensitive deadlines or countdowns, any changes to the player character's nature or abilities, faction standings, legal agreements, and contained or sealed entities. Do not invent anything. Do not omit anything that appears only once. Plain text only. No headers. No bullet points. Output only the compressed paragraph.`,
+          messages: [
+            { role: 'user', content: 'Compress this campaign log:\n\n' + fullSummary },
+          ],
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const compressed = data.content?.[0]?.text || '';
+        if (compressed) {
+          log('[SUMMARY] Compressed from ' + fullSummary.length + ' to ' + compressed.length + ' chars');
+          return compressed;
+        }
+      }
+    } catch (e) {
+      log('[SUMMARY] Compression failed: ' + e.message);
+    }
+    return fullSummary; // fall back to uncompressed if anything goes wrong
+  };
 
   // Condense old messages into a rolling summary, keep recent tail verbatim
   const maybeAutoSummarize = async (allMessages) => {
     if (allMessages.length < SUMMARIZE_AFTER) return;
-    // Only fire once per SUMMARIZE_AFTER block — not on every message after 20
     const nextThreshold = lastSummarizedAt.current + SUMMARIZE_AFTER;
     if (allMessages.length < nextThreshold) return;
     lastSummarizedAt.current = allMessages.length;
+
     const toSummarize = allMessages.slice(0, allMessages.length - KEEP_RECENT);
     const recent      = allMessages.slice(-KEEP_RECENT);
+    const prevSummary = storySummaryRef.current;
 
-    const prevSummary = storySummaryRef.current;    const historyForSummary = toSummarize.map(m => ({
+    const historyForSummary = toSummarize.map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
       content: m.text.substring(0, 600),
     }));
 
-    // Add-only: never rewrite existing summary, only append new events
     const summaryPrompt = prevSummary
       ? `NEW EVENTS TO LOG (these happened after the existing log below):\n`
       : `Log what has happened in this adventure so far:\n`;
 
     try {
       const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+
+      // Step 1 — append new entry for recent events
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -274,22 +313,24 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
           ],
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        const newEntry = data.content?.[0]?.text || '';
-        if (newEntry) {
-          // Append new entry to existing log — never replace it
-          const updatedSummary = prevSummary
-            ? prevSummary + '\n\n' + newEntry
-            : newEntry;
-          setStorySummary(updatedSummary);
-          storySummaryRef.current = updatedSummary;
-          // Only trim display window if there are actually more messages than KEEP_RECENT
-          if (allMessages.length > KEEP_RECENT) {
-            setMessages(recent);
-            log('[SUMMARY] Appended new log entry — kept last ' + KEEP_RECENT + ' messages in view');
-          }
-        }
+
+      if (!res.ok) return;
+      const data = await res.json();
+      const newEntry = data.content?.[0]?.text || '';
+      if (!newEntry) return;
+
+      // Step 2 — append the new entry
+      const appended = prevSummary ? prevSummary + '\n\n' + newEntry : newEntry;
+
+      // Step 3 — compress if over threshold (fires occasionally, not every time)
+      const finalSummary = await maybeCompressSummary(appended, key);
+
+      setStorySummary(finalSummary);
+      storySummaryRef.current = finalSummary;
+
+      if (allMessages.length > KEEP_RECENT) {
+        setMessages(recent);
+        log('[SUMMARY] Entry appended' + (finalSummary.length < appended.length ? ' + compressed' : '') + ' — kept last ' + KEEP_RECENT + ' messages');
       }
     } catch (e) {
       log('[SUMMARY] Failed: ' + e.message);
