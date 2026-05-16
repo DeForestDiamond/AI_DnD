@@ -198,7 +198,7 @@ export const buildSystemPrompt = (char) => {
 
 ── FORMAT ──
 THESE ARE RULES, NOT GUIDELINES. VIOLATIONS ARE NOT ACCEPTABLE.
-HARD LIMIT: Maximum 4 paragraphs and 200 words per response. Count before sending — if you exceed either limit, rewrite content until you are within both.
+HARD LIMIT: Maximum 3 paragraphs and 150 words per response. The API enforces this — you will be cut off if you run long, so front-load the most important narrative first.
 HARD LIMIT: Always end with 2–4 numbered action choices.
 HARD LIMIT: Never resolve travel, combat, violence, time skips, or any significant story event without player input first. Stop before it happens and ask. Do not narrate outcomes the player had no say in.
 Plain text only. No markdown, no asterisks, no bold, no headers.
@@ -445,7 +445,7 @@ export function useGame({ charRef, apiKey }) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
+        max_tokens: 450,
         // System prompt as array with cache_control — bio and rules are static, cache them
         system: [
           {
@@ -511,12 +511,12 @@ export function useGame({ charRef, apiKey }) {
         if (result.crit) {
           const bonusDmg = rollDice(weapon.damage);
           result.totalDmg += bonusDmg + sneakDmg;
-          context += `\n[CRITICAL HIT with ${weapon.name}! Attack: ${result.atkRoll}(nat20)=${result.totalAtk} to hit. Damage: ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit bonus${sneakDmg?`+${sneakDmg} sneak`:''} = ${result.totalDmg}]`;
+          context += `\n\n[GAME DATA — CRITICAL HIT with ${weapon.name}. Attack: ${result.atkRoll}(nat20)=${result.totalAtk} to hit. Damage: ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit bonus${sneakDmg?`+${sneakDmg} sneak`:''} = ${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll.]`;
         } else if (result.fumble) {
-          context += `\n[FUMBLE with ${weapon.name}! Attack roll: 1 (nat 1) — automatic miss]`;
+          context += `\n\n[GAME DATA — FUMBLE with ${weapon.name}. Attack roll: 1 (nat 1) — automatic miss. Narrate the player's action first, then the fumble.]`;
         } else {
           result.totalDmg += sneakDmg;
-          context += `\n[${weapon.name} attack: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${sneakDesc}=${result.totalDmg}]`;
+          context += `\n\n[GAME DATA — ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll.]`;
         }
         rollResult = {
           label: `${weapon.name}${sneakDmg?' + Sneak Attack':''}`,
