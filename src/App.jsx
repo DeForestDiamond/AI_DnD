@@ -431,6 +431,34 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     setLoading(false);
   };
 
+  const handleEditMessage = async (msgId, newText) => {
+    const idx = fullLogRef.current.findIndex(m => m.id === msgId);
+    if (idx === -1) return;
+    const truncated = fullLogRef.current.slice(0, idx);
+    setFullLog(truncated);
+    fullLogRef.current = truncated;
+    const displayIdx = messages.findIndex(m => m.id === msgId);
+    if (displayIdx !== -1) setMessages(prev => prev.slice(0, displayIdx));
+    await handleSend(newText);
+  };
+
+  const handleRegenerate = async () => {
+    const log = fullLogRef.current;
+    const lastUserIdx = [...log].reverse().findIndex(m => m.role === 'user');
+    if (lastUserIdx === -1) return;
+    const actualIdx = log.length - 1 - lastUserIdx;
+    const lastUserMsg = log[actualIdx];
+    const truncated = log.slice(0, actualIdx);
+    setFullLog(truncated);
+    fullLogRef.current = truncated;
+    const displayLastUserIdx = [...messages].reverse().findIndex(m => m.role === 'user');
+    if (displayLastUserIdx !== -1) {
+      const dIdx = messages.length - 1 - displayLastUserIdx;
+      setMessages(prev => prev.slice(0, dIdx));
+    }
+    await handleSend(lastUserMsg.text);
+  };
+
   // ── Slot handling ──────────────────────────────────────────────────────────
   const handleSlotClick = (slotId) => {
     if (character.slots[slotId]) {
@@ -851,9 +879,11 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
         )}
 
         <MessageFeed
-          messages={fullLog}
+          messages={messages}
           loading={loading}
           characterEmoji={character.cls?.emoji}
+          onEditMessage={handleEditMessage}
+          onRegenerate={handleRegenerate}
         />
 
         <InputBar

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { colors, fonts } from '../styles/theme.js';
 import { cleanDisplayText } from '../hooks/useGame.js';
 
@@ -37,9 +37,37 @@ function DiceRollDisplay({ roll }) {
   );
 }
 
-export function MessageFeed({ messages, loading, characterEmoji }) {
+export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, onRegenerate }) {
   const endRef = useRef(null);
+  const [hoverId, setHoverId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+
   useEffect(() => { endRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
+
+  const lastDMId = [...messages].reverse().find(m => m.role === 'dm')?.id;
+  const lastUserId = [...messages].reverse().find(m => m.role === 'user')?.id;
+
+  const startEdit = (msg) => {
+    setEditingId(msg.id);
+    setEditText(cleanDisplayText(msg.text));
+  };
+
+  const confirmEdit = (msgId) => {
+    if (editText.trim()) onEditMessage?.(msgId, editText.trim());
+    setEditingId(null);
+  };
+
+  const iconBtn = (onClick, label) => (
+    <button onClick={onClick} title={label} style={{
+      background:'transparent', border:`1px solid ${colors.borderDim}`,
+      color:colors.textDead, fontSize:10, padding:'2px 6px', borderRadius:3,
+      cursor:'pointer', lineHeight:1.4,
+    }}
+    onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
+    onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}
+    >{label}</button>
+  );
 
   return (
     <div style={{flex:1,overflowY:'auto',padding:'20px 18px',display:'flex',flexDirection:'column',gap:16}}>
@@ -52,24 +80,51 @@ export function MessageFeed({ messages, loading, characterEmoji }) {
 
       {messages.map(msg => (
         <div key={msg.id} className={`msg-${msg.role}`}
-          style={{display:'flex',gap:10,justifyContent:msg.role==='user'?'flex-end':'flex-start'}}>
+          style={{display:'flex',gap:10,justifyContent:msg.role==='user'?'flex-end':'flex-start'}}
+          onMouseEnter={() => setHoverId(msg.id)}
+          onMouseLeave={() => setHoverId(null)}>
 
           {msg.role === 'dm' && <div style={{fontSize:20,flexShrink:0,marginTop:2}}>📜</div>}
 
-          <div style={{
-            maxWidth:'80%',
-            background: msg.role==='dm' ? 'rgba(201,168,76,0.05)' : 'rgba(255,255,255,0.04)',
-            border:`1px solid ${msg.role==='dm' ? colors.borderDim : '#2a2a1a'}`,
-            borderRadius: msg.role==='dm' ? '2px 8px 8px 8px' : '8px 2px 8px 8px',
-            padding:'12px 14px',
-          }}>
-            {msg.role === 'dm' && (
-              <div style={{fontFamily:fonts.display,fontSize:8,color:'#4a3820',letterSpacing:3,marginBottom:6}}>DUNGEON MASTER</div>
-            )}
-            <div style={{fontSize:14,lineHeight:1.9,color:msg.role==='dm'?colors.textDim:colors.textMuted,whiteSpace:'pre-wrap'}}>
-              {cleanDisplayText(msg.text)}
+          <div style={{maxWidth:'80%'}}>
+            <div style={{
+              background: msg.role==='dm' ? 'rgba(201,168,76,0.05)' : 'rgba(255,255,255,0.04)',
+              border:`1px solid ${msg.role==='dm' ? colors.borderDim : '#2a2a1a'}`,
+              borderRadius: msg.role==='dm' ? '2px 8px 8px 8px' : '8px 2px 8px 8px',
+              padding:'12px 14px',
+            }}>
+              {msg.role === 'dm' && (
+                <div style={{fontFamily:fonts.display,fontSize:8,color:'#4a3820',letterSpacing:3,marginBottom:6}}>DUNGEON MASTER</div>
+              )}
+
+              {editingId === msg.id ? (
+                <div>
+                  <textarea
+                    value={editText}
+                    onChange={e => setEditText(e.target.value)}
+                    autoFocus
+                    style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.gold}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.7,padding:'8px 10px',borderRadius:4,resize:'vertical',minHeight:80,outline:'none'}}
+                  />
+                  <div style={{display:'flex',gap:6,marginTop:6}}>
+                    {iconBtn(() => confirmEdit(msg.id), '✓ Send')}
+                    {iconBtn(() => setEditingId(null), '✕ Cancel')}
+                  </div>
+                </div>
+              ) : (
+                <div style={{fontSize:14,lineHeight:1.9,color:msg.role==='dm'?colors.textDim:colors.textMuted,whiteSpace:'pre-wrap'}}>
+                  {cleanDisplayText(msg.text)}
+                </div>
+              )}
+              {msg.role === 'dm' && <DiceRollDisplay roll={msg.roll}/>}
             </div>
-            {msg.role === 'dm' && <DiceRollDisplay roll={msg.roll}/>}
+
+            {/* Action buttons on hover */}
+            {hoverId === msg.id && !editingId && !loading && (
+              <div style={{display:'flex',gap:4,marginTop:4,justifyContent:msg.role==='user'?'flex-end':'flex-start'}}>
+                {msg.role === 'user' && msg.id === lastUserId && iconBtn(() => startEdit(msg), '✏️ Edit')}
+                {msg.role === 'dm'   && msg.id === lastDMId   && iconBtn(() => onRegenerate?.(), '↺ Regenerate')}
+              </div>
+            )}
           </div>
 
           {msg.role === 'user' && <div style={{fontSize:20,flexShrink:0,marginTop:2}}>{characterEmoji}</div>}
