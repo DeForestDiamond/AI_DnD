@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
 import { getAvailableAbilities, getAbilityCounts } from '../../constants/abilities.js';
+import { RACE_TRAITS } from '../../constants/raceTraits.js';
 
 export function AbilitiesModal({ character, onSave, onClose }) {
   const classLevels = character.classLevels || { [character.cls?.name]: character.level };
   const existing = character.abilities || {};
   const deityName = character.deity?.name || null;
+  const raceTraits = RACE_TRAITS[character.race?.name]?.traits || [];
 
   const [selected, setSelected] = useState({
     cantrips:  [...(existing.cantrips  || [])],
     spells:    [...(existing.spells    || [])],
     infusions: [...(existing.infusions || [])],
   });
+  const [showRaceTraits, setShowRaceTraits] = useState(false);
 
   // Calculate totals across all classes
   const totals = { cantrips:0, spells:0, infusions:0 };
@@ -70,6 +73,29 @@ export function AbilitiesModal({ character, onSave, onClose }) {
         )}
 
         <div style={{overflowY:'auto',flex:1}}>
+
+          {/* Racial Traits */}
+          {raceTraits.length > 0 && (
+            <div style={{marginBottom:16}}>
+              <div
+                onClick={() => setShowRaceTraits(v => !v)}
+                style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:6,display:'flex',justifyContent:'space-between',cursor:'pointer',userSelect:'none'}}
+              >
+                <span>🧬 {character.race?.name?.toUpperCase()} RACIAL TRAITS</span>
+                <span style={{color:colors.textGhost}}>{showRaceTraits ? '▲' : '▼'}</span>
+              </div>
+              {showRaceTraits && (
+                <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                  {raceTraits.map(trait => (
+                    <div key={trait.name} style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:'6px 10px'}}>
+                      <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,marginBottom:2}}>{trait.name}</div>
+                      <div style={{fontSize:10,color:colors.textFaint,lineHeight:1.5}}>{trait.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {sections.length === 0 && (
             <div style={{textAlign:'center',color:colors.textGhost,fontSize:12,padding:'24px 0',fontStyle:'italic'}}>
               Your class doesn't have spells, cantrips, or infusions to manage at this level.
