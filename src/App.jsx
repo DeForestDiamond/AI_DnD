@@ -635,9 +635,26 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
               <div style={{fontSize:12,color:colors.textGhost}}>Level 1 · {character.maxHp} HP</div>
             </div>
           </div>
-          {Object.entries(character.stats).map(([k,v])=>(
-            <StatBar key={k} label={STAT_NAMES[k]} value={v} desc={STAT_DESC[k]}/>
-          ))}
+          {Object.entries(character.stats).map(([k,v])=>{
+            const racialBonus = character.race?.bonus?.[k] || 0;
+            const baseVal = v - racialBonus;
+            return (
+              <div key={k} style={{marginBottom:8}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:2}}>
+                  <span style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:1}}>{STAT_NAMES[k]}</span>
+                  <span style={{fontFamily:fonts.mono,fontWeight:'bold',color:colors.text,fontSize:13}}>
+                    {v} <span style={{fontSize:9,color:colors.textGhost}}>({modStr(v)})</span>
+                    {racialBonus > 0 && <span style={{fontSize:9,color:colors.gold,marginLeft:4}}>({baseVal}+{racialBonus})</span>}
+                  </span>
+                </div>
+                <div style={{background:colors.borderFaint,borderRadius:2,height:5,overflow:'hidden',display:'flex'}}>
+                  <div style={{width:`${(baseVal/20)*100}%`,height:'100%',background:v>=15?'#8a7040':'#4a3a20',borderRadius:2,transition:'width 0.4s'}}/>
+                  {racialBonus > 0 && <div style={{width:`${(racialBonus/20)*100}%`,height:'100%',background:colors.gold,transition:'width 0.4s'}}/>}
+                </div>
+                <div style={{fontSize:8,color:colors.textGhost,marginTop:1}}>{STAT_DESC[k]}</div>
+              </div>
+            );
+          })}
         </div>
         <input value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleFinalize()} placeholder="Enter your hero's name..."
           style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:16,padding:'10px 14px',borderRadius:4,marginBottom:16,outline:'none'}}/>
