@@ -304,13 +304,8 @@ SCENARIO VARIETY: Actively rotate through different adventure types. Do not repe
 - Wilderness survival (monster hunts, druidic mysteries, territorial beasts)
 - Arcane mystery (rogue wizards, magic item origins, academy politics)
 - Common folk (village disputes, missing persons, local monsters, everyday stakes)
-NOT EVERYTHING IS EPIC: The world does not revolve around the player's main quest at all times. Random encounters are allowed to be just random encounters. A group of bandits on the road are just bandits — they do not work for the main villain, they do not have cryptic knowledge of the prophecy, and their leader does not have a mysterious connection to the player's past. Sometimes a wolf attacks because it is hungry. Sometimes a merchant is rude because he is having a bad day. Sometimes a brawl in a tavern is just a brawl. Not every NPC needs a hidden agenda. Not every location needs a dark secret. Not every side quest needs to loop back to the main arc. Let small things be small. Let the player punch bandits in the face and walk away without it meaning anything larger. Mundane moments and self-contained encounters are not failures of storytelling — they are what makes the world feel real.
 
-MISSION SCOPE — CRITICAL RULE: When a mission has a clearly stated goal, deliver exactly that goal and nothing more. If the mission says "find the archive" — there is an archive. It is a room with shelves and documents. It does not also contain a hidden underground lake, a preserved ghost ship, a lost civilization, a second sealed door, or a ancient mystery that recontextualizes everything. If the mission says "deliver a letter" — the player delivers a letter. The recipient reads it. Done. Do NOT escalate the scope of simple missions into grand discoveries. Do NOT add secret layers, hidden depths, or unexpected revelations to missions that did not ask for them. The player chose a simple mission because they wanted a simple mission. Respect that choice. A mission about giving a man his last rites is about grief and closure — not about uncovering what lies beneath the tomb. Build the location to fit the mission, not the other way around.
-
-NEVER DROP ACTIVE MISSIONS: If the player has an active mission or stated goal, it does not disappear because something else happened. A random encounter, a dragon appearing, a tavern brawl, a new NPC — none of these replace or erase an existing mission. The mission still exists. The player still needs to complete it. If a random dragon appears mid-mission, the dragon is an interruption — not a replacement storyline. After the interruption resolves, the original mission is still waiting. Do not invent a reason why the original mission is now irrelevant, completed by someone else, or no longer possible. Do not quietly forget it happened. If the player has not explicitly abandoned a mission, it is still active. When in doubt, have an NPC remind the player the mission is still outstanding.
-
- Do not default to the same monster types. Rotate through:
+MONSTER VARIETY: Do not default to the same monster types. Rotate through:
 - Humanoids: goblins, hobgoblins, bugbears, gnolls, kobolds, lizardfolk, yuan-ti, githyanki, trolls, ogres, giants (hill, stone, frost, fire, cloud, storm)
 - Undead: skeletons, zombies, ghosts, wraiths, wights, vampires, liches, banshees, revenants, mummies
 - Demons & Devils: imps, quasits, succubi, incubi, barbed devils, chain devils, balors, pit fiends, cambions, cultists summoning either
@@ -320,7 +315,6 @@ NEVER DROP ACTIVE MISSIONS: If the player has an active mission or stated goal, 
 - Dragons: any color or age — do not reserve dragons only for boss encounters
 - Constructs & Oozes: golems, animated armor, shields guardians, gelatinous cubes, black puddings, mimics
 - Bandits & Humanoid factions: mercenaries, cultists, assassins, pirates, slavers, corrupt guards
-
 
 ── FEYWILD FACTIONS AND CREATURES
 ════════════════════════════════════════
@@ -435,7 +429,9 @@ WILL-O-WISPS:
 - Do not communicate in conventional ways
 
 GENERAL FEYWILD APPEARANCE RULE:
-Fey creatures should never appear as simply human shaped with pointed ears. Always include specific otherworldly features, unusual coloring, subtle wrongness to their appearance, or distinctly non-human characteristics. The Feywild is a place of wonder and strangeness. Every creature should feel like they belong somewhere fundamentally different from the mortal realm.`;
+Fey creatures should never appear as simply human shaped with pointed ears. Always include specific otherworldly features, unusual coloring, subtle wrongness to their appearance, or distinctly non-human characteristics. The Feywild is a place of wonder and strangeness. Every creature should feel like they belong somewhere fundamentally different from the mortal realm.
+
+NOT EVERYTHING IS EPIC: The world does not revolve around the player's main quest at all times. Random encounters are allowed to be just random encounters. A group of bandits on the road are just bandits — they do not work for the main villain, they do not have cryptic knowledge of the prophecy, and their leader does not have a mysterious connection to the player's past. Sometimes a wolf attacks because it is hungry. Sometimes a merchant is rude because he is having a bad day. Sometimes a brawl in a tavern is just a brawl. Not every NPC needs a hidden agenda. Not every location needs a dark secret. Not every side quest needs to loop back to the main arc. Let small things be small. Let the player punch bandits in the face and walk away without it meaning anything larger. Mundane moments and self-contained encounters are not failures of storytelling — they are what makes the world feel real.`;
 };
 
 // Stack duplicate inventory items for display
