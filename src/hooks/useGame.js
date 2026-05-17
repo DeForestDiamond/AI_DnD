@@ -72,6 +72,18 @@ export const buildSystemPrompt = (char) => {
     ? '\n- RACE TRAITS: Tiefling — darkvision 60ft, resistance to fire damage, innate dark magic (Thaumaturgy cantrip, Hellish Rebuke 1/day, Darkness 1/day). Infernal heritage is visible — horns, tail, unusual eye color. May face prejudice in some regions.'
     : char.race?.name === 'Shadar-kai'
     ? '\n- RACE TRAITS: Shadar-kai — darkvision 60ft, resistance to necrotic damage, Blessing of the Raven Queen (teleport up to 30ft as bonus action 1/long rest, briefly become incorporeal). Shadow-touched — appear pale and unnervingly still. Connected to the Shadowfell.'
+    : char.race?.name === 'Half-Elf'
+    ? '\n- RACE TRAITS: Half-Elf — darkvision 60ft, Fey Ancestry (advantage on saves vs. charm, immune to magical sleep), Skill Versatility (proficiency in any two skills). Walks between human and elven worlds — often charming and adaptable.'
+    : char.race?.name === 'Half-Orc'
+    ? '\n- RACE TRAITS: Half-Orc — darkvision 60ft, Relentless Endurance (drop to 1 HP instead of 0 once per rest), Savage Attacks (add one extra weapon damage die on a critical hit). Imposing and battle-hardened in appearance.'
+    : char.race?.name === 'Gnome'
+    ? '\n- RACE TRAITS: Gnome — darkvision 60ft, Gnome Cunning (advantage on all INT/WIS/CHA saving throws vs. magic), Tinker proficiency (create small clockwork devices). Small stature — 3 to 4 feet tall. Naturally curious and inventive.'
+    : char.race?.name === 'Dragonborn'
+    ? '\n- RACE TRAITS: Dragonborn — Breath Weapon (15ft cone or 30ft line of elemental damage, Dex save, usable once per rest), damage resistance matching breath type, draconic appearance (scales, clawed hands, reptilian features). Carries themselves with pride.'
+    : char.race?.name === 'Aasimar'
+    ? '\n- RACE TRAITS: Aasimar — darkvision 60ft, Healing Hands (heal HP equal to level 1/long rest), Light Bearer (Light cantrip), Radiant Soul (1/long rest: grow wings for 1 minute, fly speed 30ft, add radiant damage equal to level on one attack per turn). Appears touched by divinity — luminous eyes or a faint halo.'
+    : char.race?.name === 'Githyanki'
+    ? '\n- RACE TRAITS: Githyanki — Astral Knowledge (gain proficiency in any one skill 1/long rest), Martial Prodigy (proficiency with light and medium armor, shortswords, longswords, greatswords), Psionic abilities: Mage Hand cantrip, Jump 1/day (3rd level), Misty Step 1/day (5th level). Tall and gaunt with yellowish skin and angular features. Intense and militaristic.'
     : '';
   const equippedList = Object.entries(char.slots)
     .filter(([,v]) => v).map(([k,v]) => `${k}: ${v}`).join(', ') || 'nothing';

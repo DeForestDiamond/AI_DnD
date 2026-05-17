@@ -14,12 +14,18 @@ export const CLASSES = [
 ];
 
 export const RACES = [
-  { name:'Human',      emoji:'👤', desc:'Adaptable and ambitious. +2 Strength, +1 Constitution.',                                                                                          bonus:{str:2,dex:0,con:1,int:0,wis:0,cha:0} },
-  { name:'Elf',        emoji:'🧝', desc:'Graceful and perceptive. +2 Dexterity, +1 Intelligence.',                                                                                        bonus:{str:0,dex:2,con:0,int:1,wis:0,cha:0} },
-  { name:'Dwarf',      emoji:'⛏️', desc:'Tough and resilient. +2 Constitution, +1 Strength.',                                                                                             bonus:{str:1,dex:0,con:2,int:0,wis:0,cha:0} },
-  { name:'Halfling',   emoji:'🍀', desc:'Lucky and nimble. +2 Dexterity, +1 Charisma.',                                                                                                  bonus:{str:0,dex:2,con:0,int:0,wis:0,cha:1} },
-  { name:'Tiefling',   emoji:'😈', desc:'Infernal heritage — born with devil\'s blood. Darkvision, fire resistance, and natural dark magic. +2 Charisma, +1 Intelligence.',               bonus:{str:0,dex:0,con:0,int:1,wis:0,cha:2} },
-  { name:'Shadar-kai', emoji:'🌑', desc:'Shadow-touched elves from the Shadowfell. Necrotic resistance, Blessing of the Raven Queen teleport, and supernatural calm. +2 Dexterity, +1 Wisdom.', bonus:{str:0,dex:2,con:0,int:0,wis:1,cha:0} },
+  { name:'Human',      emoji:'👤', desc:'Adaptable and ambitious. +2 Strength, +1 Constitution.',                                                                                                                bonus:{str:2,dex:0,con:1,int:0,wis:0,cha:0} },
+  { name:'Elf',        emoji:'🧝', desc:'Graceful and perceptive. +2 Dexterity, +1 Intelligence.',                                                                                                             bonus:{str:0,dex:2,con:0,int:1,wis:0,cha:0} },
+  { name:'Dwarf',      emoji:'⛏️', desc:'Tough and resilient. +2 Constitution, +1 Strength.',                                                                                                                  bonus:{str:1,dex:0,con:2,int:0,wis:0,cha:0} },
+  { name:'Halfling',   emoji:'🍀', desc:'Lucky and nimble. +2 Dexterity, +1 Charisma.',                                                                                                                       bonus:{str:0,dex:2,con:0,int:0,wis:0,cha:1} },
+  { name:'Tiefling',   emoji:'😈', desc:'Infernal heritage — born with devil\'s blood. Darkvision, fire resistance, and natural dark magic. +2 Charisma, +1 Intelligence.',                                    bonus:{str:0,dex:0,con:0,int:1,wis:0,cha:2} },
+  { name:'Shadar-kai', emoji:'🌑', desc:'Shadow-touched elves from the Shadowfell. Necrotic resistance, Blessing of the Raven Queen teleport, and supernatural calm. +2 Dexterity, +1 Wisdom.',               bonus:{str:0,dex:2,con:0,int:0,wis:1,cha:0} },
+  { name:'Half-Elf',   emoji:'🧬', desc:'Born of two worlds — human ambition and elven grace. Darkvision, Fey Ancestry (charm resistance), and a free +1 to any two stats of your choice. +1 Charisma, +1 Dexterity, +1 Wisdom.', bonus:{str:0,dex:1,con:0,int:0,wis:1,cha:1} },
+  { name:'Half-Orc',   emoji:'💪', desc:'Fierce and relentless. Relentless Endurance lets you survive a killing blow once per rest. Savage Attacks add an extra weapon die on crits. +2 Strength, +1 Constitution.', bonus:{str:2,dex:0,con:1,int:0,wis:0,cha:0} },
+  { name:'Gnome',      emoji:'🔬', desc:'Small but brilliant. Gnome Cunning grants advantage on all INT, WIS, and CHA saves vs. magic. Tinker proficiency. +2 Intelligence, +1 Constitution.',                 bonus:{str:0,dex:0,con:1,int:2,wis:0,cha:0} },
+  { name:'Dragonborn', emoji:'🐉', desc:'Draconic heritage runs through your veins. Choose a color — each grants a breath weapon and elemental resistance. Commanding presence. +2 Strength, +1 Charisma.',    bonus:{str:2,dex:0,con:0,int:0,wis:0,cha:1} },
+  { name:'Aasimar',    emoji:'😇', desc:'Celestial lineage — touched by divine light. Healing Hands, Darkvision, and Radiant Soul form that adds radiant damage and grants flight. +2 Charisma, +1 Wisdom.',   bonus:{str:0,dex:0,con:0,int:0,wis:1,cha:2} },
+  { name:'Githyanki',  emoji:'⚔️', desc:'Astral warriors bred to hunt mind flayers. Psionic abilities, martial training, and Astral Knowledge for situational expertise. Proud and ruthless. +2 Strength, +1 Intelligence.', bonus:{str:2,dex:0,con:0,int:1,wis:0,cha:0} },
 ];
 
 export const STAT_NAMES = {
