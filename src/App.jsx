@@ -437,8 +437,6 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     const truncated = fullLogRef.current.slice(0, idx);
     setFullLog(truncated);
     fullLogRef.current = truncated;
-    const displayIdx = messages.findIndex(m => m.id === msgId);
-    if (displayIdx !== -1) setMessages(prev => prev.slice(0, displayIdx));
     await handleSend(newText);
   };
 
@@ -451,11 +449,6 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     const truncated = log.slice(0, actualIdx);
     setFullLog(truncated);
     fullLogRef.current = truncated;
-    const displayLastUserIdx = [...messages].reverse().findIndex(m => m.role === 'user');
-    if (displayLastUserIdx !== -1) {
-      const dIdx = messages.length - 1 - displayLastUserIdx;
-      setMessages(prev => prev.slice(0, dIdx));
-    }
     await handleSend(lastUserMsg.text);
   };
 
@@ -879,7 +872,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
         )}
 
         <MessageFeed
-          messages={messages}
+          messages={fullLog}
           loading={loading}
           characterEmoji={character.cls?.emoji}
           onEditMessage={handleEditMessage}
