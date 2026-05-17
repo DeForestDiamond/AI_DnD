@@ -68,22 +68,22 @@ export const buildSystemPrompt = (char) => {
     ? `\n- PATRON: Bound by pact to ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc} This patron's agenda influences your story.`
     : '';
 
-  const raceContext = char.race?.name === 'Tiefling'
-    ? '\n- RACE TRAITS: Tiefling — darkvision 60ft, resistance to fire damage, innate dark magic (Thaumaturgy cantrip, Hellish Rebuke 1/day, Darkness 1/day). Infernal heritage is visible — horns, tail, unusual eye color. May face prejudice in some regions.'
-    : char.race?.name === 'Shadar-kai'
-    ? '\n- RACE TRAITS: Shadar-kai — darkvision 60ft, resistance to necrotic damage, Blessing of the Raven Queen (teleport up to 30ft as bonus action 1/long rest, briefly become incorporeal). Shadow-touched — appear pale and unnervingly still. Connected to the Shadowfell.'
-    : char.race?.name === 'Half-Elf'
-    ? '\n- RACE TRAITS: Half-Elf — darkvision 60ft, Fey Ancestry (advantage on saves vs. charm, immune to magical sleep), Skill Versatility (proficiency in any two skills). Walks between human and elven worlds — often charming and adaptable.'
-    : char.race?.name === 'Half-Orc'
-    ? '\n- RACE TRAITS: Half-Orc — darkvision 60ft, Relentless Endurance (drop to 1 HP instead of 0 once per rest), Savage Attacks (add one extra weapon damage die on a critical hit). Imposing and battle-hardened in appearance.'
-    : char.race?.name === 'Gnome'
-    ? '\n- RACE TRAITS: Gnome — darkvision 60ft, Gnome Cunning (advantage on all INT/WIS/CHA saving throws vs. magic), Tinker proficiency (create small clockwork devices). Small stature — 3 to 4 feet tall. Naturally curious and inventive.'
-    : char.race?.name === 'Dragonborn'
-    ? '\n- RACE TRAITS: Dragonborn — Breath Weapon (15ft cone or 30ft line of elemental damage, Dex save, usable once per rest), damage resistance matching breath type, draconic appearance (scales, clawed hands, reptilian features). Carries themselves with pride.'
-    : char.race?.name === 'Aasimar'
-    ? '\n- RACE TRAITS: Aasimar — darkvision 60ft, Healing Hands (heal HP equal to level 1/long rest), Light Bearer (Light cantrip), Radiant Soul (1/long rest: grow wings for 1 minute, fly speed 30ft, add radiant damage equal to level on one attack per turn). Appears touched by divinity — luminous eyes or a faint halo.'
-    : char.race?.name === 'Githyanki'
-    ? '\n- RACE TRAITS: Githyanki — Astral Knowledge (gain proficiency in any one skill 1/long rest), Martial Prodigy (proficiency with light and medium armor, shortswords, longswords, greatswords), Psionic abilities: Mage Hand cantrip, Jump 1/day (3rd level), Misty Step 1/day (5th level). Tall and gaunt with yellowish skin and angular features. Intense and militaristic.'
+  const RACE_TRAITS = {
+    'Human':      'Versatile and ambitious. Proficiency in one extra skill. Adaptable — gains one extra feat at level 1. No darkvision.',
+    'Elf':        'Darkvision 60ft. Keen Senses (proficiency in Perception). Fey Ancestry (advantage on saves vs. charm, immune to magical sleep). Trance (meditate 4hrs instead of sleeping). Proficiency with longswords, shortswords, shortbows, longbows.',
+    'Dwarf':      'Darkvision 60ft. Dwarven Resilience (advantage on poison saves, resistance to poison damage). Stonecunning (expertise on History checks about stonework). Proficiency with battleaxes, handaxes, throwing hammers, warhammers.',
+    'Halfling':   'Lucky (reroll any attack/ability/save roll of 1, must use new roll). Brave (advantage on saves vs. frightened). Halfling Nimbleness (move through space of larger creatures). Small — 3 feet tall. No darkvision.',
+    'Tiefling':   'Darkvision 60ft. Resistance to fire damage. Infernal Legacy: Thaumaturgy cantrip, Hellish Rebuke 1/day, Darkness 1/day. Horns, tail, and unusual eye color — may face prejudice.',
+    'Shadar-kai': 'Darkvision 60ft. Resistance to necrotic damage. Blessing of the Raven Queen: teleport up to 30ft as bonus action 1/long rest, briefly become incorporeal. Pale and unnervingly still in appearance.',
+    'Half-Elf':   'Darkvision 60ft. Fey Ancestry (advantage on saves vs. charm, immune to magical sleep). Skill Versatility: proficiency in any two skills. Charming and adaptable — walks between human and elven worlds.',
+    'Half-Orc':   'Darkvision 60ft. Relentless Endurance: drop to 1 HP instead of 0 once per rest. Savage Attacks: add one extra weapon damage die on a critical hit. Imposing and battle-hardened.',
+    'Gnome':      'Darkvision 60ft. Gnome Cunning: advantage on ALL INT, WIS, and CHA saving throws vs. magic. Tinker proficiency. Small — 3 to 4 feet tall. Naturally curious and inventive.',
+    'Dragonborn': 'Breath Weapon: 15ft cone or 30ft line of elemental damage (Dex save DC 8+CON+proficiency), usable once per rest. Damage resistance matching breath type. Draconic appearance — scales, clawed hands, reptilian features.',
+    'Aasimar':    'Darkvision 60ft. Healing Hands: heal HP equal to level 1/long rest. Light cantrip (innate). Radiant Soul 1/long rest: wings appear for 1 minute, fly speed 30ft, add radiant damage equal to level on one attack per turn.',
+    'Githyanki':  'Astral Knowledge: gain proficiency in any one skill 1/long rest. Martial Prodigy: proficiency with light/medium armor, shortswords, longswords, greatswords. Psionics: Mage Hand cantrip; Jump 1/day at level 3; Misty Step 1/day at level 5. Tall, gaunt, yellowish skin.',
+  };
+  const raceContext = RACE_TRAITS[char.race?.name]
+    ? `\n- RACE TRAITS (${char.race.name}): ${RACE_TRAITS[char.race.name]}`
     : '';
   const equippedList = Object.entries(char.slots)
     .filter(([,v]) => v).map(([k,v]) => `${k}: ${v}`).join(', ') || 'nothing';
