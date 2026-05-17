@@ -219,6 +219,14 @@ export const DEITY_DOMAIN_SPELLS = {
       3: ['Nondetection', 'Hunger of Hadar'],
     },
   },
+  'Kelemvor': {
+    cantrips: ['Toll the Dead', 'Spare the Dying'],
+    spells: {
+      1: ['False Life', 'Ray of Sickness'],
+      2: ['Gentle Repose', 'Ray of Enfeeblement'],
+      3: ['Animate Dead', 'Speak with Dead'],
+    },
+  },
 };
 
 // ── Warlock patron spells ──────────────────────────────────────────────────────

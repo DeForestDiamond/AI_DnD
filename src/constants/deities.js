@@ -56,7 +56,15 @@ export const DEITIES = [
     domains: ['Trickery', 'Darkness', 'Deception'],
     desc: 'Goddess of darkness, secrets, and loss. Mother of shadows and lies.',
     flavor: 'You draw power from shadow and deception, spreading secrets and chaos in her name.'
-  }
+  },
+  {
+    name: 'Kelemvor',
+    emoji: '⚖️',
+    alignment: 'Lawful Neutral',
+    domains: ['Death', 'Grave', 'Order'],
+    desc: 'God of the dead and the afterlife. Fair judge of souls, enemy of undeath and those who would cheat death.',
+    flavor: 'You serve as a guardian of the natural cycle — ensuring the dead find their rest and the undead are destroyed.'
+  },
 ];
 
 export const getDeityByName = (name) => DEITIES.find(d => d.name === name);
