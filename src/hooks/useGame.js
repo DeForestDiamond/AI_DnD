@@ -45,14 +45,27 @@ export const buildSystemPrompt = (char) => {
   const pb           = profBonus(char.level);
   const weapon       = getMainWeapon(char.slots, char.stats, char.customItems || {});
   const dexBuild = char.cls?.name === 'Artificer'
-    ? '\n- PLAYSTYLE: Artificer — INT-based spellcasting and combat. Uses arcane firearms and infusions. Can imbue items with magical properties. No ammo required for arcane firearms.'
+    ? '\n- PLAYSTYLE: Artificer — INT-based spellcasting. Arcane firearms, infusions, magical invention. No ammo required for arcane firearms.'
     : char.cls?.name === 'Illrigger'
-    ? '\n- PLAYSTYLE: Illrigger — infernal knight. Places invisible Baleful Interdict seals on enemies and burns them for fire/necrotic damage. CHA governs Interdict save DC. Uses Invoke Hell abilities and Interdict Boons for battlefield control. Pledged to an archdevil — infernal, ruthless, tactical.'
+    ? '\n- PLAYSTYLE: Illrigger — infernal knight. Places Baleful Interdict seals on enemies, burns them for fire/necrotic damage. CHA governs Interdict save DC. Pledged to an archdevil.'
+    : char.cls?.name === 'Monk'
+    ? '\n- PLAYSTYLE: Monk — DEX/WIS martial artist. Unarmed strikes, Ki-powered abilities (Flurry of Blows, Stunning Strike, Patient Defense). Fast and precise. No armor.'
+    : char.cls?.name === 'Barbarian'
+    ? '\n- PLAYSTYLE: Barbarian — STR/CON bruiser. Enters Rage for damage resistance and bonus damage. Reckless Attack for advantage. Massive HP. Unarmored Defense uses CON.'
+    : char.cls?.name === 'Warlock'
+    ? '\n- PLAYSTYLE: Warlock — CHA-based eldritch power from a dark patron. Eldritch Blast as primary attack. Hex for bonus damage. Limited spell slots but highly flexible invocations.'
+    : char.cls?.name === 'Blood Hunter'
+    ? '\n- PLAYSTYLE: Blood Hunter — CON/STR monster slayer. Spends own HP to activate Crimson Rites (elemental weapon damage). Brands enemies with Blood Curses. Grim and relentless.'
     : char.race?.name === 'Elf' && char.cls?.name === 'Fighter'
-    ? '\n- PLAYSTYLE: Dex Fighter — favour finesse weapons, use DEX for attacks and damage.' : '';
+    ? '\n- PLAYSTYLE: Dex Fighter — favour finesse weapons, use DEX for attacks and damage.'
+    : '';
 
-  const clericDeity = char.cls?.name === 'Cleric' && char.deity
-    ? `\n- DEITY: Devoted to ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc} Your powers flow from this divine connection. Reflect ${char.deity.name}'s values in your actions: ${char.deity.flavor}`
+  const hasClericLevels = char.cls?.name === 'Cleric' || Object.keys(char.classLevels || {}).includes('Cleric');
+  const hasWarlockLevels = char.cls?.name === 'Warlock' || Object.keys(char.classLevels || {}).includes('Warlock');
+  const clericDeity = char.deity && hasClericLevels
+    ? `\n- DEITY: Devoted to ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc} Reflect ${char.deity.name}'s values in your actions.`
+    : char.deity && hasWarlockLevels
+    ? `\n- PATRON: Bound by pact to ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc} This patron's agenda influences your story.`
     : '';
 
   const raceContext = char.race?.name === 'Tiefling'

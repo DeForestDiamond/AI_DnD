@@ -83,9 +83,11 @@ export default function App() {
   fullLogRef.current = fullLog;
 
   // ── Save/Load ──────────────────────────────────────────────────────────────
-  const isClericCharacter = (char) =>
-    char.cls?.name === 'Cleric' ||
-    (char.classLevels && Object.keys(char.classLevels).includes('Cleric'));
+  const isClericCharacter = (char) => {
+    const patronClasses = ['Cleric', 'Warlock'];
+    return patronClasses.includes(char.cls?.name) ||
+      Object.keys(char.classLevels || {}).some(k => patronClasses.includes(k));
+  };
 
   const save = useSave({
     charRef,
@@ -582,7 +584,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
         </div>
         <div style={{display:'flex',gap:8}}>
           <button style={{...btn(false),flex:1}} onClick={()=>setPhase('create-race')}>← BACK</button>
-          <button style={{...btn(true),flex:2,opacity:character.cls?1:0.4}} disabled={!character.cls} onClick={()=>character.cls?.name === 'Cleric' ? setPhase('create-deity') : setPhase('create-name')}>CONTINUE →</button>
+          <button style={{...btn(true),flex:2,opacity:character.cls?1:0.4}} disabled={!character.cls} onClick={()=>['Cleric','Warlock'].includes(character.cls?.name) ? setPhase('create-deity') : setPhase('create-name')}>CONTINUE →</button>
         </div>
       </div>
     </div>
@@ -594,8 +596,8 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       <style>{animations}</style>
       <div style={{maxWidth:700,width:'100%',padding:24}}>
         <p style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:4,marginBottom:8}}>CHARACTER CREATION — STEP 3 OF 4</p>
-        <h2 style={{fontFamily:fonts.display,color:colors.gold,fontSize:22,margin:'0 0 6px'}}>Choose Your Deity</h2>
-        <p style={{color:colors.textGhost,fontSize:13,marginBottom:24}}>Which god do you serve? Your deity shapes your divine powers and moral path.</p>
+        <h2 style={{fontFamily:fonts.display,color:colors.gold,fontSize:22,margin:'0 0 6px'}}>{character.cls?.name === 'Warlock' ? 'Choose Your Patron' : 'Choose Your Deity'}</h2>
+        <p style={{color:colors.textGhost,fontSize:13,marginBottom:24}}>{character.cls?.name === 'Warlock' ? 'Who holds the other end of your pact? Choose carefully — your patron shapes your power and your fate.' : 'Which god do you serve? Your deity shapes your divine powers and moral path.'}</p>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
           {DEITIES.map(deity => (
             <div key={deity.name} style={cardStyle(character.deity?.name===deity.name)} onClick={()=>selectDeity(deity)}>
@@ -718,6 +720,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       {showDeityModal && (
         <DeityModal
           context={deityModalContext}
+          cls={character.cls?.name}
           onSelectDeity={(deity) => {
             selectDeity(deity);
             updateChar({ ...charRef.current, deity, _needsDeitySelection: false });
@@ -732,7 +735,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
           classLevels={character.classLevels || { [character.cls?.name]: character.level }}
           deityPending={showDeityModal}
           onChooseClass={(cls) => {
-            if (cls === 'Cleric' && !character.deity) {
+            if (['Cleric','Warlock'].includes(cls) && !character.deity) {
               setDeityModalContext('multiclass');
               setShowDeityModal(true);
             }

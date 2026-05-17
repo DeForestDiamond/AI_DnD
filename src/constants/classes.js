@@ -1,12 +1,16 @@
 import { EMPTY_SLOTS } from './items.js';
 
 export const CLASSES = [
-  { name:'Fighter',   emoji:'⚔️', desc:'Strong warrior, great with weapons and armor. Best for beginners.',        stats:{str:16,dex:12,con:14,int:10,wis:10,cha:8 } },
-  { name:'Wizard',    emoji:'🔮', desc:'Casts powerful spells. Fragile but devastating from a distance.',           stats:{str:8, dex:14,con:10,int:17,wis:12,cha:10} },
-  { name:'Rogue',     emoji:'🗡️', desc:'Sneaky and quick. Deals huge damage from the shadows.',                    stats:{str:10,dex:17,con:12,int:12,wis:10,cha:14} },
-  { name:'Cleric',    emoji:'✨', desc:'Holy warrior devoted to a deity. Heal, fight, and channel divine power. Choose a god to serve during creation.',                      stats:{str:14,dex:10,con:13,int:10,wis:16,cha:12} },
-  { name:'Artificer',  emoji:'⚙️', desc:'Master of magical invention. Uses INT for combat and spellcasting. Infuses items with magic and wields arcane firearms.', stats:{str:8, dex:13,con:12,int:17,wis:10,cha:10} },
-  { name:'Illrigger',  emoji:'😈', desc:'Infernal knight pledged to an archdevil. Places hellfire seals on enemies and burns them for devastating damage. STR or DEX primary, CHA secondary.', stats:{str:16,dex:12,con:14,int:8, wis:10,cha:14} },
+  { name:'Fighter',     emoji:'⚔️',  desc:'Strong warrior, great with weapons and armor. Best for beginners.',                                                                                              stats:{str:16,dex:12,con:14,int:10,wis:10,cha:8 } },
+  { name:'Wizard',      emoji:'🔮',  desc:'Casts powerful spells. Fragile but devastating from a distance.',                                                                                               stats:{str:8, dex:14,con:10,int:17,wis:12,cha:10} },
+  { name:'Rogue',       emoji:'🗡️',  desc:'Sneaky and quick. Deals huge damage from the shadows.',                                                                                                        stats:{str:10,dex:17,con:12,int:12,wis:10,cha:14} },
+  { name:'Cleric',      emoji:'✨',  desc:'Holy warrior devoted to a deity. Heal, fight, and channel divine power. Choose a god to serve during creation.',                                                stats:{str:14,dex:10,con:13,int:10,wis:16,cha:12} },
+  { name:'Artificer',   emoji:'⚙️',  desc:'Master of magical invention. Uses INT for combat and spellcasting. Infuses items with magic and wields arcane firearms.',                                      stats:{str:8, dex:13,con:12,int:17,wis:10,cha:10} },
+  { name:'Illrigger',   emoji:'😈',  desc:'Infernal knight pledged to an archdevil. Places hellfire seals on enemies and burns them for devastating damage. STR or DEX primary, CHA secondary.',          stats:{str:16,dex:12,con:14,int:8, wis:10,cha:14} },
+  { name:'Monk',        emoji:'👊',  desc:'Disciplined martial artist who channels Ki energy. Fast, precise, and deadly with unarmed strikes and finesse weapons. DEX and WIS primary.',                   stats:{str:10,dex:17,con:13,int:10,wis:15,cha:8 } },
+  { name:'Barbarian',   emoji:'🪓',  desc:'Savage warrior who enters a primal Rage. Massive HP, brutal STR damage, and damage resistance while raging. Nearly impossible to kill.',                       stats:{str:17,dex:12,con:16,int:8, wis:10,cha:10} },
+  { name:'Warlock',     emoji:'🌑',  desc:'Wielder of eldritch power granted by a dark patron. CHA-based blasts and curses. Choose a patron during creation — your power comes with a price.',            stats:{str:8, dex:13,con:12,int:12,wis:10,cha:17} },
+  { name:'Blood Hunter', emoji:'🩸', desc:'Monster slayer who brands enemies with Crimson Rites, spending their own HP to imbue weapons with elemental power. CON and STR primary. Dark and relentless.', stats:{str:15,dex:12,con:16,int:10,wis:12,cha:8 } },
 ];
 
 export const RACES = [
@@ -33,10 +37,14 @@ export const STAT_DESC = {
 };
 
 export const STARTING_GEAR = {
-  Fighter:   { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword', offhand:'Shield', armor:'Chain Shirt' },  inventory:['Torch','Rations x3'] },
-  Wizard:    { slots:{ ...EMPTY_SLOTS, mainhand:'Dagger' },                                             inventory:['Spellbook','Arcane Focus','Torch','Rations x3'] },
-  Rogue:     { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword' },                                         inventory:['Dagger','Hunting Knife','Thieves\' Tools','Torch','Rations x3'] },
-  Cleric:    { slots:{ ...EMPTY_SLOTS, mainhand:'Mace', offhand:'Shield' },                             inventory:['Holy Symbol','Torch','Rations x3'] },
-  Artificer:  { slots:{ ...EMPTY_SLOTS, mainhand:'Arcane Pistol' },                                      inventory:['Thieves\' Tools','Tinker\'s Tools','Component Pouch','Torch','Rations x3'] },
-  Illrigger:  { slots:{ ...EMPTY_SLOTS, mainhand:'Longsword', armor:'Chain Shirt' },                      inventory:['Javelin x5','Torch','Rations x3'] },
+  Fighter:      { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword', offhand:'Shield', armor:'Chain Shirt' },  inventory:['Torch','Rations x3'] },
+  Wizard:       { slots:{ ...EMPTY_SLOTS, mainhand:'Dagger' },                                             inventory:['Spellbook','Arcane Focus','Torch','Rations x3'] },
+  Rogue:        { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword' },                                         inventory:['Dagger','Hunting Knife','Thieves\' Tools','Torch','Rations x3'] },
+  Cleric:       { slots:{ ...EMPTY_SLOTS, mainhand:'Mace', offhand:'Shield' },                             inventory:['Holy Symbol','Torch','Rations x3'] },
+  Artificer:    { slots:{ ...EMPTY_SLOTS, mainhand:'Arcane Pistol' },                                      inventory:['Thieves\' Tools','Tinker\'s Tools','Component Pouch','Torch','Rations x3'] },
+  Illrigger:    { slots:{ ...EMPTY_SLOTS, mainhand:'Longsword', armor:'Chain Shirt' },                     inventory:['Javelin x5','Torch','Rations x3'] },
+  Monk:         { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword' },                                         inventory:['10 Darts','Meditation Beads','Rations x3'] },
+  Barbarian:    { slots:{ ...EMPTY_SLOTS, mainhand:'Greataxe', armor:'Hide Armor' },                       inventory:['Handaxe x2','Torch','Rations x3'] },
+  Warlock:      { slots:{ ...EMPTY_SLOTS, mainhand:'Dagger' },                                             inventory:['Arcane Focus','Component Pouch','Torch','Rations x3'] },
+  'Blood Hunter': { slots:{ ...EMPTY_SLOTS, mainhand:'Longsword', armor:'Studded Leather' },               inventory:['Hunter\'s Kit','Torch','Rations x3'] },
 };

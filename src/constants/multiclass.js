@@ -1,5 +1,4 @@
 // Multiclass definitions
-// Each entry defines what a class gives at each level taken as a multiclass
 
 export const MULTICLASS_OPTIONS = {
   Fighter: {
@@ -19,8 +18,8 @@ export const MULTICLASS_OPTIONS = {
     hpPerLevel: 5,
     features: {
       1: [
-        'Sneak Attack - +1d6 damage when attacking from hiding or with advantage',
-        'Expertise - double proficiency on Stealth and Deception',
+        'Sneak Attack - +1d6 damage when attacking with advantage or from hiding',
+        "Expertise - double proficiency on Stealth and Deception",
         "Thieves' Cant",
       ],
       2: ['Cunning Action - bonus Hide, Dash, or Disengage action'],
@@ -83,13 +82,78 @@ export const MULTICLASS_OPTIONS = {
         'Baleful Interdict - place invisible seals on enemies that burn for fire/necrotic damage',
         'Invoke Hell - spend Interdict charges for powerful infernal abilities',
       ],
-      2: ['Interdict Boons - gain bonus effects when burning seals', 'Hellfire damage increases'],
+      2: ['Interdict Boons - bonus effects when burning seals', 'Hellfire damage increases'],
       3: ['Seal of Damnation - cursed enemies take extra damage from all sources'],
       4: ['Additional Interdict charges per rest'],
       5: [
         'Extra Attack - attack twice when taking the attack action',
         'Consume the Wicked - restore HP equal to Interdict damage dealt',
       ],
+    },
+  },
+  Monk: {
+    emoji: '\uD83D\uDC4A',
+    desc: 'Channel Ki energy. Fast unarmed strikes, stunning blows, and evasion.',
+    hpPerLevel: 5,
+    features: {
+      1: [
+        'Unarmored Defense - WIS mod added to AC when unarmored',
+        'Martial Arts - unarmed strikes use DEX, deal 1d4 damage',
+      ],
+      2: ['Ki Points - spend to Flurry of Blows, Patient Defense, or Step of the Wind'],
+      3: ['Deflect Missiles - catch and redirect ranged attacks', 'Monastic Tradition subclass'],
+      4: ['Slow Fall - reduce fall damage by 5x Monk level'],
+      5: ['Extra Attack', 'Stunning Strike - spend Ki to stun on hit'],
+    },
+  },
+  Barbarian: {
+    emoji: '\uD83E\uDEA3',
+    desc: 'Enter a primal Rage. Massive damage resistance and brutal STR attacks.',
+    hpPerLevel: 7,
+    features: {
+      1: [
+        'Rage - advantage on STR checks, +2 damage, resistance to physical damage',
+        'Unarmored Defense - CON mod added to AC when unarmored',
+      ],
+      2: ['Reckless Attack - advantage on attacks, enemies get advantage back', 'Danger Sense'],
+      3: ['Primal Path subclass', 'Bear Totem - resistance to ALL damage while raging'],
+      4: ['Ability Score Improvement'],
+      5: ['Extra Attack', 'Fast Movement - +10ft speed when not in heavy armor'],
+    },
+  },
+  Warlock: {
+    emoji: '\uD83C\uDF11',
+    desc: 'Eldritch power from a dark patron. CHA-based blasts and curses.',
+    hpPerLevel: 5,
+    features: {
+      1: [
+        'Eldritch Blast cantrip',
+        'Patron spells added to spell list',
+        'Hex - bonus action curse, +1d6 damage to target',
+      ],
+      2: [
+        'Eldritch Invocations - Agonizing Blast (+CHA to Eldritch Blast)',
+        "Devil's Sight - darkvision 120ft through magical darkness",
+      ],
+      3: ['Pact Boon - Pact of the Blade (summon weapon), Chain (familiar), or Tome (spellbook)'],
+      4: ['Additional Eldritch Invocation'],
+      5: ['3rd level patron spells', 'Contact Other Plane ritual'],
+    },
+  },
+  'Blood Hunter': {
+    emoji: '\uD83E\uDE78',
+    desc: 'Spend your own HP to fuel Crimson Rites and brand enemies.',
+    hpPerLevel: 5,
+    features: {
+      1: [
+        "Hunter's Bane - advantage vs. undead and fey",
+        'Blood Maledict - curse enemies with haemorrhage or sense vitality',
+        'Crimson Rite - spend HP to imbue weapon with elemental damage',
+      ],
+      2: ['Fighting Style', 'Crimson Rite damage increases'],
+      3: ['Blood Hunter Order subclass', 'Brand of Castigation'],
+      4: ['Ability Score Improvement'],
+      5: ['Extra Attack', 'Grim Psychometry - read psychic impressions from objects'],
     },
   },
 };
@@ -100,7 +164,6 @@ export const SNEAK_ATTACK_DICE = {
   6: '3d6', 7: '4d6', 8: '4d6', 9: '5d6', 10: '5d6',
 };
 
-// Get all features earned up to a given level in a class
 export const getClassFeatures = (className, level) => {
   const cls = MULTICLASS_OPTIONS[className];
   if (!cls) return [];
@@ -111,19 +174,16 @@ export const getClassFeatures = (className, level) => {
   return features;
 };
 
-// Calculate total character level across all classes
 export const getTotalLevel = (classLevels) => {
   return Object.values(classLevels).reduce((sum, lvl) => sum + lvl, 0);
 };
 
-// Get sneak attack bonus if character has rogue levels
 export const getSneakAttackDice = (classLevels) => {
   const rogueLevels = classLevels?.Rogue || 0;
   if (rogueLevels === 0) return null;
   return SNEAK_ATTACK_DICE[Math.min(rogueLevels, 10)] || '5d6';
 };
 
-// Check if sneak attack should apply (attacking from hiding)
 export const shouldApplySneakAttack = (userMsg) => {
   return /\b(hiding|hidden|shadow|stealth|sneak|ambush|surprise|dark|darkness|unseen|undetected|ghost|backstab)\b/i.test(userMsg);
 };

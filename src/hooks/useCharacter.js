@@ -147,11 +147,14 @@ export const migrateCharacter = (char) => {
   if (v < 8) {
     // Add deity for clerics from old saves that don't have one.
     // Check both primary class AND classLevels (catches multiclass clerics).
-    const hasClericLevels = c.cls?.name === 'Cleric' ||
-      (c.classLevels && Object.keys(c.classLevels).includes('Cleric'));
-    if (!c.deity && hasClericLevels) {
+    const patronClasses = ['Cleric', 'Warlock'];
+    const hasPatronClass = patronClasses.some(c =>
+      c === (c.cls?.name) || Object.keys(c.classLevels || {}).includes(c)
+    );
+    if (!c.deity && (c.cls?.name === 'Cleric' || c.cls?.name === 'Warlock' ||
+      Object.keys(c.classLevels || {}).some(k => ['Cleric','Warlock'].includes(k)))) {
       c._needsDeitySelection = true;
-      notes.push('Cleric needs to choose a deity — you will be prompted after load');
+      notes.push('Character needs to choose a deity/patron — you will be prompted after load');
     }
     if (!c.deity) c.deity = null;
     // Add stash if missing
@@ -225,7 +228,7 @@ export function useCharacter() {
       const classLevels  = { ...(c.classLevels || {}) };
       classLevels[className] = (classLevels[className] || 0) + 1;
       const newStats  = { ...c.stats, [stat]: c.stats[stat] + 1 };
-      const hpPerLevel = { Fighter:6, Wizard:4, Rogue:5, Cleric:5, Illrigger:6 }[className] || 5;
+      const hpPerLevel = { Fighter:6, Wizard:4, Rogue:5, Cleric:5, Artificer:5, Illrigger:6, Monk:5, Barbarian:7, Warlock:5, 'Blood Hunter':5 }[className] || 5;
       const conMod     = statMod(newStats.con);
       const hpGain     = Math.max(1, hpPerLevel + conMod);
       const newMaxHp   = c.maxHp + hpGain;

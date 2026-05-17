@@ -77,6 +77,58 @@ export const CLASS_ABILITIES = {
     infusionsKnown: {},
   },
 
+  Monk: {
+    cantrips: [],
+    spells: {
+      1: ['Flurry of Blows', 'Patient Defense', 'Step of the Wind'],
+      2: ['Stunning Strike', 'Ki-Empowered Strikes', 'Deflect Missiles'],
+      3: ['Slow Fall', 'Extra Attack', 'Evasion'],
+    },
+    cantripsKnown: {},
+    spellsKnown: { 1:2, 2:3, 3:3, 4:4, 5:4, 6:5, 7:5, 8:5, 9:6, 10:6 },
+    infusionsKnown: {},
+  },
+
+  Barbarian: {
+    cantrips: [],
+    spells: {
+      1: ['Rage', 'Unarmored Defense', 'Reckless Attack'],
+      2: ['Danger Sense', 'Reckless Attack', 'Bear Totem - Resistance to all damage while raging'],
+      3: ['Extra Attack', 'Fast Movement', 'Feral Instinct'],
+    },
+    cantripsKnown: {},
+    spellsKnown: { 1:2, 2:3, 3:3, 4:4, 5:4, 6:5, 7:5, 8:5, 9:6, 10:6 },
+    infusionsKnown: {},
+  },
+
+  Warlock: {
+    cantrips: [
+      'Eldritch Blast', 'Chill Touch', 'Minor Illusion',
+      'Mage Hand', 'Prestidigitation', 'Toll the Dead',
+      'Poison Spray', 'True Strike', 'Thunderclap',
+    ],
+    spells: {
+      1: ['Armor of Agathys', 'Arms of Hadar', 'Charm Person', 'Comprehend Languages', 'Expeditious Retreat', 'Hellish Rebuke', 'Hex', 'Illusory Script', 'Protection from Evil and Good', 'Unseen Servant', 'Witch Bolt'],
+      2: ['Cloud of Daggers', 'Crown of Madness', 'Darkness', 'Enthrall', 'Hold Person', 'Invisibility', 'Mirror Image', 'Misty Step', 'Ray of Enfeeblement', 'Shatter', 'Spider Climb', 'Suggestion'],
+      3: ['Counterspell', 'Dispel Magic', 'Fear', 'Fly', 'Gaseous Form', 'Hunger of Hadar', 'Hypnotic Pattern', 'Magic Circle', 'Major Image', 'Remove Curse', 'Tongues', 'Vampiric Touch'],
+    },
+    cantripsKnown: { 1:2, 2:2, 3:2, 4:3, 5:3, 6:3, 7:3, 8:3, 9:3, 10:4 },
+    spellsKnown: { 1:2, 2:3, 3:4, 4:5, 5:6, 6:7, 7:8, 8:9, 9:10, 10:11 },
+    infusionsKnown: {},
+  },
+
+  'Blood Hunter': {
+    cantrips: [],
+    spells: {
+      1: ['Crimson Rite - Rite of the Flame (fire damage)', 'Crimson Rite - Rite of the Frozen (cold damage)', 'Crimson Rite - Rite of the Storm (lightning damage)', 'Hunter\'s Bane', 'Blood Maledict - Haemorrhage'],
+      2: ['Crimson Rite - Rite of the Dead (necrotic damage)', 'Blood Maledict - Sense Vitality', 'Brand of Castigation', 'Grim Psychometry'],
+      3: ['Extra Attack', 'Brand of Tethering', 'Blood Maledict - Curse of the Eyeless', 'Blood Curse of Mutual Suffering'],
+    },
+    cantripsKnown: {},
+    spellsKnown: { 1:3, 2:4, 3:5, 4:6, 5:7, 6:8, 7:9, 8:10, 9:11, 10:12 },
+    infusionsKnown: {},
+  },
+
   Illrigger: {
     cantrips: [],
     // Illrigger uses Invoke Hell (subclass abilities) and Interdict Boons, not traditional spells.
@@ -87,7 +139,7 @@ export const CLASS_ABILITIES = {
       3: ['Invoke Hell', 'Diabolic Contract'],
       4: ['Ability Score Improvement'],
       5: ['Extra Attack'],
-      6: ['Infernal Conduit — Invigorate', 'Infernal Conduit — Devour'],
+      6: ['Infernal Conduit - Invigorate', 'Infernal Conduit - Devour'],
       7: ['Acheron\'s Chain', 'Conflagrant Channel', 'Eyes of the Gate', 'Shadow Shroud', 'Unleash Hell', 'Vengeful Shot'],
     },
     cantripsKnown: {},
@@ -109,7 +161,7 @@ export const getAbilityCounts = (className, level) => {
 
 // ── Deity domain spells ────────────────────────────────────────────────────────
 // These are added on top of the standard cleric list when a deity is chosen.
-// Domain spells are always prepared — they don't count against spell slots.
+// Domain spells are always prepared - they don't count against spell slots.
 export const DEITY_DOMAIN_SPELLS = {
   'Selûne': {
     cantrips: ['Dancing Lights', 'Minor Illusion'],
@@ -169,7 +221,51 @@ export const DEITY_DOMAIN_SPELLS = {
   },
 };
 
-// Get available options at a given level, optionally merged with deity domains
+// ── Warlock patron spells ──────────────────────────────────────────────────────
+// Warlocks pick a patron (via the same deity selection system as Clerics).
+// These expand the available spell list based on patron.
+export const WARLOCK_PATRON_SPELLS = {
+  'The Archfey': {
+    cantrips: ['Dancing Lights', 'Friends'],
+    spells: {
+      1: ['Faerie Fire', 'Sleep'],
+      2: ['Calm Emotions', 'Phantasmal Force'],
+      3: ['Blink', 'Plant Growth'],
+    },
+  },
+  'The Great Old One': {
+    cantrips: ['Mind Sliver', 'Guidance'],
+    spells: {
+      1: ['Dissonant Whispers', 'Tasha\'s Hideous Laughter'],
+      2: ['Detect Thoughts', 'Phantasmal Force'],
+      3: ['Clairvoyance', 'Sending'],
+    },
+  },
+  'Asmodeus': {
+    cantrips: ['Toll the Dead', 'Chill Touch'],
+    spells: {
+      1: ['Burning Hands', 'Command'],
+      2: ['Scorching Ray', 'Suggestion'],
+      3: ['Fireball', 'Stinking Cloud'],
+    },
+  },
+  'Shar': {
+    cantrips: ['Minor Illusion', 'Chill Touch'],
+    spells: {
+      1: ['Bane', 'Disguise Self'],
+      2: ['Darkness', 'Pass Without Trace'],
+      3: ['Nondetection', 'Hunger of Hadar'],
+    },
+  },
+  'Dendar the Night Serpent': {
+    cantrips: ['Poison Spray', 'Thunderclap'],
+    spells: {
+      1: ['Cause Fear', 'Ray of Sickness'],
+      2: ['Crown of Madness', 'Web'],
+      3: ['Fear', 'Gaseous Form'],
+    },
+  },
+};
 export const getAvailableAbilities = (className, level, deity = null) => {
   const cls = CLASS_ABILITIES[className];
   if (!cls) return { cantrips: [], spells: [], infusions: [] };
@@ -179,8 +275,8 @@ export const getAvailableAbilities = (className, level, deity = null) => {
     if (cls.spells?.[l]) spells.push(...cls.spells[l]);
   }
 
-  // Merge deity domain spells for clerics
   const domainCantrips = [];
+  // Cleric - merge deity domain spells
   if (className === 'Cleric' && deity) {
     const domain = DEITY_DOMAIN_SPELLS[deity];
     if (domain) {
@@ -190,18 +286,33 @@ export const getAvailableAbilities = (className, level, deity = null) => {
       }
     }
   }
+  // Warlock - merge patron spells
+  if (className === 'Warlock' && deity) {
+    const patron = WARLOCK_PATRON_SPELLS[deity];
+    if (patron) {
+      domainCantrips.push(...(patron.cantrips || []));
+      for (let l = 1; l <= spellLevel; l++) {
+        if (patron.spells?.[l]) spells.push(...patron.spells[l]);
+      }
+    }
+  }
 
   const infusionKeys = Object.keys(cls.infusions || {}).map(Number).filter(k => k <= level);
   const infusions = infusionKeys.length > 0
     ? (cls.infusions[level] || cls.infusions[Math.max(...infusionKeys)] || [])
     : [];
+
+  const domainSpells = className === 'Cleric' && deity
+    ? Object.values(DEITY_DOMAIN_SPELLS[deity]?.spells || {}).flat()
+    : className === 'Warlock' && deity
+    ? Object.values(WARLOCK_PATRON_SPELLS[deity]?.spells || {}).flat()
+    : [];
+
   return {
     cantrips:  [...new Set([...(cls.cantrips || []), ...domainCantrips])],
     spells:    [...new Set(spells)],
     infusions: infusions,
-    domainCantrips,  // exposed so modal can label them
-    domainSpells: className === 'Cleric' && deity
-      ? Object.values(DEITY_DOMAIN_SPELLS[deity]?.spells || {}).flat()
-      : [],
+    domainCantrips,
+    domainSpells,
   };
 };
