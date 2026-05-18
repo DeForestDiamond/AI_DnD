@@ -893,7 +893,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
           onToggleTts={() => { voice.setTtsEnabled(v=>!v); if(voice.isSpeaking) voice.stopSpeaking(); }}
           onStopSpeaking={voice.stopSpeaking}
           onReplay={() => {
-            const lastDM = [...messages].reverse().find(m => m.role === 'dm');
+            const lastDM = [...fullLog].reverse().find(m => m.role === 'dm');
             if (lastDM) voice.speak(lastDM.text);
           }}
           tokenUsage={tokenUsage}
