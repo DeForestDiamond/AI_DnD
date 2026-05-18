@@ -114,16 +114,35 @@ export const buildSystemPrompt = (char) => {
     const present = [];
     const distant = [];
     Object.entries(char.companions).forEach(([name, data]) => {
-      const loc = (data.location || '').toLowerCase();
+      const loc = (data.location || data.status || '').toLowerCase();
       const here = currentLocation
         ? loc.includes(currentLocation.toLowerCase()) || currentLocation.toLowerCase().includes(loc)
         : false;
+
+      // Build a description that handles both formats:
+      // Vael format: { desc, relationship, location, notes }
+      // Sylran format: { trueName, race, age, role, status, appearance, personality, abilities[] }
+      const desc = data.desc
+        || [
+            data.trueName ? `True name: ${data.trueName}` : '',
+            data.race ? `Race: ${data.race}` : '',
+            data.role ? `Role: ${data.role}` : '',
+            data.appearance ? `Appearance: ${data.appearance}` : '',
+            data.personality ? `Personality: ${data.personality}` : '',
+            data.status ? `Status: ${data.status}` : '',
+          ].filter(Boolean).join(' | ')
+        || '';
+
+      const abilitiesStr = data.abilities
+        ? Array.isArray(data.abilities)
+          ? data.abilities.join(', ')
+          : data.abilities
+        : '';
+
       if (here || !data.location) {
-        // Full detail — companion is here or location unknown
-        present.push(`- ${name} [PRESENT]: ${data.desc || ''}${data.abilities ? ' | Abilities: ' + data.abilities : ''}${data.notes ? ' | ' + data.notes : ''}`);
+        present.push(`- ${name} [PRESENT]: ${desc}${abilitiesStr ? ' | Abilities: ' + abilitiesStr : ''}${data.notes ? ' | ' + data.notes : ''}`);
       } else {
-        // Compressed — just name, location, one-line relationship
-        distant.push(`- ${name} (at ${data.location}): ${data.relationship || data.notes || 'ally'}`);
+        distant.push(`- ${name} (at ${data.location}): ${data.relationship || data.role || data.notes || 'ally'}`);
       }
     });
     const parts = [];
