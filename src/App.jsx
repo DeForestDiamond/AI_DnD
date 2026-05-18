@@ -56,9 +56,6 @@ export default function App() {
   const storySummaryRef = useRef('');
   const isMobile = window.innerWidth < 768;
 
-  // Keep storySummary ref in sync
-  storySummaryRef.current = storySummary;
-
   const log = (msg, data) => {
     const entry = `[${new Date().toLocaleTimeString()}] ${msg}${data ? ' ' + JSON.stringify(data) : ''}`;
     console.log(entry);
@@ -80,9 +77,6 @@ export default function App() {
   const { callDM, buildActionContext, interceptRollRequest, processEnemyAttacks } = useGame({ charRef, apiKey });
 
   const messagesRef = useRef(messages);
-  messagesRef.current = messages;
-  fullLogRef.current = fullLog;
-
   // ── Save/Load ──────────────────────────────────────────────────────────────
   const isClericCharacter = (char) => {
     const patronClasses = ['Cleric', 'Warlock'];
@@ -334,8 +328,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       if (allMessages.length > KEEP_RECENT) {
         setMessages(recent);
         log('[SUMMARY] Entry appended' + (finalSummary.length < appended.length ? ' + compressed' : '') + ' — kept last ' + KEEP_RECENT + ' messages');
-      }
-    } catch (e) {
+      }    } catch (e) {
       log('[SUMMARY] Failed: ' + e.message);
     }
   };
