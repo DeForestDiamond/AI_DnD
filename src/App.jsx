@@ -6,7 +6,7 @@ import { SLOTS, allItems as allItemsHelper } from './constants/items.js';
 import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
-import { useGame, buildSystemPrompt } from './hooks/useGame.js';
+import { useGame, buildSystemPrompt, cleanDisplayText } from './hooks/useGame.js';
 import { Sidebar } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
@@ -428,12 +428,14 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     const log = fullLogRef.current;
     const idx = log.findIndex(m => m.id === msgId);
     if (idx === -1) return;
-    // fullLog truncates at the edited message (display keeps the preceding DM response)
+    const originalText = log[idx]?.text || '';
+    const textChanged = newText.trim() !== cleanDisplayText(originalText).trim();
+    // fullLog truncates at the edited message
     const truncated = log.slice(0, idx);
     setFullLog(truncated);
     fullLogRef.current = truncated;
-    // API history also skips the preceding DM message so its stale options don't leak
-    const cutFrom = idx > 0 && log[idx - 1]?.role === 'dm' ? idx - 1 : idx;
+    // Only skip the preceding DM if text actually changed — otherwise keep full history
+    const cutFrom = textChanged && idx > 0 && log[idx - 1]?.role === 'dm' ? idx - 1 : idx;
     const apiTruncated = log.slice(0, cutFrom);
     await handleSend(newText, apiTruncated);
   };
