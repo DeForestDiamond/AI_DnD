@@ -427,7 +427,10 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
   const handleEditMessage = async (msgId, newText) => {
     const idx = fullLogRef.current.findIndex(m => m.id === msgId);
     if (idx === -1) return;
-    const truncated = fullLogRef.current.slice(0, idx);
+    // Also remove the DM message immediately before the edited user message
+    // so its stale option list doesn't confuse Haiku on the next send
+    const cutFrom = idx > 0 && fullLogRef.current[idx - 1].role === 'dm' ? idx - 1 : idx;
+    const truncated = fullLogRef.current.slice(0, cutFrom);
     setFullLog(truncated);
     fullLogRef.current = truncated;
     await handleSend(newText, truncated);

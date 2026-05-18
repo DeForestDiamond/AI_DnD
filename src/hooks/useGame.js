@@ -231,6 +231,7 @@ export const buildSystemPrompt = (char) => {
 THESE ARE RULES, NOT GUIDELINES. VIOLATIONS ARE NOT ACCEPTABLE.
 HARD LIMIT: Maximum 3 paragraphs and 150 words per response. The API enforces this — you will be cut off if you run long, so front-load the most important narrative first.
 HARD LIMIT: Always end with 2–4 numbered action choices.
+HARD LIMIT: When a player sends a bare number (1, 2, 3, 4), it ALWAYS refers to the numbered options at the end of your most recent response — never to options from any earlier message. Do not get confused by numbered lists elsewhere in the conversation history.
 HARD LIMIT: Never resolve travel, combat, violence, time skips, or any significant story event without player input first. Stop before it happens and ask. Do not narrate outcomes the player had no say in.
 Plain text only. No markdown, no asterisks, no bold, no headers.
 Never abbreviate HP, XP, AC, DC, STR, DEX, CON, INT, WIS, CHA in narrative text — spell them out.
