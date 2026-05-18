@@ -425,15 +425,17 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
   };
 
   const handleEditMessage = async (msgId, newText) => {
-    const idx = fullLogRef.current.findIndex(m => m.id === msgId);
+    const log = fullLogRef.current;
+    const idx = log.findIndex(m => m.id === msgId);
     if (idx === -1) return;
-    // Also remove the DM message immediately before the edited user message
-    // so its stale option list doesn't confuse Haiku on the next send
-    const cutFrom = idx > 0 && fullLogRef.current[idx - 1].role === 'dm' ? idx - 1 : idx;
-    const truncated = fullLogRef.current.slice(0, cutFrom);
+    // fullLog truncates at the edited message (display keeps the preceding DM response)
+    const truncated = log.slice(0, idx);
     setFullLog(truncated);
     fullLogRef.current = truncated;
-    await handleSend(newText, truncated);
+    // API history also skips the preceding DM message so its stale options don't leak
+    const cutFrom = idx > 0 && log[idx - 1]?.role === 'dm' ? idx - 1 : idx;
+    const apiTruncated = log.slice(0, cutFrom);
+    await handleSend(newText, apiTruncated);
   };
 
   const handleRegenerate = async () => {
