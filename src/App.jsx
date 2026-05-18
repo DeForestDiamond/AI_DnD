@@ -339,15 +339,15 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     }
   };
 
-  // Build the API history from summary + recent messages
-  const buildApiHistory = (allMessages) => {
+  // Build the API history from summary + messages since last summary
+  // messages state is already trimmed by summarizer — never send fullLog to the DM
+  const buildApiHistory = () => {
     const summary = storySummaryRef.current;
-    const apiMsgs = allMessages.map(m => ({
+    const apiMsgs = messages.map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
       content: m.text,
     }));
     if (!summary) return apiMsgs;
-    // Prepend summary as a user/assistant exchange so the DM has full context
     return [
       { role: 'user',      content: '[STORY SO FAR — read before continuing]\n' + summary },
       { role: 'assistant', content: 'Understood. I have the full story context and will continue from where we left off.' },
@@ -371,7 +371,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       ? '[Your previous response was cut off mid-sentence. Continue EXACTLY where you left off — do not restart or summarize the scene, just resume the prose from where it ended.]\n\n'
       : '';
 
-    const history = buildApiHistory(fullLogRef.current);
+    const history = buildApiHistory();
 
     addMessage({ role:'user', text:userMsg, id:Date.now() });
 
