@@ -272,8 +272,12 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
   const maybeAutoSummarize = async (allMessages) => {
     if (allMessages.length < SUMMARIZE_AFTER) return;
     const nextThreshold = lastSummarizedAt.current + SUMMARIZE_AFTER;
-    if (allMessages.length < nextThreshold) return;
+    if (allMessages.length < nextThreshold) {
+      log(`[SUMMARY] Skipping — ${allMessages.length} msgs, next threshold: ${nextThreshold}`);
+      return;
+    }
     lastSummarizedAt.current = allMessages.length;
+    log(`[SUMMARY] Firing — ${allMessages.length} msgs, summary length: ${storySummaryRef.current.length} chars`);
 
     const toSummarize = allMessages.slice(0, allMessages.length - KEEP_RECENT);
     const recent      = allMessages.slice(-KEEP_RECENT);
@@ -436,8 +440,8 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     const truncated = log.slice(0, idx);
     setFullLog(truncated);
     fullLogRef.current = truncated;
-    // Send with the truncated log as history — preceding DM stays in so Haiku
-    // has full context. System prompt handles stale option numbers.
+    // Reset summarization threshold so it fires correctly at the new log length
+    lastSummarizedAt.current = Math.floor(truncated.length / SUMMARIZE_AFTER) * SUMMARIZE_AFTER;
     await handleSend(newText, truncated);
   };
 
@@ -450,6 +454,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     const truncated = log.slice(0, actualIdx);
     setFullLog(truncated);
     fullLogRef.current = truncated;
+    lastSummarizedAt.current = Math.floor(truncated.length / SUMMARIZE_AFTER) * SUMMARIZE_AFTER;
     await handleSend(lastUserMsg.text, truncated);
   };
 
