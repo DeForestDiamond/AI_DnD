@@ -144,12 +144,55 @@ function CompanionSlots({ companion, db }) {
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory }) {
+export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag }) {
   const db       = allItems(character.customItems || {});
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
   const weapon   = character.stats.dex ? getMainWeapon(character.slots, character.stats, character.customItems||{}) : null;
   const pb       = profBonus(character.level);
+
+  // Bag creation state
+  const [bagMode, setBagMode] = useState(false);       // are we in bag creation mode?
+  const [bagSelected, setBagSelected] = useState({});  // { itemName: count }
+  const [bagName, setBagName] = useState('');
+  const [addingToBag, setAddingToBag] = useState(null); // bag name we're adding to
+
+  const existingBags = Object.entries(character.customItems || {})
+    .filter(([, v]) => v.type === 'bag')
+    .map(([name]) => name);
+
+  const toggleBagItem = (itemName) => {
+    setBagSelected(prev => {
+      const current = prev[itemName] || 0;
+      const max = character.inventory.filter(i => i === itemName).length;
+      if (current >= max) {
+        const next = { ...prev };
+        delete next[itemName];
+        return next;
+      }
+      return { ...prev, [itemName]: current + 1 };
+    });
+  };
+
+  const confirmBag = () => {
+    const items = Object.entries(bagSelected).flatMap(([name, count]) => Array(count).fill(name));
+    if (addingToBag) {
+      onAddToBag?.(addingToBag, items);
+    } else {
+      if (!bagName.trim()) return;
+      onCreateBag?.(bagName.trim(), items);
+    }
+    setBagMode(false);
+    setBagSelected({});
+    setBagName('');
+    setAddingToBag(null);
+  };
+
+  const startAddToBag = (name) => {
+    setAddingToBag(name);
+    setBagMode(true);
+    setBagSelected({});
+  };
 
   const sidebarStyle = {
     width:285, flexShrink:0,
@@ -379,33 +422,90 @@ export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilit
         </CollapsibleSection>
       )}
 
+      {/* Bag mode toolbar */}
+      {bagMode && (
+        <div style={{background:colors.bgDark,border:`1px solid ${colors.gold}`,borderRadius:4,padding:'8px 10px',marginBottom:8}}>
+          <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:10,letterSpacing:2,marginBottom:6}}>
+            {addingToBag ? `ADDING TO: ${addingToBag}` : '🎒 CREATE BAG'}
+          </div>
+          {!addingToBag && (
+            <input
+              value={bagName}
+              onChange={e => setBagName(e.target.value)}
+              placeholder="Bag name..."
+              style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:12,padding:'4px 8px',borderRadius:3,marginBottom:6,outline:'none'}}
+            />
+          )}
+          <div style={{fontSize:10,color:colors.textGhost,marginBottom:6}}>
+            {Object.keys(bagSelected).length === 0 ? 'Tap items below to select' : Object.entries(bagSelected).map(([n,c]) => `${n}${c>1?` x${c}`:''}`).join(', ')}
+          </div>
+          <div style={{display:'flex',gap:4}}>
+            <button onClick={confirmBag} disabled={Object.keys(bagSelected).length === 0 || (!addingToBag && !bagName.trim())}
+              style={{...btn(true),flex:2,fontSize:10,opacity:(Object.keys(bagSelected).length>0&&(addingToBag||bagName.trim()))?1:0.4}}>
+              {addingToBag ? 'ADD TO BAG' : 'CREATE'}
+            </button>
+            <button onClick={()=>{setBagMode(false);setBagSelected({});setBagName('');setAddingToBag(null);}}
+              style={{...btn(false),flex:1,fontSize:10}}>CANCEL</button>
+          </div>
+        </div>
+      )}
+
+      {/* Bag creation / add-to-bag trigger */}
+      {!bagMode && (
+        <div style={{display:'flex',gap:4,marginBottom:6,flexWrap:'wrap'}}>
+          <button onClick={()=>{setBagMode(true);setAddingToBag(null);}}
+            style={{...btn(false),fontSize:9,padding:'2px 8px'}}>🎒 Create Bag</button>
+          {existingBags.map(name => (
+            <button key={name} onClick={() => startAddToBag(name)}
+              style={{...btn(false),fontSize:9,padding:'2px 8px'}}>+ {name}</button>
+          ))}
+        </div>
+      )}
+
       {/* Collapsible inventory sections */}
       {Object.entries(CATEGORY_META).map(([cat, meta]) => {
         const items = categorized[cat] || [];
         if (items.length === 0) return null;
         return (
-          <CollapsibleSection
-            key={cat}
-            title={meta.label}
-            count={items.length}
-            defaultOpen={false}
-          >
+          <CollapsibleSection key={cat} title={meta.label} count={items.length} defaultOpen={false}>
             {items.map(({ name, count }) => {
               const data = db[name];
+              const isBag = data?.type === 'bag';
               const statLabel = data?.type==='weapon'?` (${data.damage}${data.bonus?`+${data.bonus}`:''})`
                 : data?.type==='armor'?` (AC${data.ac})`
                 : data?.label?` [${data.label}]`:'';
+              const selectedCount = bagSelected[name] || 0;
               return (
-                <div key={name} style={{fontSize:12,color:data?colors.textFaint:colors.textGhost,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`,display:'flex',alignItems:'center',gap:4}}>
-                  <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>· {name}{statLabel}{count > 1 && <span style={{color:colors.gold,fontFamily:fonts.mono,fontSize:12,marginLeft:4}}>x{count}</span>}</span>
-                  {onMoveToStash && (
-                    <button
-                      title="Move to stash"
-                      onClick={() => onMoveToStash(name)}
-                      style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
-                      onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}
-                    >📦</button>
+                <div key={name} style={{fontSize:12,color:data?colors.textFaint:colors.textGhost,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`,display:'flex',alignItems:'center',gap:4,
+                  background: bagMode && selectedCount > 0 ? 'rgba(201,168,76,0.08)' : 'transparent',
+                }}>
+                  {bagMode && !isBag && (
+                    <span onClick={() => toggleBagItem(name)}
+                      style={{cursor:'pointer',color:selectedCount>0?colors.gold:colors.textDead,fontSize:12,flexShrink:0,width:14,textAlign:'center'}}>
+                      {selectedCount > 0 ? `${selectedCount}` : '○'}
+                    </span>
+                  )}
+                  <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,cursor:bagMode&&!isBag?'pointer':'default'}}
+                    onClick={bagMode && !isBag ? () => toggleBagItem(name) : undefined}>
+                    · {name}{statLabel}{count > 1 && <span style={{color:colors.gold,fontFamily:fonts.mono,fontSize:12,marginLeft:4}}>x{count}</span>}
+                  </span>
+                  {!bagMode && onMoveToStash && (
+                    <>
+                      <button title="Move one to stash" onClick={() => onMoveToStash(name, false)}
+                        style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}>
+                        📦
+                      </button>
+                      {count > 1 && (
+                        <button title="Move all to stash" onClick={() => onMoveToStash(name, true)}
+                          style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
+                          onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
+                          onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}>
+                          📦📦
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               );
@@ -432,7 +532,7 @@ export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilit
               <div style={{fontSize:12,color:colors.textDead,fontStyle:'italic',padding:'2px 0'}}>Empty — move items here to hide them from the DM.</div>
             )}
             {stashEntries.map(([name, count]) => {
-              const data = db[name];
+              const data = db[name] || (character.stashedCustomItems || {})[name];
               const statLabel = data?.label ? ` [${data.label}]` : '';
               return (
                 <div key={name} style={{fontSize:12,color:colors.textGhost,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`,display:'flex',alignItems:'center',gap:4}}>
@@ -440,13 +540,22 @@ export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilit
                     · {name}{statLabel}{count > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,fontSize:12,marginLeft:4}}>x{count}</span>}
                   </span>
                   {onMoveToInventory && (
-                    <button
-                      title="Return to inventory"
-                      onClick={() => onMoveToInventory(name)}
-                      style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
-                      onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}
-                    >↑</button>
+                    <>
+                      <button title="Return one to inventory" onClick={() => onMoveToInventory(name, false)}
+                        style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}>
+                        ↑
+                      </button>
+                      {count > 1 && (
+                        <button title="Return all to inventory" onClick={() => onMoveToInventory(name, true)}
+                          style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
+                          onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
+                          onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}>
+                          ↑↑
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               );

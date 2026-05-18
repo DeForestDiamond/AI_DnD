@@ -159,6 +159,7 @@ export const migrateCharacter = (char) => {
     if (!c.deity) c.deity = null;
     // Add stash if missing
     if (!c.stash) { c.stash = []; notes.push('Stash initialized'); }
+    if (!c.stashedCustomItems) { c.stashedCustomItems = {}; }
   }
   c._v = SAVE_VERSION;
   return { char: c, notes };
@@ -174,6 +175,7 @@ export const EMPTY_CHAR = {
   slots:{ ...EMPTY_SLOTS },
   inventory:[], stash:[], gold:10,
   customItems:{},
+  stashedCustomItems:{},
   bio: '',
   currentLocation: '',
   companions: {},
@@ -350,25 +352,110 @@ export function useCharacter() {
     setCharacter(c => ({ ...c, deity }));
   };
 
-  const moveToStash = (itemName) => {
+  const moveToStash = (itemName, all = false) => {
     setCharacter(c => {
-      const idx = c.inventory.indexOf(itemName);
-      if (idx === -1) return c;
-      const inventory = [...c.inventory.slice(0, idx), ...c.inventory.slice(idx + 1)];
-      const stash = [...(c.stash || []), itemName];
-      const nc = { ...c, inventory, stash };
+      let inventory = [...c.inventory];
+      let stash = [...(c.stash || [])];
+      if (all) {
+        // Move every copy
+        const moved = inventory.filter(i => i === itemName);
+        inventory = inventory.filter(i => i !== itemName);
+        stash = [...stash, ...moved];
+      } else {
+        const idx = inventory.indexOf(itemName);
+        if (idx === -1) return c;
+        inventory = [...inventory.slice(0, idx), ...inventory.slice(idx + 1)];
+        stash = [...stash, itemName];
+      }
+      // Move customItem definition to stashedCustomItems if present
+      const customItems = { ...c.customItems };
+      const stashedCustomItems = { ...(c.stashedCustomItems || {}) };
+      if (customItems[itemName]) {
+        stashedCustomItems[itemName] = customItems[itemName];
+        delete customItems[itemName];
+      }
+      const nc = { ...c, inventory, stash, customItems, stashedCustomItems };
       charRef.current = nc;
       return nc;
     });
   };
 
-  const moveToInventory = (itemName) => {
+  const moveToInventory = (itemName, all = false) => {
     setCharacter(c => {
-      const idx = (c.stash || []).indexOf(itemName);
-      if (idx === -1) return c;
-      const stash = [...c.stash.slice(0, idx), ...c.stash.slice(idx + 1)];
-      const inventory = [...c.inventory, itemName];
-      const nc = { ...c, inventory, stash };
+      let stash = [...(c.stash || [])];
+      let inventory = [...c.inventory];
+      if (all) {
+        const moved = stash.filter(i => i === itemName);
+        stash = stash.filter(i => i !== itemName);
+        inventory = [...inventory, ...moved];
+      } else {
+        const idx = stash.indexOf(itemName);
+        if (idx === -1) return c;
+        stash = [...stash.slice(0, idx), ...stash.slice(idx + 1)];
+        inventory = [...inventory, itemName];
+      }
+      // Restore customItem definition from stashedCustomItems if present
+      const customItems = { ...c.customItems };
+      const stashedCustomItems = { ...(c.stashedCustomItems || {}) };
+      if (stashedCustomItems[itemName]) {
+        customItems[itemName] = stashedCustomItems[itemName];
+        delete stashedCustomItems[itemName];
+      }
+      const nc = { ...c, inventory, stash, customItems, stashedCustomItems };
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
+  // Create a named bag from selected inventory items
+  // selectedItems: array of item names (may include duplicates for multiple copies)
+  const createBag = (bagName, selectedItems) => {
+    setCharacter(c => {
+      // Count selected items
+      const counts = {};
+      selectedItems.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+      // Build label from counts
+      const label = Object.entries(counts)
+        .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
+        .join(', ');
+      // Remove selected items from inventory (one copy at a time)
+      let inventory = [...c.inventory];
+      selectedItems.forEach(name => {
+        const idx = inventory.indexOf(name);
+        if (idx !== -1) inventory.splice(idx, 1);
+      });
+      // Add bag to inventory and customItems
+      inventory = [...inventory, bagName];
+      const customItems = {
+        ...c.customItems,
+        [bagName]: { type: 'bag', slot: null, bonuses: {}, label, contents: counts },
+      };
+      const nc = { ...c, inventory, customItems };
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
+  // Add more items to an existing bag
+  const addToBag = (bagName, selectedItems) => {
+    setCharacter(c => {
+      const existing = c.customItems[bagName];
+      if (!existing) return c;
+      const counts = { ...(existing.contents || {}) };
+      selectedItems.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+      const label = Object.entries(counts)
+        .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
+        .join(', ');
+      let inventory = [...c.inventory];
+      selectedItems.forEach(name => {
+        const idx = inventory.indexOf(name);
+        if (idx !== -1) inventory.splice(idx, 1);
+      });
+      const customItems = {
+        ...c.customItems,
+        [bagName]: { ...existing, label, contents: counts },
+      };
+      const nc = { ...c, inventory, customItems };
       charRef.current = nc;
       return nc;
     });
@@ -418,6 +505,7 @@ export function useCharacter() {
     applyEffects, spendStatPoint,
     equipToSlot, unequipSlot, equippableInSlot,
     moveToStash, moveToInventory,
+    createBag, addToBag,
     pendingStatPoint, setPendingStatPoint,
     levelUpMsg, setLevelUpMsg,
   };

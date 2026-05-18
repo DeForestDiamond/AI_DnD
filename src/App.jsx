@@ -71,6 +71,7 @@ export default function App() {
     applyEffects, spendStatPoint,
     equipToSlot, unequipSlot,
     moveToStash, moveToInventory,
+    createBag, addToBag,
     pendingStatPoint, setPendingStatPoint,
     levelUpMsg,
   } = useCharacter();
@@ -832,6 +833,8 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
             onClose={isMobile ? ()=>setSidebarOpen(false) : null}
             onMoveToStash={moveToStash}
             onMoveToInventory={moveToInventory}
+            onCreateBag={createBag}
+            onAddToBag={addToBag}
           />
         </div>
       )}
