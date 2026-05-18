@@ -340,11 +340,10 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     }
   };
 
-  // Build the API history from summary + messages since last summary
-  // messages state is already trimmed by summarizer — never send fullLog to the DM
-  const buildApiHistory = () => {
+  const buildApiHistory = (overrideMsgs = null) => {
     const summary = storySummaryRef.current;
-    const apiMsgs = messages.map(m => ({
+    const source = overrideMsgs ?? messages;
+    const apiMsgs = source.map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
       content: m.text,
     }));
@@ -356,7 +355,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     ];
   };
 
-  const handleSend = async (userMsg) => {
+  const handleSend = async (userMsg, historyOverride = null) => {
     setLoading(true);
     setApiError('');
 
@@ -372,7 +371,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       ? '[Your previous response was cut off mid-sentence. Continue EXACTLY where you left off — do not restart or summarize the scene, just resume the prose from where it ended.]\n\n'
       : '';
 
-    const history = buildApiHistory();
+    const history = buildApiHistory(historyOverride);
 
     addMessage({ role:'user', text:userMsg, id:Date.now() });
 
@@ -438,7 +437,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     const truncated = fullLogRef.current.slice(0, idx);
     setFullLog(truncated);
     fullLogRef.current = truncated;
-    await handleSend(newText);
+    await handleSend(newText, truncated);
   };
 
   const handleRegenerate = async () => {
@@ -450,7 +449,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     const truncated = log.slice(0, actualIdx);
     setFullLog(truncated);
     fullLogRef.current = truncated;
-    await handleSend(lastUserMsg.text);
+    await handleSend(lastUserMsg.text, truncated);
   };
 
   // ── Slot handling ──────────────────────────────────────────────────────────
