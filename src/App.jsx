@@ -366,6 +366,8 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
 
     const history = buildApiHistory(historyOverride);
 
+    log(`[API] Sending to Haiku: ${history.length} history messages (summary: ${storySummaryRef.current ? 'yes' : 'no'}, messages state: ${messages.length}, fullLog: ${fullLogRef.current.length})`);
+
     addMessage({ role:'user', text:userMsg, id:Date.now() });
 
     // Check if we should auto-summarize (based on full log length)
