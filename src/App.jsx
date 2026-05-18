@@ -335,7 +335,9 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
 
   const buildApiHistory = (overrideMsgs = null) => {
     const summary = storySummaryRef.current;
-    const source = overrideMsgs ?? messages;
+    // Use fullLogRef (always current) sliced to KEEP_RECENT window
+    // Never use messages state — it can be stale during compression
+    const source = overrideMsgs ?? fullLogRef.current.slice(-KEEP_RECENT);
     const apiMsgs = source.map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
       content: m.text,
