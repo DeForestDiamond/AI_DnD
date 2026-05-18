@@ -9,41 +9,85 @@ import { XP_THRESHOLDS } from '../constants/progression.js';
 // ── Inventory categorization ───────────────────────────────────────────────────
 const categorizeItem = (name, data) => {
   const n = name.toLowerCase();
+  // Check explicit type first
   if (data?.type === 'weapon') return 'weapons';
+  if (data?.type === 'armor' || data?.type === 'shield' || data?.type === 'magic') return 'armor';
+  if (data?.type === 'bag') return 'misc';
+  if (data?.type === 'loot' || data?.type === 'crafting') return 'loot';
+  if (data?.type === 'valuable' || data?.type === 'gem' || data?.type === 'currency') return 'valuables';
+  if (data?.type === 'quest') return 'quest';
+  if (data?.type === 'consumable' || data?.type === 'potion') return 'consumables';
+  // Keyword fallback
   if (n.includes('book') || n.includes('codex') || n.includes('tome') ||
       n.includes('compendium') || n.includes('guide') || n.includes('liturgy') ||
-      n.includes('accord') || n.includes('testimony') || n.includes('journal') ||
+      n.includes('accord') || n.includes('testimony') ||
       n.includes('contracts of') || n.includes('scholar') || n.includes('fundamentals') ||
       n.includes('theory') || n.includes('artisan') || n.includes('binding magic') ||
       n.includes('sacred materials') || n.includes('construct design') ||
       n.includes('nocturnal') || n.includes('lunar binding') || n.includes('lunar sight') ||
-      n.includes('advanced lunar')) return 'books';
+      n.includes('advanced lunar') || n.includes('grimoire') || n.includes('scroll')) return 'books';
   if (n.includes('potion') || n.includes('vial') || n.includes('oil') ||
       n.includes('holy water') || n.includes('antitoxin') || n.includes('draught') ||
       n.includes('tincture') || n.includes('alchemist') || n.includes('knockout') ||
       n.includes('resistance') || n.includes('fortitude') || n.includes('acuity') ||
       n.includes('berserk') || n.includes('clarity') || n.includes('incendiary') ||
-      n.includes('moonwater')) return 'consumables';
+      n.includes('elixir') || n.includes('salve') || n.includes('moonwater')) return 'consumables';
   if (n.includes('camping') || n.includes('bedroll') || n.includes('torch') ||
       n.includes('rope') || n.includes('hook') || n.includes('lantern') ||
       n.includes('flint') || n.includes('rations') || n.includes('cooking') ||
-      n.includes('water skin') || n.includes('oilskin') || n.includes('satchel')) return 'camping';
+      n.includes('water skin') || n.includes('waterskin') || n.includes('oilskin') ||
+      n.includes('satchel') || n.includes('dried meat') || n.includes('hard biscuit') ||
+      n.includes('blanket') || n.includes('honey')) return 'camping';
   if (n.includes('document') || n.includes('token') || n.includes('insignia') ||
       n.includes('vessel') || n.includes('sealed') || n.includes('communication') ||
-      n.includes('circlet') || n.includes('pendant') || n.includes('crescent') ||
       n.includes('wolf insignia') || n.includes('glass jar') || n.includes('binding kit') ||
-      n.includes('wire spool') || n.includes('binding stone') || n.includes('crystal') ||
-      n.includes('shar') || n.includes('ammunition')) return 'quest';
+      n.includes('wire spool') || n.includes('binding stone') ||
+      n.includes('shar') || n.includes('ammunition') || n.includes('key') ||
+      n.includes('relic') || n.includes('artifact') || n.includes('seal') ||
+      n.includes('sigil') || n.includes('ward') || n.includes('journal') ||
+      n.includes('map') || n.includes('letter') || n.includes('note') ||
+      n.includes('contract') || n.includes('deed') || n.includes('orders') ||
+      n.includes('mission') || n.includes('blueprint') || n.includes('plans')) return 'quest';
+  // Armor, shields, and jewelry
+  if (n.includes('armor') || n.includes('armour') || n.includes('mail') ||
+      n.includes('plate') || n.includes('leather') || n.includes('shield') ||
+      n.includes('bracer') || n.includes('gauntlet') || n.includes('helm') ||
+      n.includes('helmet') || n.includes('pauldron') || n.includes('greave') ||
+      n.includes('ring') || n.includes('necklace') || n.includes('crown') ||
+      n.includes('circlet') || n.includes('amulet') || n.includes('brooch') ||
+      n.includes('earring') || n.includes('bracelet') || n.includes('choker') ||
+      n.includes('tiara') || n.includes('diadem') || n.includes('locket') ||
+      n.includes('pendant')) return 'armor';
+  // Monster parts, crafting materials, harvested loot
+  if (n.includes('scale') || n.includes('claw') || n.includes('tooth') || n.includes('fang') ||
+      n.includes('bone') || n.includes('hide') || n.includes('pelt') || n.includes('skin') ||
+      n.includes('wing') || n.includes('talon') || n.includes('tentacle') || n.includes('eye') ||
+      n.includes('horn') || n.includes('hoof') || n.includes('carapace') || n.includes('shell') ||
+      n.includes('venom') || n.includes('ichor') || n.includes('essence') || n.includes('gland') ||
+      n.includes('heart') || n.includes('brain') || n.includes('liver') || n.includes('plate') ||
+      n.includes('dust') || n.includes('ore') || n.includes('ingot') || n.includes('shard') ||
+      n.includes('fragment') || n.includes('chunk') || n.includes('sample') ||
+      n.includes('parts') || n.includes('components') || n.includes('materials') ||
+      n.includes('reagent') || n.includes('herb') || n.includes('root') || n.includes('bark') ||
+      n.includes('feather') || n.includes('fur') || n.includes('wool')) return 'loot';
+  // Gems, coins, valuables
+  if (n.includes('gem') || n.includes('ruby') || n.includes('sapphire') || n.includes('emerald') ||
+      n.includes('diamond') || n.includes('pearl') || n.includes('opal') || n.includes('topaz') ||
+      n.includes('amethyst') || n.includes('gold') || n.includes('silver') || n.includes('platinum') ||
+      n.includes('jewel') || n.includes('coin') || n.includes('treasure') || n.includes('crown')) return 'valuables';
   return 'misc';
 };
 
 const CATEGORY_META = {
-  weapons:     { label: '⚔️ Weapons',     emoji: '⚔️' },
-  books:       { label: '📚 Books',        emoji: '📚' },
-  consumables: { label: '⚗️ Consumables',  emoji: '⚗️' },
-  camping:     { label: '🎒 Camping',      emoji: '🎒' },
-  quest:       { label: '📜 Quest Items',  emoji: '📜' },
-  misc:        { label: '🗃️ Misc',         emoji: '🗃️' },
+  weapons:     { label: '⚔️ Weapons',          emoji: '⚔️' },
+  armor:       { label: '🛡️ Armor & Jewelry',  emoji: '🛡️' },
+  books:       { label: '📚 Books & Scrolls',  emoji: '📚' },
+  consumables: { label: '⚗️ Consumables',      emoji: '⚗️' },
+  camping:     { label: '🎒 Camping & Food',   emoji: '🎒' },
+  quest:       { label: '📜 Quest Items',      emoji: '📜' },
+  loot:        { label: '🦴 Loot & Materials', emoji: '🦴' },
+  valuables:   { label: '💎 Gems & Valuables', emoji: '💎' },
+  misc:        { label: '🗃️ Misc',             emoji: '🗃️' },
 };
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
