@@ -229,7 +229,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
 
   const SUMMARIZE_AFTER   = 20;    // append a new entry every N messages
   const KEEP_RECENT       = 6;     // always keep this many recent messages verbatim
-  const COMPRESS_AFTER    = 6000;  // compress the full summary when it exceeds this many chars
+  const COMPRESS_AFTER    = 8000;  // compress the full summary when it exceeds this many chars
   const lastSummarizedAt  = useRef(0);
 
   // Compress the full summary into one tight paragraph when it gets too long
@@ -247,8 +247,30 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
-          max_tokens: 1000,
-          system: `You are compressing a D&D campaign log. Multiple entries cover the same arc with overlapping detail. Merge them into ONE single coherent paragraph of 400-600 words. RETCON RULE: If any entries indicate that events were retconned, walked back, rewound, undone, or declared to not have happened — remove those events entirely from the compressed output. The final paragraph must reflect only the current accepted timeline, as if the retconned events never occurred. You MUST preserve without exception: every named NPC and their relationship to the player, all active quest threads and their current status, every named location, all items gained or lost, all gold and resource changes, every decision the player made and its consequence, any time-sensitive deadlines or countdowns, any changes to the player character's nature or abilities, faction standings, legal agreements, and contained or sealed entities. Do not invent anything. Do not omit anything that appears only once in the accepted timeline. Plain text only. No headers. No bullet points. Output only the compressed paragraph.`,
+          max_tokens: 1400,
+          system: `You are compressing a D&D campaign log. Your job is to produce a single coherent summary of 800-1000 words that reflects the current state of the story. Use narrative judgment — not everything deserves equal weight.
+
+PRIORITIZE AND PRESERVE IN FULL:
+- Active quest threads and their current status
+- Named NPCs the player has meaningful relationships with — allies, enemies, contacts
+- Consequences that are still unresolved or ongoing
+- Items, gold, or resources that matter to current play
+- The player character's current state, abilities, or changed nature
+- Time-sensitive threats or deadlines
+- Factions, agreements, or standings that affect future events
+- The most recent major events — what just happened shapes what comes next
+
+COMPRESS HEAVILY OR DROP ENTIRELY:
+- Completed quests that have no lingering consequence
+- Locations the player has left and is unlikely to return to
+- NPCs who are dead, gone, or no longer relevant
+- Items delivered, used, or lost
+- Early world details that have been superseded by later events
+- Minor encounters with no lasting impact (a marked map that was never revisited, a brief skirmish that led nowhere)
+
+RETCON RULE: If any entries indicate events were retconned, walked back, or declared not to have happened — remove those events entirely. The output must reflect only the accepted timeline.
+
+Plain text only. No headers. No bullet points. Output only the compressed summary.`,
           messages: [
             { role: 'user', content: 'Compress this campaign log:\n\n' + fullSummary },
           ],
