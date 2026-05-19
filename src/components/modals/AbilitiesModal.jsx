@@ -26,8 +26,8 @@ export function AbilitiesModal({ character, onSave, onClose }) {
     totals.cantrips  += counts.cantrips;
     totals.spells    += counts.spells;
     totals.infusions += counts.infusions;
-    // Pass deity name only for Cleric entries
-    const deity = cls === 'Cleric' ? deityName : null;
+    // Pass deity name for Cleric and Warlock (patron system)
+    const deity = (cls === 'Cleric' || cls === 'Warlock') ? deityName : null;
     const avail = getAvailableAbilities(cls, lvl, deity);
     avail.cantrips.forEach(s  => available.cantrips.add(s));
     avail.spells.forEach(s    => available.spells.add(s));
