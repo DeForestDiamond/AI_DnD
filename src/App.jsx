@@ -96,6 +96,7 @@ export default function App() {
       setMessages(tail);
       setStorySummary(summary);
       storySummaryRef.current = summary;
+      initSummarizedAt(msgs.length);
       if (char._needsDeitySelection && isClericCharacter(char)) {
         setDeityModalContext('oldSave');
         setShowDeityModal(true);
@@ -105,6 +106,7 @@ export default function App() {
     onLoadCharacter: (char) => {
       loadCharacter(char);
       setMessages([]); setFullLog([]); fullLogRef.current = [];
+      initSummarizedAt(0);
       if (char._needsDeitySelection && isClericCharacter(char)) {
         setDeityModalContext('oldSave');
         setShowDeityModal(true);
@@ -231,7 +233,14 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
   const KEEP_RECENT       = 6;     // keep this many recent messages verbatim for display trim
   const ENTRIES_BEFORE_COMPRESS = 6;  // compress oldest 4 entries when we hit this many
   const COMPRESS_KEEP_RECENT_ENTRIES = 2; // always keep newest N entries raw
-  const lastSummarizedAt  = useRef(0);
+  const lastSummarizedAt = useRef(0);
+
+  // When a save loads, set lastSummarizedAt so summarizer picks up correctly
+  // rather than re-firing from 0 and skipping to the end in one shot
+  const initSummarizedAt = (loadedMsgCount) => {
+    // Round down to nearest SUMMARIZE_AFTER boundary
+    lastSummarizedAt.current = Math.floor(loadedMsgCount / SUMMARIZE_AFTER) * SUMMARIZE_AFTER;
+  };
 
   // Parse storySummary — handles both new JSON format and legacy plain string
   const parseSummary = (raw) => {
@@ -558,6 +567,7 @@ Plain text only. No headers. No bullet points. Write in past tense. Output only 
           setFullLog(msgs); fullLogRef.current = msgs;
           const tail = summary ? msgs.slice(-KEEP_RECENT) : msgs;
           setMessages(tail); setStorySummary(summary); storySummaryRef.current = summary;
+          initSummarizedAt(msgs.length);
           setPhase('playing');
           if (char._needsDeitySelection && isClericCharacter(char)) {
             setDeityModalContext('oldSave');
@@ -567,6 +577,7 @@ Plain text only. No headers. No bullet points. Write in past tense. Output only 
         onLoadCharacter={(char) => {
           loadCharacter(char);
           setMessages([]); setFullLog([]); fullLogRef.current = [];
+          initSummarizedAt(0);
           setPhase('playing');
           if (char._needsDeitySelection && isClericCharacter(char)) {
             setDeityModalContext('oldSave');
@@ -769,6 +780,7 @@ Plain text only. No headers. No bullet points. Write in past tense. Output only 
           setMessages(tail);
           setStorySummary(summary);
           storySummaryRef.current = summary;
+          initSummarizedAt(msgs.length);
           setPhase('playing');
           if (char._needsDeitySelection && isClericCharacter(char)) {
             setDeityModalContext('oldSave');
@@ -786,6 +798,7 @@ Plain text only. No headers. No bullet points. Write in past tense. Output only 
         onLoadCharacter={(char) => {
           loadCharacter(char);
           setMessages([]); setFullLog([]); fullLogRef.current = [];
+          initSummarizedAt(0);
           setPhase('playing');
           if (char._needsDeitySelection && isClericCharacter(char)) {
             setDeityModalContext('oldSave');
