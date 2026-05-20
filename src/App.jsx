@@ -228,14 +228,41 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
   };
 
   const SUMMARIZE_AFTER   = 20;    // append a new entry every N messages
-  const KEEP_RECENT       = 6;     // always keep this many recent messages verbatim
-  const COMPRESS_AFTER    = 8000;  // compress the full summary when it exceeds this many chars
+  const KEEP_RECENT       = 6;     // keep this many recent messages verbatim for display trim
+  const ENTRIES_BEFORE_COMPRESS = 6;  // compress oldest 4 entries when we hit this many
+  const COMPRESS_KEEP_RECENT_ENTRIES = 2; // always keep newest N entries raw
   const lastSummarizedAt  = useRef(0);
 
-  // Compress the full summary into one tight paragraph when it gets too long
-  const maybeCompressSummary = async (fullSummary, key) => {
-    if (fullSummary.length < COMPRESS_AFTER) return fullSummary;
-    log('[SUMMARY] Compressing — summary exceeds ' + COMPRESS_AFTER + ' chars');
+  // Parse storySummary — handles both new JSON format and legacy plain string
+  const parseSummary = (raw) => {
+    if (!raw) return { chunks: [], entries: [] };
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed.chunks !== undefined) return parsed;
+    } catch {}
+    // Legacy plain string — wrap as a single entry
+    return { chunks: [], entries: [{ id: 1, type: 'entry', text: raw }] };
+  };
+
+  const serializeSummary = (obj) => JSON.stringify(obj);
+
+  // Build the labeled context block sent to Haiku
+  const formatSummaryForApi = (summaryObj) => {
+    const { chunks, entries } = summaryObj;
+    if (chunks.length === 0 && entries.length === 0) return '';
+    const parts = [];
+    chunks.forEach(chunk => {
+      parts.push(`[ARCHIVED HISTORY — ${chunk.sessions}]\n${chunk.text}`);
+    });
+    entries.forEach((entry, i) => {
+      parts.push(`[RECENT SUMMARY ${i + 1}]\n${entry.text}`);
+    });
+    return parts.join('\n\n');
+  };
+
+  // Compress oldest entries into a frozen chunk
+  const compressEntries = async (entriesToCompress, sessionLabel, key) => {
+    log(`[SUMMARY] Compressing ${entriesToCompress.length} entries into archived chunk (${sessionLabel})`);
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -248,46 +275,40 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 1400,
-          system: `You are compressing a D&D campaign log. Your job is to produce a single coherent summary of 800-1000 words that reflects the current state of the story. Use narrative judgment — not everything deserves equal weight.
+          system: `You are archiving a section of a D&D campaign log into a permanent historical record. These events are older and will never be modified again. Write a clear, detailed summary of 800-1000 words covering everything that happened in this period.
 
-PRIORITIZE AND PRESERVE IN FULL:
-- Active quest threads and their current status
-- Named NPCs the player has meaningful relationships with — allies, enemies, contacts
-- Consequences that are still unresolved or ongoing
-- Items, gold, or resources that matter to current play
-- The player character's current state, abilities, or changed nature
-- Time-sensitive threats or deadlines
-- Factions, agreements, or standings that affect future events
-- The most recent major events — what just happened shapes what comes next
+PRESERVE WITHOUT EXCEPTION:
+- Every named NPC and their relationship to the player
+- Every location visited and what happened there
+- All quest threads — completed ones noted as resolved, unresolved ones noted as ongoing
+- All items gained, used, or lost
+- Gold and resource changes
+- Every significant decision the player made and its consequence
+- Faction standings and agreements
+- Any changes to the player character's nature, abilities, or status
+- Time-sensitive threats or countdowns still active at the end of this period
 
-COMPRESS HEAVILY OR DROP ENTIRELY:
-- Completed quests that have no lingering consequence
-- Locations the player has left and is unlikely to return to
-- NPCs who are dead, gone, or no longer relevant
-- Items delivered, used, or lost
-- Early world details that have been superseded by later events
-- Minor encounters with no lasting impact (a marked map that was never revisited, a brief skirmish that led nowhere)
+RETCON RULE: If any entries indicate events were retconned, walked back, or declared not to have happened — omit those events entirely.
 
-RETCON RULE: If any entries indicate events were retconned, walked back, or declared not to have happened — remove those events entirely. The output must reflect only the accepted timeline.
-
-Plain text only. No headers. No bullet points. Output only the compressed summary.`,
+Plain text only. No headers. No bullet points. Write in past tense. Output only the archived summary.`,
           messages: [
-            { role: 'user', content: 'Compress this campaign log:\n\n' + fullSummary },
+            { role: 'user', content: `Archive these campaign log entries:\n\n${entriesToCompress.map(e => e.text).join('\n\n')}` },
           ],
         }),
       });
       if (res.ok) {
         const data = await res.json();
-        const compressed = data.content?.[0]?.text || '';
-        if (compressed) {
-          log('[SUMMARY] Compressed from ' + fullSummary.length + ' to ' + compressed.length + ' chars');
-          return compressed;
+        const text = data.content?.[0]?.text || '';
+        if (text) {
+          log(`[SUMMARY] Archived chunk created: ${text.length} chars`);
+          return text;
         }
       }
     } catch (e) {
       log('[SUMMARY] Compression failed: ' + e.message);
     }
-    return fullSummary; // fall back to uncompressed if anything goes wrong
+    // Fallback: join entries as-is
+    return entriesToCompress.map(e => e.text).join('\n\n');
   };
 
   // Condense old messages into a rolling summary, keep recent tail verbatim
@@ -299,25 +320,19 @@ Plain text only. No headers. No bullet points. Output only the compressed summar
       return;
     }
     lastSummarizedAt.current = allMessages.length;
-    log(`[SUMMARY] Firing — ${allMessages.length} msgs, summary length: ${storySummaryRef.current.length} chars`);
+    log(`[SUMMARY] Firing — ${allMessages.length} msgs`);
 
     const toSummarize = allMessages.slice(0, allMessages.length - KEEP_RECENT);
-    const recent      = allMessages.slice(-KEEP_RECENT);
-    const prevSummary = storySummaryRef.current;
-
     const historyForSummary = toSummarize.map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
       content: m.text.substring(0, 600),
     }));
 
-    const summaryPrompt = prevSummary
-      ? `NEW EVENTS TO LOG (these happened after the existing log below):\n`
-      : `Log what has happened in this adventure so far:\n`;
-
     try {
       const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+      const currentObj = parseSummary(storySummaryRef.current);
 
-      // Step 1 — append new entry for recent events
+      // Step 1 — write new entry for recent events
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -329,10 +344,10 @@ Plain text only. No headers. No bullet points. Output only the compressed summar
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 800,
-          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Your job is to write ONLY the new entry for recent events — do NOT rewrite, summarize, or reference anything already in the log. Write 3-5 sentences covering: key events, NPCs encountered, places visited, important items or gold gained, who the victims and who the threats were (never invert these), active legal agreements, contained entities, faction changes. Begin your entry with the current location or arc in brackets e.g. [Thornwick]. Plain text only. No bullet points. No preamble. Just the new log entry.`,
+          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Write 3-5 sentences covering: key events, NPCs encountered, places visited, important items or gold gained, who the victims and who the threats were (never invert these), active agreements, faction changes. Begin with the current location or arc in brackets e.g. [Thornwick]. Plain text only. No bullet points. No preamble. Just the new log entry.`,
           messages: [
             ...historyForSummary,
-            { role: 'user', content: summaryPrompt + 'Write only the new log entry now.' },
+            { role: 'user', content: 'Write only the new log entry now.' },
           ],
         }),
       });
@@ -342,36 +357,52 @@ Plain text only. No headers. No bullet points. Output only the compressed summar
       const newEntry = data.content?.[0]?.text || '';
       if (!newEntry) return;
 
-      // Step 2 — append the new entry
-      const appended = prevSummary ? prevSummary + '\n\n' + newEntry : newEntry;
+      // Step 2 — append new entry
+      const newId = Date.now();
+      const updatedEntries = [...currentObj.entries, { id: newId, type: 'entry', text: newEntry }];
 
-      // Step 3 — compress if over threshold (fires occasionally, not every time)
-      const finalSummary = await maybeCompressSummary(appended, key);
+      // Step 3 — if we have enough entries, compress the oldest ones into a frozen chunk
+      let finalChunks = [...currentObj.chunks];
+      let finalEntries = updatedEntries;
 
-      setStorySummary(finalSummary);
-      storySummaryRef.current = finalSummary;
+      if (updatedEntries.length >= ENTRIES_BEFORE_COMPRESS) {
+        const toCompress = updatedEntries.slice(0, updatedEntries.length - COMPRESS_KEEP_RECENT_ENTRIES);
+        const keepRaw    = updatedEntries.slice(-COMPRESS_KEEP_RECENT_ENTRIES);
+        const chunkNum   = finalChunks.length + 1;
+        const sessionStart = (chunkNum - 1) * toCompress.length * SUMMARIZE_AFTER + 1;
+        const sessionEnd   = chunkNum * toCompress.length * SUMMARIZE_AFTER;
+        const sessionLabel = `Sessions ${sessionStart}-${sessionEnd}`;
+        const chunkText = await compressEntries(toCompress, sessionLabel, key);
+        finalChunks = [...finalChunks, { id: newId + 1, type: 'archived', sessions: sessionLabel, text: chunkText, frozen: true }];
+        finalEntries = keepRaw;
+        log(`[SUMMARY] New archived chunk created, ${keepRaw.length} entries remain raw`);
+      }
 
-      if (allMessages.length > KEEP_RECENT) {
-        setMessages(recent);
-        log('[SUMMARY] Entry appended' + (finalSummary.length < appended.length ? ' + compressed' : '') + ' — kept last ' + KEEP_RECENT + ' messages');
-      }    } catch (e) {
+      const finalObj = { chunks: finalChunks, entries: finalEntries };
+      const serialized = serializeSummary(finalObj);
+      setStorySummary(serialized);
+      storySummaryRef.current = serialized;
+      log(`[SUMMARY] Done — ${finalChunks.length} archived chunks, ${finalEntries.length} raw entries`);
+
+    } catch (e) {
       log('[SUMMARY] Failed: ' + e.message);
     }
   };
 
   const buildApiHistory = (overrideMsgs = null) => {
-    const summary = storySummaryRef.current;
-    // Use fullLogRef (always current) sliced to SUMMARIZE_AFTER window
-    // Never use messages state — it can be stale during compression
+    const rawSummary = storySummaryRef.current;
     const source = overrideMsgs ?? fullLogRef.current.slice(-SUMMARIZE_AFTER);
     const apiMsgs = source.map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
       content: m.text,
     }));
-    if (!summary) return apiMsgs;
+    if (!rawSummary) return apiMsgs;
+    const summaryObj = parseSummary(rawSummary);
+    const formatted = formatSummaryForApi(summaryObj);
+    if (!formatted) return apiMsgs;
     return [
-      { role: 'user',      content: '[STORY SO FAR — read before continuing]\n' + summary },
-      { role: 'assistant', content: 'Understood. I have the full story context and will continue from where we left off.' },
+      { role: 'user',      content: `[CAMPAIGN HISTORY — read in order before continuing]\n\n${formatted}` },
+      { role: 'assistant', content: 'Understood. I have read the full campaign history in order and will continue the story from the current point.' },
       ...apiMsgs,
     ];
   };
@@ -896,7 +927,25 @@ Plain text only. No headers. No bullet points. Output only the compressed summar
           <div style={{background:'rgba(30,20,5,0.85)',borderBottom:`1px solid ${colors.borderDim}`,padding:'7px 16px',display:'flex',alignItems:'flex-start',gap:8,flexShrink:0,maxHeight:160,overflowY:'auto'}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:4}}>STORY LOG</div>
-              <span style={{fontSize:11,color:colors.textFaint,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{storySummary}</span>
+              {(() => {
+                const obj = parseSummary(storySummary);
+                return (
+                  <div>
+                    {obj.chunks.map((chunk, i) => (
+                      <div key={chunk.id || i} style={{marginBottom:8}}>
+                        <div style={{fontFamily:fonts.display,fontSize:9,color:'rgba(201,168,76,0.5)',letterSpacing:2,marginBottom:2}}>📦 ARCHIVED — {chunk.sessions}</div>
+                        <span style={{fontSize:11,color:'rgba(201,168,76,0.4)',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{chunk.text}</span>
+                      </div>
+                    ))}
+                    {obj.entries.map((entry, i) => (
+                      <div key={entry.id || i} style={{marginBottom:6}}>
+                        <div style={{fontFamily:fonts.display,fontSize:9,color:colors.gold,letterSpacing:2,marginBottom:2}}>📝 RECENT {i + 1}</div>
+                        <span style={{fontSize:11,color:colors.textFaint,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{entry.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
