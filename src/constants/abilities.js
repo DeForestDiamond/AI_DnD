@@ -134,7 +134,7 @@ export const CLASS_ABILITIES = {
     // Illrigger uses Invoke Hell (subclass abilities) and Interdict Boons, not traditional spells.
     // Spells list below represents Invoke Hell options and key class features available at level.
     spells: {
-      1: ['Baleful Interdict', 'Forked Tongue'],
+      1: ['Baleful Interdict', 'Forked Tongue', 'Command'],
       2: ['Combat Mastery', 'Interdiction', 'Abating Seal', 'Bedevil', 'Soul Eater', 'Styx\'s Apathy', 'Swift Retribution'],
       3: ['Invoke Hell', 'Diabolic Contract'],
       4: ['Ability Score Improvement'],
@@ -148,15 +148,18 @@ export const CLASS_ABILITIES = {
   },
 };
 
-// Get how many of each ability type a class gets at a given level
+// Get how many of each ability type a class gets at a given level (cumulative)
 export const getAbilityCounts = (className, level) => {
   const cls = CLASS_ABILITIES[className];
   if (!cls) return { cantrips: 0, spells: 0, infusions: 0 };
-  return {
-    cantrips:  cls.cantripsKnown?.[level]  || 0,
-    spells:    cls.spellsKnown?.[level]    || 0,
-    infusions: cls.infusionsKnown?.[level] || 0,
-  };
+  // Sum up all counts from level 1 to current level
+  let cantrips = 0, spells = 0, infusions = 0;
+  for (let l = 1; l <= level; l++) {
+    cantrips  += cls.cantripsKnown?.[l]  || 0;
+    spells    += cls.spellsKnown?.[l]    || 0;
+    infusions += cls.infusionsKnown?.[l] || 0;
+  }
+  return { cantrips, spells, infusions };
 };
 
 // ── Deity domain spells ────────────────────────────────────────────────────────
@@ -285,9 +288,9 @@ export const WARLOCK_PATRON_SPELLS = {
 export const getAvailableAbilities = (className, level, deity = null) => {
   const cls = CLASS_ABILITIES[className];
   if (!cls) return { cantrips: [], spells: [], infusions: [] };
-  const spellLevel = Math.ceil(level / 2);
+  // Show all spells unlocked at or below current level
   const spells = [];
-  for (let l = 1; l <= spellLevel; l++) {
+  for (let l = 1; l <= level; l++) {
     if (cls.spells?.[l]) spells.push(...cls.spells[l]);
   }
 
@@ -297,7 +300,7 @@ export const getAvailableAbilities = (className, level, deity = null) => {
     const domain = DEITY_DOMAIN_SPELLS[deity];
     if (domain) {
       domainCantrips.push(...(domain.cantrips || []));
-      for (let l = 1; l <= spellLevel; l++) {
+      for (let l = 1; l <= level; l++) {
         if (domain.spells?.[l]) spells.push(...domain.spells[l]);
       }
     }
@@ -307,7 +310,7 @@ export const getAvailableAbilities = (className, level, deity = null) => {
     const patron = WARLOCK_PATRON_SPELLS[deity];
     if (patron) {
       domainCantrips.push(...(patron.cantrips || []));
-      for (let l = 1; l <= spellLevel; l++) {
+      for (let l = 1; l <= level; l++) {
         if (patron.spells?.[l]) spells.push(...patron.spells[l]);
       }
     }
