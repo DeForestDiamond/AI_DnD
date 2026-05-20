@@ -87,7 +87,7 @@ export default function App() {
   const save = useSave({
     charRef,
     messages: fullLog,
-    storySummary,
+    storySummaryRef,
     onLoadFull: (char, msgs, summary = '') => {
       loadCharacter(char);
       setFullLog(msgs);

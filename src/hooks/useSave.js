@@ -1,13 +1,13 @@
 import { SAVE_VERSION } from '../constants/progression.js';
 import { migrateCharacter } from './useCharacter.js';
 
-export function useSave({ charRef, messages, storySummary, onLoadFull, onLoadCharacter }) {
+export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoadCharacter }) {
 
   const buildState = (type) => ({
     _type: type,
     _v: SAVE_VERSION,
     character: { ...charRef.current, _v: SAVE_VERSION },
-    ...(type === 'fullsave' ? { messages, storySummary: storySummary || '' } : {}),
+    ...(type === 'fullsave' ? { messages, storySummary: storySummaryRef.current || '' } : {}),
   });
 
   // ── File download ────────────────────────────────────────────────────────────
@@ -24,7 +24,6 @@ export function useSave({ charRef, messages, storySummary, onLoadFull, onLoadCha
   const generateFullSave = () => {
     const state = buildState('fullsave');
     downloadJSON(state, `${charRef.current.name || 'character'}-fullsave-${Date.now()}.json`);
-    // Also store in localStorage as backup
     try { localStorage.setItem('dnd-autosave', JSON.stringify(state)); } catch {}
     return state;
   };
@@ -42,7 +41,7 @@ export function useSave({ charRef, messages, storySummary, onLoadFull, onLoadCha
         _type: 'fullsave', _v: SAVE_VERSION,
         character: { ...char, _v: SAVE_VERSION },
         messages: msgs,
-        storySummary: storySummary || '',
+        storySummary: storySummaryRef.current || '',
       }));
     } catch {}
   };
