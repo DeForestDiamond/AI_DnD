@@ -96,7 +96,7 @@ export default function App() {
       setMessages(tail);
       setStorySummary(summary);
       storySummaryRef.current = summary;
-      initSummarizedAt(msgs.length);
+      initSummarizedAt(msgs.length, summary);
       if (char._needsDeitySelection && isClericCharacter(char)) {
         setDeityModalContext('oldSave');
         setShowDeityModal(true);
@@ -235,11 +235,25 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
   const COMPRESS_KEEP_RECENT_ENTRIES = 2; // always keep newest N entries raw
   const lastSummarizedAt = useRef(0);
 
-  // When a save loads, set lastSummarizedAt so summarizer picks up correctly
-  // rather than re-firing from 0 and skipping to the end in one shot
-  const initSummarizedAt = (loadedMsgCount) => {
-    // Round down to nearest SUMMARIZE_AFTER boundary
-    lastSummarizedAt.current = Math.floor(loadedMsgCount / SUMMARIZE_AFTER) * SUMMARIZE_AFTER;
+  // When a save loads, set lastSummarizedAt based on what's already been summarized
+  // so the summarizer doesn't re-fire and overwrite existing summary content
+  const initSummarizedAt = (loadedMsgCount, loadedSummary = '') => {
+    if (loadedSummary) {
+      // If we have an existing summary, calculate how many messages it covers
+      // so we don't re-summarize already-covered content
+      const obj = parseSummary(loadedSummary);
+      const summarizedEntries = (obj.chunks.length * ENTRIES_BEFORE_COMPRESS) + obj.entries.length;
+      // Each entry covers SUMMARIZE_AFTER messages
+      const summarizedMsgCount = summarizedEntries * SUMMARIZE_AFTER;
+      // Set to whichever is higher — summary coverage or message count rounded down
+      lastSummarizedAt.current = Math.max(
+        summarizedMsgCount,
+        Math.floor(loadedMsgCount / SUMMARIZE_AFTER) * SUMMARIZE_AFTER
+      );
+    } else {
+      lastSummarizedAt.current = Math.floor(loadedMsgCount / SUMMARIZE_AFTER) * SUMMARIZE_AFTER;
+    }
+    log(`[SUMMARY] Initialized lastSummarizedAt to ${lastSummarizedAt.current} (${loadedMsgCount} msgs loaded)`);
   };
 
   // Parse storySummary — handles both new JSON format and legacy plain string
@@ -567,7 +581,7 @@ Plain text only. No headers. No bullet points. Write in past tense. Output only 
           setFullLog(msgs); fullLogRef.current = msgs;
           const tail = summary ? msgs.slice(-KEEP_RECENT) : msgs;
           setMessages(tail); setStorySummary(summary); storySummaryRef.current = summary;
-          initSummarizedAt(msgs.length);
+          initSummarizedAt(msgs.length, summary);
           setPhase('playing');
           if (char._needsDeitySelection && isClericCharacter(char)) {
             setDeityModalContext('oldSave');
@@ -780,7 +794,7 @@ Plain text only. No headers. No bullet points. Write in past tense. Output only 
           setMessages(tail);
           setStorySummary(summary);
           storySummaryRef.current = summary;
-          initSummarizedAt(msgs.length);
+          initSummarizedAt(msgs.length, summary);
           setPhase('playing');
           if (char._needsDeitySelection && isClericCharacter(char)) {
             setDeityModalContext('oldSave');
