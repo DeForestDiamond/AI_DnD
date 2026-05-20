@@ -956,6 +956,7 @@ Plain text only. No headers. No bullet points. Write in past tense. Output only 
           characterEmoji={character.cls?.emoji}
           onEditMessage={handleEditMessage}
           onRegenerate={handleRegenerate}
+          editableFromId={fullLog[lastSummarizedAt.current]?.id ?? fullLog[0]?.id}
         />
 
         <InputBar

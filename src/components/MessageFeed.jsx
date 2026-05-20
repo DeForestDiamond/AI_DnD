@@ -37,16 +37,39 @@ function DiceRollDisplay({ roll }) {
   );
 }
 
-export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, onRegenerate }) {
+const staticBtn = (label, onClick, dim = false) => (
+  <button
+    onClick={onClick}
+    style={{
+      background: 'transparent',
+      border: `1px solid ${dim ? colors.borderFaint : colors.borderDim}`,
+      color: dim ? 'rgba(255,255,255,0.15)' : colors.textDead,
+      fontSize: 10, padding: '2px 7px', borderRadius: 3,
+      cursor: 'pointer', lineHeight: 1.5, flexShrink: 0,
+    }}
+    onMouseEnter={e => { if (!dim) { e.currentTarget.style.borderColor = colors.gold; e.currentTarget.style.color = colors.gold; }}}
+    onMouseLeave={e => { if (!dim) { e.currentTarget.style.borderColor = colors.borderDim; e.currentTarget.style.color = colors.textDead; }}}
+  >{label}</button>
+);
+
+export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, onRegenerate, editableFromId }) {
   const endRef = useRef(null);
-  const [hoverId, setHoverId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
 
-  const lastDMId = [...messages].reverse().find(m => m.role === 'dm')?.id;
+  const lastDMId   = [...messages].reverse().find(m => m.role === 'dm')?.id;
   const lastUserId = [...messages].reverse().find(m => m.role === 'user')?.id;
+
+  // A message is editable if it appears at or after the editableFromId in the list
+  const editableFromIdx = editableFromId
+    ? messages.findIndex(m => m.id === editableFromId)
+    : 0;
+
+  const isEditable = (msg) =>
+    msg.role === 'user' &&
+    messages.findIndex(m => m.id === msg.id) >= editableFromIdx;
 
   const startEdit = (msg) => {
     setEditingId(msg.id);
@@ -58,17 +81,6 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
     setEditingId(null);
   };
 
-  const iconBtn = (onClick, label) => (
-    <button onClick={onClick} title={label} style={{
-      background:'transparent', border:`1px solid ${colors.borderDim}`,
-      color:colors.textDead, fontSize:10, padding:'2px 6px', borderRadius:3,
-      cursor:'pointer', lineHeight:1.4,
-    }}
-    onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
-    onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}
-    >{label}</button>
-  );
-
   return (
     <div style={{flex:1,overflowY:'auto',padding:'20px 18px',display:'flex',flexDirection:'column',gap:16}}>
 
@@ -78,58 +90,68 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
         </div>
       )}
 
-      {messages.map(msg => (
-        <div key={msg.id} className={`msg-${msg.role}`}
-          style={{display:'flex',gap:10,justifyContent:msg.role==='user'?'flex-end':'flex-start'}}
-          onMouseEnter={() => setHoverId(msg.id)}
-          onMouseLeave={() => setHoverId(null)}>
+      {messages.map(msg => {
+        const editable = isEditable(msg);
+        const isLastDM = msg.role === 'dm' && msg.id === lastDMId;
 
-          {msg.role === 'dm' && <div style={{fontSize:20,flexShrink:0,marginTop:2}}>📜</div>}
+        return (
+          <div key={msg.id} className={`msg-${msg.role}`}
+            style={{display:'flex',gap:10,justifyContent:msg.role==='user'?'flex-end':'flex-start'}}>
 
-          <div style={{maxWidth:'80%'}}>
-            <div style={{
-              background: msg.role==='dm' ? 'rgba(201,168,76,0.05)' : 'rgba(255,255,255,0.04)',
-              border:`1px solid ${msg.role==='dm' ? colors.borderDim : '#2a2a1a'}`,
-              borderRadius: msg.role==='dm' ? '2px 8px 8px 8px' : '8px 2px 8px 8px',
-              padding:'12px 14px',
-            }}>
-              {msg.role === 'dm' && (
-                <div style={{fontFamily:fonts.display,fontSize:8,color:'#4a3820',letterSpacing:3,marginBottom:6}}>DUNGEON MASTER</div>
-              )}
+            {msg.role === 'dm' && <div style={{fontSize:20,flexShrink:0,marginTop:2}}>📜</div>}
 
-              {editingId === msg.id ? (
-                <div>
-                  <textarea
-                    value={editText}
-                    onChange={e => setEditText(e.target.value)}
-                    autoFocus
-                    style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.gold}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.7,padding:'8px 10px',borderRadius:4,resize:'vertical',minHeight:80,outline:'none'}}
-                  />
-                  <div style={{display:'flex',gap:6,marginTop:6}}>
-                    {iconBtn(() => confirmEdit(msg.id), '✓ Send')}
-                    {iconBtn(() => setEditingId(null), '✕ Cancel')}
+            <div style={{maxWidth:'80%'}}>
+              <div style={{
+                background: msg.role==='dm' ? 'rgba(201,168,76,0.05)' : 'rgba(255,255,255,0.04)',
+                border:`1px solid ${msg.role==='dm' ? colors.borderDim : '#2a2a1a'}`,
+                borderRadius: msg.role==='dm' ? '2px 8px 8px 8px' : '8px 2px 8px 8px',
+                padding:'12px 14px',
+              }}>
+                {msg.role === 'dm' && (
+                  <div style={{fontFamily:fonts.display,fontSize:8,color:'#4a3820',letterSpacing:3,marginBottom:6}}>DUNGEON MASTER</div>
+                )}
+                {editingId === msg.id ? (
+                  <div>
+                    <textarea
+                      value={editText}
+                      onChange={e => setEditText(e.target.value)}
+                      autoFocus
+                      style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.gold}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.7,padding:'8px 10px',borderRadius:4,resize:'vertical',minHeight:80,outline:'none'}}
+                    />
+                    <div style={{display:'flex',gap:6,marginTop:6}}>
+                      {staticBtn('✓ Send', () => confirmEdit(msg.id))}
+                      {staticBtn('✕ Cancel', () => setEditingId(null))}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div style={{fontSize:14,lineHeight:1.9,color:msg.role==='dm'?colors.textDim:colors.textMuted,whiteSpace:'pre-wrap'}}>
-                  {cleanDisplayText(msg.text)}
+                ) : (
+                  <div style={{fontSize:14,lineHeight:1.9,color:msg.role==='dm'?colors.textDim:colors.textMuted,whiteSpace:'pre-wrap'}}>
+                    {cleanDisplayText(msg.text)}
+                  </div>
+                )}
+                {msg.role === 'dm' && <DiceRollDisplay roll={msg.roll}/>}
+              </div>
+
+              {/* Static action buttons — always visible, dimmed if not applicable */}
+              {!editingId && !loading && (
+                <div style={{display:'flex',gap:4,marginTop:4,justifyContent:msg.role==='user'?'flex-end':'flex-start'}}>
+                  {msg.role === 'user' && (
+                    editable
+                      ? staticBtn('✏️', () => startEdit(msg), false)
+                      : staticBtn('✏️', null, true)
+                  )}
+                  {msg.role === 'dm' && (
+                    isLastDM
+                      ? staticBtn('↺', () => onRegenerate?.(), false)
+                      : staticBtn('↺', null, true)
+                  )}
                 </div>
               )}
-              {msg.role === 'dm' && <DiceRollDisplay roll={msg.roll}/>}
             </div>
 
-            {/* Action buttons on hover */}
-            {hoverId === msg.id && !editingId && !loading && (
-              <div style={{display:'flex',gap:4,marginTop:4,justifyContent:msg.role==='user'?'flex-end':'flex-start'}}>
-                {msg.role === 'user' && msg.id === lastUserId && iconBtn(() => startEdit(msg), '✏️ Edit')}
-                {msg.role === 'dm'   && msg.id === lastDMId   && iconBtn(() => onRegenerate?.(), '↺ Regenerate')}
-              </div>
-            )}
+            {msg.role === 'user' && <div style={{fontSize:20,flexShrink:0,marginTop:2}}>{characterEmoji}</div>}
           </div>
-
-          {msg.role === 'user' && <div style={{fontSize:20,flexShrink:0,marginTop:2}}>{characterEmoji}</div>}
-        </div>
-      ))}
+        );
+      })}
 
       {loading && messages.length > 0 && (
         <div style={{display:'flex',gap:10}}>
