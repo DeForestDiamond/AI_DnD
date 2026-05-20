@@ -9,6 +9,7 @@ export const WARLOCK_PATRONS = [
   { name:'Asmodeus',                emoji:'👑', alignment:'Lawful Evil',     desc:'Lord of the Nine Hells. Power through infernal contracts and hellfire.' },
   { name:'Shar',                    emoji:'🌑', alignment:'Chaotic Evil',    desc:'Goddess of darkness and secrets. Grants shadow magic and deception.' },
   { name:'Dendar the Night Serpent',emoji:'🐍', alignment:'Neutral Evil',    desc:'Ancient primordial serpent of nightmares. Grants fear and poison magic.' },
+  { name:'Bane',                    emoji:'🔥', alignment:'Lawful Evil',     desc:'God of tyranny, strife, and domination. Power through fear, conquest, and absolute control.' },
 ];
 
 export function DeityModal({ onSelectDeity, context = 'multiclass', cls = null }) {

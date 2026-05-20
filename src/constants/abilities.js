@@ -265,6 +265,14 @@ export const WARLOCK_PATRON_SPELLS = {
       3: ['Nondetection', 'Hunger of Hadar'],
     },
   },
+  'Bane': {
+    cantrips: ['Toll the Dead', 'Chill Touch'],
+    spells: {
+      1: ['Bane', 'Hellish Rebuke'],
+      2: ['Crown of Madness', 'Hold Person'],
+      3: ['Bestow Curse', 'Fear'],
+    },
+  },
   'Dendar the Night Serpent': {
     cantrips: ['Poison Spray', 'Thunderclap'],
     spells: {
