@@ -3,7 +3,7 @@ import { colors, fonts, btn } from '../../styles/theme.js';
 import { DEITIES } from '../../constants/deities.js';
 import { WARLOCK_PATRON_SPELLS } from '../../constants/abilities.js';
 
-const WARLOCK_PATRONS = [
+export const WARLOCK_PATRONS = [
   { name:'The Archfey',             emoji:'🌿', alignment:'Chaotic Neutral', desc:'A powerful and capricious lord of the Feywild. Grants enchantment and illusion magic.' },
   { name:'The Great Old One',       emoji:'🐙', alignment:'Chaotic Neutral', desc:'An incomprehensible cosmic entity from beyond the stars. Telepathy and mind-warping power.' },
   { name:'Asmodeus',                emoji:'👑', alignment:'Lawful Evil',     desc:'Lord of the Nine Hells. Power through infernal contracts and hellfire.' },

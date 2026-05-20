@@ -15,7 +15,7 @@ import { LevelUpModal } from './components/modals/LevelUpModal.jsx';
 import { MulticlassModal } from './components/modals/MulticlassModal.jsx';
 import { ItemPickerModal } from './components/modals/ItemPickerModal.jsx';
 import { AbilitiesModal } from './components/modals/AbilitiesModal.jsx';
-import { DeityModal } from './components/modals/DeityModal.jsx';
+import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx';
 
 function StatBar({ label, value, desc }) {
   return (
@@ -648,7 +648,7 @@ Plain text only. No headers. No bullet points. Output only the compressed summar
         <h2 style={{fontFamily:fonts.display,color:colors.gold,fontSize:22,margin:'0 0 6px'}}>{character.cls?.name === 'Warlock' ? 'Choose Your Patron' : 'Choose Your Deity'}</h2>
         <p style={{color:colors.textGhost,fontSize:13,marginBottom:24}}>{character.cls?.name === 'Warlock' ? 'Who holds the other end of your pact? Choose carefully — your patron shapes your power and your fate.' : 'Which god do you serve? Your deity shapes your divine powers and moral path.'}</p>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
-          {DEITIES.map(deity => (
+          {(character.cls?.name === 'Warlock' ? WARLOCK_PATRONS : DEITIES).map(deity => (
             <div key={deity.name} style={cardStyle(character.deity?.name===deity.name)} onClick={()=>selectDeity(deity)}>
               <div style={{fontSize:28,marginBottom:6}}>{deity.emoji}</div>
               <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:2}}>{deity.name}</div>
