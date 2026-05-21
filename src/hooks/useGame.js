@@ -496,8 +496,8 @@ export function useGame({ charRef, apiKey }) {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 450,
+        model: 'claude-sonnet-4-5',
+        max_tokens: 600,
         // System prompt as array with cache_control — bio and rules are static, cache them
         system: [
           {
