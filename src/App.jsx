@@ -297,23 +297,15 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
-          max_tokens: 1400,
-          system: `You are archiving a section of a D&D campaign log into a permanent historical record. These events are older and will never be modified again. Write a clear, detailed summary of 800-1000 words covering everything that happened in this period.
+          max_tokens: 500,
+          system: `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. Be concise — facts only, no scene-setting or atmosphere.
 
-PRESERVE WITHOUT EXCEPTION:
-- Every named NPC and their relationship to the player
-- Every location visited and what happened there
-- All quest threads — completed ones noted as resolved, unresolved ones noted as ongoing
-- All items gained, used, or lost
-- Gold and resource changes
-- Every significant decision the player made and its consequence
-- Faction standings and agreements
-- Any changes to the player character's nature, abilities, or status
-- Time-sensitive threats or countdowns still active at the end of this period
+PRESERVE: every named NPC and their role, locations visited, items gained/lost, gold changes, decisions and consequences, active quest threads, faction changes, character state changes.
+DROP: scene descriptions, dialogue, atmosphere, combat blow-by-blow details. Just the facts.
 
-RETCON RULE: If any entries indicate events were retconned, walked back, or declared not to have happened — omit those events entirely.
+RETCON RULE: if any events were walked back or declared not to have happened, omit them entirely.
 
-Plain text only. No headers. No bullet points. Write in past tense. Output only the archived summary.`,
+Plain text only. No headers. No bullet points. Past tense. Output only the archive text.`,
           messages: [
             { role: 'user', content: `Archive these campaign log entries:\n\n${entriesToCompress.map(e => e.text).join('\n\n')}` },
           ],
