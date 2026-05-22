@@ -23,6 +23,7 @@ export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoad
 
   const generateFullSave = () => {
     const state = buildState('fullsave');
+    console.log('[SAVE] storySummary length:', (storySummaryRef.current || '').length, 'preview:', (storySummaryRef.current || '').slice(0, 50));
     downloadJSON(state, `${charRef.current.name || 'character'}-fullsave-${Date.now()}.json`);
     try { localStorage.setItem('dnd-autosave', JSON.stringify(state)); } catch {}
     return state;
