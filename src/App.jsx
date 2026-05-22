@@ -402,6 +402,9 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       const serialized = serializeSummary(finalObj);
       setStorySummary(serialized);
       storySummaryRef.current = serialized;
+      // Autosave immediately so the new summary persists — addMessage autosave
+      // fires before the summary is written so we need to save again here
+      save.autoSave(charRef.current, fullLogRef.current);
       log(`[SUMMARY] Done — ${finalChunks.length} archived chunks, ${finalEntries.length} raw entries`);
 
     } catch (e) {
