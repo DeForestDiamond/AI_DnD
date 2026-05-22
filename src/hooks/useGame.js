@@ -177,10 +177,15 @@ Equip item: [EQUIP: Sword | mainhand]
   Slots: mainhand, offhand, armor, head, neck, cloak, hands, ring1, ring2, feet
 
 Custom items — always include type and stats:
-  Weapon:     [ITEM: Obsidian Dagger | weapon | 1d6 | finesse | melee]
-  Armor:      [ITEM: Chainmail of Thorns | armor | 15 | false | 1]
-  Magic item: [ITEM: Ring of Feather Falling | magic | ring | ac:0 | feather fall on wearer]
-  Consumable: [ITEM: Antitoxin Vial | consumable]
+  Weapon:     [ITEM: Obsidian Dagger | weapon | 1d6 | finesse | melee | label]
+    label (optional): description shown in sidebar e.g. "cursed, deals necrotic damage"
+  Armor:      [ITEM: Chainmail of Thorns | armor | 15 | false | 1 | label]
+    fields: ac | dexBonus (true/false) | maxDex (number or null) | label (optional)
+    bonus stats on armor: add after label e.g. | con:1
+  Magic item: [ITEM: Ring of Protection | magic | ring | ac:1 | +1 to AC]
+    fields: slot | bonuses (stat:value, comma separated e.g. ac:1,dex:2) | label
+    bonus options: ac, str, dex, con, int, wis, cha — e.g. ac:1 or dex:2 or ac:1,str:1
+  Consumable: [ITEM: Antitoxin Vial | consumable | cures poison]
 
 Give and equip: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
 Quantities: [ITEM: Blast Powder | qty:3] — NEVER bake quantity into the item name
@@ -434,10 +439,14 @@ Standard item (potion, torch, rope, common weapon):
   [ITEM: Health Potion]
 
 Custom item — you MUST include type and stats or it becomes a useless placeholder:
-  Custom weapon:  [ITEM: Obsidian Dagger | weapon | 1d6 | finesse | melee]
-  Custom armor:   [ITEM: Chainmail of Thorns | armor | 15 | false | 1]
-  Magic item:     [ITEM: Ring of Feather Falling | magic | ring | ac:0 | feather fall on wearer]
-  Consumable:     [ITEM: Antitoxin Vial | consumable]
+  Custom weapon:  [ITEM: Obsidian Dagger | weapon | 1d6 | finesse | melee | cursed blade]
+    fields: damage | finesse/normal | melee/ranged | label (optional description)
+  Custom armor:   [ITEM: Chainmail of Thorns | armor | 15 | false | 1 | deals 1 piercing on grapple]
+    fields: ac | dexBonus (true/false) | maxDex | label (optional) | bonus stats e.g. con:1
+  Magic item:     [ITEM: Ring of Protection | magic | ring | ac:1,con:1 | +1 AC and Constitution]
+    fields: slot | bonuses (stat:value comma separated e.g. ac:1 or dex:2 or ac:1,str:1) | label
+    bonus stats: ac, str, dex, con, int, wis, cha
+  Consumable:     [ITEM: Antitoxin Vial | consumable | cures poison]
 
 Give AND immediately equip:
   [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]

@@ -68,16 +68,24 @@ export const parseDMItem = (raw) => {
     const damage = parts[2] || '1d6';
     const finesse = parts[3]?.toLowerCase() === 'finesse';
     const range   = parts[4]?.toLowerCase() === 'ranged' ? 'ranged' : 'melee';
+    const label   = parts[5] || '';
     const bonusMatch = damage.match(/\+(\d+)$/);
     const bonus = bonusMatch ? parseInt(bonusMatch[1]) : 0;
     const baseDmg = damage.replace(/\+\d+$/, '');
-    return { name, data: { type:'weapon', damage:baseDmg, bonus, finesse, range } };
+    return { name, data: { type:'weapon', damage:baseDmg, bonus, finesse, range, label } };
   }
   if (kind === 'armor') {
     const ac = parseInt(parts[2]) || 13;
     const dexBonus = parts[3]?.toLowerCase() !== 'false';
     const maxDex = parts[4] && parts[4] !== 'null' ? parseInt(parts[4]) : null;
-    return { name, data: { type:'armor', ac, dexBonus, maxDex } };
+    const label  = parts[5] || '';
+    // Also parse stat bonuses from parts[4] onward if they look like bonus:val
+    const bonuses = {};
+    parts.slice(4).forEach(p => {
+      const m = p.trim().match(/^(ac|str|dex|con|int|wis|cha):(-?\d+)$/i);
+      if (m) bonuses[m[1].toLowerCase()] = parseInt(m[2]);
+    });
+    return { name, data: { type:'armor', ac, dexBonus, maxDex, bonuses, label } };
   }
   if (kind === 'shield') {
     return { name, data: { type:'shield', ac: parseInt(parts[2]) || 2 } };
@@ -90,6 +98,9 @@ export const parseDMItem = (raw) => {
       if (m) bonuses[m[1].toLowerCase()] = parseInt(m[2]);
     });
     return { name, data: { type:'magic', slot, bonuses, label: parts[4] || '' } };
+  }
+  if (kind === 'consumable') {
+    return { name, data: { type:'consumable', label: parts[2] || '' } };
   }
   return { name, data: { type:'misc' } };
 };
