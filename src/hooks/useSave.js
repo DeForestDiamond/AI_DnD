@@ -37,6 +37,7 @@ export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoad
 
   // ── localStorage auto-save ───────────────────────────────────────────────────
   const autoSave = (char, msgs) => {
+    console.log('[AUTOSAVE] storySummary length:', (storySummaryRef.current || '').length);
     try {
       localStorage.setItem('dnd-autosave', JSON.stringify({
         _type: 'fullsave', _v: SAVE_VERSION,
