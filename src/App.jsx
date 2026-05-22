@@ -6,7 +6,7 @@ import { SLOTS, allItems as allItemsHelper } from './constants/items.js';
 import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
-import { useGame, buildSystemPrompt, cleanDisplayText } from './hooks/useGame.js';
+import { useGame, buildSystemPrompt, buildSystemPromptSonnet, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
 import { Sidebar } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
@@ -50,7 +50,8 @@ export default function App() {
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [showAbilitiesModal, setShowAbilitiesModal] = useState(false);
   const [showDeityModal, setShowDeityModal] = useState(false);
-  const [deityModalContext, setDeityModalContext] = useState('multiclass'); // 'multiclass' or 'oldSave'
+  const [deityModalContext, setDeityModalContext] = useState('multiclass');
+  const [selectedModel, setSelectedModel] = useState('sonnet'); // 'sonnet' or 'haiku' // 'multiclass' or 'oldSave'
   const [storySummary, setStorySummary] = useState('');
   const [tokenUsage, setTokenUsage]     = useState(null);
   const storySummaryRef = useRef('');
@@ -192,7 +193,10 @@ export default function App() {
     setLoading(true);
     setApiError('');
     try {
-      const system = buildSystemPrompt(char);
+      const modelConfig = MODEL_CONFIGS[selectedModel];
+      const system = selectedModel === 'sonnet'
+        ? buildSystemPromptSonnet(char)
+        : buildSystemPrompt(char);
       const seed = rollAdventureSeed();
       const seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
 You MUST open the adventure using ALL of the following parameters exactly as given. This is not a suggestion. Do not substitute, reinterpret, or ignore any field.
@@ -210,7 +214,8 @@ REQUIRED: Invent a specific named location that fits the setting (e.g. "The Salt
 NON-COMPLIANCE: If you open with anything other than the parameters above, you have failed your role as DM.`;
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
-        system
+        system,
+        modelConfig
       );
       if (usage) setTokenUsage(usage);
       const newChar = applyEffects(text, char);
@@ -451,10 +456,14 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     }
 
     try {
-      const system = buildSystemPrompt(charRef.current);
+      const modelConfig = MODEL_CONFIGS[selectedModel];
+      const system = selectedModel === 'sonnet'
+        ? buildSystemPromptSonnet(charRef.current)
+        : buildSystemPrompt(charRef.current);
       const { text: dmText, usage: dmUsage } = await callDM(
         [...history, { role:'user', content: continuePrefix + userMsg + actionCtx }],
-        system
+        system,
+        modelConfig
       );
       if (dmUsage) setTokenUsage(dmUsage);
 
@@ -471,7 +480,8 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
            { role:'assistant', content: dmText },
            { role:'user', content: resultText }
           ],
-          system
+          system,
+          modelConfig
         );
         if (followUpUsage) setTokenUsage(followUpUsage);
         finalText = followUp;
@@ -912,6 +922,8 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             onMoveToInventory={moveToInventory}
             onCreateBag={createBag}
             onAddToBag={addToBag}
+            selectedModel={selectedModel}
+            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : 'sonnet')}
           />
         </div>
       )}

@@ -39,12 +39,163 @@ export const performEnemyRoll = (notation) => {
   return Math.max(1, base + bonus);
 };
 
-// ── System Prompt ──────────────────────────────────────────────────────────────
+// ── Model configs ──────────────────────────────────────────────────────────────
+export const MODEL_CONFIGS = {
+  sonnet: {
+    model: 'claude-sonnet-4-5',
+    max_tokens: 800,
+    label: 'Sonnet',
+    emoji: '✨',
+  },
+  haiku: {
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 450,
+    label: 'Haiku',
+    emoji: '⚡',
+  },
+};
+
+// ── Shared character data block ────────────────────────────────────────────────
+const buildCharBlock = (char) => {
+  const effStats    = effectiveStats(char.stats, char.slots, char.customItems || {});
+  const ac          = calcAC(char.slots, char.stats, char.customItems || {});
+  const pb          = profBonus(char.level);
+  const weapon      = getMainWeapon(char.slots, char.stats, char.customItems || {});
+  const classLevels = char.classLevels || { [char.cls?.name]: char.level };
+  const classDesc   = Object.entries(classLevels).map(([c,l]) => `${c} ${l}`).join(' / ');
+  const db          = { ...ITEM_DB, ...(char.customItems||{}) };
+  const equippedList = Object.entries(char.slots).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join(', ') || 'nothing';
+  const weaponLine  = weapon ? `${weapon.name} (${weapon.damage}${weapon.bonus?`+${weapon.bonus}`:''}, Attack bonus +${weapon.statBonus+pb+(weapon.bonus||0)}, ${weapon.finesse?'finesse/Dexterity':'Strength'}${weapon.label?', '+weapon.label:''})` : 'Unarmed (1 damage)';
+  const sneakLine   = char.sneakAttackDice ? `\n- SNEAK ATTACK: ${char.sneakAttackDice} extra damage when attacking with advantage or from hiding` : '';
+  const offhandData = char.slots.offhand ? db[char.slots.offhand] : null;
+  const focusLine   = offhandData?.type==='focus' ? `\n- HOLY FOCUS: ${char.slots.offhand} equipped (${offhandData.label})` : '';
+  const stackedInv  = stackInventory(char.inventory);
+  const invDisplay  = Object.entries(stackedInv).map(([n,c])=>c>1?`${n} x${c}`:n).join(', ') || 'empty';
+  const hasCleric   = char.cls?.name==='Cleric'  || Object.keys(classLevels).includes('Cleric');
+  const hasWarlock  = char.cls?.name==='Warlock' || Object.keys(classLevels).includes('Warlock');
+  const deityLine   = char.deity && hasCleric
+    ? `\n- DEITY: Devoted to ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc}`
+    : char.deity && hasWarlock
+    ? `\n- PATRON: Bound by pact to ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc}`
+    : '';
+  const raceCtx     = RACE_TRAIT_STRINGS[char.race?.name] ? `\n- RACE TRAITS (${char.race.name}): ${RACE_TRAIT_STRINGS[char.race.name]}` : '';
+  const playstyle   = char.cls?.name==='Artificer' ? '\n- PLAYSTYLE: Artificer — Intelligence-based spellcasting. Arcane firearms, infusions. No ammo required for arcane firearms.'
+    : char.cls?.name==='Illrigger' ? '\n- PLAYSTYLE: Illrigger — infernal knight. Baleful Interdict seals, Invoke Hell. Charisma governs Interdict DC.'
+    : char.cls?.name==='Monk'      ? '\n- PLAYSTYLE: Monk — Dexterity/Wisdom martial artist. Unarmed strikes, Ki abilities. No armor.'
+    : char.cls?.name==='Barbarian' ? '\n- PLAYSTYLE: Barbarian — Strength/Constitution bruiser. Rage for damage resistance. Reckless Attack. Unarmored Defense uses Constitution.'
+    : char.cls?.name==='Warlock'   ? '\n- PLAYSTYLE: Warlock — Charisma-based eldritch power. Eldritch Blast primary attack. Hex for bonus damage.'
+    : char.cls?.name==='Blood Hunter' ? '\n- PLAYSTYLE: Blood Hunter — Constitution/Strength monster slayer. Crimson Rites spend HP for elemental weapon damage.'
+    : char.race?.name==='Elf' && char.cls?.name==='Fighter' ? '\n- PLAYSTYLE: Dex Fighter — favour finesse weapons, use Dexterity for attacks and damage.'
+    : '';
+  const abilities   = char.abilities || { cantrips:[], spells:[], infusions:[] };
+  const abilitiesLine = [
+    abilities.cantrips?.length  ? `Cantrips: ${abilities.cantrips.join(', ')}` : '',
+    abilities.spells?.length    ? `Spells: ${abilities.spells.join(', ')}` : '',
+    abilities.infusions?.length ? `Infusions: ${abilities.infusions.join(', ')}` : '',
+  ].filter(Boolean).join('\n');
+  return { effStats, ac, pb, classDesc, equippedList, weaponLine, sneakLine, focusLine, invDisplay, deityLine, raceCtx, playstyle, abilitiesLine: abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : '' };
+};
+
+// ── Shared context sections (bio, companions, NPCs, towns) ─────────────────────
+const buildCtxSections = (char) => {
+  const loc = char.currentLocation || '';
+  const bio = char.bio ? `\nBACKSTORY: ${char.bio}\n` : '';
+
+  // Companions
+  const companions = char.companions || {};
+  let companionSection = '';
+  if (Object.keys(companions).length > 0) {
+    const present = [], distant = [];
+    Object.entries(companions).forEach(([name, data]) => {
+      const dloc = (data.location||data.status||'').toLowerCase();
+      const here = loc ? dloc.includes(loc.toLowerCase())||loc.toLowerCase().includes(dloc) : false;
+      const desc = data.desc || [data.trueName?`True name: ${data.trueName}`:'',data.race?`Race: ${data.race}`:'',data.role?`Role: ${data.role}`:'',data.appearance?`Appearance: ${data.appearance}`:'',data.personality?`Personality: ${data.personality}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join(' | ') || '';
+      const ab = data.abilities ? (Array.isArray(data.abilities)?data.abilities.join(', '):data.abilities) : '';
+      if (here||!data.location) present.push(`- ${name} [PRESENT]: ${desc}${ab?` | Abilities: ${ab}`:''}${data.notes?` | ${data.notes}`:''}`);
+      else distant.push(`- ${name} (at ${data.location}): ${data.relationship||data.role||'ally'}`);
+    });
+    const parts = [];
+    if (present.length) parts.push(`COMPANIONS (present):\n${present.join('\n')}`);
+    if (distant.length) parts.push(`COMPANIONS (elsewhere):\n${distant.join('\n')}`);
+    companionSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
+  }
+
+  // NPCs
+  const npcs = char.npcs || {};
+  let npcSection = '';
+  if (Object.keys(npcs).length > 0) {
+    const lines = [];
+    Object.entries(npcs).forEach(([name, data]) => {
+      const nloc = (data.location||'').toLowerCase();
+      const here = loc ? nloc.includes(loc.toLowerCase())||loc.toLowerCase().includes(nloc) : false;
+      if (here||!data.location) lines.push(`- ${name} [NEARBY]: ${data.desc||''} | Relationship: ${data.relationship||'neutral'}${data.notes?` | ${data.notes}`:''}`);
+      else lines.push(`- ${name} (${data.location}): ${data.relationship||'neutral'}`);
+    });
+    npcSection = '\nKNOWN NPCs:\n'+lines.join('\n')+'\n';
+  }
+
+  // Towns
+  const towns = char.towns || {};
+  let townsSection = '';
+  if (Object.keys(towns).length > 0) {
+    const current = [], other = [];
+    Object.entries(towns).forEach(([townName, data]) => {
+      if (!data||typeof data!=='object') return;
+      const isCurrent = loc && (townName.toLowerCase().includes(loc.toLowerCase())||loc.toLowerCase().includes(townName.toLowerCase()));
+      if (isCurrent) {
+        const locLines = data.locations ? Object.entries(data.locations).map(([k,v])=>`  · ${k}: ${v}`).join('\n') : '';
+        const resLines = data.minor_residents ? Object.entries(data.minor_residents).map(([k,v])=>`  · ${k}: ${v}`).join('\n') : '';
+        current.push([`TOWN — ${townName} [CURRENT]:`,data.desc||'',locLines?`Locations:\n${locLines}`:'',resLines?`Residents:\n${resLines}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join('\n'));
+      } else {
+        other.push(`- ${townName}: ${data.desc||''} | Status: ${data.status||'unknown'}`);
+      }
+    });
+    const parts = [];
+    if (current.length) parts.push(current.join('\n\n'));
+    if (other.length) parts.push('OTHER TOWNS:\n'+other.join('\n'));
+    townsSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
+  }
+
+  return { bio, companionSection, npcSection, townsSection };
+};
+
+// ── Shared tag reference ───────────────────────────────────────────────────────
+const TAGS_BLOCK = `── GAME TAGS ──
+Place ALL tags at the END of your response. Never mid-narrative.
+
+XP (mandatory after every combat and milestone): [XP: +50]
+  Amounts: trivial 15-30 | minor 30-60 | standard 50-100 | hard 100-150 | boss 150-250
+Gold: [GOLD: +10] or [GOLD: -10]
+Item gained: [ITEM: Health Potion]
+Item removed: [REMOVE: Health Potion]
+Skill check: [ROLL: dexterity difficulty 14] — wait for result before narrating outcome
+Enemy attack: [ENEMY ATTACK: 1d6+2]
+Environmental damage: [DAMAGE: 5]
+Magical healing: [HP: +10]
+Location change: [LOCATION: Millhaven]
+Equip item: [EQUIP: Sword | mainhand]
+  Slots: mainhand, offhand, armor, head, neck, cloak, hands, ring1, ring2, feet
+
+Custom items — always include type and stats:
+  Weapon:     [ITEM: Obsidian Dagger | weapon | 1d6 | finesse | melee]
+  Armor:      [ITEM: Chainmail of Thorns | armor | 15 | false | 1]
+  Magic item: [ITEM: Ring of Feather Falling | magic | ring | ac:0 | feather fall on wearer]
+  Consumable: [ITEM: Antitoxin Vial | consumable]
+
+Give and equip: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
+Quantities: [ITEM: Blast Powder | qty:3] — NEVER bake quantity into the item name
+Transform: [UPDATE: Sealed Letter | Opened Letter]
+New companion: [COMPANION: Name | relationship | description | location]
+Remove companion: [COMPANION REMOVE: Name]
+New NPC: [NPC: Name | role | description | location | relationship]
+New town: [TOWN: Name | description]
+
+CRITICAL: Mentioning an item in prose does NOT add it to inventory. Only [ITEM:] does.`;
+
+// ── System Prompt — Haiku ──────────────────────────────────────────────────────
 export const buildSystemPrompt = (char) => {
-  const effStats     = effectiveStats(char.stats, char.slots, char.customItems || {});
-  const ac           = calcAC(char.slots, char.stats, char.customItems || {});
-  const pb           = profBonus(char.level);
-  const weapon       = getMainWeapon(char.slots, char.stats, char.customItems || {});
+  const cb = buildCharBlock(char);
+  const ctx = buildCtxSections(char);
   const dexBuild = char.cls?.name === 'Artificer'
     ? '\n- PLAYSTYLE: Artificer — INT-based spellcasting. Arcane firearms, infusions, magical invention. No ammo required for arcane firearms.'
     : char.cls?.name === 'Illrigger'
@@ -472,6 +623,58 @@ NOT EVERYTHING IS EPIC: The world does not revolve around the player's main ques
 ACTIVELY CHOOSE SMALL: Do not merely allow mundane encounters — deliberately create them. A goblin ambush on a sunny road. A merchant whose cart wheel broke. A drunk soldier picking a fight outside a tavern. A farmer asking for help with a wolf problem. A pickpocket in a crowded market. These are not filler — they are the texture of a living world. If every encounter is an ancient evil or a world-shaking threat, the world stops feeling real and the player stops caring. Earn the epic moments by surrounding them with ordinary ones. When you find yourself about to introduce another powerful entity, a mysterious conspiracy, or a reality-threatening force — stop. Put a goblin there instead.`;
 };
 
+// ── System Prompt — Sonnet ─────────────────────────────────────────────────────
+export const buildSystemPromptSonnet = (char) => {
+  const cb  = buildCharBlock(char);
+  const ctx = buildCtxSections(char);
+
+  return `You are the Dungeon Master for a D&D 5e game called Tales of the Realm. Persistent single-player campaign. Be creative, consistent, and deeply reactive to player choices.
+
+── CHARACTER ──
+${char.name} | ${char.race?.name} ${cb.classDesc} | Level ${char.level} | ${char.xp||0} XP
+STATS: Strength ${cb.effStats.str}(${modStr(cb.effStats.str)}) Dexterity ${cb.effStats.dex}(${modStr(cb.effStats.dex)}) Constitution ${cb.effStats.con}(${modStr(cb.effStats.con)}) Intelligence ${cb.effStats.int}(${modStr(cb.effStats.int)}) Wisdom ${cb.effStats.wis}(${modStr(cb.effStats.wis)}) Charisma ${cb.effStats.cha}(${modStr(cb.effStats.cha)})
+COMBAT: HP ${char.hp}/${char.maxHp} | AC ${cb.ac} | Proficiency +${cb.pb} | Weapon: ${cb.weaponLine}${cb.sneakLine}${cb.focusLine}
+EQUIPPED: ${cb.equippedList}
+INVENTORY: ${cb.invDisplay} | Gold: ${char.gold}gp${cb.playstyle}${cb.deityLine}${cb.raceCtx}${cb.abilitiesLine}
+${ctx.bio}${ctx.companionSection}${ctx.npcSection}${ctx.townsSection}
+── HARD RULES ──
+- Maximum 3 paragraphs, 200 words. Front-load the narrative.
+- Always end with 2-4 numbered choices.
+- Never resolve travel, combat, violence, or significant events without player input first.
+- Bare numbers refer to your most recent options only — never earlier ones.
+- Plain text only. No markdown, asterisks, bold, or headers.
+- Never abbreviate stats: write Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma in full.
+
+${TAGS_BLOCK}
+
+── BANNED ──
+"The Hunger Between Stars" and all variants — permanently retired. Do not create entities that feed on consciousness, hunger from the void, or consume existence in any form. The Bloom.
+
+── NAMED CREATURES ONLY ──
+Every enemy must have a specific named type. No "a presence", "something that moves wrong", or "a shape in the darkness." Mystery resolves into something real.
+
+── ENCOUNTER SCALE ──
+Match creatures to context. Road: goblins, bandits, wolves, a troll. Aboleth: deep underwater ruins. Tarrasque: world-ending event. Ask why this creature is HERE, NOW. If you can't answer — use something smaller.
+
+── PACING ──
+Actively choose small. Deliberately create mundane encounters — goblin ambush, broken cart, drunk soldier, farmer with a wolf problem. Earn epic moments by surrounding them with ordinary ones. When about to introduce another ancient evil — stop. Put a goblin there instead.
+
+Actions have consequences. The world must react to significant player actions — always.
+
+Every scene needs a hook. Atmosphere is not a story. Every scene must contain a problem, threat, or decision that matters.
+
+Never drop active missions. Side events are interruptions, not replacements.
+
+── PLAYER AUTONOMY ──
+The player decides everything. Never make choices for them or override decisions through NPCs. Let them face consequences honestly.
+
+── FACTIONS ──
+Seelie and aligned courts: never threaten — only offer. Leverage through withdrawing favor, never intimidation.
+Unseelie Court: comfortable with direct intimidation and implied consequences.
+Keepers of the Twilight Accords: strictly neutral, formal declarations only, no opinions.
+Fey appearance: always specific and otherworldly — never just pointed ears on a human face.`;
+};
+
 // Stack duplicate inventory items for display
 export const stackInventory = (inventory) => {
   const stacked = {};
@@ -484,7 +687,7 @@ export const stackInventory = (inventory) => {
 // ── The Hook ───────────────────────────────────────────────────────────────────
 export function useGame({ charRef, apiKey }) {
 
-  const callDM = async (messages, systemPrompt) => {
+  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -496,8 +699,8 @@ export function useGame({ charRef, apiKey }) {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 600,
+        model: modelConfig.model,
+        max_tokens: modelConfig.max_tokens,
         // System prompt as array with cache_control — bio and rules are static, cache them
         system: [
           {

@@ -188,7 +188,7 @@ function CompanionSlots({ companion, db }) {
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag }) {
+export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel }) {
   const db       = allItems(character.customItems || {});
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
@@ -288,6 +288,13 @@ export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilit
       {onAbilitiesClick && (
         <button onClick={onAbilitiesClick} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>
           📚 Manage Abilities
+        </button>
+      )}
+
+      {/* Model toggle */}
+      {onToggleModel && (
+        <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:colors.border}}>
+          {selectedModel==='sonnet' ? '✨ DM: Sonnet' : '⚡ DM: Haiku'}
         </button>
       )}
 
