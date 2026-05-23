@@ -43,7 +43,7 @@ export function SaveModal({ onClose, generateFullSave, generateCharExport, loadF
       const state = loadAutoSave();
       if (!state) { setMsg('No autosave found.'); return; }
       if (state._type === 'fullsave' || state.messages) {
-        onLoadFull(state.character, state.messages || []);
+        onLoadFull(state.character, state.messages || [], state.storySummary || '');
       } else {
         onLoadCharacter(state.character);
       }
