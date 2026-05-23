@@ -31,14 +31,15 @@ export function InputBar({ onSend, loading, isListening, sttSupported, onMicClic
             🎙
           </button>
         )}
-        <input
+        <textarea
           ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
           placeholder="What do you do?"
           disabled={loading}
-          style={{flex:1,background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:15,padding:'10px 12px',borderRadius:4,outline:'none',opacity:loading?0.5:1}}
+          rows={3}
+          style={{flex:1,background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:15,padding:'10px 12px',borderRadius:4,outline:'none',opacity:loading?0.5:1,resize:'none',overflowY:'auto',lineHeight:1.5}}
         />
         <button style={{...btn(true),padding:'10px 18px',fontSize:13,opacity:loading?0.4:1}} disabled={loading} onClick={handleSend}>
           ACT
@@ -46,7 +47,7 @@ export function InputBar({ onSend, loading, isListening, sttSupported, onMicClic
       </div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
         <div style={{fontSize:10,color:colors.textDead,fontFamily:fonts.display,letterSpacing:1}}>
-          Enter to act{sttSupported?' · 🎙 speak':''} · 💾 save in sidebar
+          Enter to act · Shift+Enter for new line{sttSupported?' · 🎙 speak':''} · 💾 save in sidebar
         </div>
         {voiceSupported && (
           <div style={{display:'flex',gap:6}}>
