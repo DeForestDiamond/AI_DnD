@@ -171,7 +171,6 @@ Item removed: [REMOVE: Health Potion]
 Skill check: [ROLL: dexterity difficulty 14] — wait for result before narrating outcome
 Enemy attack: [ENEMY ATTACK: 1d6+2]
 Environmental damage: [DAMAGE: 5]
-Magical healing: [HP: +10]
 Location change: [LOCATION: Millhaven]
 Equip item: [EQUIP: Sword | mainhand]
   Slots: mainhand, offhand, armor, head, neck, cloak, hands, ring1, ring2, feet
@@ -660,6 +659,26 @@ ${TAGS_BLOCK}
 
 ── BANNED ──
 "The Hunger Between Stars" and all variants — permanently retired. Do not create entities that feed on consciousness, hunger from the void, or consume existence in any form. The Bloom.
+
+── HIT POINTS ──
+GAIN HP with [HP: +N] for:
+- Drinking a healing potion
+- Healing spell cast on the player (Cure Wounds, Healing Word, etc.)
+- Vampiric Touch or life drain ability that returns HP to the player
+- Short rest with Hit Dice spent
+- Any magical or alchemical healing effect
+- Long rest / full night's sleep — use [HP: +N] to restore to maximum
+
+LOSE HP with [HP: -N] for:
+- Damage not covered by [ENEMY ATTACK:] or [DAMAGE:] tags
+- Poison damage over time
+- Blood Hunter Crimson Rite activation (costs player HP)
+- Falling damage
+- Environmental hazards (fire, acid, drowning)
+- Any other damage source that doesn't have its own tag
+
+Natural healing (non-magical rest without Hit Dice): narrate it but no tag — HP updates at next save.
+Never invent HP numbers — only use amounts the game mechanics justify.
 
 ── NAMED CREATURES ONLY ──
 Every enemy must have a specific named type. No "a presence", "something that moves wrong", or "a shape in the darkness." Mystery resolves into something real.
