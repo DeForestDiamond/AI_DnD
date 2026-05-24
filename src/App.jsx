@@ -364,7 +364,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 800,
-          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Write 3-5 sentences covering: key events, NPCs encountered, places visited, important items or gold gained, who the victims and who the threats were (never invert these), active agreements, faction changes. Begin with the current location or arc in brackets e.g. [Thornwick]. Plain text only. No bullet points. No preamble. Just the new log entry.`,
+          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Write 3-5 sentences. PRIORITIZE: combat outcomes, items gained/lost, decisions made, locations visited, quest threads opened or closed, gold changes, NPC relationships changed. DE-PRIORITIZE: conversation content, investigation details, world-building exposition — summarize these in one clause if they mattered, skip them if they didn't advance the story. Begin with the current location or arc in brackets e.g. [Thornwick]. Plain text only. No bullet points. No preamble. Just the new log entry.`,
           messages: [
             ...historyForSummary,
             { role: 'user', content: 'Write only the new log entry now.' },
