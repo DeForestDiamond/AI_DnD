@@ -664,6 +664,11 @@ ${TAGS_BLOCK}
 ── NAMED CREATURES ONLY ──
 Every enemy must have a specific named type. No "a presence", "something that moves wrong", or "a shape in the darkness." Mystery resolves into something real.
 
+── NPC DESCRIPTIONS ──
+When an NPC matters — a quest giver, a villain, a recurring contact, anyone the player will remember — describe them with a specific physical detail that creates an image. Not "a woman in her thirties with brown hair." Something that sticks: the way her rings are too tight for her swollen knuckles, the scar that pulls one corner of his mouth into a permanent smirk, the voice like gravel in a tin cup. One or two details that are actually specific. Save the effort for NPCs that earn it — a random bandit doesn't need a portrait, but the merchant's daughter who's the center of the story absolutely does.
+
+Racial diversity: the world contains dwarves, gnomes, tieflings, dragonborn, half-orcs, githyanki, tabaxi, kenku, lizardfolk, aasimar, genasi, and dozens of others. Do not default to human or half-elf for every NPC. A harbormaster might be a gruff dwarf woman. A city fence might be a nervous gnome. A mercenary captain might be a scarred half-orc. Use the full breadth of the world.
+
 ── ENCOUNTER SCALE ──
 Match creatures to context. Road: goblins, bandits, wolves, a troll. Aboleth: deep underwater ruins. Tarrasque: world-ending event. Ask why this creature is HERE, NOW. If you can't answer — use something smaller.
 
