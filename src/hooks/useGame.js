@@ -56,6 +56,9 @@ export const MODEL_CONFIGS = {
 };
 
 // ── Shared character data block ────────────────────────────────────────────────
+// Returns { static: string, dynamic: string }
+// static = race, class, deity, playstyle, abilities — changes rarely
+// dynamic = HP, stats, inventory, equipped, gold, location — changes every message
 const buildCharBlock = (char) => {
   const effStats    = effectiveStats(char.stats, char.slots, char.customItems || {});
   const ac          = calcAC(char.slots, char.stats, char.customItems || {});
@@ -93,7 +96,20 @@ const buildCharBlock = (char) => {
     abilities.spells?.length    ? `Spells: ${abilities.spells.join(', ')}` : '',
     abilities.infusions?.length ? `Infusions: ${abilities.infusions.join(', ')}` : '',
   ].filter(Boolean).join('\n');
-  return { effStats, ac, pb, classDesc, equippedList, weaponLine, sneakLine, focusLine, invDisplay, deityLine, raceCtx, playstyle, abilitiesLine: abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : '' };
+
+  // Static — race, class, deity, playstyle, abilities (rarely change)
+  const staticPart = `CHARACTER: ${char.name} | ${char.race?.name} ${classDesc}${char.deity ? ` | ${hasWarlock?'Patron':'Deity'}: ${char.deity.name}` : ''}${playstyle}${deityLine}${raceCtx}${abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : ''}`;
+
+  // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
+  const dynamicPart = `CURRENT STATE:
+Level ${char.level} | ${char.xp||0} XP | Gold: ${char.gold}gp
+HP: ${char.hp}/${char.maxHp} | AC: ${ac} | Proficiency: +${pb}
+Stats: Strength ${effStats.str}(${modStr(effStats.str)}) Dexterity ${effStats.dex}(${modStr(effStats.dex)}) Constitution ${effStats.con}(${modStr(effStats.con)}) Intelligence ${effStats.int}(${modStr(effStats.int)}) Wisdom ${effStats.wis}(${modStr(effStats.wis)}) Charisma ${effStats.cha}(${modStr(effStats.cha)})
+Weapon: ${weaponLine}${sneakLine}${focusLine}
+Equipped: ${equippedList}
+Inventory: ${invDisplay}${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}`;
+
+  return { staticPart, dynamicPart };
 };
 
 // ── Shared context sections (bio, companions, NPCs, towns) ─────────────────────
@@ -636,14 +652,10 @@ export const buildSystemPromptSonnet = (char) => {
   const cb  = buildCharBlock(char);
   const ctx = buildCtxSections(char);
 
-  return `You are the Dungeon Master for a D&D 5e game called Tales of the Realm. Persistent single-player campaign. Be creative, consistent, and deeply reactive to player choices.
+  const staticPart = `You are the Dungeon Master for a D&D 5e game called Tales of the Realm. Persistent single-player campaign. Be creative, consistent, and deeply reactive to player choices.
 
-── CHARACTER ──
-${char.name} | ${char.race?.name} ${cb.classDesc} | Level ${char.level} | ${char.xp||0} XP
-STATS: Strength ${cb.effStats.str}(${modStr(cb.effStats.str)}) Dexterity ${cb.effStats.dex}(${modStr(cb.effStats.dex)}) Constitution ${cb.effStats.con}(${modStr(cb.effStats.con)}) Intelligence ${cb.effStats.int}(${modStr(cb.effStats.int)}) Wisdom ${cb.effStats.wis}(${modStr(cb.effStats.wis)}) Charisma ${cb.effStats.cha}(${modStr(cb.effStats.cha)})
-COMBAT: HP ${char.hp}/${char.maxHp} | AC ${cb.ac} | Proficiency +${cb.pb} | Weapon: ${cb.weaponLine}${cb.sneakLine}${cb.focusLine}
-EQUIPPED: ${cb.equippedList}
-INVENTORY: ${cb.invDisplay} | Gold: ${char.gold}gp${cb.playstyle}${cb.deityLine}${cb.raceCtx}${cb.abilitiesLine}
+── CHARACTER (STATIC) ──
+${cb.staticPart}
 ${ctx.bio}${ctx.companionSection}${ctx.npcSection}${ctx.townsSection}
 ── HARD RULES ──
 - Maximum 3 paragraphs, 200 words. Hard limit — if you're writing a fourth paragraph, stop and cut. Front-load the narrative, the choices go last.
@@ -716,6 +728,11 @@ Seelie and aligned courts: never threaten — only offer. Leverage through withd
 Unseelie Court: comfortable with direct intimidation and implied consequences.
 Keepers of the Twilight Accords: strictly neutral, formal declarations only, no opinions.
 Fey appearance: always specific and otherworldly — never just pointed ears on a human face.`;
+
+  const dynamicPart = `── CURRENT STATE (changes every message) ──
+${cb.dynamicPart}`;
+
+  return { static: staticPart, dynamic: dynamicPart };
 };
 
 // Stack duplicate inventory items for display
@@ -732,6 +749,16 @@ export function useGame({ charRef, apiKey }) {
 
   const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+
+    // systemPrompt can be a string (legacy) or { static, dynamic }
+    // Static block gets cached — bio, rules, companions, NPCs, towns (rarely change)
+    // Dynamic block is fresh every message — HP, stats, inventory, gold, location
+    const systemBlocks = typeof systemPrompt === 'object' && systemPrompt.static
+      ? [
+          { type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } },
+          { type: 'text', text: systemPrompt.dynamic },
+        ]
+      : [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -744,14 +771,7 @@ export function useGame({ charRef, apiKey }) {
       body: JSON.stringify({
         model: modelConfig.model,
         max_tokens: modelConfig.max_tokens,
-        // System prompt as array with cache_control — bio and rules are static, cache them
-        system: [
-          {
-            type: 'text',
-            text: systemPrompt,
-            cache_control: { type: 'ephemeral' },
-          }
-        ],
+        system: systemBlocks,
         // Cache the stable history (everything except the last 2 messages)
         // The last message before the tail gets the cache checkpoint
         messages: messages.length > 2
