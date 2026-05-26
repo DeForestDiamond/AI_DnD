@@ -270,10 +270,6 @@ export const buildSystemPrompt = (char) => {
     ? `\n- HOLY FOCUS: ${char.slots.offhand} equipped (${offhandData.label}${offhandData.radiantBonus ? ` — add ${offhandData.radiantBonus} radiant damage to all attacks` : ''}${offhandData.perceptionAdv ? ' — advantage on perception checks' : ''})`
     : '';
 
-  // Build class description for system prompt
-  const classDesc = Object.entries(char.classLevels || { [char.cls?.name]: char.level })
-    .map(([cls, lvl]) => `${cls} ${lvl}`).join(' / ');
-
   // Sneak attack if rogue levels exist
   const rogueLevels = (char.classLevels || {}).Rogue || 0;
   const sneakDice   = rogueLevels > 0 ? (['1d6','1d6','2d6','2d6','3d6'][Math.min(rogueLevels-1,4)]) : null;
