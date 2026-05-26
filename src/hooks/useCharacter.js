@@ -3,7 +3,7 @@ import { ITEM_DB, SLOTS, EMPTY_SLOTS, parseDMItem } from '../constants/items.js'
 import { STARTING_GEAR } from '../constants/classes.js';
 import { XP_THRESHOLDS, HP_PER_LEVEL, HP_BASE, SAVE_VERSION } from '../constants/progression.js';
 
-// ── Pure stat helpers ──────────────────────────────────────────────────────────
+// -- Pure stat helpers ----------------------------------------------------------
 export const statMod   = (v) => Math.floor(((v||10) - 10) / 2);
 export const modStr    = (v) => { const m = statMod(v); return m >= 0 ? `+${m}` : `${m}`; };
 export const profBonus = (level) => 1 + Math.ceil(level / 4);
@@ -28,7 +28,7 @@ export const applyRaceBonus = (baseStats, race) => {
   return r;
 };
 
-// ── Item / slot helpers ────────────────────────────────────────────────────────
+// -- Item / slot helpers --------------------------------------------------------
 export const allItems = (customItems) => ({ ...ITEM_DB, ...customItems });
 
 export const effectiveStats = (baseStats, slots, customItems) => {
@@ -95,7 +95,7 @@ export const equippableInSlot = (char, slotId) => {
   });
 };
 
-// ── Save migration ─────────────────────────────────────────────────────────────
+// -- Save migration -------------------------------------------------------------
 export const migrateCharacter = (char) => {
   const notes = [];
   const v = char._v || 1;
@@ -166,7 +166,7 @@ export const migrateCharacter = (char) => {
   return { char: c, notes };
 };
 
-// ── Empty character ────────────────────────────────────────────────────────────
+// -- Empty character ------------------------------------------------------------
 export const EMPTY_CHAR = {
   _v: SAVE_VERSION,
   name:'', race:null, cls:null, deity:null,
@@ -199,7 +199,7 @@ export const COMPANION_SLOT_DEFS = {
 export const emptyCompanionSlots = (type = 'humanoid') =>
   Object.fromEntries((COMPANION_SLOT_DEFS[type] || COMPANION_SLOT_DEFS.humanoid).map(s => [s, null]));
 
-// ── The hook ───────────────────────────────────────────────────────────────────
+// -- The hook -------------------------------------------------------------------
 export function useCharacter() {
   const [character, setCharacter]         = useState(EMPTY_CHAR);
   const [pendingStatPoint, setPendingStatPoint] = useState(false);
