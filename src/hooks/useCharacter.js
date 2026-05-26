@@ -128,7 +128,7 @@ export const migrateCharacter = (char) => {
     if (c.slots.armor === 'Chitin Greaves') { c.slots.armor = null; c.slots.feet  = 'Chitin Greaves'; }
   }
   if (v < 6) {
-    // Add classLevels if missing — infer from primary class
+    // Add classLevels if missing -- infer from primary class
     if (!c.classLevels) {
       c.classLevels = {};
       if (c.cls?.name) c.classLevels[c.cls.name] = c.level;
@@ -138,7 +138,7 @@ export const migrateCharacter = (char) => {
   if (v < 7) {
     if (!c.abilities) {
       c.abilities = { cantrips:[], spells:[], infusions:[] };
-      notes.push('Abilities initialized — please select your known spells and infusions');
+      notes.push('Abilities initialized -- please select your known spells and infusions');
     }
     if (!c.abilities.cantrips)  c.abilities.cantrips  = [];
     if (!c.abilities.spells)    c.abilities.spells    = [];
@@ -154,7 +154,7 @@ export const migrateCharacter = (char) => {
     if (!c.deity && (c.cls?.name === 'Cleric' || c.cls?.name === 'Warlock' ||
       Object.keys(c.classLevels || {}).some(k => ['Cleric','Warlock'].includes(k)))) {
       c._needsDeitySelection = true;
-      notes.push('Character needs to choose a deity/patron — you will be prompted after load');
+      notes.push('Character needs to choose a deity/patron -- you will be prompted after load');
     }
     if (!c.deity) c.deity = null;
     // Add stash if missing
@@ -220,7 +220,7 @@ export function useCharacter() {
     if (char.xp < threshold) return char;
     const expectedLevel = XP_THRESHOLDS.reduce((lvl, t, idx) => (t > 0 && char.xp >= t) ? idx : lvl, 1);
     if (char.level >= expectedLevel) return char;
-    setLevelUpMsg(`🎉 Level ${next}! Choose your path!`);
+    setLevelUpMsg(` Level ${next}! Choose your path!`);
     setTimeout(() => setLevelUpMsg(null), 8000);
     setPendingStatPoint(true);
     return { ...char, level: next };
@@ -252,13 +252,13 @@ export function useCharacter() {
       c.gold = Math.max(0, c.gold + parseInt(m[1]));
     });
 
-    // HP — [DAMAGE:] = player takes damage, [HEAL:] = player heals
+    // HP -- [DAMAGE:] = player takes damage, [HEAL:] = player heals
     const dmgM  = text.match(/\[DAMAGE:\s*(\d+)\]/i);
     if (dmgM)  c.hp = Math.max(0, c.hp - parseInt(dmgM[1]));
     const healM = text.match(/\[HEAL:\s*(\d+)\]/i);
     if (healM) c.hp = Math.min(c.maxHp, c.hp + parseInt(healM[1]));
 
-    // XP — accept [XP: +50] or [XP: 50]
+    // XP -- accept [XP: +50] or [XP: 50]
     [...text.matchAll(/\[XP:\s*\+?(\d+)\]/gi)].forEach(m => { c.xp = (c.xp||0) + parseInt(m[1]); });
 
     // Items gained
@@ -275,7 +275,7 @@ export function useCharacter() {
       }
     });
 
-    // Items removed — case-insensitive, supports qty tag: [REMOVE: Blast Powder | qty:2]
+    // Items removed -- case-insensitive, supports qty tag: [REMOVE: Blast Powder | qty:2]
     [...text.matchAll(/\[REMOVE:\s*([^\]]+)\]/gi)].forEach(m => {
       const raw = m[1];
       const qtyMatch = raw.match(/\|\s*qty:\s*(\d+)/i);
@@ -289,7 +289,7 @@ export function useCharacter() {
       if (slotEntry) c.slots = { ...c.slots, [slotEntry[0]]: null };
     });
 
-    // Location tracking — updates currentLocation for tiered context system
+    // Location tracking -- updates currentLocation for tiered context system
     const locMatch = text.match(/\[LOCATION:\s*([^\]]+)\]/i);
     if (locMatch) c.currentLocation = locMatch[1].trim();
 
@@ -307,7 +307,7 @@ export function useCharacter() {
       if (slotEntry) c.slots = { ...c.slots, [slotEntry[0]]: newName };
     });
 
-    // DM equip — only first occurrence removed from inventory
+    // DM equip -- only first occurrence removed from inventory
     [...text.matchAll(/\[EQUIP:\s*([^|^\]]+)\|?\s*([^\]]*)\]/gi)].forEach(m => {
       const name     = m[1].trim();
       const slotHint = m[2].trim().toLowerCase();
