@@ -367,8 +367,9 @@ export function useCharacter() {
 
   const moveToStash = (itemName, all = false) => {
     setCharacter(c => {
+      let inventory = [...c.inventory];
+      let stash = [...(c.stash || [])];
       if (all) {
-        // Move every copy
         const moved = inventory.filter(i => i === itemName);
         inventory = inventory.filter(i => i !== itemName);
         stash = [...stash, ...moved];
