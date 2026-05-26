@@ -759,7 +759,7 @@ export const stackInventory = (inventory) => {
 // ── The Hook ───────────────────────────────────────────────────────────────────
 export function useGame({ charRef, apiKey }) {
 
-  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet) => {
+  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
 
     // systemPrompt can be a string (legacy) or { static, dynamic }
@@ -773,6 +773,7 @@ export function useGame({ charRef, apiKey }) {
       : [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': key,

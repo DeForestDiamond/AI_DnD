@@ -38,6 +38,15 @@ export default function App() {
   const [fullLog,  setFullLog]  = useState([]);
   const fullLogRef = useRef([]);
   const [loading, setLoading]   = useState(false);
+  const abortRef = useRef(null);
+
+  const handleStop = () => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    setLoading(false);
+  };
   const [nameInput, setNameInput] = useState('');
   const [apiKey, setApiKey]     = useState('');
   const [apiError, setApiError] = useState('');
@@ -436,6 +445,9 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
   const handleSend = async (userMsg, historyOverride = null) => {
     setLoading(true);
     setApiError('');
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const signal = controller.signal;
 
     // Detect "please continue" — skip attack context, inject resume instruction
     const isContinue = /^\s*(please\s+)?(continue|finish|go on|keep going|finish the scene|resume|you got cut off|message got cut off|got cut off|finish the story|finish that|finish your)\b/i.test(userMsg.trim());
@@ -469,7 +481,8 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       const { text: dmText, usage: dmUsage } = await callDM(
         [...history, { role:'user', content: continuePrefix + userMsg + actionCtx }],
         system,
-        modelConfig
+        modelConfig,
+        signal
       );
       if (dmUsage) setTokenUsage(dmUsage);
 
@@ -487,7 +500,8 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
            { role:'user', content: resultText }
           ],
           system,
-          modelConfig
+          modelConfig,
+          signal
         );
         if (followUpUsage) setTokenUsage(followUpUsage);
         finalText = followUp;
@@ -510,9 +524,15 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       addMessage({ role:'dm', text:finalText, id:Date.now(), roll:finalRoll });
       voice.speak(finalText);
     } catch (e) {
-      setApiError(e.message);
-      addMessage({ role:'dm', text:`The magic wavers... (${e.message})`, id:Date.now(), roll:null });
+      if (e.name === 'AbortError') {
+        // User stopped the request — remove the pending user message from log
+        setFullLog(prev => { const n = prev.slice(0,-1); fullLogRef.current = n; return n; });
+      } else {
+        setApiError(e.message);
+        addMessage({ role:'dm', text:`The magic wavers... (${e.message})`, id:Date.now(), roll:null });
+      }
     }
+    abortRef.current = null;
     setLoading(false);
   };
 
@@ -999,6 +1019,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 
         <InputBar
           onSend={handleSend}
+          onStop={handleStop}
           loading={loading}
           isListening={voice.isListening}
           sttSupported={voice.sttSupported}
