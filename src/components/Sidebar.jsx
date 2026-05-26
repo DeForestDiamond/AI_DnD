@@ -188,7 +188,7 @@ function CompanionSlots({ companion, db }) {
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel }) {
+export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel, onToggleContextExclusion }) {
   const db       = allItems(character.customItems || {});
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
@@ -415,39 +415,56 @@ export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilit
       {/* Companions */}
       {character.companions && Object.keys(character.companions).length > 0 && (
         <CollapsibleSection title="COMPANIONS" count={Object.keys(character.companions).length} defaultOpen={false}>
-          {Object.entries(character.companions).map(([name, data]) => (
-            <div key={name} style={{padding:'4px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
-              <div style={{color:colors.gold,fontFamily:fonts.display,fontSize:12}}>{data.emoji || '👤'} {name}</div>
-              {data.desc && <div style={{color:colors.textGhost,fontSize:13,marginTop:1,lineHeight:1.4}}>{data.desc}</div>}
-              <CompanionSlots companion={data} db={db}/>
-            </div>
-          ))}
+          {Object.entries(character.companions).map(([name, data]) => {
+            const excluded = character.contextExclusions?.companions?.[name];
+            return (
+              <div key={name} style={{padding:'4px 0',borderBottom:`1px solid ${colors.borderFaint}`,opacity:excluded?0.4:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <input type="checkbox" checked={!excluded} onChange={()=>onToggleContextExclusion?.('companions',name)}
+                    style={{cursor:'pointer',accentColor:colors.gold,flexShrink:0}} title={excluded?'Excluded from AI context':'Included in AI context'}/>
+                  <div style={{color:colors.gold,fontFamily:fonts.display,fontSize:12}}>{data.emoji||'👤'} {name}</div>
+                </div>
+                {data.desc && <div style={{color:colors.textGhost,fontSize:13,marginTop:1,lineHeight:1.4}}>{data.desc}</div>}
+                <CompanionSlots companion={data} db={db}/>
+              </div>
+            );
+          })}
         </CollapsibleSection>
       )}
 
-      {/* Key NPCs — collapsed by default */}
+      {/* Key NPCs */}
       {character.npcs && Object.keys(character.npcs).length > 0 && (
         <CollapsibleSection title="KEY NPCs" count={Object.keys(character.npcs).length} defaultOpen={false}>
-          {Object.entries(character.npcs).map(([name, data]) => (
-            <div key={name} style={{padding:'3px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
-              <div style={{color:colors.textDim,fontFamily:fonts.display,fontSize:12}}>{name}</div>
-              <div style={{color:colors.textGhost,fontSize:13}}>{data.location}</div>
-              <div style={{color:colors.textGhost,fontSize:13,fontStyle:'italic'}}>{data.relationship}</div>
-            </div>
-          ))}
+          {Object.entries(character.npcs).map(([name, data]) => {
+            const excluded = character.contextExclusions?.npcs?.[name];
+            return (
+              <div key={name} style={{padding:'3px 0',borderBottom:`1px solid ${colors.borderFaint}`,opacity:excluded?0.4:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <input type="checkbox" checked={!excluded} onChange={()=>onToggleContextExclusion?.('npcs',name)}
+                    style={{cursor:'pointer',accentColor:colors.gold,flexShrink:0}} title={excluded?'Excluded from AI context':'Included in AI context'}/>
+                  <div style={{color:colors.textDim,fontFamily:fonts.display,fontSize:12}}>{name}</div>
+                </div>
+                <div style={{color:colors.textGhost,fontSize:13}}>{data.location}</div>
+                <div style={{color:colors.textGhost,fontSize:13,fontStyle:'italic'}}>{data.relationship}</div>
+              </div>
+            );
+          })}
         </CollapsibleSection>
       )}
 
-      {/* Towns — world locations with minor residents and status */}
+      {/* Towns */}
       {character.towns && Object.keys(character.towns).length > 0 && (
         <CollapsibleSection title="🏙️ TOWNS" count={Object.keys(character.towns).length} defaultOpen={false}>
           {Object.entries(character.towns).map(([townName, data]) => {
             const isCurrent = character.currentLocation
               ? character.currentLocation.toLowerCase().includes(townName.toLowerCase()) || townName.toLowerCase().includes(character.currentLocation.toLowerCase())
               : false;
+            const excluded = character.contextExclusions?.towns?.[townName];
             return (
-              <div key={townName} style={{padding:'4px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
-                <div style={{display:'flex',alignItems:'center',gap:4}}>
+              <div key={townName} style={{padding:'4px 0',borderBottom:`1px solid ${colors.borderFaint}`,opacity:excluded?0.4:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <input type="checkbox" checked={!excluded} onChange={()=>onToggleContextExclusion?.('towns',townName)}
+                    style={{cursor:'pointer',accentColor:colors.gold,flexShrink:0}} title={excluded?'Excluded from AI context':'Included in AI context'}/>
                   <div style={{color:isCurrent?colors.gold:colors.textDim,fontFamily:fonts.display,fontSize:12}}>{townName}</div>
                   {isCurrent && <span style={{fontSize:10,color:colors.gold}}>◆ HERE</span>}
                 </div>

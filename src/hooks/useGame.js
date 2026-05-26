@@ -116,13 +116,15 @@ Inventory: ${invDisplay}${char.currentLocation ? `\nLocation: ${char.currentLoca
 const buildCtxSections = (char) => {
   const loc = char.currentLocation || '';
   const bio = char.bio ? `\nBACKSTORY: ${char.bio}\n` : '';
+  const excl = char.contextExclusions || { companions:{}, npcs:{}, towns:{} };
 
   // Companions
   const companions = char.companions || {};
   let companionSection = '';
-  if (Object.keys(companions).length > 0) {
+  const activeCompanions = Object.entries(companions).filter(([name]) => !excl.companions?.[name]);
+  if (activeCompanions.length > 0) {
     const present = [], distant = [];
-    Object.entries(companions).forEach(([name, data]) => {
+    activeCompanions.forEach(([name, data]) => {
       const dloc = (data.location||data.status||'').toLowerCase();
       const here = loc ? dloc.includes(loc.toLowerCase())||loc.toLowerCase().includes(dloc) : false;
       const desc = data.desc || [data.trueName?`True name: ${data.trueName}`:'',data.race?`Race: ${data.race}`:'',data.role?`Role: ${data.role}`:'',data.appearance?`Appearance: ${data.appearance}`:'',data.personality?`Personality: ${data.personality}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join(' | ') || '';
@@ -139,9 +141,10 @@ const buildCtxSections = (char) => {
   // NPCs
   const npcs = char.npcs || {};
   let npcSection = '';
-  if (Object.keys(npcs).length > 0) {
+  const activeNpcs = Object.entries(npcs).filter(([name]) => !excl.npcs?.[name]);
+  if (activeNpcs.length > 0) {
     const lines = [];
-    Object.entries(npcs).forEach(([name, data]) => {
+    activeNpcs.forEach(([name, data]) => {
       const nloc = (data.location||'').toLowerCase();
       const here = loc ? nloc.includes(loc.toLowerCase())||loc.toLowerCase().includes(nloc) : false;
       if (here||!data.location) lines.push(`- ${name} [NEARBY]: ${data.desc||''} | Relationship: ${data.relationship||'neutral'}${data.notes?` | ${data.notes}`:''}`);
@@ -153,9 +156,10 @@ const buildCtxSections = (char) => {
   // Towns
   const towns = char.towns || {};
   let townsSection = '';
-  if (Object.keys(towns).length > 0) {
+  const activeTowns = Object.entries(towns).filter(([name]) => !excl.towns?.[name]);
+  if (activeTowns.length > 0) {
     const current = [], other = [];
-    Object.entries(towns).forEach(([townName, data]) => {
+    activeTowns.forEach(([townName, data]) => {
       if (!data||typeof data!=='object') return;
       const isCurrent = loc && (townName.toLowerCase().includes(loc.toLowerCase())||loc.toLowerCase().includes(townName.toLowerCase()));
       if (isCurrent) {

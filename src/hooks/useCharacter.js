@@ -160,6 +160,7 @@ export const migrateCharacter = (char) => {
     // Add stash if missing
     if (!c.stash) { c.stash = []; notes.push('Stash initialized'); }
     if (!c.stashedCustomItems) { c.stashedCustomItems = {}; }
+    if (!c.contextExclusions) { c.contextExclusions = { companions:{}, npcs:{}, towns:{} }; }
   }
   c._v = SAVE_VERSION;
   return { char: c, notes };
@@ -176,6 +177,7 @@ export const EMPTY_CHAR = {
   inventory:[], stash:[], gold:10,
   customItems:{},
   stashedCustomItems:{},
+  contextExclusions: { companions:{}, npcs:{}, towns:{} },
   bio: '',
   currentLocation: '',
   companions: {},
@@ -352,7 +354,16 @@ export function useCharacter() {
     setCharacter(c => ({ ...c, deity }));
   };
 
-  const moveToStash = (itemName, all = false) => {
+  const toggleContextExclusion = (section, name) => {
+    setCharacter(c => {
+      const excl = { ...(c.contextExclusions || { companions:{}, npcs:{}, towns:{} }) };
+      excl[section] = { ...excl[section] };
+      excl[section][name] = !excl[section][name];
+      const nc = { ...c, contextExclusions: excl };
+      charRef.current = nc;
+      return nc;
+    });
+  };
     setCharacter(c => {
       let inventory = [...c.inventory];
       let stash = [...(c.stash || [])];
@@ -506,6 +517,7 @@ export function useCharacter() {
     equipToSlot, unequipSlot, equippableInSlot,
     moveToStash, moveToInventory,
     createBag, addToBag,
+    toggleContextExclusion,
     pendingStatPoint, setPendingStatPoint,
     levelUpMsg, setLevelUpMsg,
   };

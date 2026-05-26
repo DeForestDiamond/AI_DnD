@@ -70,6 +70,7 @@ export default function App() {
     equipToSlot, unequipSlot,
     moveToStash, moveToInventory,
     createBag, addToBag,
+    toggleContextExclusion,
     pendingStatPoint, setPendingStatPoint,
     levelUpMsg,
   } = useCharacter();
@@ -929,6 +930,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             onAddToBag={addToBag}
             selectedModel={selectedModel}
             onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : 'sonnet')}
+            onToggleContextExclusion={toggleContextExclusion}
           />
         </div>
       )}
