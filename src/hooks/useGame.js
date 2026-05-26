@@ -216,6 +216,14 @@ CRITICAL: Mentioning an item in prose does NOT add it to inventory. Only [ITEM:]
 export const buildSystemPrompt = (char) => {
   const cb = buildCharBlock(char);
   const ctx = buildCtxSections(char);
+
+  // Local variables still needed for Haiku's inline prompt template
+  const effStats    = effectiveStats(char.stats, char.slots, char.customItems || {});
+  const ac          = calcAC(char.slots, char.stats, char.customItems || {});
+  const pb          = profBonus(char.level);
+  const weapon      = getMainWeapon(char.slots, char.stats, char.customItems || {});
+  const classLevels = char.classLevels || { [char.cls?.name]: char.level };
+  const classDesc   = Object.entries(classLevels).map(([c,l]) => `${c} ${l}`).join(' / ');
   const dexBuild = char.cls?.name === 'Artificer'
     ? '\n- PLAYSTYLE: Artificer — INT-based spellcasting. Arcane firearms, infusions, magical invention. No ammo required for arcane firearms.'
     : char.cls?.name === 'Illrigger'
