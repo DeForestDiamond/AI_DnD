@@ -200,10 +200,13 @@ Custom items — always include type and stats:
     label (optional): description shown in sidebar e.g. "cursed, deals necrotic damage"
   Armor:      [ITEM: Chainmail of Thorns | armor | 15 | false | 1 | label]
     fields: ac | dexBonus (true/false) | maxDex (number or null) | label (optional)
+    NOTE: only the main armor piece (armor slot) gets an AC value. Everything else uses bonus stats.
     bonus stats on armor: add after label e.g. | con:1
   Magic item: [ITEM: Ring of Protection | magic | ring | ac:1 | +1 to AC]
-    fields: slot | bonuses (stat:value, comma separated e.g. ac:1,dex:2) | label
-    bonus options: ac, str, dex, con, int, wis, cha — e.g. ac:1 or dex:2 or ac:1,str:1
+    fields: slot | bonuses (stat:value, comma separated) | label
+    bonus options: ac, str, dex, con, int, wis, cha
+    e.g. ac:1 = +1 AC bonus | dex:2 = +2 Dexterity | ac:1,str:1 = +1 AC and +1 Strength
+    Rings, necklaces, cloaks, bracers etc. all use magic type with bonus stats — NOT armor type
   Consumable: [ITEM: Antitoxin Vial | consumable | cures poison]
 
 Give and equip: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
