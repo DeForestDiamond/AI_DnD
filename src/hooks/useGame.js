@@ -200,14 +200,27 @@ Custom items — always include type and stats:
     label (optional): description shown in sidebar e.g. "cursed, deals necrotic damage"
   Armor:      [ITEM: Chainmail of Thorns | armor | 15 | false | 1 | label]
     fields: ac | dexBonus (true/false) | maxDex (number or null) | label (optional)
-    NOTE: only the main armor piece (armor slot) gets an AC value. Everything else uses bonus stats.
+    NOTE: only the main chest/body armor piece uses armor type with a flat AC value.
     bonus stats on armor: add after label e.g. | con:1
   Magic item: [ITEM: Ring of Protection | magic | ring | ac:1 | +1 to AC]
     fields: slot | bonuses (stat:value, comma separated) | label
     bonus options: ac, str, dex, con, int, wis, cha
     e.g. ac:1 = +1 AC bonus | dex:2 = +2 Dexterity | ac:1,str:1 = +1 AC and +1 Strength
-    Rings, necklaces, cloaks, bracers etc. all use magic type with bonus stats — NOT armor type
+    WEARABLES — these are ALL magic type with bonus stats, never armor type:
+      Boots/Greaves (feet):    [ITEM: Serpent-Drake Greaves | magic | feet | ac:2 | +2 AC]
+      Gloves/Bracers (hands):  [ITEM: Dragonsteel Bracers | magic | hands | ac:1,str:1 | +1 AC +1 Str]
+      Cloak (cloak):           [ITEM: Cloak of Protection | magic | cloak | ac:1 | +1 AC]
+      Helmet (head):           [ITEM: Helm of Clarity | magic | head | int:1 | +1 Intelligence]
+      Necklace (neck):         [ITEM: Amulet of Health | magic | neck | con:2 | +2 Constitution]
+      Ring (ring1 or ring2):   [ITEM: Ring of Protection | magic | ring1 | ac:1 | +1 AC]
   Consumable: [ITEM: Antitoxin Vial | consumable | cures poison]
+
+Quest items — use regular [ITEM:] with a descriptive name so they sort correctly:
+  [ITEM: Sealed Letter]  [ITEM: Ancient Key]  [ITEM: Evidence Ledger]
+  When a quest item changes state, transform it with UPDATE:
+  [UPDATE: Sealed Letter | Opened Letter]
+  [UPDATE: Broken Amulet | Restored Amulet]
+  Always use UPDATE when a quest item is used, opened, decoded, or changed — never REMOVE then re-add.
 
 Give and equip: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
 Quantities: [ITEM: Blast Powder | qty:3] — NEVER bake quantity into the item name
