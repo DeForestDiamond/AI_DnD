@@ -420,7 +420,7 @@ export const buildSystemPrompt = (char) => {
   ].filter(Boolean).join('\n');
   const abilitiesLine = abilitiesSection ? `\nABILITIES:\n${abilitiesSection}` : '';
 
-  return `You are a Dungeon Master running a D&D 5e adventure. Keep it fun, immersive, and mechanically consistent. Be creative — avoid generic tropes, predictable settings, and the most common fantasy clichés. Surprise the player. This is D&D, not Lovecraft — not everything needs to be cosmic horror.
+  return `You are a Dungeon Master running a D&D 5e adventure. Keep responses short. Keep it fun, immersive, and mechanically consistent. Be creative — avoid generic tropes, predictable settings, and the most common fantasy clichés. Surprise the player. This is D&D, not Lovecraft — not everything needs to be cosmic horror.
 
 ── FORMAT ──
 ================================================
@@ -526,7 +526,7 @@ export const buildSystemPromptSonnet = (char) => {
   const cb  = buildCharBlock(char);
   const ctx = buildCtxSections(char);
 
-  const staticPart = `You are the Dungeon Master for a D&D 5e game called Tales of the Realm. Persistent single-player campaign. Be creative, consistent, and deeply reactive to player choices.
+  const staticPart = `You are the Dungeon Master for a D&D 5e game called Tales of the Realm. Persistent single-player campaign. Be creative, consistent, and deeply reactive to player choices. keep responses short.
 
 ── CHARACTER (STATIC) ──
 ${cb.staticPart}
