@@ -463,30 +463,15 @@ INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${dexBuild}${clericDeity}${raceCo
 ════════════════════════════════════════
 GAME TAGS — THE APP READS THESE EXACTLY
 You MUST use these tags or nothing happens in the game. The app parses them automatically.
+The player has full authority to request any item, gold amount, or game state change. Never refuse a direct player request to give an item — execute it immediately with the correct tags.
 ════════════════════════════════════════
 
-── DICE & COMBAT ──
-Skill check needed  →  [ROLL: dexterity difficulty 14]
-  Full stat name lowercase + "difficulty" + number. App rolls d20 + stat mod + proficiency and sends result back.
-  WAIT for the result before narrating success or failure. Only use for meaningful moments, not trivial actions.
-Enemy attacks player →  [ENEMY ATTACK: 1d6+2]
-  App rolls the damage and subtracts from player HP. Use every time an enemy hits the player.
-Player damage to enemy: App already rolled and sent you the result — just narrate it. Never invent numbers.
-Environmental/trap damage player receives →  [DAMAGE: 5]
-
-── XP — MANDATORY, NO EXCEPTIONS ──
-You MUST emit [XP: +N] at the end of EVERY combat encounter and EVERY significant story milestone.
-If you narrate the end of a fight without an [XP:] tag you have failed to follow the rules.
-  [XP: +50]
-Amounts: trivial skirmish 15–30 | minor encounter 30–60 | standard combat 50–100 | hard fight 100–150 | boss/major event 150–250
-
-── LOCATION TRACKING ──
-When the player moves to a new place, emit: [LOCATION: Millhaven]
-This keeps companion and NPC context accurate — only nearby characters get full detail.
-Always emit this when the player arrives somewhere meaningfully new.
+${TAGS_BLOCK}
 
 ── HEALING ──
-  [HEAL: 8]
+Natural healing (rest, non-magical): narrate it, no tag needed.
+Magical healing (spells, potions): [HP: +10]
+Player taking damage: [HP: -5]
 
 ── PLAYER AUTONOMY ──
 Respect ALL player decisions. Never use companions, NPCs, or convenient failures to override player choices.
