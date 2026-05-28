@@ -57,6 +57,7 @@ export default function App() {
   const [showDebug, setShowDebug] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(true);
+  const [showRawTags, setShowRawTags] = useState(false);
   const [showAbilitiesModal, setShowAbilitiesModal] = useState(false);
   const [showDeityModal, setShowDeityModal] = useState(false);
   const [deityModalContext, setDeityModalContext] = useState('multiclass');
@@ -918,23 +919,6 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         </div>
       )}
 
-      {/* Debug overlay */}
-      <div style={{position:'fixed',bottom:0,left:0,zIndex:999}}>
-        <button onClick={()=>setShowDebug(v=>!v)} style={{background:'#1a0f05',border:'1px solid #3a2a10',color:'#4a3a20',fontSize:9,padding:'3px 6px',cursor:'pointer',fontFamily:'monospace'}}>
-          🐛 debug
-        </button>
-        {showDebug && (
-          <div style={{position:'fixed',bottom:30,left:0,width:360,height:300,background:'rgba(0,0,0,0.95)',border:'1px solid #3a2a10',overflowY:'auto',padding:8,fontFamily:'monospace',fontSize:9,color:'#7fc97f'}}>
-            <div style={{color:'#c9a84c',marginBottom:4,display:'flex',justifyContent:'space-between'}}>
-              <span>DEBUG LOG</span>
-              <span>char: lv{character.level} xp:{character.xp} pending:{String(pendingStatPoint)}</span>
-            </div>
-            {debugLog.map((entry, i) => <div key={i} style={{borderBottom:'1px solid #1a1208',paddingBottom:2,marginBottom:2,wordBreak:'break-all'}}>{entry}</div>)}
-            {debugLog.length === 0 && <div style={{color:'#4a3a20'}}>no logs yet</div>}
-          </div>
-        )}
-      </div>
-
       {/* Sidebar — hidden on mobile when closed */}
       {(!isMobile || sidebarOpen) && (
         <div style={{position: isMobile ? 'fixed' : 'relative', zIndex: isMobile ? 50 : 'auto', top:0, left:0, height:'100vh'}}>
@@ -965,21 +949,47 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         {/* Header */}
         <div style={{background:'rgba(10,7,3,0.9)',borderBottom:`1px solid ${colors.border}`,padding:'10px 16px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
-            {/* Sidebar toggle button */}
             <button onClick={()=>setSidebarOpen(v=>!v)}
               style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textFaint,padding:'4px 8px',fontSize:14,borderRadius:3,cursor:'pointer'}}>
               {sidebarOpen && !isMobile ? '◀' : '▶'}
             </button>
             <span style={{fontFamily:fonts.display,fontSize:13,color:colors.gold,letterSpacing:2}}>🐉 TALES OF THE REALM</span>
           </div>
-          {storySummary && (
-            <button onClick={()=>setSummaryOpen(v=>!v)}
-              style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textFaint,padding:'4px 8px',fontSize:14,borderRadius:3,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
-              <span style={{fontSize:10,fontFamily:fonts.display,letterSpacing:1,color:colors.gold}}>📜</span>
-              {summaryOpen ? '▲' : '▼'}
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            {/* Tag toggle */}
+            <button onClick={()=>setShowRawTags(v=>!v)}
+              style={{background:showRawTags?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${showRawTags?colors.gold:colors.borderDim}`,color:showRawTags?colors.gold:colors.textFaint,padding:'4px 8px',fontSize:10,borderRadius:3,cursor:'pointer',fontFamily:fonts.display,letterSpacing:1}}>
+              🏷️
             </button>
-          )}
+            {/* Debug toggle */}
+            <button onClick={()=>setShowDebug(v=>!v)}
+              style={{background:showDebug?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${showDebug?colors.gold:colors.borderDim}`,color:showDebug?colors.gold:colors.textFaint,padding:'4px 8px',fontSize:10,borderRadius:3,cursor:'pointer',fontFamily:fonts.display,letterSpacing:1}}>
+              🐛
+            </button>
+            {/* Story log toggle */}
+            {storySummary && (
+              <button onClick={()=>setSummaryOpen(v=>!v)}
+                style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textFaint,padding:'4px 8px',fontSize:14,borderRadius:3,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
+                <span style={{fontSize:10,fontFamily:fonts.display,letterSpacing:1,color:colors.gold}}>📜</span>
+                {summaryOpen ? '▲' : '▼'}
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Debug panel — drops down like story log */}
+        {showDebug && (
+          <div style={{background:'rgba(0,0,0,0.95)',borderBottom:`1px solid #3a2a10`,padding:'7px 16px',flexShrink:0,maxHeight:200,overflowY:'auto'}}>
+            <div style={{fontFamily:'monospace',fontSize:9,color:'#7fc97f'}}>
+              <div style={{color:'#c9a84c',marginBottom:4,display:'flex',justifyContent:'space-between'}}>
+                <span style={{fontFamily:fonts.display,fontSize:10,letterSpacing:2}}>DEBUG LOG</span>
+                <span>char: lv{character.level} xp:{character.xp} pending:{String(pendingStatPoint)}</span>
+              </div>
+              {debugLog.map((entry, i) => <div key={i} style={{borderBottom:'1px solid #1a1208',paddingBottom:2,marginBottom:2,wordBreak:'break-all'}}>{entry}</div>)}
+              {debugLog.length === 0 && <div style={{color:'#4a3a20'}}>no logs yet</div>}
+            </div>
+          </div>
+        )}
 
         {storySummary && summaryOpen && (
           <div style={{background:'rgba(30,20,5,0.85)',borderBottom:`1px solid ${colors.borderDim}`,padding:'7px 16px',display:'flex',alignItems:'flex-start',gap:8,flexShrink:0,maxHeight:160,overflowY:'auto'}}>
@@ -1015,6 +1025,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
           onEditMessage={handleEditMessage}
           onRegenerate={handleRegenerate}
           editableFromId={fullLog[lastSummarizedAt.current]?.id ?? fullLog[0]?.id}
+          showRawTags={showRawTags}
         />
 
         <InputBar

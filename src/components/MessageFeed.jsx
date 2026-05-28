@@ -51,11 +51,10 @@ const staticBtn = (label, onClick, dim = false) => (
   >{label}</button>
 );
 
-export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, onRegenerate, editableFromId }) {
+export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, onRegenerate, editableFromId, showRawTags }) {
   const endRef = useRef(null);
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
-  const [showRaw, setShowRaw] = useState(false);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
 
@@ -83,19 +82,6 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
 
   return (
     <div style={{flex:1,overflowY:'auto',padding:'20px 18px',display:'flex',flexDirection:'column',gap:16}}>
-
-      {/* Raw tag toggle */}
-      <div style={{display:'flex',justifyContent:'flex-end'}}>
-        <button onClick={() => setShowRaw(v => !v)} style={{
-          background: showRaw ? 'rgba(201,168,76,0.15)' : 'transparent',
-          border: `1px solid ${showRaw ? colors.gold : colors.borderDim}`,
-          color: showRaw ? colors.gold : colors.textDead,
-          fontSize: 9, padding: '2px 8px', borderRadius: 3, cursor: 'pointer',
-          fontFamily: fonts.display, letterSpacing: 1,
-        }}>
-          {showRaw ? '🏷️ TAGS ON' : '🏷️ TAGS OFF'}
-        </button>
-      </div>
 
       {messages.length === 0 && loading && (
         <div style={{textAlign:'center',color:colors.textDead,fontFamily:fonts.display,fontSize:12,letterSpacing:2,paddingTop:40}}>
@@ -138,7 +124,7 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
                   </div>
                 ) : (
                   <div style={{fontSize:14,lineHeight:1.9,color:msg.role==='dm'?colors.textDim:colors.textMuted,whiteSpace:'pre-wrap'}}>
-                    {showRaw ? msg.text : cleanDisplayText(msg.text)}
+                  {showRawTags ? msg.text : cleanDisplayText(msg.text)}
                   </div>
                 )}
                 {msg.role === 'dm' && <DiceRollDisplay roll={msg.roll}/>}
