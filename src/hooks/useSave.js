@@ -103,24 +103,9 @@ export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoad
     }
   };
 
-  // ── History compression ──────────────────────────────────────────────────────
-  const compressHistory = async (messages, char, callDM, buildSystemPrompt) => {
-    if (messages.length < 20) return null; // not worth compressing yet
-    const history = messages.map(m => ({
-      role: m.role === 'dm' ? 'assistant' : 'user',
-      content: m.text.substring(0, 500), // truncate each message for summary
-    }));
-    const summary = await callDM([
-      ...history,
-      { role: 'user', content: 'Please write a detailed 3-4 paragraph summary of everything that has happened in this adventure so far. Include: key events, NPCs met, locations visited, items found, gold earned, contracts made, and the current situation. This will replace the full history to save space.' }
-    ], buildSystemPrompt(char));
-    return [{ role: 'dm', text: `[SESSION SUMMARY]\n${summary}`, id: Date.now(), roll: null }];
-  };
-
   return {
     generateFullSave, generateCharExport,
     loadFromFile, loadFromCode, loadFromState,
     autoSave, loadAutoSave, hasAutoSave, clearAutoSave,
-    compressHistory,
   };
 }

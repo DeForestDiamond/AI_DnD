@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { animations, colors, fonts, btn, panel, cardStyle } from './styles/theme.js';
 import { CLASSES, RACES, STAT_NAMES, STAT_DESC } from './constants/classes.js';
 import { DEITIES } from './constants/deities.js';
-import { SLOTS, allItems as allItemsHelper } from './constants/items.js';
+import { SLOTS } from './constants/items.js';
 import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
@@ -350,6 +350,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       log(`[SUMMARY] Skipping — ${allMessages.length} msgs, next threshold: ${nextThreshold}`);
       return;
     }
+    const prevSummarizedAt = lastSummarizedAt.current;
     lastSummarizedAt.current = allMessages.length;
     log(`[SUMMARY] Firing — ${allMessages.length} msgs`);
 
@@ -383,10 +384,10 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         }),
       });
 
-      if (!res.ok) return;
+      if (!res.ok) { lastSummarizedAt.current = prevSummarizedAt; return; }
       const data = await res.json();
       const newEntry = data.content?.[0]?.text || '';
-      if (!newEntry) return;
+      if (!newEntry) { lastSummarizedAt.current = prevSummarizedAt; return; }
 
       // Step 2 — append new entry
       const newId = Date.now();
@@ -421,6 +422,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       log(`[SUMMARY] Done — ${finalChunks.length} archived chunks, ${finalEntries.length} raw entries`);
 
     } catch (e) {
+      lastSummarizedAt.current = prevSummarizedAt;
       log('[SUMMARY] Failed: ' + e.message);
     }
   };

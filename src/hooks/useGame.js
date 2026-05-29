@@ -150,7 +150,7 @@ const buildCtxSections = (char) => {
       if (here||!data.location) lines.push(`- ${name} [NEARBY]: ${data.desc||''} | Relationship: ${data.relationship||'neutral'}${data.notes?` | ${data.notes}`:''}`);
       else lines.push(`- ${name} (${data.location}): ${data.relationship||'neutral'}`);
     });
-    npcSection = '\nKNOWN NPCs:\n'+lines.join('\n')+'\n';
+    npcSection = '\nKNOWN NPCs:\n'+lines.join('\n')+'\nNPC RULES: Never use NPCs as plot hooks or to drive the story. Do not assume any person, rumour, or event is connected to a known NPC unless the player explicitly names them.\n';
   }
 
   // Towns
@@ -163,7 +163,7 @@ const buildCtxSections = (char) => {
       if (!data||typeof data!=='object') return;
       const isCurrent = loc && (townName.toLowerCase().includes(loc.toLowerCase())||loc.toLowerCase().includes(townName.toLowerCase()));
       if (isCurrent) {
-        const locLines = data.locations ? Object.entries(data.locations).map(([k,v])=>`  · ${k}: ${v}`).join('\n') : '';
+        const locLines = data.notable_locations ? Object.entries(data.notable_locations).map(([k,v])=>`  · ${k}: ${v}`).join('\n') : '';
         const resLines = data.minor_residents ? Object.entries(data.minor_residents).map(([k,v])=>`  · ${k}: ${v}`).join('\n') : '';
         current.push([`TOWN — ${townName} [CURRENT]:`,data.desc||'',locLines?`Locations:\n${locLines}`:'',resLines?`Residents:\n${resLines}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join('\n'));
       } else {
@@ -234,7 +234,6 @@ CRITICAL: Mentioning an item in prose does NOT add it to inventory. Only [ITEM:]
 
 // ── System Prompt — Haiku ──────────────────────────────────────────────────────
 export const buildSystemPrompt = (char) => {
-  const cb = buildCharBlock(char);
   const ctx = buildCtxSections(char);
 
   // Local variables still needed for Haiku's inline prompt template
@@ -295,121 +294,13 @@ export const buildSystemPrompt = (char) => {
   const sneakDice   = rogueLevels > 0 ? (['1d6','1d6','2d6','2d6','3d6'][Math.min(rogueLevels-1,4)]) : null;
   const sneakLine   = sneakDice ? `\n- SNEAK ATTACK: ${sneakDice} bonus damage when attacking from hiding, shadows, or with advantage. Apply automatically when player attacks stealthily.` : '';
 
-  // Bio — persistent character description, never compressed
-  const bioSection = char.bio ? `\nCHARACTER BIOGRAPHY (permanent, read carefully):\n${char.bio}\n` : '';
-
-  // ── Tiered Context System ──────────────────────────────────────────────────
-  // Companions present at current location get full detail.
-  // Companions elsewhere get a one-line summary only.
-  // This prevents massive dragon bios flooding every prompt.
-  const currentLocation = char.currentLocation || '';
-
-  const buildCompanionSection = () => {
-    if (!char.companions || Object.keys(char.companions).length === 0) return '';
-    const present = [];
-    const distant = [];
-    Object.entries(char.companions).forEach(([name, data]) => {
-      const loc = (data.location || data.status || '').toLowerCase();
-      const here = currentLocation
-        ? loc.includes(currentLocation.toLowerCase()) || currentLocation.toLowerCase().includes(loc)
-        : false;
-
-      // Build a description that handles both formats:
-      // Vael format: { desc, relationship, location, notes }
-      // Sylran format: { trueName, race, age, role, status, appearance, personality, abilities[] }
-      const desc = data.desc
-        || [
-            data.trueName ? `True name: ${data.trueName}` : '',
-            data.race ? `Race: ${data.race}` : '',
-            data.role ? `Role: ${data.role}` : '',
-            data.appearance ? `Appearance: ${data.appearance}` : '',
-            data.personality ? `Personality: ${data.personality}` : '',
-            data.status ? `Status: ${data.status}` : '',
-          ].filter(Boolean).join(' | ')
-        || '';
-
-      const abilitiesStr = data.abilities
-        ? Array.isArray(data.abilities)
-          ? data.abilities.join(', ')
-          : data.abilities
-        : '';
-
-      if (here || !data.location) {
-        present.push(`- ${name} [PRESENT]: ${desc}${abilitiesStr ? ' | Abilities: ' + abilitiesStr : ''}${data.notes ? ' | ' + data.notes : ''}`);
-      } else {
-        distant.push(`- ${name} (at ${data.location}): ${data.relationship || data.role || data.notes || 'ally'}`);
-      }
-    });
-    const parts = [];
-    if (present.length) parts.push('COMPANIONS (present):\n' + present.join('\n'));
-    if (distant.length) parts.push('COMPANIONS (elsewhere — brief):\n' + distant.join('\n'));
-    return parts.length ? '\n' + parts.join('\n') + '\n' : '';
-  };
-
-  const buildNpcSection = () => {
-    if (!char.npcs || Object.keys(char.npcs).length === 0) return '';
-    const present = [];
-    const distant = [];
-    Object.entries(char.npcs).forEach(([name, data]) => {
-      const loc = (data.location || '').toLowerCase();
-      const here = currentLocation
-        ? loc.includes(currentLocation.toLowerCase()) || currentLocation.toLowerCase().includes(loc)
-        : false;
-      if (here) {
-        // Full NPC detail for locally relevant characters
-        present.push(`- ${name} [NEARBY] (${data.location || '?'}): ${data.relationship || ''} — ${data.desc || ''}`);
-      } else {
-        // Distant NPCs: name + relationship only, no long desc
-        distant.push(`- ${name} (${data.location || '?'}): ${data.relationship || 'known'}`);
-      }
-    });
-    const parts = [];
-    if (present.length) parts.push('KEY NPCs (nearby):\n' + present.join('\n'));
-    if (distant.length) parts.push('KEY NPCs (elsewhere):\n' + distant.join('\n'));
-    if (parts.length) parts.push('NPC RULES: Never use NPCs as plot hooks or to drive the story. Do not assume any person, rumour, or event is connected to a known NPC unless the player explicitly names them.');
-    return parts.length ? '\n' + parts.join('\n') + '\n' : '';
-  };
-
-  const companionSection = buildCompanionSection();
-  const npcSection = buildNpcSection();
-
-  // ── Towns Section ──────────────────────────────────────────────────────────
-  // Current town gets full detail. Other towns get compressed summary.
-  // Minor residents live here instead of polluting the NPC list.
-  const buildTownsSection = () => {
-    if (!char.towns || Object.keys(char.towns).length === 0) return '';
-    const current = [];
-    const other   = [];
-    Object.entries(char.towns).forEach(([townName, data]) => {
-      const isHere = currentLocation
-        ? currentLocation.toLowerCase().includes(townName.toLowerCase()) || townName.toLowerCase().includes(currentLocation.toLowerCase())
-        : false;
-      if (isHere) {
-        const locLines = data.notable_locations
-          ? Object.entries(data.notable_locations).map(([k,v]) => `  · ${k}: ${v}`).join('\n')
-          : '';
-        const resLines = data.minor_residents
-          ? Object.entries(data.minor_residents).map(([k,v]) => `  · ${k}: ${v}`).join('\n')
-          : '';
-        const statusLine = data.status ? `  Status: ${data.status}` : '';
-        current.push([
-          `TOWN — ${townName} [CURRENT LOCATION]:`,
-          data.desc || '',
-          locLines  ? `Notable locations:\n${locLines}` : '',
-          resLines  ? `Residents (minor):\n${resLines}` : '',
-          statusLine,
-        ].filter(Boolean).join('\n'));
-      } else {
-        other.push(`- ${townName}: ${data.desc || ''} | Status: ${data.status || 'unknown'}`);
-      }
-    });
-    const parts = [];
-    if (current.length) parts.push(current.join('\n\n'));
-    if (other.length)   parts.push('OTHER KNOWN TOWNS (brief):\n' + other.join('\n'));
-    return parts.length ? '\n' + parts.join('\n') + '\n' : '';
-  };
-
-  const townsSection = buildTownsSection();
+  // Bio + tiered context (companions / NPCs / towns) come from the SHARED
+  // helpers so Haiku and Sonnet always see identical context. The only
+  // intended difference between the two models is the directives section.
+  const bioSection       = ctx.bio;
+  const companionSection = ctx.companionSection;
+  const npcSection       = ctx.npcSection;
+  const townsSection     = ctx.townsSection;
 
   // Abilities — spells, cantrips, infusions
   const abilities = char.abilities || { cantrips:[], spells:[], infusions:[] };
