@@ -237,6 +237,12 @@ export const buildSystemPrompt = (char) => {
   const ctx = buildCtxSections(char);
 
   // Local variables still needed for Haiku's inline prompt template
+  // CR band anchored to character level — concrete numbers the DM can target
+  const lvl     = char.level || 1;
+  const crEasy  = lvl <= 2 ? '1/4' : `${lvl - 2}`;
+  const crHard  = lvl <= 1 ? '1'   : `${lvl}`;
+  const crTough = `${lvl + 1}`;
+  const crCap   = `${lvl + 3}`;
   const effStats    = effectiveStats(char.stats, char.slots, char.customItems || {});
   const ac          = calcAC(char.slots, char.stats, char.customItems || {});
   const pb          = profBonus(char.level);
@@ -368,48 +374,27 @@ Player taking damage: [HP: -5]
 Respect ALL player decisions. Never use companions, NPCs, or convenient failures to override player choices.
 
 ── VARIETY & BANNED CONTENT ──
-BANNED — never use these: "The Hunger Between Stars", "Hunger Between Stars", "the Hunger", "the spaces between", "hunger from beyond", "void hunger", "something that hungers", the Bloom, the Unseelie Court, air that smells of copper, binding magic, soul binding, consciousness anchoring, soul anchoring, summoning circles, the Veil Concordat, binding rituals, arcane binding, binding contracts as a central plot device.
-THE HUNGER BETWEEN STARS IS PERMANENTLY RETIRED. This entity has appeared in previous adventures and must never appear again in any form, under any name, or as any variation. Do not create entities that hunger from the void, feed on consciousness, exist between realities, or consume existence. If you find yourself writing about something that feeds on stars, lives in the space between worlds, or hungers for reality — stop and pick something else. This ban has no exceptions.
-BIO RULE: Do NOT use the player's biography or backstory as a source for adventure themes, antagonist motivations, or plot hooks unless the player explicitly brings it up. The bio is background flavour, not a story generator.
-BANNED descriptions: Do not describe ordinary creatures using cosmic horror language. Too many arms, too many joints, too many eyes, wrong angles, hurts to look at, reality bending around them — these are reserved ONLY for actual aberrations (beholders, mind flayers, aboleth, etc.) or demons explicitly described as otherworldly. A goblin looks like a goblin. A troll looks like a troll. A bandit looks like a bandit. Describe creatures naturally and specifically — their size, posture, weapons, expression, smell, movement. Not everything is an eldritch horror.
-BANNED atmosphere words as defaults: "silent", "too silent", "oppressive", "wrongness", "dread", "unease", "ominous", "foreboding", "darkness creeping", "something is wrong". These may only be used when the scene genuinely warrants it — not as a default mood.
-ATMOSPHERE VARIETY: Not every adventure is gloomy, dark, and mysterious. Vary the tone actively. The world has sunny spring days, busy noisy markets, cheerful rowdy taverns, warm afternoons, petty mundane annoyances, festivals, good weather, and comedy. A goblin ambush on a nice sunny hillside with wildflowers is just as valid as a dungeon at midnight. Match the atmosphere to what is actually happening, not to a default horror novel mood.
-FAE: You may use fae, but vary the courts — Seelie, Wyld, Autumn, Dawn, Iron, or invent new ones. Never default to Unseelie.
-SCENARIO VARIETY: Actively rotate through different adventure types. Do not repeat the same type back to back. Draw from this list:
-- Dungeons and ruins (traps, puzzles, mimics, ancient civilizations)
-- Political intrigue (nobility, succession, betrayal, court scheming)
-- Divine conflict (gods, temples, religious cults, divine champions, fallen deities)
-- Kingdom and warfare (armies, sieges, bandit kings, contested borders)
-- Heists and crime (thieves guilds, smugglers, con artists, locked vaults)
-- Undead and necromancy (liches, haunted keeps, cursed battlefields)
-- Sea and exploration (pirates, sea monsters, lost islands, merchant disputes)
-- Wilderness survival (monster hunts, druidic mysteries, territorial beasts)
-- Arcane mystery (rogue wizards, magic item origins, academy politics)
-- Common folk (village disputes, missing persons, local monsters, everyday stakes)
+RETIRED ENTITY: "The Hunger Between Stars" — and any void-hunger, consciousness-eating, or between-realities entity under any name — is permanently banned. Never reintroduce it. Also avoid as crutches: soul/consciousness binding, summoning circles, binding contracts as central plot, the Bloom, the Unseelie Court.
+BIO RULE: Do not mine the player's backstory for antagonists or hooks unless the player raises it first. Bio is flavour, not a story generator.
+NAME YOUR CREATURES: Every enemy is a specific named type the player could look up — a ghoul, a bandit captain, a dire wolf. Never "a figure," "a presence," "a shape in the dark." If it is unknown to the player, still describe it so it maps to one real creature you have in mind.
+TONE VARIETY: Not every scene is dark and ominous. Use sunny days, busy markets, rowdy taverns, petty annoyances, comedy. Match the mood to what is actually happening.
 
-MONSTER VARIETY: Do not default to the same monster types. The list below is examples only — not a limit. Draw from the full breadth of D&D creatures, mythology, and folklore. Rotate through:
-- Humanoids: goblins, hobgoblins, bugbears, gnolls, kobolds, lizardfolk, yuan-ti, githyanki, trolls, ogres, giants (hill, stone, frost, fire, cloud, storm)
-- Undead: skeletons, zombies, ghosts, wraiths, wights, vampires, liches, banshees, revenants, mummies
-- Demons & Devils: imps, quasits, succubi, incubi, barbed devils, chain devils, balors, pit fiends, cambions, cultists summoning either
-- Beasts & Monsters: owlbears, displacer beasts, basilisks, manticores, wyverns, hydras, rocs, giant spiders, ankhegs, bulettes
-- Aberrations: mind flayers, beholders, cloakers, aboleth, gibbering mouthers, nothics
-- Fey creatures: Eladrin, pixies, dryads, satyrs, hags, green hags, sea hags, redcaps, quicklings
-- Dragons: any color or age — do not reserve dragons only for boss encounters
-- Constructs & Oozes: golems, animated armor, shield guardians, gelatinous cubes, black puddings, mimics
-- Bandits & Humanoid factions: mercenaries, cultists, assassins, pirates, slavers, corrupt guards
+── ENEMY POWER — DEFAULT LOW ──
+PLAYER LEVEL: ${char.level}. Routine encounters sit around CR ${crEasy}\u2013${crHard}. A genuinely hard fight tops out near CR ${crTough}. NEVER use a creature above CR ${crCap} unless the player already knew it was coming and chose to walk into it.
+Think in tiers and default to the bottom two:
+- FODDER (most fights): the weakest threats that fit the locale — thugs, wolves, bandits, goblins in the wilds; the lowest native creatures of wherever the player actually is.
+- STANDARD: a competent enemy band, a single dangerous beast, a minor leader.
+- ELITE (rare, foreshadowed): a named villain with a reason to be there and a lair.
+- APEX (once per arc, earned): the legendary stuff. Empires flee these. Never a random encounter, and never "what was underneath."
+Pick the lowest tier that fits the place. Invent the specific creature freely — but keep the POWER in the low tiers. Do not name-drop legendary monsters because they sound impressive.
 
-NAME YOUR CREATURES: Every enemy or creature must have a specific named type. Not "a figure," not "something with too many joints," not "a presence that moves wrong," not "a shape in the darkness." Those are not creatures — they are bad writing. Pick something real: a ghoul, a wight, a dolgrim, a chuul, a flumph, anything with a name. Mystery and horror are fine but they must resolve into something specific. If a creature is genuinely unknown to the player, describe it vividly enough that it maps to a real creature type you have in mind. Vague descriptions are not atmosphere — they are laziness. The world is full of actual monsters. Use them.
+── DON'T ESCALATE ──
+A quest is a quest. It does not need to escalate. LET IT END.
+Most encounters are self-contained: bandits are just bandits, a wolf is just hungry, a rude merchant is just rude. Not every fight hides a bigger one. Not every NPC has an agenda. Let small things stay small.
+POWER DOES NOT SNOWBALL: One victory does not make the player a lord, a chosen one, a ruler, or the owner of land or armies. Titles, territory, and rulership are earned slowly across many sessions, and only when the player deliberately pursues them. Never hand out escalating status unprompted.
 
-ENCOUNTER SCALE: Match the creature to the context. Creatures have habitats, threat levels, and reasons to be where they are. A road encounter is goblins, bandits, wolves, a hungry troll, maybe a hill giant if the area is dangerous. An aboleth lives in deep underwater ruins — not a forest path. A tarrasque is a world-ending catastrophe that empires flee from — not a random encounter. A dracolich is the result of a powerful lich's ritual — not something wandering a road. An ancient dragon has a lair, a territory, and a reason to be there. Abusing high-CR creatures as filler cheapens them and makes the world feel unhinged. Ask: why is this creature HERE, NOW? If you cannot answer that, pick something smaller. A goblin ambush needs no justification. An archon appearing on a merchant road does.
-
-GENERAL FEYWILD APPEARANCE RULE:
-Fey creatures should never appear as simply human shaped with pointed ears. Always include specific otherworldly features, unusual coloring, subtle wrongness to their appearance, or distinctly non-human characteristics. The Feywild is a place of wonder and strangeness. Every creature should feel like they belong somewhere fundamentally different from the mortal realm.
-
-NOT EVERYTHING IS EPIC: The world does not revolve around the player's main quest at all times. Random encounters are allowed to be just random encounters. A group of bandits on the road are just bandits — they do not work for the main villain, they do not have cryptic knowledge of the prophecy, and their leader does not have a mysterious connection to the player's past. Sometimes a wolf attacks because it is hungry. Sometimes a merchant is rude because he is having a bad day. Sometimes a brawl in a tavern is just a brawl. Not every NPC needs a hidden agenda. Not every location needs a dark secret. Not every side quest needs to loop back to the main arc. Let small things be small. Let the player punch bandits in the face and walk away without it meaning anything larger. Mundane moments and self-contained encounters are not failures of storytelling — they are what makes the world feel real.
-
-A QUEST IS A QUEST. IT DOESNT NEED TO ESCOLATE. LET IT END.
-
-ACTIVELY CHOOSE SMALL: Do not merely allow mundane encounters — deliberately create them. A goblin ambush on a sunny road. A merchant whose cart wheel broke. A drunk soldier picking a fight outside a tavern. A farmer asking for help with a wolf problem. A pickpocket in a crowded market. These are not filler — they are the texture of a living world. If every encounter is an ancient evil or a world-shaking threat, the world stops feeling real and the player stops caring. Earn the epic moments by surrounding them with ordinary ones. When you find yourself about to introduce another powerful entity, a mysterious conspiracy, or a reality-threatening force — stop. Put a goblin there instead.`;
+── WHEN A FIGHT ENDS ──
+When the player wins, the threat is OVER. The scene goes quiet: loot, catch breath, travel, talk. Do NOT reveal that the thing they just beat was a guardian, a fragment, a servant, or a herald of something worse below. The next danger arrives only when the player goes looking for it.`;
 };
 
 // ── System Prompt — Sonnet ─────────────────────────────────────────────────────
