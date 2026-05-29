@@ -253,10 +253,17 @@ export function useCharacter() {
     });
 
     // HP -- [DAMAGE:] = player takes damage, [HEAL:] = player heals
+    // Also supports [HP: +10] for healing and [HP: -5] for damage
     const dmgM  = text.match(/\[DAMAGE:\s*(\d+)\]/i);
     if (dmgM)  c.hp = Math.max(0, c.hp - parseInt(dmgM[1]));
     const healM = text.match(/\[HEAL:\s*(\d+)\]/i);
     if (healM) c.hp = Math.min(c.maxHp, c.hp + parseInt(healM[1]));
+    // [HP: +10] or [HP: -5] — sign determines heal vs damage
+    [...text.matchAll(/\[HP:\s*([+-]?\d+)\]/gi)].forEach(m => {
+      const val = parseInt(m[1]);
+      if (val > 0) c.hp = Math.min(c.maxHp, c.hp + val);
+      else if (val < 0) c.hp = Math.max(0, c.hp + val); // val is already negative
+    });
 
     // XP -- accept [XP: +50] or [XP: 50]
     [...text.matchAll(/\[XP:\s*\+?(\d+)\]/gi)].forEach(m => { c.xp = (c.xp||0) + parseInt(m[1]); });
