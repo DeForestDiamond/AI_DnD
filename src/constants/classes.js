@@ -11,6 +11,8 @@ export const CLASSES = [
   { name:'Barbarian',   emoji:'🪓',  desc:'Savage warrior who enters a primal Rage. Massive HP, brutal STR damage, and damage resistance while raging. Nearly impossible to kill.',                       stats:{str:17,dex:12,con:16,int:8, wis:10,cha:10} },
   { name:'Warlock',     emoji:'🌑',  desc:'Wielder of eldritch power granted by a dark patron. CHA-based blasts and curses. Choose a patron during creation — your power comes with a price.',            stats:{str:8, dex:13,con:12,int:12,wis:10,cha:17} },
   { name:'Blood Hunter', emoji:'🩸', desc:'Monster slayer who brands enemies with Crimson Rites, spending their own HP to imbue weapons with elemental power. CON and STR primary. Dark and relentless.', stats:{str:15,dex:12,con:16,int:10,wis:12,cha:8 } },
+  { name:'Sorcerer',    emoji:'🔥',  desc:'Innate arcane caster who channels raw magic from their bloodline. CHA-based spellcasting with Metamagic to bend spells to their will. Fragile but flexible.', stats:{str:8, dex:14,con:13,int:10,wis:11,cha:17} },
+  { name:'Druid',       emoji:'🍃',  desc:'Guardian of the natural world, wielding primal magic. WIS-based spellcasting and Wild Shape to transform into beasts.',                                       stats:{str:10,dex:14,con:14,int:10,wis:17,cha:8 } },
 ];
 
 export const RACES = [

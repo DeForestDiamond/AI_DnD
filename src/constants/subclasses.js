@@ -11,6 +11,7 @@ export const SUBCLASS_PICK_LEVEL = {
   Cleric: 1, Warlock: 1, Wizard: 2,
   Fighter: 3, Rogue: 3, Monk: 3, Barbarian: 3, Artificer: 3,
   Illrigger: 3, 'Blood Hunter': 3,
+  Sorcerer: 1, Druid: 2,
 };
 
 export const SUBCLASSES = {
@@ -735,6 +736,154 @@ export const SUBCLASSES = {
         {
           "name": "Mutagenic Mastery",
           "desc": "Drink multiple mutagens at once for combined effects."
+        }
+      ]
+    }
+  },
+  "Sorcerer": {
+    "Draconic Bloodline": {
+      "emoji": "🐉",
+      "desc": "Magic born of draconic ancestry — your blood carries a dragon's might and resilience.",
+      "features": [
+        {
+          "name": "Dragon Ancestor",
+          "desc": "Choose a dragon type; speak Draconic and gain a commanding edge with dragons."
+        },
+        {
+          "name": "Draconic Resilience",
+          "desc": "Extra hit points and a scaly toughness that sets your base armor class."
+        },
+        {
+          "name": "Elemental Affinity",
+          "desc": "Add your Charisma modifier to one damage type tied to your dragon."
+        }
+      ]
+    },
+    "Wild Magic": {
+      "emoji": "🎲",
+      "desc": "Raw, unpredictable chaos magic that surges at the edges of your spells.",
+      "features": [
+        {
+          "name": "Wild Magic Surge",
+          "desc": "Your spells can trigger random magical effects from a table of chaos."
+        },
+        {
+          "name": "Tides of Chaos",
+          "desc": "Gain advantage on a roll once per rest — at the cost of a likely surge."
+        },
+        {
+          "name": "Bend Luck",
+          "desc": "Spend sorcery points to nudge another creature's roll up or down."
+        }
+      ]
+    },
+    "Divine Soul": {
+      "emoji": "✨",
+      "desc": "A spark of divine power lets you weave both arcane and clerical magic.",
+      "features": [
+        {
+          "name": "Divine Magic",
+          "desc": "Add cleric spells to your known list, blending faith with raw sorcery."
+        },
+        {
+          "name": "Favored by the Gods",
+          "desc": "Bolster a failed save or a missed attack with a burst of divine luck."
+        },
+        {
+          "name": "Empowered Healing",
+          "desc": "Reroll dice when you or an ally restores hit points nearby."
+        }
+      ]
+    },
+    "Shadow Magic": {
+      "emoji": "🌑",
+      "desc": "Your magic wells up from the Shadowfell, the plane of darkness and death.",
+      "features": [
+        {
+          "name": "Eyes of the Dark",
+          "desc": "Gain darkvision and cast Darkness, seeing through your own gloom."
+        },
+        {
+          "name": "Strength of the Grave",
+          "desc": "When dropped to 0 hit points, a save can leave you standing at 1."
+        },
+        {
+          "name": "Hound of Ill Omen",
+          "desc": "Summon a shadow hound to hunt and hamper a chosen foe."
+        }
+      ]
+    }
+  },
+  "Druid": {
+    "Circle of the Land": {
+      "emoji": "🌳",
+      "desc": "Druids of the old faith — keepers of sacred groves and ancient lore.",
+      "features": [
+        {
+          "name": "Natural Recovery",
+          "desc": "Regain expended spell slots during a short rest."
+        },
+        {
+          "name": "Circle Spells",
+          "desc": "Gain extra always-prepared spells tied to your chosen land."
+        },
+        {
+          "name": "Land's Stride",
+          "desc": "Move through nonmagical difficult terrain and hazards unhindered."
+        }
+      ]
+    },
+    "Circle of the Moon": {
+      "emoji": "🌕",
+      "desc": "Fierce shapeshifters who become powerful beasts to guard the wilds.",
+      "features": [
+        {
+          "name": "Combat Wild Shape",
+          "desc": "Transform as a bonus action and spend spell slots to heal in beast form."
+        },
+        {
+          "name": "Circle Forms",
+          "desc": "Take the shape of far more dangerous beasts than other druids."
+        },
+        {
+          "name": "Primal Strike",
+          "desc": "Your beast-form attacks count as magical for overcoming resistance."
+        }
+      ]
+    },
+    "Circle of the Stars": {
+      "emoji": "⭐",
+      "desc": "Druids who chart the heavens and channel the power of constellations.",
+      "features": [
+        {
+          "name": "Star Map",
+          "desc": "Carry a guiding celestial chart that grants you bonus spells."
+        },
+        {
+          "name": "Starry Form",
+          "desc": "Take an Archer, Chalice, or Dragon constellation form for ranged power, healing, or focus."
+        },
+        {
+          "name": "Cosmic Omen",
+          "desc": "Read the stars each day to aid allies or hinder foes with reactions."
+        }
+      ]
+    },
+    "Circle of Spores": {
+      "emoji": "🍄",
+      "desc": "Druids who embrace decay as part of nature's cycle, commanding fungus and the risen dead.",
+      "features": [
+        {
+          "name": "Halo of Spores",
+          "desc": "A reactive aura of spores deals necrotic damage to creatures near you."
+        },
+        {
+          "name": "Symbiotic Entity",
+          "desc": "Spend Wild Shape for temporary hit points and empowered spore attacks."
+        },
+        {
+          "name": "Fungal Infestation",
+          "desc": "Raise a slain creature as a short-lived fungal zombie under your command."
         }
       ]
     }

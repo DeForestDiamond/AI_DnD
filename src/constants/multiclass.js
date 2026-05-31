@@ -156,6 +156,26 @@ export const MULTICLASS_OPTIONS = {
       5: ['Extra Attack', 'Grim Psychometry - read psychic impressions from objects'],
     },
   },
+  Sorcerer: {
+    emoji: '🔥',
+    desc: 'Innate arcane magic from your bloodline, shaped by Metamagic.',
+    hpPerLevel: 4,
+    features: {
+      1: ['Spellcasting - learn 4 cantrips and 2 first-level spells', 'Sorcerous Origin subclass'],
+      2: ['Font of Magic - Sorcery Points'],
+      3: ['Metamagic - bend spells with options like Twin and Quicken'],
+    },
+  },
+  Druid: {
+    emoji: '🍃',
+    desc: 'Primal nature magic and the power to take beast forms.',
+    hpPerLevel: 5,
+    features: {
+      1: ['Spellcasting - learn 2 cantrips and prepared spells', 'Druidic - the secret language of druids'],
+      2: ['Wild Shape - transform into beasts', 'Druid Circle subclass'],
+      3: ['Learn 2nd-level spells'],
+    },
+  },
 };
 
 // Sneak attack dice by total rogue levels
