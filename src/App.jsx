@@ -160,7 +160,7 @@ export default function App() {
   };
 
   // ── Adventure RNG seed ─────────────────────────────────────────────────────
-  const rollAdventureSeed = () => {
+  const rollAdventureSeed = (level = 1) => {
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
     const settings = [
@@ -191,13 +191,18 @@ export default function App() {
       'a heist opportunity', 'a festival goes wrong', 'a bounty posted on a dangerous target',
       'a shipment of contraband intercepted', 'a monster terrorising the area',
     ];
-    const antagonists = [
+    const lowAntagonists = [
       'a thieves guild', 'a corrupt local official', 'a gang of bandits', 'a goblin warband',
-      'a troll', 'a pack of gnolls', 'a rogue wizard', 'a smuggling ring', 'a rival adventuring party',
-      'a cult (not cosmic horror — a mundane power-hungry cult)', 'a dragon (young)',
-      'a vampire and their thralls', 'a necromancer raising the local dead', 'a pirate captain',
-      'a yuan-ti slaver operation', 'a group of hobgoblin soldiers', 'a giant causing problems',
+      'a pack of gnolls', 'a rogue hedge wizard', 'a smuggling ring', 'a rival adventuring party',
+      'a cult (not cosmic horror — a mundane power-hungry cult)', 'a pirate captain',
+      'a group of hobgoblin soldiers',
     ];
+    const higherAntagonists = [
+      'a troll', 'a young dragon', 'a vampire and their thralls', 'a necromancer raising the local dead',
+      'a yuan-ti slaver operation', 'a giant causing problems', 'a hag coven',
+    ];
+    // Bigger threats only become eligible once the party can plausibly face them.
+    const antagonists = level >= 5 ? [...lowAntagonists, ...higherAntagonists] : lowAntagonists;
     const locations = [
       'a crowded market', 'a dockside tavern', 'a crossroads inn', 'the city gates',
       'a noble\'s receiving hall', 'a back alley', 'a guildhall', 'a temple courtyard',
@@ -205,7 +210,14 @@ export default function App() {
       'a tournament grounds', 'a prison visiting room', 'a magic shop',
     ];
 
+    const scope =
+      level <= 4  ? 'LOW-LEVEL, LOCAL STORY. The stakes are small and immediate — one village, caravan, road, farm, or neighbourhood. The hook is exactly what it appears to be. The antagonist wants something ordinary (coin, territory, revenge, fear, survival). Do NOT invent ancient evils, sealed entities, prophecies, secret bloodlines, centuries-old conspiracies, chosen-one destinies, or world-ending threats. Keep the history shallow and the danger mundane.'
+      : level <= 10 ? 'REGIONAL STORY. Threats can span a town or region and involve organised factions with real plans, but nothing world-ending. Mysteries may have some depth; avoid cosmic or world-shaking stakes.'
+      : level <= 16 ? 'REALM-SHAKING STORY. Powerful factions, old secrets, and large threats are appropriate; stakes can reach across a kingdom.'
+      :               'LEGENDARY STORY. World-shaking, planar, and ancient threats suit a hero of this power.';
+
     return {
+      scope,
       setting: pick(settings),
       time: pick(times),
       weather: pick(weathers),
@@ -226,9 +238,11 @@ export default function App() {
       const system = selectedModel === 'sonnet'
         ? buildSystemPromptSonnet(char)
         : buildSystemPrompt(char);
-      const seed = rollAdventureSeed();
+      const seed = rollAdventureSeed(char.level);
       const seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
 You MUST open the adventure using ALL of the following parameters exactly as given. This is not a suggestion. Do not substitute, reinterpret, or ignore any field.
+
+STORY SCOPE (the player is level ${char.level} — match the SIZE and stakes of the story to this): ${seed.scope}
 
 SETTING: ${seed.setting}
 TIME OF DAY: ${seed.time}

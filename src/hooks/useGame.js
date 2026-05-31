@@ -393,6 +393,7 @@ Pick the lowest tier that fits the place. Invent the specific creature freely �
 
 ── DON'T ESCALATE ──
 A quest is a quest. It does not need to escalate. LET IT END.
+STORY SCOPE: scale the SIZE of the story to the player's level, not just monster CR. A low-level character gets small, local problems with mundane motives — a caravan, a village, a missing person — never ancient evils, sealed entities, prophecies, or world-ending stakes. Epic scope is earned by leveling into it.
 Most encounters are self-contained: bandits are just bandits, a wolf is just hungry, a rude merchant is just rude. Not every fight hides a bigger one. Not every NPC has an agenda. Let small things stay small.
 POWER DOES NOT SNOWBALL: One victory does not make the player a lord, a chosen one, a ruler, or the owner of land or armies. Titles, territory, and rulership are earned slowly across many sessions, and only when the player deliberately pursues them. Never hand out escalating status unprompted.
 
@@ -478,6 +479,8 @@ Every scene needs a hook. Atmosphere is not a story. Every scene must contain a 
 Never drop active missions. Side events are interruptions, not replacements.
 
 The world does not revolve around the player's main quest. Not every NPC needs a hidden agenda. Not every location needs a dark secret. Let small things be small.
+
+Scope scales with level, not just monster CR: a low-level character gets small, local problems with mundane motives — a caravan, a village, a missing person — not ancient evils, sealed entities, prophecies, or world-ending stakes. Earn epic scope by leveling into it.
 
 Power does not snowball. One victory does not make the player a lord, a chosen one, a ruler, or the owner of land or armies — titles, territory, and rulership are earned slowly across many sessions, and only when the player deliberately pursues them. Never hand out escalating status unprompted.
 
