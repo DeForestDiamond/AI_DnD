@@ -1,6 +1,7 @@
 import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod } from './useCharacter.js';
 import { ITEM_DB } from '../constants/items.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
+import { subclassPromptLines } from '../constants/subclasses.js';
 
 // Strip game tags from DM text before displaying
 export const cleanDisplayText = (text) => text.replace(/\[[^\]]+\]/g, '').trim();
@@ -98,7 +99,7 @@ const buildCharBlock = (char) => {
   ].filter(Boolean).join('\n');
 
   // Static — race, class, deity, playstyle, abilities (rarely change)
-  const staticPart = `CHARACTER: ${char.name} | ${char.race?.name} ${classDesc}${char.deity ? ` | ${hasWarlock?'Patron':'Deity'}: ${char.deity.name}` : ''}${playstyle}${deityLine}${raceCtx}${abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : ''}`;
+  const staticPart = `CHARACTER: ${char.name} | ${char.race?.name} ${classDesc}${char.deity ? ` | ${hasWarlock?'Patron':'Deity'}: ${char.deity.name}` : ''}${playstyle}${deityLine}${raceCtx}${subclassPromptLines(char)}${abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : ''}`;
 
   // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
   const dynamicPart = `CURRENT STATE:
@@ -355,7 +356,7 @@ CHARACTER: ${char.name} | ${char.race?.name} ${classDesc} | Total Level ${char.l
 STATS: STR ${effStats.str}(${modStr(effStats.str)}) DEX ${effStats.dex}(${modStr(effStats.dex)}) CON ${effStats.con}(${modStr(effStats.con)}) INT ${effStats.int}(${modStr(effStats.int)}) WIS ${effStats.wis}(${modStr(effStats.wis)}) CHA ${effStats.cha}(${modStr(effStats.cha)})
 COMBAT: Hit Points ${char.hp}/${char.maxHp} | Armor Class ${ac} | Proficiency Bonus +${pb} | Weapon: ${weaponLine}${sneakLine}${focusLine}
 EQUIPPED: ${equippedList}
-INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${dexBuild}${clericDeity}${raceContext}
+INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}
 
 ════════════════════════════════════════
 GAME TAGS — THE APP READS THESE EXACTLY

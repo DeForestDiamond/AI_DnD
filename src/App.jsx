@@ -16,6 +16,8 @@ import { MulticlassModal } from './components/modals/MulticlassModal.jsx';
 import { ItemPickerModal } from './components/modals/ItemPickerModal.jsx';
 import { AbilitiesModal } from './components/modals/AbilitiesModal.jsx';
 import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx';
+import { SubclassModal } from './components/modals/SubclassModal.jsx';
+import { owedSubclasses } from './constants/subclasses.js';
 
 function StatBar({ label, value, desc }) {
   return (
@@ -61,6 +63,8 @@ export default function App() {
   const [showAbilitiesModal, setShowAbilitiesModal] = useState(false);
   const [showDeityModal, setShowDeityModal] = useState(false);
   const [deityModalContext, setDeityModalContext] = useState('multiclass');
+  const [showSubclassModal, setShowSubclassModal] = useState(false);
+  const [subclassQueue, setSubclassQueue] = useState([]);
   const [selectedModel, setSelectedModel] = useState('sonnet'); // 'sonnet' or 'haiku' // 'multiclass' or 'oldSave'
   const [storySummary, setStorySummary] = useState('');
   const [tokenUsage, setTokenUsage]     = useState(null);
@@ -113,6 +117,13 @@ export default function App() {
         setDeityModalContext('oldSave');
         setShowDeityModal(true);
       }
+      {
+        const owedSC = owedSubclasses(char);
+        if (owedSC.length && !(char._needsDeitySelection && isClericCharacter(char))) {
+          setSubclassQueue(owedSC);
+          setShowSubclassModal(true);
+        }
+      }
       setPhase('playing');
     },
     onLoadCharacter: (char) => {
@@ -122,6 +133,13 @@ export default function App() {
       if (char._needsDeitySelection && isClericCharacter(char)) {
         setDeityModalContext('oldSave');
         setShowDeityModal(true);
+      }
+      {
+        const owedSC = owedSubclasses(char);
+        if (owedSC.length && !(char._needsDeitySelection && isClericCharacter(char))) {
+          setSubclassQueue(owedSC);
+          setShowSubclassModal(true);
+        }
       }
       setPhase('playing');
       setTimeout(() => startAdventure(char), 100);
@@ -872,6 +890,21 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         />
       )}
 
+      {showSubclassModal && subclassQueue.length > 0 && (
+        <SubclassModal
+          className={subclassQueue[0]}
+          context="oldSave"
+          remaining={subclassQueue.length - 1}
+          onSelect={(subName) => {
+            const cls = subclassQueue[0];
+            const cur = charRef.current;
+            updateChar({ ...cur, subclasses: { ...(cur.subclasses || {}), [cls]: subName } });
+            const rest = subclassQueue.slice(1);
+            setSubclassQueue(rest);
+            if (rest.length === 0) setShowSubclassModal(false);
+          }}
+        />
+      )}
       {showDeityModal && (
         <DeityModal
           context={deityModalContext}

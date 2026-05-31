@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
 import { getAvailableAbilities, getAbilityCounts } from '../../constants/abilities.js';
 import { RACE_TRAITS } from '../../constants/raceTraits.js';
+import { SUBCLASSES } from '../../constants/subclasses.js';
 
 export function AbilitiesModal({ character, onSave, onClose }) {
   const classLevels = character.classLevels || { [character.cls?.name]: character.level };
   const existing = character.abilities || {};
   const deityName = character.deity?.name || null;
   const raceTraits = RACE_TRAITS[character.race?.name]?.traits || [];
+  const subEntries = Object.entries(character.subclasses || {})
+    .map(([cls, sub]) => ({ cls, sub, data: SUBCLASSES[cls]?.[sub] }))
+    .filter(x => x.data);
 
   const [selected, setSelected] = useState({
     cantrips:  [...(existing.cantrips  || [])],
@@ -15,6 +19,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
     infusions: [...(existing.infusions || [])],
   });
   const [showRaceTraits, setShowRaceTraits] = useState(false);
+  const [showSubclass, setShowSubclass] = useState(false);
 
   // Calculate totals across all classes
   const totals = { cantrips:0, spells:0, infusions:0 };
@@ -90,6 +95,34 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                     <div key={trait.name} style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:'6px 10px'}}>
                       <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,marginBottom:2}}>{trait.name}</div>
                       <div style={{fontSize:10,color:colors.textFaint,lineHeight:1.5}}>{trait.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Subclass paths */}
+          {subEntries.length > 0 && (
+            <div style={{marginBottom:16}}>
+              <div
+                onClick={() => setShowSubclass(v => !v)}
+                style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:6,display:'flex',justifyContent:'space-between',cursor:'pointer',userSelect:'none'}}
+              >
+                <span>🧭 SUBCLASS PATHS</span>
+                <span style={{color:colors.textGhost}}>{showSubclass ? '▲' : '▼'}</span>
+              </div>
+              {showSubclass && (
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  {subEntries.map(({ cls, sub, data }) => (
+                    <div key={cls} style={{display:'flex',flexDirection:'column',gap:6}}>
+                      <div style={{fontSize:10,color:colors.textGhost,fontStyle:'italic'}}>{data.emoji} {cls} — {sub}</div>
+                      {data.features.map(f => (
+                        <div key={f.name} style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:'6px 10px'}}>
+                          <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,marginBottom:2}}>{f.name}</div>
+                          <div style={{fontSize:10,color:colors.textFaint,lineHeight:1.5}}>{f.desc}</div>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>

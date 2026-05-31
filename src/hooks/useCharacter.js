@@ -147,10 +147,6 @@ export const migrateCharacter = (char) => {
   if (v < 8) {
     // Add deity for clerics from old saves that don't have one.
     // Check both primary class AND classLevels (catches multiclass clerics).
-    const patronClasses = ['Cleric', 'Warlock'];
-    const hasPatronClass = patronClasses.some(c =>
-      c === (c.cls?.name) || Object.keys(c.classLevels || {}).includes(c)
-    );
     if (!c.deity && (c.cls?.name === 'Cleric' || c.cls?.name === 'Warlock' ||
       Object.keys(c.classLevels || {}).some(k => ['Cleric','Warlock'].includes(k)))) {
       c._needsDeitySelection = true;
@@ -161,6 +157,10 @@ export const migrateCharacter = (char) => {
     if (!c.stash) { c.stash = []; notes.push('Stash initialized'); }
     if (!c.stashedCustomItems) { c.stashedCustomItems = {}; }
     if (!c.contextExclusions) { c.contextExclusions = { companions:{}, npcs:{}, towns:{} }; }
+  }
+  if (v < 9) {
+    // Subclass support. Add the field; owed choices are detected live on load.
+    if (!c.subclasses) c.subclasses = {};
   }
   c._v = SAVE_VERSION;
   return { char: c, notes };
@@ -173,6 +173,7 @@ export const EMPTY_CHAR = {
   hp:0, maxHp:0, stats:{},
   level:1, xp:0,
   classLevels: {},
+  subclasses: {},
   slots:{ ...EMPTY_SLOTS },
   inventory:[], stash:[], gold:10,
   customItems:{},
