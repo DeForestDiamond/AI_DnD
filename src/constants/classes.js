@@ -26,6 +26,10 @@ export const RACES = [
   { name:'Dragonborn', emoji:'🐉', desc:'Draconic heritage runs through your veins. Choose a color — each grants a breath weapon and elemental resistance. Commanding presence. +2 Strength, +1 Charisma.',    bonus:{str:2,dex:0,con:0,int:0,wis:0,cha:1} },
   { name:'Aasimar',    emoji:'😇', desc:'Celestial lineage — touched by divine light. Healing Hands, Darkvision, and Radiant Soul form that adds radiant damage and grants flight. +2 Charisma, +1 Wisdom.',   bonus:{str:0,dex:0,con:0,int:0,wis:1,cha:2} },
   { name:'Githyanki',  emoji:'⚔️', desc:'Astral warriors bred to hunt mind flayers. Psionic abilities, martial training, and Astral Knowledge for situational expertise. Proud and ruthless. +2 Strength, +1 Intelligence.', bonus:{str:2,dex:0,con:0,int:1,wis:0,cha:0} },
+  { name:'Astral Elf', emoji:'✨', desc:'Elves who dwelt on the Astral Plane near their gods, their souls touched by divine light. Astral Fire cantrip, Fey Ancestry, Starlight Step teleport, and Astral Trance for shifting proficiencies. +2 Dexterity, +1 Wisdom.', bonus:{str:0,dex:2,con:0,int:0,wis:1,cha:0} },
+  { name:'Reborn', emoji:'🪦', desc:'Those who died and yet still live, carrying memories from a past life. Deathless Nature (no need to eat, drink, or breathe; advantage on death saves) and Knowledge from a Past Life. +2 Constitution, +1 Intelligence.', bonus:{str:0,dex:0,con:2,int:1,wis:0,cha:0} },
+  { name:'Kalashtar', emoji:'🌙', desc:'A compound people born of humanity bonded with renegade spirits from the plane of dreams. Dual Mind, psychic resistance, telepathic Mind Link, and immunity to dream magic. +2 Wisdom, +1 Charisma.', bonus:{str:0,dex:0,con:0,int:0,wis:2,cha:1} },
+  { name:'Dhampir', emoji:'🧛', desc:'Living people cursed with vampiric hunger and prowess. Darkvision, Spider Climb, a life-draining Vampiric Bite, and a trace of undeath. +2 Dexterity, +1 Constitution.', bonus:{str:0,dex:2,con:1,int:0,wis:0,cha:0} },
 ];
 
 export const STAT_NAMES = {

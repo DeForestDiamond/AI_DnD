@@ -95,6 +95,39 @@ export const RACE_TRAITS = {
       { name: 'Misty Step (Psionic)', desc: '1/day at level 5: teleport up to 30ft to an unoccupied space you can see.' },
     ],
   },
+  'Astral Elf': {
+    traits: [
+      { name: 'Astral Fire',      desc: 'Innate cantrip — choose Dancing Lights, Light, or Sacred Flame (Int, Wis, or Cha based).' },
+      { name: 'Darkvision 60ft',  desc: 'See in dim light as if bright, darkness as if dim.' },
+      { name: 'Fey Ancestry',     desc: 'Advantage on saves vs. charm. Magic cannot put you to sleep.' },
+      { name: 'Keen Senses',      desc: 'Proficiency in one of Perception, Insight, Investigation, or Survival.' },
+      { name: 'Starlight Step',   desc: 'Bonus action: teleport up to 30ft to a space you can see. Proficiency-bonus times per long rest.' },
+      { name: 'Astral Trance',    desc: 'Meditate 4 hours instead of sleeping. Each long rest, gain two chosen proficiencies (skills, tools, or weapons).' },
+    ],
+  },
+  'Reborn': {
+    traits: [
+      { name: 'Ancestral Legacy',           desc: 'Keep skill or tool proficiencies from the race you were before, or gain two new ones.' },
+      { name: 'Deathless Nature',           desc: 'No need to eat, drink, breathe, or sleep. Advantage on death saves and saves vs. disease and poison; resistance to poison damage.' },
+      { name: 'Knowledge from a Past Life', desc: 'Add 1d6 to an ability check for a skill you lack. Proficiency-bonus times per long rest.' },
+    ],
+  },
+  'Kalashtar': {
+    traits: [
+      { name: 'Dual Mind',           desc: 'Advantage on all Wisdom saving throws.' },
+      { name: 'Mental Discipline',   desc: 'Resistance to psychic damage.' },
+      { name: 'Mind Link',           desc: 'Speak telepathically to any creature you can see (range scales with level). Can let one creature reply telepathically.' },
+      { name: 'Severed from Dreams', desc: 'Immune to magic that affects dreams or causes magical sleep. You do not dream and rest in a wakeful trance.' },
+    ],
+  },
+  'Dhampir': {
+    traits: [
+      { name: 'Darkvision',     desc: 'See in dim light as if bright, darkness as if dim — out to 120ft.' },
+      { name: 'Spider Climb',   desc: 'Climb difficult surfaces, including ceilings, without a check. Climb speed equal to your walking speed (higher levels).' },
+      { name: 'Trace of Undeath', desc: 'Touched by undeath — you need only half the food and sleep of the living, and read as faintly undead to some magic.' },
+      { name: 'Vampiric Bite',  desc: 'A Constitution-based bite that damages a creature and lets you regain hit points or empower your next roll.' },
+    ],
+  },
 };
 
 // Flat string version for the DM system prompt
@@ -111,4 +144,8 @@ export const RACE_TRAIT_STRINGS = {
   'Dragonborn': 'Breath Weapon: 15ft cone or 30ft line of elemental damage (Dex save DC 8+CON+proficiency), usable once per rest. Damage resistance matching breath type. Draconic appearance.',
   'Aasimar':    'Darkvision 60ft. Healing Hands: heal HP equal to level 1/long rest. Light cantrip (innate). Radiant Soul 1/long rest: wings for 1 minute, fly speed 30ft, add radiant damage equal to level on one attack per turn.',
   'Githyanki':  'Astral Knowledge: gain proficiency in any one skill 1/long rest. Martial Prodigy: proficiency with light/medium armor, shortswords, longswords, greatswords. Psionics: Mage Hand cantrip; Jump 1/day at level 3; Misty Step 1/day at level 5.',
+  'Astral Elf': 'Darkvision 60ft. Astral Fire (innate Dancing Lights, Light, or Sacred Flame cantrip). Fey Ancestry (advantage vs. charm, immune to magical sleep). Keen Senses. Starlight Step: bonus-action 30ft teleport, proficiency-bonus times per long rest. Astral Trance: meditate 4hrs, gain two chosen proficiencies each long rest. Ethereal, divine-touched bearing.',
+  'Reborn': 'Deathless Nature: no need to eat, drink, breathe, or sleep; advantage on death saves and vs. disease/poison; resistance to poison. Ancestral Legacy from a former life. Knowledge from a Past Life: add 1d6 to an unproficient ability check, proficiency-bonus times per long rest. Carries fragmented memories of who they were.',
+  'Kalashtar': 'Dual Mind (advantage on all Wisdom saves). Mental Discipline (resistance to psychic damage). Mind Link: telepathy with creatures you can see. Severed from Dreams: immune to dream magic and magical sleep, rests in a wakeful trance. Quietly serene, bonded to a spirit of the plane of dreams.',
+  'Dhampir': 'Darkvision up to 120ft. Spider Climb: scale sheer surfaces and ceilings, climb speed equal to walking speed. Vampiric Bite: Constitution-based bite that drains life to heal you or empower a roll. Trace of Undeath: needs only half normal food and sleep. Cursed with a macabre hunger.',
 };
