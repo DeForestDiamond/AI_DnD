@@ -54,6 +54,7 @@ export default function App() {
   const [apiError, setApiError] = useState('');
   const [showSave, setShowSave] = useState(false);
   const [slotTarget, setSlotTarget] = useState(null);
+  const [companionSlotTarget, setCompanionSlotTarget] = useState(null);
   const [levelUpToast, setLevelUpToast] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
   const [showDebug, setShowDebug] = useState(false);
@@ -81,7 +82,7 @@ export default function App() {
     character, charRef, updateChar, loadCharacter,
     selectRace, selectClass, selectDeity, finalizeCharacter,
     applyEffects, spendStatPoint,
-    equipToSlot, unequipSlot,
+    equipToSlot, unequipSlot, equipCompanionItem, unequipCompanionItem,
     moveToStash, moveToInventory,
     createBag, addToBag,
     toggleContextExclusion,
@@ -598,6 +599,13 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
   };
 
   // ── Slot handling ──────────────────────────────────────────────────────────
+  const handleCompanionSlotClick = (companionName, slotId) => {
+    const options = equippableInSlot(character, slotId);
+    if (options.length === 0) return;
+    if (options.length === 1) { equipCompanionItem(companionName, slotId, options[0]); }
+    else setCompanionSlotTarget({ name: companionName, slotId });
+  };
+
   const handleSlotClick = (slotId) => {
     if (character.slots[slotId]) {
       unequipSlot(slotId);
@@ -956,6 +964,16 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         />
       )}
 
+      {companionSlotTarget && (
+        <ItemPickerModal
+          slotId={companionSlotTarget.slotId}
+          options={equippableInSlot(character, companionSlotTarget.slotId)}
+          allItemsDB={db}
+          onPick={(name)=>{ equipCompanionItem(companionSlotTarget.name, companionSlotTarget.slotId, name); setCompanionSlotTarget(null); }}
+          onClose={()=>setCompanionSlotTarget(null)}
+        />
+      )}
+
       {levelUpMsg && !pendingStatPoint && (
         <div style={{position:'fixed',top:20,left:'50%',transform:'translateX(-50%)',background:`linear-gradient(135deg,${colors.gold},${colors.goldDim})`,color:colors.bg,fontFamily:fonts.display,fontWeight:'bold',fontSize:13,padding:'12px 24px',borderRadius:6,zIndex:200,animation:'levelUp 6s ease forwards',whiteSpace:'nowrap'}}>
           {levelUpMsg}
@@ -974,6 +992,8 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
           <Sidebar
             character={character}
             onSlotClick={handleSlotClick}
+            onCompanionSlotClick={handleCompanionSlotClick}
+            onCompanionUnequip={unequipCompanionItem}
             onSaveClick={()=>setShowSave(true)}
             onAbilitiesClick={()=>setShowAbilitiesModal(true)}
             onClose={isMobile ? ()=>setSidebarOpen(false) : null}

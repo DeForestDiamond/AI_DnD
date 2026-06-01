@@ -511,6 +511,37 @@ export function useCharacter() {
     });
   };
 
+  // Equip an inventory item onto a companion's slot. Mirrors equipToSlot: the
+  // item leaves the shared inventory, and anything previously in that slot
+  // returns to inventory.
+  const equipCompanionItem = (companionName, slotId, itemName) => {
+    setCharacter(c => {
+      const comp = c.companions?.[companionName];
+      if (!comp) return c;
+      const compSlots = comp.slots || {};
+      const prev = compSlots[slotId];
+      const idx  = c.inventory.indexOf(itemName);
+      let inventory = idx !== -1
+        ? [...c.inventory.slice(0, idx), ...c.inventory.slice(idx + 1)]
+        : c.inventory;
+      if (prev) inventory = [...inventory, prev];
+      const nc = { ...c, inventory, companions: { ...c.companions, [companionName]: { ...comp, slots: { ...compSlots, [slotId]: itemName } } } };
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
+  const unequipCompanionItem = (companionName, slotId) => {
+    setCharacter(c => {
+      const comp = c.companions?.[companionName];
+      const item = comp?.slots?.[slotId];
+      if (!item) return c;
+      const nc = { ...c, inventory: [...c.inventory, item], companions: { ...c.companions, [companionName]: { ...comp, slots: { ...comp.slots, [slotId]: null } } } };
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
   const loadCharacter = (char) => {
     const { char:migrated } = migrateCharacter(char);
     updateChar(migrated);
@@ -523,7 +554,7 @@ export function useCharacter() {
     character, charRef, updateChar, loadCharacter,
     selectRace, selectClass, selectDeity, finalizeCharacter,
     applyEffects, spendStatPoint,
-    equipToSlot, unequipSlot, equippableInSlot,
+    equipToSlot, unequipSlot, equippableInSlot, equipCompanionItem, unequipCompanionItem,
     moveToStash, moveToInventory,
     createBag, addToBag,
     toggleContextExclusion,

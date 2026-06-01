@@ -152,8 +152,9 @@ const slotItemLabel = (name, data) => {
   return name;
 };
 
-// Companion slot display — simplified, no click handlers for now
-function CompanionSlots({ companion, db }) {
+// Companion equipment slots — interactive, mirroring the player's slot list.
+// Tap an empty slot to open the item picker; tap the ✕ to return gear to inventory.
+function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip }) {
   const slots = companion.slots || {};
   const slotDefs = companion.type === 'wolf'
     ? [{ id:'neck', label:'Collar', emoji:'📿' }, { id:'armor', label:'Barding', emoji:'🥋' }]
@@ -164,22 +165,29 @@ function CompanionSlots({ companion, db }) {
         { id:'head',     label:'Head',      emoji:'⛑️' },
         { id:'neck',     label:'Neck',      emoji:'📿' },
       ];
-  const equipped = slotDefs.filter(s => slots[s.id]);
-  if (equipped.length === 0) return null;
   return (
-    <div style={{marginTop:4}}>
-      {equipped.map(slot => {
+    <div style={{marginTop:4,paddingLeft:6,borderLeft:`1px solid ${colors.borderFaint}`}}>
+      {slotDefs.map(slot => {
         const itemName = slots[slot.id];
-        const data = itemName ? db[itemName] : null;
+        const data     = itemName ? db[itemName] : null;
+        const canEquip = !itemName && character && equippableInSlot(character, slot.id).length > 0;
+        const active   = itemName || canEquip;
         return (
-          <div key={slot.id} style={{display:'flex',alignItems:'center',gap:5,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
-            <span style={{fontSize:12,flexShrink:0}}>{slot.emoji}</span>
+          <div key={slot.id}
+            onClick={() => active && onSlotClick?.(name, slot.id)}
+            style={{display:'flex',alignItems:'center',gap:5,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`,cursor:active?'pointer':'default',opacity:active?1:0.4}}>
+            <span style={{fontSize:11,flexShrink:0}}>{slot.emoji}</span>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:12,color:colors.textGhost,fontFamily:fonts.display}}>{slot.label}</div>
-              <div style={{fontSize:13,color:colors.gold,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                {slotItemLabel(itemName, data)}
-              </div>
+              <div style={{fontSize:11,color:colors.textGhost,fontFamily:fonts.display}}>{slot.label}</div>
+              {itemName
+                ? <div style={{fontSize:12,color:colors.gold,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{slotItemLabel(itemName, data)}</div>
+                : <div style={{fontSize:12,color:colors.textDead,fontStyle:'italic'}}>{canEquip?'tap to equip':'—'}</div>
+              }
             </div>
+            {itemName && (
+              <span onClick={(e)=>{ e.stopPropagation(); onUnequip?.(name, slot.id); }}
+                style={{fontSize:12,color:colors.textDead,flexShrink:0,cursor:'pointer',padding:'0 4px'}} title="Unequip">✕</span>
+            )}
           </div>
         );
       })}
@@ -188,7 +196,7 @@ function CompanionSlots({ companion, db }) {
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel, onToggleContextExclusion }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel, onToggleContextExclusion }) {
   const db       = allItems(character.customItems || {});
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
@@ -425,7 +433,7 @@ export function Sidebar({ character, onSlotClick, onSaveClick, onClose, onAbilit
                   <div style={{color:colors.gold,fontFamily:fonts.display,fontSize:12}}>{data.emoji||'👤'} {name}</div>
                 </div>
                 {data.desc && <div style={{color:colors.textGhost,fontSize:13,marginTop:1,lineHeight:1.4}}>{data.desc}</div>}
-                <CompanionSlots companion={data} db={db}/>
+                <CompanionSlots companion={data} name={name} db={db} character={character} onSlotClick={onCompanionSlotClick} onUnequip={onCompanionUnequip}/>
               </div>
             );
           })}
