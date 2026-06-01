@@ -17,6 +17,7 @@ import { ItemPickerModal } from './components/modals/ItemPickerModal.jsx';
 import { AbilitiesModal } from './components/modals/AbilitiesModal.jsx';
 import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx';
 import { SubclassModal } from './components/modals/SubclassModal.jsx';
+import { AdventureStartModal } from './components/modals/StartModal.jsx';
 import { owedSubclasses } from './constants/subclasses.js';
 
 function StatBar({ label, value, desc }) {
@@ -59,6 +60,7 @@ export default function App() {
   const [debugLog, setDebugLog] = useState([]);
   const [showDebug, setShowDebug] = useState(false);
   const [showDirectives, setShowDirectives] = useState(false);
+  const [adventureStartChar, setAdventureStartChar] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [showRawTags, setShowRawTags] = useState(false);
@@ -144,7 +146,7 @@ export default function App() {
         }
       }
       setPhase('playing');
-      setTimeout(() => startAdventure(char), 100);
+      setTimeout(() => beginAdventure(char), 100);
     },
   });
 
@@ -231,7 +233,10 @@ export default function App() {
   };
 
   // ── API call ───────────────────────────────────────────────────────────────
-  const startAdventure = async (char) => {
+  // Fresh adventures route through a choice: random seed or a player-written opening.
+  const beginAdventure = (char) => setAdventureStartChar(char);
+
+  const startAdventure = async (char, openingOverride = null) => {
     log('startAdventure', { level: char.level, xp: char.xp, hp: char.hp });
     setLoading(true);
     setApiError('');
@@ -240,8 +245,12 @@ export default function App() {
       const system = selectedModel === 'sonnet'
         ? buildSystemPromptSonnet(char)
         : buildSystemPrompt(char);
-      const seed = rollAdventureSeed(char.level);
-      const seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
+      let seedPrompt;
+      if (openingOverride && openingOverride.trim()) {
+        seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with 2-3 clear choices.\n\nPLAYER'S OPENING:\n${openingOverride.trim()}`;
+      } else {
+        const seed = rollAdventureSeed(char.level);
+        seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
 You MUST open the adventure using ALL of the following parameters exactly as given. This is not a suggestion. Do not substitute, reinterpret, or ignore any field.
 
 STORY SCOPE (the player is level ${char.level} — match the SIZE and stakes of the story to this): ${seed.scope}
@@ -257,6 +266,7 @@ ANTAGONIST (do NOT reveal or name yet — plant subtle setup only): ${seed.antag
 REQUIRED: Invent a specific named location that fits the setting (e.g. "The Saltwind Docks of Port Calavar"). Ground the scene in physical details matching the weather and time. End with 2-3 clear choices for the player.
 
 NON-COMPLIANCE: If you open with anything other than the parameters above, you have failed your role as DM.`;
+      }
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
         system,
@@ -622,7 +632,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
   const handleFinalize = async () => {
     const char = finalizeCharacter(nameInput);
     setPhase('playing');
-    await startAdventure(char);
+    beginAdventure(char);
   };
 
   // ── Common styles ──────────────────────────────────────────────────────────
@@ -669,7 +679,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             setDeityModalContext('oldSave');
             setShowDeityModal(true);
           }
-          setTimeout(()=>startAdventure(char),100);
+          setTimeout(()=>beginAdventure(char),100);
         }}
       />}
       <div style={{maxWidth:500,padding:40}}>
@@ -898,7 +908,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             char.abilities.infusions?.length === 0
           ));
           if (needsAbilities) setTimeout(() => setShowAbilitiesModal(true), 500);
-          setTimeout(()=>startAdventure(char),100);
+          setTimeout(()=>beginAdventure(char),100);
         }}
       />}
 
@@ -952,6 +962,13 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             }
           }}
           onChooseStat={(className, stat) => spendStatPoint(className, stat)}
+        />
+      )}
+
+      {adventureStartChar && (
+        <AdventureStartModal
+          onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
+          onManual={(text) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text); }}
         />
       )}
 
