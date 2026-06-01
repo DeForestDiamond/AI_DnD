@@ -3,6 +3,13 @@ import { ITEM_DB } from '../constants/items.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
 import { subclassPromptLines } from '../constants/subclasses.js';
 
+// Player-authored standing instructions, injected into every prompt so they
+// never scroll out of context. Empty string when unset.
+const directivesBlock = (char) => {
+  const d = char?.directives?.trim();
+  return d ? `── PLAYER STANDING INSTRUCTIONS (the player set these directly — always honor them) ──\n${d}\n\n` : '';
+};
+
 // Strip game tags from DM text before displaying
 export const cleanDisplayText = (text) => text.replace(/\[[^\]]+\]/g, '').trim();
 
@@ -398,7 +405,9 @@ Most encounters are self-contained: bandits are just bandits, a wolf is just hun
 POWER DOES NOT SNOWBALL: One victory does not make the player a lord, a chosen one, a ruler, or the owner of land or armies. Titles, territory, and rulership are earned slowly across many sessions, and only when the player deliberately pursues them. Never hand out escalating status unprompted.
 
 ── WHEN A FIGHT ENDS ──
-When the player wins, the threat is OVER. The scene goes quiet: loot, catch breath, travel, talk. Do NOT reveal that the thing they just beat was a guardian, a fragment, a servant, or a herald of something worse below. The next danger arrives only when the player goes looking for it.`;
+When the player wins, the threat is OVER. The scene goes quiet: loot, catch breath, travel, talk. Do NOT reveal that the thing they just beat was a guardian, a fragment, a servant, or a herald of something worse below. The next danger arrives only when the player goes looking for it.
+
+${directivesBlock(char)}`;
 };
 
 // ── System Prompt — Sonnet ─────────────────────────────────────────────────────
@@ -414,7 +423,7 @@ export const buildSystemPromptSonnet = (char) => {
 
   const staticPart = `You are the Dungeon Master for a D&D 5e game called Tales of the Realm. Persistent single-player campaign. Be creative, consistent, and deeply reactive to player choices. keep responses short.
 
-── CHARACTER (STATIC) ──
+${directivesBlock(char)}── CHARACTER (STATIC) ──
 ${cb.staticPart}
 ${ctx.bio}${ctx.companionSection}${ctx.npcSection}${ctx.townsSection}
 ── HARD RULES ──

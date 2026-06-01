@@ -58,6 +58,7 @@ export default function App() {
   const [levelUpToast, setLevelUpToast] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
   const [showDebug, setShowDebug] = useState(false);
+  const [showDirectives, setShowDirectives] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [showRawTags, setShowRawTags] = useState(false);
@@ -1035,6 +1036,12 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
               style={{background:showDebug?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${showDebug?colors.gold:colors.borderDim}`,color:showDebug?colors.gold:colors.textFaint,padding:'4px 8px',fontSize:10,borderRadius:3,cursor:'pointer',fontFamily:fonts.display,letterSpacing:1}}>
               🐛
             </button>
+            {/* Standing instructions toggle */}
+            <button onClick={()=>setShowDirectives(v=>!v)}
+              title="Standing instructions to the DM (always sent)"
+              style={{background:showDirectives?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${showDirectives?colors.gold:colors.borderDim}`,color:showDirectives?colors.gold:colors.textFaint,padding:'4px 8px',fontSize:10,borderRadius:3,cursor:'pointer',fontFamily:fonts.display,letterSpacing:1}}>
+              📌
+            </button>
             {/* Story log toggle */}
             {storySummary && (
               <button onClick={()=>setSummaryOpen(v=>!v)}
@@ -1057,6 +1064,20 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
               {debugLog.map((entry, i) => <div key={i} style={{borderBottom:'1px solid #1a1208',paddingBottom:2,marginBottom:2,wordBreak:'break-all'}}>{entry}</div>)}
               {debugLog.length === 0 && <div style={{color:'#4a3a20'}}>no logs yet</div>}
             </div>
+          </div>
+        )}
+
+        {showDirectives && (
+          <div style={{background:'rgba(30,20,5,0.85)',borderBottom:`1px solid ${colors.borderDim}`,padding:'7px 16px',flexShrink:0}}>
+            <div style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:4}}>📌 STANDING INSTRUCTIONS TO THE DM</div>
+            <div style={{fontSize:10,color:colors.textFaint,marginBottom:6,lineHeight:1.4}}>Sent to the DM every turn — use it for lasting directions that should not be forgotten. Leave blank for none.</div>
+            <textarea
+              value={character.directives || ''}
+              onChange={e => updateChar({ ...charRef.current, directives: e.target.value })}
+              placeholder={'e.g. The current journey should play out as its own arc — give it encounters and events along the way, not a single skip.'}
+              rows={3}
+              style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:12,fontFamily:'inherit',padding:'6px 8px',resize:'vertical',boxSizing:'border-box'}}
+            />
           </div>
         )}
 

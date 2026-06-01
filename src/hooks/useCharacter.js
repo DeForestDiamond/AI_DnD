@@ -180,6 +180,7 @@ export const EMPTY_CHAR = {
   stashedCustomItems:{},
   contextExclusions: { companions:{}, npcs:{}, towns:{} },
   bio: '',
+  directives: '',
   currentLocation: '',
   companions: {},
   npcs: {},
