@@ -1,7 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { colors, fonts, btn } from '../styles/theme.js';
 
-export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, tokenUsage }) {
+// USD per million tokens (Anthropic standard rates). Cache writes are 1.25x
+// input, cache reads 0.1x input. Sonnet 4.5 = $3/$15, Haiku 4.5 = $1/$5.
+const PRICING = {
+  sonnet: { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.30 },
+  haiku:  { input: 1.0, output: 5.0,  cacheWrite: 1.25, cacheRead: 0.10 },
+};
+
+export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, tokenUsage, selectedModel }) {
   const [input, setInput] = useState('');
   const inputRef = useRef(null);
 
@@ -78,6 +85,13 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
         const cached      = cacheRead + cacheCreate;
         const inputTotal  = (tokenUsage.input_tokens ?? 0) + cached;
         const output      = tokenUsage.output_tokens ?? 0;
+        const rate = PRICING[selectedModel] || PRICING.sonnet;
+        const cost = (
+          (tokenUsage.input_tokens ?? 0) * rate.input +
+          cacheCreate                    * rate.cacheWrite +
+          cacheRead                      * rate.cacheRead +
+          output                         * rate.output
+        ) / 1e6;
         return (
           <div style={{display:'flex',gap:16,marginTop:5,paddingTop:5,borderTop:`1px solid rgba(74,56,32,0.3)`,flexWrap:'wrap'}}>
             <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
@@ -88,6 +102,9 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
             </span>
             <span style={{fontSize:10,color:'rgba(150,130,90,0.45)',fontFamily:fonts.display,letterSpacing:1}}>
               ∑ {(inputTotal + output).toLocaleString()} total
+            </span>
+            <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
+              ≈ ${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(3)} this turn
             </span>
           </div>
         );

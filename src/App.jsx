@@ -1155,6 +1155,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             if (lastDM) voice.speak(lastDM.text);
           }}
           tokenUsage={tokenUsage}
+          selectedModel={selectedModel}
         />
       </div>
     </div>
