@@ -289,8 +289,8 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
     setLoading(false);
   };
 
-  const SUMMARIZE_AFTER   = 20;    // append a new entry every N messages
-  const KEEP_RECENT       = 6;     // keep this many recent messages verbatim for display trim
+  const SUMMARIZE_AFTER   = 12;    // DM history window AND summary cadence (every N messages)
+  const KEEP_RECENT       = 4;     // keep this many recent messages raw (not summarized / display trim)
   const ENTRIES_BEFORE_COMPRESS = 6;  // compress oldest 4 entries when we hit this many
   const COMPRESS_KEEP_RECENT_ENTRIES = 2; // always keep newest N entries raw
   const lastSummarizedAt = useRef(0);
@@ -332,15 +332,27 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
   // Build the labeled context block sent to Haiku
   const formatSummaryForApi = (summaryObj) => {
     const { chunks, entries } = summaryObj;
-    if (chunks.length === 0 && entries.length === 0) return '';
+    // Manually-archived (unchecked) entries are excluded from what the DM sees.
+    const activeChunks  = chunks.filter(c => !c.excluded);
+    const activeEntries = entries.filter(e => !e.excluded);
+    if (activeChunks.length === 0 && activeEntries.length === 0) return '';
     const parts = [];
-    chunks.forEach(chunk => {
+    activeChunks.forEach(chunk => {
       parts.push(`[ARCHIVED HISTORY — ${chunk.sessions}]\n${chunk.text}`);
     });
-    entries.forEach((entry, i) => {
+    activeEntries.forEach((entry, i) => {
       parts.push(`[RECENT SUMMARY ${i + 1}]\n${entry.text}`);
     });
     return parts.join('\n\n');
+  };
+
+  // Toggle a summary entry/chunk on or off (off = not sent to the DM). Persists in the save.
+  const toggleSummaryEntry = (id) => {
+    const obj = parseSummary(storySummaryRef.current);
+    const flip = arr => arr.map(x => x.id === id ? { ...x, excluded: !x.excluded } : x);
+    const serialized = serializeSummary({ chunks: flip(obj.chunks), entries: flip(obj.entries) });
+    setStorySummary(serialized);
+    storySummaryRef.current = serialized;
   };
 
   // Compress oldest entries into a frozen chunk
@@ -1101,21 +1113,28 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         {storySummary && summaryOpen && (
           <div style={{background:'rgba(30,20,5,0.85)',borderBottom:`1px solid ${colors.borderDim}`,padding:'7px 16px',display:'flex',alignItems:'flex-start',gap:8,flexShrink:0,maxHeight:160,overflowY:'auto'}}>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:4}}>STORY LOG</div>
+              <div style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:2}}>STORY LOG</div>
+              <div style={{fontSize:9,color:colors.textFaint,marginBottom:6,lineHeight:1.4}}>Uncheck an entry to stop sending it to the DM once it's no longer relevant.</div>
               {(() => {
                 const obj = parseSummary(storySummary);
                 return (
                   <div>
                     {obj.chunks.map((chunk, i) => (
-                      <div key={chunk.id || i} style={{marginBottom:8}}>
-                        <div style={{fontFamily:fonts.display,fontSize:9,color:'rgba(201,168,76,0.5)',letterSpacing:2,marginBottom:2}}>📦 ARCHIVED — {chunk.sessions}</div>
-                        <span style={{fontSize:11,color:'rgba(201,168,76,0.4)',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{chunk.text}</span>
+                      <div key={chunk.id || i} style={{marginBottom:8,opacity:chunk.excluded?0.4:1}}>
+                        <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
+                          <input type="checkbox" checked={!chunk.excluded} onChange={()=>toggleSummaryEntry(chunk.id)} style={{cursor:'pointer',accentColor:colors.gold,flexShrink:0}}/>
+                          <span style={{fontFamily:fonts.display,fontSize:9,color:'rgba(201,168,76,0.5)',letterSpacing:2}}>📦 ARCHIVED — {chunk.sessions}{chunk.excluded?' · off':''}</span>
+                        </div>
+                        <span style={{fontSize:11,color:'rgba(201,168,76,0.4)',lineHeight:1.6,whiteSpace:'pre-wrap',textDecoration:chunk.excluded?'line-through':'none'}}>{chunk.text}</span>
                       </div>
                     ))}
                     {obj.entries.map((entry, i) => (
-                      <div key={entry.id || i} style={{marginBottom:6}}>
-                        <div style={{fontFamily:fonts.display,fontSize:9,color:colors.gold,letterSpacing:2,marginBottom:2}}>📝 RECENT {i + 1}</div>
-                        <span style={{fontSize:11,color:colors.textFaint,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{entry.text}</span>
+                      <div key={entry.id || i} style={{marginBottom:6,opacity:entry.excluded?0.4:1}}>
+                        <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
+                          <input type="checkbox" checked={!entry.excluded} onChange={()=>toggleSummaryEntry(entry.id)} style={{cursor:'pointer',accentColor:colors.gold,flexShrink:0}}/>
+                          <span style={{fontFamily:fonts.display,fontSize:9,color:colors.gold,letterSpacing:2}}>📝 RECENT {i + 1}{entry.excluded?' · off':''}</span>
+                        </div>
+                        <span style={{fontSize:11,color:colors.textFaint,lineHeight:1.6,whiteSpace:'pre-wrap',textDecoration:entry.excluded?'line-through':'none'}}>{entry.text}</span>
                       </div>
                     ))}
                   </div>
