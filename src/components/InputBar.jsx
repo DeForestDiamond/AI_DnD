@@ -69,19 +69,29 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
           </div>
         )}
       </div>
-      {tokenUsage && (
-        <div style={{display:'flex',gap:16,marginTop:5,paddingTop:5,borderTop:`1px solid rgba(74,56,32,0.3)`}}>
-          <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
-            ↑ {tokenUsage.input_tokens?.toLocaleString() ?? '—'} tokens sent
-          </span>
-          <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
-            ↓ {tokenUsage.output_tokens?.toLocaleString() ?? '—'} tokens received
-          </span>
-          <span style={{fontSize:10,color:'rgba(150,130,90,0.45)',fontFamily:fonts.display,letterSpacing:1}}>
-            ∑ {((tokenUsage.input_tokens ?? 0) + (tokenUsage.output_tokens ?? 0)).toLocaleString()} total
-          </span>
-        </div>
-      )}
+      {tokenUsage && (() => {
+        // The API splits input when prompt caching is on: input_tokens is only the
+        // NEW/uncached portion; the cached bulk lives in cache_read/cache_creation.
+        // The true context size sent is the sum of all three.
+        const cacheRead   = tokenUsage.cache_read_input_tokens ?? 0;
+        const cacheCreate = tokenUsage.cache_creation_input_tokens ?? 0;
+        const cached      = cacheRead + cacheCreate;
+        const inputTotal  = (tokenUsage.input_tokens ?? 0) + cached;
+        const output      = tokenUsage.output_tokens ?? 0;
+        return (
+          <div style={{display:'flex',gap:16,marginTop:5,paddingTop:5,borderTop:`1px solid rgba(74,56,32,0.3)`,flexWrap:'wrap'}}>
+            <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
+              ↑ {inputTotal.toLocaleString()} tokens sent{cached > 0 ? ` (${cached.toLocaleString()} cached)` : ''}
+            </span>
+            <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
+              ↓ {output.toLocaleString()} tokens received
+            </span>
+            <span style={{fontSize:10,color:'rgba(150,130,90,0.45)',fontFamily:fonts.display,letterSpacing:1}}>
+              ∑ {(inputTotal + output).toLocaleString()} total
+            </span>
+          </div>
+        );
+      })()}
     </div>
   );
 }
