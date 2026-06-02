@@ -1,4 +1,4 @@
-Haiku old::::::::::
+Haiku old:::::::::::
 
 ── GOLD ──
 Any gold gained or spent MUST use a tag or it does not register in the game.
