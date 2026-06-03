@@ -82,6 +82,11 @@ const buildCharBlock = (char) => {
   const focusLine   = offhandData?.type==='focus' ? `\n- HOLY FOCUS: ${char.slots.offhand} equipped (${offhandData.label})` : '';
   const stackedInv  = stackInventory(char.inventory);
   const invDisplay  = Object.entries(stackedInv).map(([n,c])=>c>1?`${n} x${c}`:n).join(', ') || 'empty';
+  // Descriptions for custom items the player owns (inventory + equipped), so the
+  // DM knows what they do — their flavor/label lives in customItems, not the name.
+  const ownedNames   = new Set([...Object.keys(stackedInv), ...Object.values(char.slots||{}).filter(Boolean)]);
+  const itemDetails  = [...ownedNames].map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; }).filter(Boolean).join('; ');
+  const itemDetailLine = itemDetails ? `\nItem details: ${itemDetails}` : '';
   const hasCleric   = char.cls?.name==='Cleric'  || Object.keys(classLevels).includes('Cleric');
   const hasWarlock  = char.cls?.name==='Warlock' || Object.keys(classLevels).includes('Warlock');
   const deityLine   = char.deity && hasCleric
@@ -115,7 +120,7 @@ HP: ${char.hp}/${char.maxHp} | AC: ${ac} | Proficiency: +${pb}
 Stats: Strength ${effStats.str}(${modStr(effStats.str)}) Dexterity ${effStats.dex}(${modStr(effStats.dex)}) Constitution ${effStats.con}(${modStr(effStats.con)}) Intelligence ${effStats.int}(${modStr(effStats.int)}) Wisdom ${effStats.wis}(${modStr(effStats.wis)}) Charisma ${effStats.cha}(${modStr(effStats.cha)})
 Weapon: ${weaponLine}${sneakLine}${focusLine}
 Equipped: ${equippedList}
-Inventory: ${invDisplay}${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}`;
+Inventory: ${invDisplay}${itemDetailLine}${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}`;
 
   return { staticPart, dynamicPart };
 };
@@ -297,6 +302,11 @@ export const buildSystemPrompt = (char) => {
   const invDisplay = Object.entries(stackedInv)
     .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
     .join(', ') || 'empty';
+  // Descriptions for custom items the player owns (inventory + equipped), so the
+  // DM knows what they do — their flavor/label lives in customItems, not the name.
+  const ownedNames   = new Set([...Object.keys(stackedInv), ...Object.values(char.slots||{}).filter(Boolean)]);
+  const itemDetails  = [...ownedNames].map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; }).filter(Boolean).join('; ');
+  const itemDetailLine = itemDetails ? `\nItem details: ${itemDetails}` : '';
 
   // Check for active holy focus in offhand
   const db = { ...ITEM_DB, ...(char.customItems||{}) };
@@ -365,7 +375,7 @@ CHARACTER: ${char.name} | ${char.race?.name} ${classDesc} | Total Level ${char.l
 STATS: STR ${effStats.str}(${modStr(effStats.str)}) DEX ${effStats.dex}(${modStr(effStats.dex)}) CON ${effStats.con}(${modStr(effStats.con)}) INT ${effStats.int}(${modStr(effStats.int)}) WIS ${effStats.wis}(${modStr(effStats.wis)}) CHA ${effStats.cha}(${modStr(effStats.cha)})
 COMBAT: Hit Points ${char.hp}/${char.maxHp} | Armor Class ${ac} | Proficiency Bonus +${pb} | Weapon: ${weaponLine}${sneakLine}${focusLine}
 EQUIPPED: ${equippedList}
-INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}
+INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${itemDetailLine}${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}
 
 ════════════════════════════════════════
 GAME TAGS — THE APP READS THESE EXACTLY
