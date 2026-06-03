@@ -67,6 +67,7 @@ export default function App() {
   const [showAbilitiesModal, setShowAbilitiesModal] = useState(false);
   const [showDeityModal, setShowDeityModal] = useState(false);
   const [deityModalContext, setDeityModalContext] = useState('multiclass');
+  const [deityModalClass, setDeityModalClass] = useState(null);
   const [showSubclassModal, setShowSubclassModal] = useState(false);
   const [subclassQueue, setSubclassQueue] = useState([]);
   const [selectedModel, setSelectedModel] = useState('sonnet'); // 'sonnet' or 'haiku' // 'multiclass' or 'oldSave'
@@ -98,6 +99,11 @@ export default function App() {
 
   const messagesRef = useRef(messages);
   // ── Save/Load ──────────────────────────────────────────────────────────────
+  // Which patron class is the deity/patron being chosen for? Prefers Warlock so a
+  // Fighter/Warlock multiclass shows patrons, not the cleric deity list.
+  const patronClassOf = (c) =>
+    ['Warlock', 'Cleric'].find(k => c?.classLevels?.[k] || c?.cls?.name === k) || c?.cls?.name || null;
+
   const isClericCharacter = (char) => {
     const patronClasses = ['Cleric', 'Warlock'];
     return patronClasses.includes(char.cls?.name) ||
@@ -953,11 +959,12 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       {showDeityModal && (
         <DeityModal
           context={deityModalContext}
-          cls={character.cls?.name}
+          cls={deityModalClass || patronClassOf(character)}
           onSelectDeity={(deity) => {
             selectDeity(deity);
             updateChar({ ...charRef.current, deity, _needsDeitySelection: false });
             setShowDeityModal(false);
+            setDeityModalClass(null);
           }}
         />
       )}
@@ -970,6 +977,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
           onChooseClass={(cls) => {
             if (['Cleric','Warlock'].includes(cls) && !character.deity) {
               setDeityModalContext('multiclass');
+              setDeityModalClass(cls);
               setShowDeityModal(true);
             }
           }}
