@@ -179,19 +179,27 @@ export default function App() {
       'a frozen northern settlement', 'a swamp village on stilts', 'a noble estate in the countryside',
       'a thieves guild underground beneath a city', 'a moving merchant caravan on the road',
       'a remote island', 'an active volcano region', 'a halfling shire', 'a dwarven mine complex',
+      'a riverside mill town', 'a university city of mages', 'a border garrison town',
+      'a pilgrimage road to a holy site', 'a floating market on a great river', 'a logging camp at the forest edge',
+      'a ruined city slowly being resettled', 'a hot-spring resort town', 'a hillside monastery',
+      'a canyon settlement carved into the cliffs', 'a windswept fishing village', 'a lonely crossroads trading post',
     ];
     const times = [
       'early morning just after dawn', 'midday under a bright sun', 'a warm afternoon',
       'golden hour just before sunset', 'early evening as lanterns are lit', 'late night',
+      'the small hours before dawn', 'a grey, indeterminate hour',
     ];
     const weathers = [
       'clear and sunny', 'warm with a light breeze', 'overcast but dry', 'light rain',
       'a sudden thunderstorm rolling in', 'thick morning fog', 'crisp and cold', 'sweltering heat',
       'a beautiful spring day with wildflowers', 'heavy snow', 'gusty and windy',
+      'humid and still before a storm', 'a fine drizzle', 'unseasonable warmth', 'the first frost of the season',
     ];
     const tones = [
       'lighthearted and fun', 'gritty and grounded', 'tense and political', 'mysterious but not dark',
       'comedic with real stakes', 'action-packed from the start', 'slow burn intrigue',
+      'warm and hopeful', 'eerie and unsettling (not horror)', 'bittersweet', 'rowdy and chaotic',
+      'somber and reflective',
     ];
     const hooks = [
       'a job offer from a stranger', 'something valuable has been stolen', 'an old enemy resurfaces',
@@ -200,6 +208,39 @@ export default function App() {
       'a noble needs a discreet service', 'a dungeon entrance has been discovered nearby',
       'a heist opportunity', 'a festival goes wrong', 'a bounty posted on a dangerous target',
       'a shipment of contraband intercepted', 'a monster terrorising the area',
+      'a debt the player owes comes due', 'two factions each want the player on their side',
+      'a child or stray animal leads the player somewhere', 'the player witnesses a crime in progress',
+      'a map or sealed letter falls into the player\'s hands', 'a dying stranger leaves the player something',
+      'the player is mistaken for someone important', 'a local rite or ritual needs an outsider',
+      'the player\'s lodging, ship, or transport falls through', 'a wager or game of chance with real stakes',
+      'someone calls in an old favor', 'the wagon or ship the player is travelling on stops unexpectedly',
+    ];
+    // HOW the scene opens — varies the structure/rhythm so starts don't all feel the same.
+    const openingStyles = [
+      'in media res: the player is already mid-action (a chase, a brawl, fleeing, or a task going wrong) when the scene opens',
+      'open on dialogue: someone is already mid-sentence talking to the player as the scene begins',
+      'a quiet, grounded moment (eating, resting, mending gear, working) that gets interrupted',
+      'the player has just arrived somewhere new and is taking it in',
+      'the immediate aftermath of something that already happened (a fight just ended, a deal collapsed, a storm just broke)',
+      'a discovery: the player stumbles onto something they did not expect',
+      'mid-task: the player is actively working, haggling, or travelling when things shift',
+      'a tense standoff or confrontation already underway',
+      'a calm, atmospheric establishing beat before anything happens',
+    ];
+    // A distinctive detail to weave in so each opening has its own texture.
+    const wildcards = [
+      'an unusual local custom or small festival happening right now',
+      'a memorable, eccentric NPC who inserts themselves into the scene',
+      'an odd sensory detail that sets this place apart (a strange smell, sound, or sight)',
+      'a juicy piece of local gossip or rumour overheard nearby',
+      'an animal or common creature behaving strangely',
+      'a recent local event everyone is still talking about',
+      'an eye-catching object, sign, or notice',
+      'an unusual but harmless natural phenomenon',
+      'a stranger who seems to mistake the player for someone else',
+      'a minor mishap or inconvenience the player is already dealing with',
+      'a street performance, market hawker, or impromptu crowd',
+      'no wildcard — keep this one clean and straightforward',
     ];
     const lowAntagonists = [
       'a thieves guild', 'a corrupt local official', 'a gang of bandits', 'a goblin warband',
@@ -218,6 +259,9 @@ export default function App() {
       'a noble\'s receiving hall', 'a back alley', 'a guildhall', 'a temple courtyard',
       'a busy harbor', 'a village square', 'a roadside camp', 'a dungeon entrance',
       'a tournament grounds', 'a prison visiting room', 'a magic shop',
+      'a crowded festival', 'a riverboat deck', 'a blacksmith\'s forge', 'a library or archive',
+      'a stable yard', 'a steaming bathhouse', 'a graveyard at dusk', 'a bridge over a gorge',
+      'a farmhouse kitchen', 'a watchtower on the wall', 'a caravanserai', 'a ferry crossing',
     ];
 
     const scope =
@@ -235,6 +279,8 @@ export default function App() {
       hook: pick(hooks),
       antagonist: pick(antagonists),
       location: pick(locations),
+      openingStyle: pick(openingStyles),
+      wildcard: pick(wildcards),
     };
   };
 
@@ -266,10 +312,12 @@ TIME OF DAY: ${seed.time}
 WEATHER: ${seed.weather}
 TONE: ${seed.tone}
 OPENING LOCATION (the specific place the scene starts): ${seed.location}
+OPENING STYLE (HOW to open the scene — follow this structure, do not default to a generic establishing shot): ${seed.openingStyle}
+WILDCARD (a distinctive detail to work into the opening): ${seed.wildcard}
 ADVENTURE HOOK (what draws the player in): ${seed.hook}
 ANTAGONIST (do NOT reveal or name yet — plant subtle setup only): ${seed.antagonist}
 
-REQUIRED: Invent a specific named location that fits the setting (e.g. "The Saltwind Docks of Port Calavar"). Ground the scene in physical details matching the weather and time. End with 2-3 clear choices for the player.
+REQUIRED: Invent a specific named location that fits the setting (e.g. "The Saltwind Docks of Port Calavar"). Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock "you stand in X" description. End at a natural decision point — that can be 2-3 choices, a question an NPC puts to the player, or an immediate situation demanding a reaction. Vary this; do not always present a tidy numbered list.
 
 NON-COMPLIANCE: If you open with anything other than the parameters above, you have failed your role as DM.`;
       }
