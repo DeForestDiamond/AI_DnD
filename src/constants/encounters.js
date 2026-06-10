@@ -287,6 +287,18 @@ const ARC_WEIRD = [
 const TABLES     = { social: SOCIAL, weird: WEIRD };
 const ARC_TABLES = { hostile: ARC_HOSTILE, social: ARC_SOCIAL, weird: ARC_WEIRD };
 
+// ── NPC race/gender roll for social encounters ─────────────────────────────────
+// The app rolls who you meet — humans and half-elves are deliberately a minority
+// weight so the DM's training-data default can't dominate the road.
+const NPC_RACES = [
+  'dwarf', 'dwarf', 'elf', 'elf', 'halfling', 'halfling', 'gnome', 'gnome',
+  'tiefling', 'tiefling', 'dragonborn', 'dragonborn', 'half-orc', 'half-orc',
+  'goliath', 'tabaxi', 'kenku', 'firbolg', 'aasimar', 'genasi', 'lizardfolk', 'orc',
+  'human', 'human', 'half-elf',
+];
+const rollNpcDescriptor = () =>
+  `${Math.random() < 0.5 ? 'male' : 'female'} ${pick(NPC_RACES)}`;
+
 // ── Roll an encounter directive ────────────────────────────────────────────────
 // Mix: 60% hostile / 25% social / 15% weird. 1-in-3 ties to the active arc.
 // Hostile rolls only from entries at or under the level's CR ceiling.
@@ -296,7 +308,7 @@ export const rollEncounterDirective = (char) => {
   const arcTied = !!char?.arc?.antagonist && Math.random() < (1 / 3);
   const cap = encounterCRCap(char?.level);
 
-  let desc, crNote = '';
+  let desc, crNote = '', npcNote = '';
   if (arcTied) {
     desc = pick(ARC_TABLES[type])(char.arc.antagonist);
   } else if (type === 'hostile') {
@@ -306,11 +318,14 @@ export const rollEncounterDirective = (char) => {
   } else {
     desc = pick(TABLES[type]);
   }
+  if (type === 'social') {
+    npcNote = `The person at the center of this encounter is a ${rollNpcDescriptor()} — use exactly that race and gender, and give them one fresh memorable detail (no scars, no travel leathers, no merchant's clothes). `;
+  }
 
   const directive =
     `\n\n[ENCOUNTER — MANDATORY: This turn, the following occurs: ${desc}. ` +
     `Weave it in at a natural moment of THIS response — do not defer it, do not summarize past it, do not resolve it without the player. ` +
-    crNote +
+    crNote + npcNote +
     (arcTied ? `This connects to the active arc antagonist — let that show without naming them outright. Scale any threat to the player's level. ` : '') +
     `End with your usual 4 numbered choices.]`;
   return { type, arcTied, desc, directive };

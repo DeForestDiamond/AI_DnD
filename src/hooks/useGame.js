@@ -246,6 +246,31 @@ QUEST ITEMS — regular [ITEM:] with a descriptive name so they sort correctly:
 
 CRITICAL: Mentioning an item in prose does NOT add it to inventory. Only [ITEM:] does.`;
 
+// ── Shared NPC description rules (both models) ─────────────────────────────────
+const NPC_BLOCK = `── NPC DESCRIPTIONS ──
+When an NPC matters — a quest giver, a villain, a recurring contact, anyone the player will remember — describe them with height, build, and at least one specific memorable detail. Not "a woman in her thirties with brown hair." Build and physicality are not optional. One vivid specific detail beats three vague ones.
+
+RACE — ROLL THE WORLD, NOT THE DEFAULT: humans and half-elves COMBINED may be at most 1 in 3 NPCs. Everyone else comes from the full world: dwarves, elves, halflings, gnomes, tieflings, dragonborn, half-orcs, orcs, goliaths, tabaxi, kenku, firbolgs, aasimar, genasi, lizardfolk, githyanki, and more. A harbormaster can be a goliath. A fence can be a kenku. A magistrate can be a lizardfolk. If your last two NPCs were human or half-elf, the next one CANNOT be.
+
+GENDER — KEEP IT NEAR 50/50: alternate across the session. If your last two NPCs were women, the next is a man, and vice versa. Once established, a character's gender and pronouns NEVER change between scenes — if Harren is a man, Harren is always a man.
+
+BANNED STOCK DETAILS — retired from the game, never use on any new NPC:
+  Facial scars of ANY kind (temple, temple-to-jaw, through the eyebrow, across the cheek)
+  Scarred, calloused, or battle-worn knuckles and hands
+  Missing fingers | one milky, clouded, or blind eye
+  "travel leathers" / "well-worn leathers" | "merchant's clothes" | "simple robes" / "homespun"
+  If you reach for one of these, STOP and pick from a different category below.
+
+INSTEAD, rotate the CATEGORY of the memorable detail:
+  Voice and speech: a whistle on S sounds, a flatland drawl, says "mm" before every sentence, too quiet for the room
+  Posture and movement: leads with the chin, never fully sits down, rolls a coin when thinking, walks heel-heavy
+  Teeth and mouth: a gold canine, chews a fennel stalk, smiles with the mouth closed
+  Hair and grooming: braided beard with copper rings, hair chopped with a knife, immaculate except dirt under every nail
+  Actual clothing — name real garments: a dyed-green wool coat with bone toggles, a butcher's apron over fine shirtsleeves, salt-crusted boots, a foreign-cut jacket, one glove
+  Habits and possessions: feeds crumbs to a pocket mouse, counts change twice, wears religious tokens from three different faiths
+  Smell and presence: woodsmoke and ink, lavender soap over horse sweat, crowds part without knowing why
+Invent fresh details inside these categories — the examples are a register, not a list to reuse.`;
+
 // ── System Prompt — Haiku ──────────────────────────────────────────────────────
 export const buildSystemPrompt = (char) => {
   const ctx = buildCtxSections(char);
@@ -396,6 +421,8 @@ BIO RULE: Do not mine the player's backstory for antagonists or hooks unless the
 NAME YOUR CREATURES: Every enemy is a specific named type the player could look up — a ghoul, a bandit captain, a dire wolf. Never "a figure," "a presence," "a shape in the dark." If it is unknown to the player, still describe it so it maps to one real creature you have in mind.
 TONE VARIETY: Not every scene is dark and ominous. Use sunny days, busy markets, rowdy taverns, petty annoyances, comedy. Match the mood to what is actually happening.
 
+${NPC_BLOCK}
+
 ── ENEMY POWER — DEFAULT LOW ──
 PLAYER LEVEL: ${char.level}. Routine encounters sit around CR ${crEasy}\u2013${crHard}. A genuinely hard fight tops out near CR ${crTough}. NEVER use a creature above CR ${crCap} unless the player already knew it was coming and chose to walk into it.
 Think in tiers and default to the bottom two:
@@ -494,12 +521,7 @@ Every enemy must have a specific named type. No "a presence", "something that mo
 
 Default to the Monster Manual. Most enemies are ordinary creatures with ordinary lifespans and simple motives — goblins, orcs, bandits, kobolds, wolves, skeletons, cultists, gnolls, ogres, trolls. Hungry, greedy, territorial, scared, or paid is a complete motive. Retired enemy flavor: never describe an enemy as "ancient", "primordial", "elder", "older than", "predating" anything, "sealed", "bound", "slumbering", or "awakened after centuries" — an enemy's age is almost never what makes it interesting, and a backstory in geological time is a sign to send an orc instead. Nine of ten enemies were alive last week and want something simple; a rare major villain may have history measured in years, not eons. This applies to enemies — established allies and world figures keep their existing lore.
 
-── NPC DESCRIPTIONS ──
-When an NPC matters — a quest giver, a villain, a recurring contact, anyone the player will remember — describe them with enough physical detail that the player can picture them completely. That means height, build, and at least one specific memorable detail. Not "a woman in her thirties with brown hair." Something complete: a short broad-shouldered dwarf woman with calloused hands and a voice too loud for the room, or a tall gaunt tiefling whose expensive clothes hang off him like he recently lost weight. Build and physicality are not optional — a character description without them is a face floating in a void. One vivid specific detail beats three vague ones, but don't skip the fundamentals.
-
-NPC gender: vary naturally — not every NPC needs to be female, not every NPC needs to be male. Let it follow the character, not a pattern. More importantly: once you establish a character's gender and pronouns, use them consistently every single time that character appears. Never switch pronouns on a character between scenes. If Harren is a man, Harren is always a man.
-
-Racial diversity: the world contains dwarves, gnomes, tieflings, dragonborn, half-orcs, githyanki, tabaxi, kenku, lizardfolk, aasimar, genasi, and dozens of others. Do not default to human or half-elf for every NPC. A harbormaster might be a gruff dwarf woman. A city fence might be a nervous gnome. A mercenary captain might be a scarred half-orc. Use the full breadth of the world.
+${NPC_BLOCK}
 
 ── ENCOUNTER SCALE ──
 Default low, and anchor power to the player. This character is level ${char.level}: routine encounters sit around CR ${crEasy}\u2013${crHard}, a genuinely hard fight tops out near CR ${crTough}, and nothing above CR ${crCap} appears unless the player already knew it was coming and chose to walk into it. Think in tiers and lean on the bottom two — fodder (the weakest threats that fit the locale: bandits, wolves, the lowest native creatures of wherever the player actually is), standard (a competent band, a single dangerous beast, a minor leader), elite (a named villain with a reason to be there and a lair — rare and foreshadowed), and apex (the legendary stuff — once per arc, earned, never a random encounter and never "what was underneath"). Pick the lowest tier that fits; invent the specific creature freely but keep the power down there. Don't reach for a legendary monster just because it sounds impressive.
