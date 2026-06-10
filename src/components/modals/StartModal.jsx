@@ -7,6 +7,7 @@ import { colors, fonts, btn } from '../../styles/theme.js';
 export function AdventureStartModal({ onRandom, onManual }) {
   const [mode, setMode] = useState(null); // null = choosing | 'manual'
   const [text, setText] = useState('');
+  const [antagonist, setAntagonist] = useState('');
 
   const card = {
     background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6,
@@ -46,9 +47,16 @@ export function AdventureStartModal({ onRandom, onManual }) {
               rows={6}
               style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',resize:'vertical',boxSizing:'border-box',marginBottom:12}}
             />
+            <div style={{fontSize:12,color:colors.textGhost,marginBottom:6,lineHeight:1.5}}>Arc antagonist <span style={{color:colors.textFaint}}>(optional — the hidden villain all foreshadowing builds toward; leave blank to roll one)</span></div>
+            <input
+              value={antagonist}
+              onChange={e=>setAntagonist(e.target.value)}
+              placeholder={'e.g. a smuggling ring run out of the Saltmere docks'}
+              style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:12}}
+            />
             <div style={{display:'flex',gap:10}}>
               <button style={{...btn(false),flex:'0 0 auto'}} onClick={()=>setMode(null)}>← Back</button>
-              <button style={{...btn(true),flex:1,opacity:text.trim()?1:0.4}} disabled={!text.trim()} onClick={()=>text.trim()&&onManual(text.trim())}>Begin Here →</button>
+              <button style={{...btn(true),flex:1,opacity:text.trim()?1:0.4}} disabled={!text.trim()} onClick={()=>text.trim()&&onManual(text.trim(), antagonist.trim() || null)}>Begin Here →</button>
             </div>
           </div>
         )}

@@ -279,7 +279,7 @@ export default function App() {
   // Fresh adventures route through a choice: random seed or a player-written opening.
   const beginAdventure = (char) => setAdventureStartChar(char);
 
-  const startAdventure = async (char, openingOverride = null) => {
+  const startAdventure = async (char, openingOverride = null, antagonistOverride = null) => {
     log('startAdventure', { level: char.level, xp: char.xp, hp: char.hp });
     setLoading(true);
     setApiError('');
@@ -288,8 +288,8 @@ export default function App() {
       let seedPrompt;
       let arcAntagonist;
       if (openingOverride && openingOverride.trim()) {
-        // Player wrote the opening — still roll a hidden arc villain in the background.
-        arcAntagonist = rollAntagonist(char.level);
+        // Player wrote the opening — use their antagonist if given, else roll a hidden one.
+        arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level);
         seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}`;
       } else {
         const seed = rollAdventureSeed(char.level);
@@ -1028,7 +1028,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       {adventureStartChar && (
         <AdventureStartModal
           onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
-          onManual={(text) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text); }}
+          onManual={(text, antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text, antagonist); }}
         />
       )}
 
