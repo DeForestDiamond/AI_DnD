@@ -299,7 +299,7 @@ export default function App() {
         : buildSystemPrompt(char);
       let seedPrompt;
       if (openingOverride && openingOverride.trim()) {
-        seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with 2-3 clear choices.\n\nPLAYER'S OPENING:\n${openingOverride.trim()}`;
+        seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}`;
       } else {
         const seed = rollAdventureSeed(char.level);
         seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
@@ -317,7 +317,7 @@ WILDCARD (a distinctive detail to work into the opening): ${seed.wildcard}
 ADVENTURE HOOK (what draws the player in): ${seed.hook}
 ANTAGONIST (do NOT reveal or name yet — plant subtle setup only): ${seed.antagonist}
 
-REQUIRED: Invent a specific named location that fits the setting (e.g. "The Saltwind Docks of Port Calavar"). Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock "you stand in X" description. End at a natural decision point — that can be 2-3 choices, a question an NPC puts to the player, or an immediate situation demanding a reaction. Vary this; do not always present a tidy numbered list.
+REQUIRED: Invent a specific named location that fits the setting (e.g. "The Saltwind Docks of Port Calavar"). Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock "you stand in X" description. End at a natural decision point and ALWAYS close with exactly 4 numbered choices — vary the framing that leads into them (a question an NPC puts to the player, a confrontation, a deadline), but the 4 numbered choices themselves are mandatory and never omitted. At least one should be chaotic or unconventional, at least one ruthless or self-serving, all written neutrally.
 
 NON-COMPLIANCE: If you open with anything other than the parameters above, you have failed your role as DM.`;
       }
