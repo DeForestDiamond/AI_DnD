@@ -196,7 +196,9 @@ Skill check: [ROLL: dexterity difficulty 14] — wait for result before narratin
 Enemy hits the player: [HP: -N] (roll the enemy's damage yourself and use the total)
 Environmental damage: [DAMAGE: 5]
 Player heal: [HP: +N]  |  Player damage: [HP: -N]
-  PLAYER ONLY: [HP:] and [DAMAGE:] change the PLAYER's hit points and NOTHING ELSE. NEVER use them for damage the player deals to an enemy or NPC — a creature being wounded or killed is narrated in prose, with no tag. If it isn't the player's own HP changing, do not use an HP/damage tag.
+  PLAYER ONLY: [HP:] and [DAMAGE:] change the PLAYER's hit points and NOTHING ELSE.
+  Enemies and NPCs have NO tracked hit points and NO tag of any kind. Their wounds and deaths exist only in your prose.
+  THE FATAL MISTAKE: the player hits an enemy for 14, you write [HP: -14] — the PLAYER just lost 14 HP. Never tag damage the player deals. There is no tag for it. Prose only.
 Location change: [LOCATION: Millhaven]
 Equip item: [EQUIP: Sword | mainhand]
   Slots: mainhand, offhand, armor, head, neck, cloak, hands, ring1, ring2, feet
@@ -376,6 +378,7 @@ ${TAGS_BLOCK}
 Natural healing (rest, non-magical): narrate it, no tag needed.
 Magical healing (spells, potions): [HP: +10]
 Player taking damage: [HP: -5]
+Player DEALING damage: NO TAG. Enemies have no tracked HP — if the player hits for 14, [HP: -14] wounds the PLAYER. Enemy wounds are prose only.
 
 ── PLAYER AUTONOMY ──
 Respect ALL player decisions. Never use companions, NPCs, or convenient failures to override player choices.
@@ -457,6 +460,7 @@ LOSE HP with [HP: -N] for:
 
 Natural healing (non-magical rest without Hit Dice): narrate it but no tag — HP updates at next save.
 Never invent HP numbers — only use amounts the game mechanics justify.
+NEVER tag damage the player deals. Enemies have no tracked HP and no tag — if the player hits for 14, writing [HP: -14] wounds the PLAYER. Enemy wounds are prose only.
 
 ── NAMED CREATURES ONLY ──
 Every enemy must have a specific named type. No "a presence", "something that moves wrong", or "a shape in the darkness." Mystery resolves into something real.
@@ -605,12 +609,12 @@ export function useGame({ charRef, apiKey }) {
         if (result.crit) {
           const bonusDmg = rollDice(weapon.damage);
           result.totalDmg += bonusDmg + sneakDmg;
-          context += `\n\n[GAME DATA — CRITICAL HIT with ${weapon.name}. Attack: ${result.atkRoll}(nat20)=${result.totalAtk} to hit. Damage: ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit bonus${sneakDmg?`+${sneakDmg} sneak`:''} = ${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll.]`;
+          context += `\n\n[GAME DATA — CRITICAL HIT with ${weapon.name}. Attack: ${result.atkRoll}(nat20)=${result.totalAtk} to hit. Damage: ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit bonus${sneakDmg?`+${sneakDmg} sneak`:''} = ${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
         } else if (result.fumble) {
           context += `\n\n[GAME DATA — FUMBLE with ${weapon.name}. Attack roll: 1 (nat 1) — automatic miss. Narrate the player's action first, then the fumble.]`;
         } else {
           result.totalDmg += sneakDmg;
-          context += `\n\n[GAME DATA — ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll.]`;
+          context += `\n\n[GAME DATA — ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
         }
         rollResult = {
           label: `${weapon.name}${sneakDmg?' + Sneak Attack':''}`,
