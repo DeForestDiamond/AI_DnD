@@ -369,7 +369,11 @@ CHARACTER: ${char.name} | ${char.race?.name} ${classDesc} | Total Level ${char.l
 STATS: STR ${effStats.str}(${modStr(effStats.str)}) DEX ${effStats.dex}(${modStr(effStats.dex)}) CON ${effStats.con}(${modStr(effStats.con)}) INT ${effStats.int}(${modStr(effStats.int)}) WIS ${effStats.wis}(${modStr(effStats.wis)}) CHA ${effStats.cha}(${modStr(effStats.cha)})
 COMBAT: Hit Points ${char.hp}/${char.maxHp} | Armor Class ${ac} | Proficiency Bonus +${pb} | Weapon: ${weaponLine}${sneakLine}${focusLine}
 EQUIPPED: ${equippedList}
-INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${itemDetailLine}${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}
+INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${itemDetailLine}${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}${char.arc?.antagonist ? `
+
+══ ACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does) ══
+${char.arc.antagonist}
+ALL foreshadowing, rumors, clues, and buildup MUST trace back to this antagonist. NEVER invent a competing main villain. When this antagonist is permanently defeated or the storyline fully resolves, output [ARC COMPLETE] — a new arc will be assigned.` : ''}
 
 ════════════════════════════════════════
 GAME TAGS — THE APP READS THESE EXACTLY
