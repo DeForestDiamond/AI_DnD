@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PACING } from '../constants/encounters.js';
 import { colors, fonts, btn } from '../styles/theme.js';
 import { SLOTS } from '../constants/items.js';
 import { STAT_NAMES } from '../constants/classes.js';
@@ -196,7 +197,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel, onToggleContextExclusion }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel, pacing, onTogglePacing, onToggleContextExclusion }) {
   const db       = allItems(character.customItems || {});
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
@@ -303,6 +304,13 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {onToggleModel && (
         <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:colors.border}}>
           {selectedModel==='sonnet' ? '✨ DM: Sonnet' : '⚡ DM: Haiku'}
+        </button>
+      )}
+
+      {/* Pacing knob — how often the world pushes back */}
+      {onTogglePacing && (
+        <button onClick={onTogglePacing} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,borderColor:pacing==='dangerous'?colors.red:pacing==='calm'?colors.border:colors.gold}}>
+          {PACING[pacing]?.label || PACING.normal.label}
         </button>
       )}
 

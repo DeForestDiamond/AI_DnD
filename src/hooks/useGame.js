@@ -105,13 +105,16 @@ const buildCharBlock = (char) => {
   const staticPart = `CHARACTER: ${char.name} | ${char.race?.name} ${classDesc}${char.deity ? ` | ${hasWarlock?'Patron':'Deity'}: ${char.deity.name}` : ''}${playstyle}${deityLine}${raceCtx}${subclassPromptLines(char)}${abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : ''}`;
 
   // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
+  const arcLine = char.arc?.antagonist
+    ? `\nACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}. ALL foreshadowing, rumors, clues, and buildup MUST trace back to this antagonist. NEVER invent a competing main villain. When this antagonist is permanently defeated or the storyline fully resolves, output [ARC COMPLETE] — a new arc will be assigned.`
+    : '';
   const dynamicPart = `CURRENT STATE:
 Level ${char.level} | ${char.xp||0} XP | Gold: ${char.gold}gp
 HP: ${char.hp}/${char.maxHp} | AC: ${ac} | Proficiency: +${pb}
 Stats: Strength ${effStats.str}(${modStr(effStats.str)}) Dexterity ${effStats.dex}(${modStr(effStats.dex)}) Constitution ${effStats.con}(${modStr(effStats.con)}) Intelligence ${effStats.int}(${modStr(effStats.int)}) Wisdom ${effStats.wis}(${modStr(effStats.wis)}) Charisma ${effStats.cha}(${modStr(effStats.cha)})
 Weapon: ${weaponLine}${sneakLine}${focusLine}
 Equipped: ${equippedList}
-Inventory: ${invDisplay}${itemDetailLine}${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}`;
+Inventory: ${invDisplay}${itemDetailLine}${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${arcLine}`;
 
   return { staticPart, dynamicPart };
 };
@@ -233,6 +236,7 @@ Quest items — use regular [ITEM:] with a descriptive name so they sort correct
 Give and equip: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
 Quantities: [ITEM: Blast Powder | qty:3] — NEVER bake quantity into the item name
 Transform: [UPDATE: Sealed Letter | Opened Letter]
+Story arc resolved (the main antagonist is permanently defeated or the storyline fully concludes): [ARC COMPLETE]
 
 CRITICAL: Mentioning an item in prose does NOT add it to inventory. Only [ITEM:] does.`;
 
@@ -339,7 +343,7 @@ WORD LIMIT: 150 words maximum. Count them. If you hit 150 and aren't done — st
 
 NO USELESS DETAIL: Every sentence must earn its place. If a sentence does not advance the situation, reveal something new, or give the player information they need to make a decision — cut it. Directions are not prose. "The mill is east, quarter mile past the last houses" is enough. You do not need to describe the torchlight, the shuttered windows, the grinding sound growing louder, and the smell of grain dust. Pick the one detail that matters and stop.
 
-TRAVEL AND TRANSITIONS: One sentence. Two at most. "You head east and reach the mill as darkness falls." Done. Do not describe the journey. Do not describe what the player sees along the way unless something happens. If nothing happens during travel, the travel takes one sentence.
+TRAVEL AND TRANSITIONS: Short, uneventful travel takes one sentence. "You head east and reach the mill as darkness falls." But journeys are not teleportation — on travel of a day or more, the road gets a say: name one concrete thing met, passed, or survived along the way (a sentence or two, not a travelogue). When an [ENCOUNTER] directive is present, it interrupts the journey at a natural point and MUST play out in full — never summarize past it, never resolve it without the player.
 
 ALWAYS end with EXACTLY 4 numbered choices. Mandatory, every response, no exceptions. The choices do NOT count toward the word limit — if you must cut, cut narrative, NEVER the choices.
 CHOICE SPREAD: of the 4, at least one must be chaotic or unconventional, and at least one must be ruthless or self-serving. Write them as neutrally as the safe options — no strawmen, no built-in punishments, no judgmental phrasing. The choices are suggestions; the player can always do something else.
@@ -444,6 +448,7 @@ ${ctx.bio}${ctx.companionSection}${ctx.npcSection}${ctx.townsSection}
 - Always end with EXACTLY 4 numbered choices — mandatory, every response, no exceptions. They do not count toward the word or paragraph limit; if you must cut, cut narrative, never the choices.
 - Choice spread: at least one of the 4 is chaotic or unconventional, at least one is ruthless or self-serving. Write them as neutrally as the rest — no strawmen, no telegraphed punishment, no judgmental phrasing. They are suggestions, never a limit on what the player may do.
 - Never resolve travel, combat, violence, or significant events without player input first.
+- Travel of a day or more includes one concrete moment from the road (brief). An [ENCOUNTER] directive always plays out in full at a natural point — never summarized past, never resolved without the player.
 - Bare numbers refer to your most recent options only — never earlier ones.
 - Plain text only. No markdown, asterisks, bold, or headers.
 - Never abbreviate stats: write Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma in full.

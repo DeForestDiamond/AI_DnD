@@ -7,6 +7,7 @@ import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems } fro
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
 import { useGame, buildSystemPrompt, buildSystemPromptSonnet, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
+import { rollAntagonist, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
 import { Sidebar } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
@@ -40,6 +41,7 @@ export default function App() {
   const fullLogRef = useRef([]);
   const [loading, setLoading]   = useState(false);
   const abortRef = useRef(null);
+  const turnsSinceEncounter = useRef(0);
 
   const handleStop = () => {
     if (abortRef.current) {
@@ -242,18 +244,7 @@ export default function App() {
       'a street performance, market hawker, or impromptu crowd',
       'no wildcard — keep this one clean and straightforward',
     ];
-    const lowAntagonists = [
-      'a thieves guild', 'a corrupt local official', 'a gang of bandits', 'a goblin warband',
-      'a pack of gnolls', 'a rogue hedge wizard', 'a smuggling ring', 'a rival adventuring party',
-      'a cult (not cosmic horror — a mundane power-hungry cult)', 'a pirate captain',
-      'a group of hobgoblin soldiers',
-    ];
-    const higherAntagonists = [
-      'a troll', 'a young dragon', 'a vampire and their thralls', 'a necromancer raising the local dead',
-      'a yuan-ti slaver operation', 'a giant causing problems', 'a hag coven',
-    ];
-    // Bigger threats only become eligible once the party can plausibly face them.
-    const antagonists = level >= 5 ? [...lowAntagonists, ...higherAntagonists] : lowAntagonists;
+    // Antagonist arrays live in constants/encounters.js so arc re-rolls use the same pool.
     const locations = [
       'a crowded market', 'a dockside tavern', 'a crossroads inn', 'the city gates',
       'a noble\'s receiving hall', 'a back alley', 'a guildhall', 'a temple courtyard',
@@ -277,7 +268,7 @@ export default function App() {
       weather: pick(weathers),
       tone: pick(tones),
       hook: pick(hooks),
-      antagonist: pick(antagonists),
+      antagonist: rollAntagonist(level),
       location: pick(locations),
       openingStyle: pick(openingStyles),
       wildcard: pick(wildcards),
@@ -294,14 +285,15 @@ export default function App() {
     setApiError('');
     try {
       const modelConfig = MODEL_CONFIGS[selectedModel];
-      const system = selectedModel === 'sonnet'
-        ? buildSystemPromptSonnet(char)
-        : buildSystemPrompt(char);
       let seedPrompt;
+      let arcAntagonist;
       if (openingOverride && openingOverride.trim()) {
+        // Player wrote the opening — still roll a hidden arc villain in the background.
+        arcAntagonist = rollAntagonist(char.level);
         seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}`;
       } else {
         const seed = rollAdventureSeed(char.level);
+        arcAntagonist = seed.antagonist;
         seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
 You MUST open the adventure using ALL of the following parameters exactly as given. This is not a suggestion. Do not substitute, reinterpret, or ignore any field.
 
@@ -321,13 +313,18 @@ REQUIRED: Invent a specific named location that fits the setting (e.g. "The Salt
 
 NON-COMPLIANCE: If you open with anything other than the parameters above, you have failed your role as DM.`;
       }
+      // Persist the arc so every later turn's foreshadowing points at the same villain.
+      const charWithArc = { ...char, arc: { antagonist: arcAntagonist } };
+      const system = selectedModel === 'sonnet'
+        ? buildSystemPromptSonnet(charWithArc)
+        : buildSystemPrompt(charWithArc);
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
         system,
         modelConfig
       );
       if (usage) setTokenUsage(usage);
-      const newChar = applyEffects(text, char);
+      const newChar = applyEffects(text, charWithArc);
       log('applyEffects after startAdventure', { xpBefore: char.xp, xpAfter: newChar.xp, levelBefore: char.level, levelAfter: newChar.level });
       updateChar(newChar);
       const firstMsg = { role:'dm', text, id:Date.now(), roll:null };
@@ -586,9 +583,29 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       ? { context: '', rollResult: null }
       : buildActionContext(userMsg);
 
+    // ── Encounter clock ──────────────────────────────────────────────────────
+    // The app decides WHEN an encounter fires and WHAT it is; the DM only narrates.
+    // Skips turns where the player is already attacking (don't stack chaos).
+    let encounterCtx = '';
+    if (!isContinue && !actionCtx) {
+      const chance = encounterChance(turnsSinceEncounter.current, charRef.current.pacing || 'normal');
+      if (chance > 0 && Math.random() < chance) {
+        const enc = rollEncounterDirective(charRef.current);
+        encounterCtx = enc.directive;
+        log(`[ENCOUNTER] Fired after ${turnsSinceEncounter.current} turns (${enc.type}${enc.arcTied ? ', arc-tied' : ''}): ${enc.desc}`);
+        turnsSinceEncounter.current = 0;
+      } else {
+        turnsSinceEncounter.current += 1;
+      }
+    } else if (!isContinue) {
+      turnsSinceEncounter.current += 1;
+    }
+
     const continuePrefix = isContinue
       ? '[Your previous response was cut off mid-sentence. Continue EXACTLY where you left off — do not restart or summarize the scene, just resume the prose from where it ended.]\n\n'
       : '';
+
+    const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx;
 
     const history = buildApiHistory(historyOverride);
 
@@ -608,7 +625,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         ? buildSystemPromptSonnet(charRef.current)
         : buildSystemPrompt(charRef.current);
       const { text: dmText, usage: dmUsage } = await callDM(
-        [...history, { role:'user', content: continuePrefix + userMsg + actionCtx }],
+        [...history, { role:'user', content: outgoing }],
         system,
         modelConfig,
         signal
@@ -624,7 +641,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       if (resultText) {
         const { text: followUp, usage: followUpUsage } = await callDM(
           [...history,
-           { role:'user', content: continuePrefix + userMsg + actionCtx },
+           { role:'user', content: outgoing },
            { role:'assistant', content: dmText },
            { role:'user', content: resultText }
           ],
@@ -1060,6 +1077,12 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             onAddToBag={addToBag}
             selectedModel={selectedModel}
             onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : 'sonnet')}
+            pacing={character.pacing || 'normal'}
+            onTogglePacing={() => {
+              const cur = charRef.current.pacing || 'normal';
+              const next = PACING_ORDER[(PACING_ORDER.indexOf(cur) + 1) % PACING_ORDER.length];
+              updateChar({ ...charRef.current, pacing: next });
+            }}
             onToggleContextExclusion={toggleContextExclusion}
           />
         </div>

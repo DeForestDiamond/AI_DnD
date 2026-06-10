@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ITEM_DB, SLOTS, EMPTY_SLOTS, parseDMItem } from '../constants/items.js';
 import { STARTING_GEAR } from '../constants/classes.js';
 import { XP_THRESHOLDS, HP_PER_LEVEL, HP_BASE, SAVE_VERSION } from '../constants/progression.js';
+import { rollAntagonist } from '../constants/encounters.js';
 
 // -- Pure stat helpers ----------------------------------------------------------
 export const statMod   = (v) => Math.floor(((v||10) - 10) / 2);
@@ -311,6 +312,11 @@ export function useCharacter() {
     // Location tracking -- updates currentLocation for tiered context system
     const locMatch = text.match(/\[LOCATION:\s*([^\]]+)\]/i);
     if (locMatch) c.currentLocation = locMatch[1].trim();
+
+    // Arc resolved — roll a fresh antagonist; the DM sees it next turn and starts seeding
+    if (/\[ARC COMPLETE\]/i.test(text)) {
+      c.arc = { antagonist: rollAntagonist(c.level) };
+    }
 
     // Item update
     [...text.matchAll(/\[UPDATE:\s*([^|\]]+)\|([^\]]+)\]/gi)].forEach(m => {

@@ -6,7 +6,11 @@ export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoad
   const buildState = (type) => ({
     _type: type,
     _v: SAVE_VERSION,
-    character: { ...charRef.current, _v: SAVE_VERSION },
+    // Character exports are a clean start: the character and world the player
+    // built, with no story arc attached. Full saves keep the arc.
+    character: type === 'character'
+      ? (({ arc, ...rest }) => ({ ...rest, _v: SAVE_VERSION }))(charRef.current)
+      : { ...charRef.current, _v: SAVE_VERSION },
     ...(type === 'fullsave' ? { messages, storySummary: storySummaryRef.current || '' } : {}),
   });
 
