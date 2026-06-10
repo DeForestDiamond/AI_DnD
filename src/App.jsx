@@ -11,7 +11,6 @@ import { Sidebar } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
 import { SaveModal } from './components/modals/SaveModal.jsx';
-import { LevelUpModal } from './components/modals/LevelUpModal.jsx';
 import { MulticlassModal } from './components/modals/MulticlassModal.jsx';
 import { ItemPickerModal } from './components/modals/ItemPickerModal.jsx';
 import { AbilitiesModal } from './components/modals/AbilitiesModal.jsx';
@@ -37,7 +36,6 @@ function StatBar({ label, value, desc }) {
 
 export default function App() {
   const [phase, setPhase]       = useState('welcome');
-  const [messages, setMessages] = useState([]);
   const [fullLog,  setFullLog]  = useState([]);
   const fullLogRef = useRef([]);
   const [loading, setLoading]   = useState(false);
@@ -56,7 +54,6 @@ export default function App() {
   const [showSave, setShowSave] = useState(false);
   const [slotTarget, setSlotTarget] = useState(null);
   const [companionSlotTarget, setCompanionSlotTarget] = useState(null);
-  const [levelUpToast, setLevelUpToast] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
   const [showDebug, setShowDebug] = useState(false);
   const [showDirectives, setShowDirectives] = useState(false);
@@ -66,11 +63,11 @@ export default function App() {
   const [showRawTags, setShowRawTags] = useState(false);
   const [showAbilitiesModal, setShowAbilitiesModal] = useState(false);
   const [showDeityModal, setShowDeityModal] = useState(false);
-  const [deityModalContext, setDeityModalContext] = useState('multiclass');
+  const [deityModalContext, setDeityModalContext] = useState('multiclass'); // 'multiclass' or 'oldSave'
   const [deityModalClass, setDeityModalClass] = useState(null);
   const [showSubclassModal, setShowSubclassModal] = useState(false);
   const [subclassQueue, setSubclassQueue] = useState([]);
-  const [selectedModel, setSelectedModel] = useState('sonnet'); // 'sonnet' or 'haiku' // 'multiclass' or 'oldSave'
+  const [selectedModel, setSelectedModel] = useState('sonnet'); // 'sonnet' or 'haiku'
   const [storySummary, setStorySummary] = useState('');
   const [tokenUsage, setTokenUsage]     = useState(null);
   const storySummaryRef = useRef('');
@@ -95,9 +92,8 @@ export default function App() {
   } = useCharacter();
 
   const voice = useVoice();
-  const { callDM, buildActionContext, interceptRollRequest, processEnemyAttacks } = useGame({ charRef, apiKey });
+  const { callDM, buildActionContext, interceptRollRequest } = useGame({ charRef, apiKey });
 
-  const messagesRef = useRef(messages);
   // ── Save/Load ──────────────────────────────────────────────────────────────
   // Which patron class is the deity/patron being chosen for? Prefers Warlock so a
   // Fighter/Warlock multiclass shows patrons, not the cleric deity list.
@@ -110,57 +106,61 @@ export default function App() {
       Object.keys(char.classLevels || {}).some(k => patronClasses.includes(k));
   };
 
+  // ── Unified load handlers ──────────────────────────────────────────────────
+  // Every load path (file, legacy code, autosave — welcome or playing phase)
+  // funnels through these two so behavior can't drift between entry points.
+  const SPELLCASTER_CLASSES = ['Artificer','Cleric','Wizard','Warlock','Sorcerer','Druid'];
+
+  const queuePostLoadModals = (char) => {
+    const needsDeity = char._needsDeitySelection && isClericCharacter(char);
+    if (needsDeity) {
+      setDeityModalContext('oldSave');
+      setShowDeityModal(true);
+    }
+    const owedSC = owedSubclasses(char);
+    if (owedSC.length && !needsDeity) {
+      setSubclassQueue(owedSC);
+      setShowSubclassModal(true);
+    }
+    const hasSpellClass = Object.keys(char.classLevels || {}).some(c => SPELLCASTER_CLASSES.includes(c));
+    const needsAbilities = hasSpellClass && (!char.abilities || (
+      char.abilities.cantrips?.length === 0 &&
+      char.abilities.spells?.length === 0 &&
+      char.abilities.infusions?.length === 0
+    ));
+    if (needsAbilities) setTimeout(() => setShowAbilitiesModal(true), 500);
+  };
+
+  const applyLoadedFull = (char, msgs, summary = '') => {
+    loadCharacter(char);
+    setFullLog(msgs);
+    fullLogRef.current = msgs;
+    setStorySummary(summary);
+    storySummaryRef.current = summary;
+    initSummarizedAt(msgs.length, summary);
+    queuePostLoadModals(char);
+    setPhase('playing');
+  };
+
+  const applyLoadedCharacter = (char) => {
+    loadCharacter(char);
+    setFullLog([]); fullLogRef.current = [];
+    initSummarizedAt(0);
+    queuePostLoadModals(char);
+    setPhase('playing');
+    setTimeout(() => beginAdventure(char), 100);
+  };
+
   const save = useSave({
     charRef,
     messages: fullLog,
     storySummaryRef,
-    onLoadFull: (char, msgs, summary = '') => {
-      loadCharacter(char);
-      setFullLog(msgs);
-      fullLogRef.current = msgs;
-      const tail = summary ? msgs.slice(-KEEP_RECENT) : msgs;
-      setMessages(tail);
-      setStorySummary(summary);
-      storySummaryRef.current = summary;
-      initSummarizedAt(msgs.length, summary);
-      if (char._needsDeitySelection && isClericCharacter(char)) {
-        setDeityModalContext('oldSave');
-        setShowDeityModal(true);
-      }
-      {
-        const owedSC = owedSubclasses(char);
-        if (owedSC.length && !(char._needsDeitySelection && isClericCharacter(char))) {
-          setSubclassQueue(owedSC);
-          setShowSubclassModal(true);
-        }
-      }
-      setPhase('playing');
-    },
-    onLoadCharacter: (char) => {
-      loadCharacter(char);
-      setMessages([]); setFullLog([]); fullLogRef.current = [];
-      initSummarizedAt(0);
-      if (char._needsDeitySelection && isClericCharacter(char)) {
-        setDeityModalContext('oldSave');
-        setShowDeityModal(true);
-      }
-      {
-        const owedSC = owedSubclasses(char);
-        if (owedSC.length && !(char._needsDeitySelection && isClericCharacter(char))) {
-          setSubclassQueue(owedSC);
-          setShowSubclassModal(true);
-        }
-      }
-      setPhase('playing');
-      setTimeout(() => beginAdventure(char), 100);
-    },
+    onLoadFull: applyLoadedFull,
+    onLoadCharacter: applyLoadedCharacter,
   });
 
   // Auto-save after every DM response
   const addMessage = (msg) => {
-    // Update display window immediately — simple and reliable
-    setMessages(prev => [...prev, msg]);
-    // Update full log separately for persistence
     setFullLog(prev => {
       const next = [...prev, msg];
       fullLogRef.current = next;
@@ -331,20 +331,21 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       log('applyEffects after startAdventure', { xpBefore: char.xp, xpAfter: newChar.xp, levelBefore: char.level, levelAfter: newChar.level });
       updateChar(newChar);
       const firstMsg = { role:'dm', text, id:Date.now(), roll:null };
-      setMessages([firstMsg]);
       setFullLog([firstMsg]);
       fullLogRef.current = [firstMsg];
       save.autoSave(newChar, [firstMsg]);
       voice.speak(text);
     } catch (e) {
       setApiError(e.message);
-      setMessages([{ role:'dm', text:`The candle flickers... (${e.message})`, id:Date.now(), roll:null }]);
+      const errMsg = { role:'dm', text:`The candle flickers... (${e.message})`, id:Date.now(), roll:null };
+      setFullLog([errMsg]);
+      fullLogRef.current = [errMsg];
     }
     setLoading(false);
   };
 
-  const SUMMARIZE_AFTER   = 12;    // DM history window AND summary cadence (every N messages)
-  const KEEP_RECENT       = 4;     // keep this many recent messages raw (not summarized / display trim)
+  const SUMMARIZE_AFTER   = 12;    // summary cadence (every N messages); API window grows up to this + KEEP_RECENT
+  const KEEP_RECENT       = 4;     // keep this many recent messages raw (never summarized)
   const ENTRIES_BEFORE_COMPRESS = 6;  // compress oldest 4 entries when we hit this many
   const COMPRESS_KEEP_RECENT_ENTRIES = 2; // always keep newest N entries raw
   const lastSummarizedAt = useRef(0);
@@ -356,8 +357,10 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       // If we have an existing summary, calculate how many messages it covers
       // so we don't re-summarize already-covered content
       const obj = parseSummary(loadedSummary);
-      const summarizedEntries = (obj.chunks.length * ENTRIES_BEFORE_COMPRESS) + obj.entries.length;
-      // Each entry covers SUMMARIZE_AFTER messages
+      // Each archived chunk absorbed the oldest entries minus the ones kept raw
+      const entriesPerChunk = ENTRIES_BEFORE_COMPRESS - COMPRESS_KEEP_RECENT_ENTRIES;
+      const summarizedEntries = (obj.chunks.length * entriesPerChunk) + obj.entries.length;
+      // Each entry corresponds to one summarization fire, which happens every SUMMARIZE_AFTER messages
       const summarizedMsgCount = summarizedEntries * SUMMARIZE_AFTER;
       // Set to whichever is higher — summary coverage or message count rounded down
       lastSummarizedAt.current = Math.max(
@@ -464,7 +467,12 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     lastSummarizedAt.current = allMessages.length;
     log(`[SUMMARY] Firing — ${allMessages.length} msgs`);
 
-    const toSummarize = allMessages.slice(0, allMessages.length - KEEP_RECENT);
+    // Only summarize messages NOT covered by previous fires. Previous coverage
+    // ended at (prevSummarizedAt - KEEP_RECENT); sending the whole log again
+    // just re-summarizes old events into duplicate entries at growing cost.
+    const prevCovered = Math.max(0, prevSummarizedAt - KEEP_RECENT);
+    const toSummarize = allMessages.slice(prevCovered, allMessages.length - KEEP_RECENT);
+    if (toSummarize.length === 0) { lastSummarizedAt.current = prevSummarizedAt; return; }
     const historyForSummary = toSummarize.map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
       content: m.text.substring(0, 600),
@@ -539,7 +547,15 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 
   const buildApiHistory = (overrideMsgs = null) => {
     const rawSummary = storySummaryRef.current;
-    const source = overrideMsgs ?? fullLogRef.current.slice(-SUMMARIZE_AFTER);
+    const base = overrideMsgs ?? fullLogRef.current;
+    // Window = everything AFTER the point summaries already cover. This closes
+    // the gap where messages could fall out of the sliding window before being
+    // summarized, and makes the window append-only between summarizations so
+    // the message-prefix cache actually gets hits instead of paying write cost
+    // every turn. Guard: always send at least the last KEEP_RECENT messages.
+    const coveredCount = Math.max(0, lastSummarizedAt.current - KEEP_RECENT);
+    const start = Math.min(coveredCount, Math.max(0, base.length - KEEP_RECENT));
+    const source = base.slice(start);
     const apiMsgs = source.map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
       content: m.text,
@@ -576,7 +592,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 
     const history = buildApiHistory(historyOverride);
 
-    log(`[API] Sending to Haiku: ${history.length} history messages (summary: ${storySummaryRef.current ? 'yes' : 'no'}, messages state: ${messages.length}, fullLog: ${fullLogRef.current.length})`);
+    log(`[API] Sending: ${history.length} history messages (summary: ${storySummaryRef.current ? 'yes' : 'no'}, fullLog: ${fullLogRef.current.length})`);
 
     addMessage({ role:'user', text:userMsg, id:Date.now() });
 
@@ -639,7 +655,12 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     } catch (e) {
       if (e.name === 'AbortError') {
         // User stopped the request — remove the pending user message from log
-        setFullLog(prev => { const n = prev.slice(0,-1); fullLogRef.current = n; return n; });
+        setFullLog(prev => {
+          const n = prev.slice(0,-1);
+          fullLogRef.current = n;
+          save.autoSave(charRef.current, n);
+          return n;
+        });
       } else {
         setApiError(e.message);
         addMessage({ role:'dm', text:`The magic wavers... (${e.message})`, id:Date.now(), roll:null });
@@ -724,29 +745,8 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         loadFromCode={save.loadFromCode}
         hasAutoSave={save.hasAutoSave}
         loadAutoSave={save.loadAutoSave}
-        onLoadFull={(char, msgs, summary = '') => {
-          loadCharacter(char);
-          setFullLog(msgs); fullLogRef.current = msgs;
-          const tail = summary ? msgs.slice(-KEEP_RECENT) : msgs;
-          setMessages(tail); setStorySummary(summary); storySummaryRef.current = summary;
-          initSummarizedAt(msgs.length, summary);
-          setPhase('playing');
-          if (char._needsDeitySelection && isClericCharacter(char)) {
-            setDeityModalContext('oldSave');
-            setShowDeityModal(true);
-          }
-        }}
-        onLoadCharacter={(char) => {
-          loadCharacter(char);
-          setMessages([]); setFullLog([]); fullLogRef.current = [];
-          initSummarizedAt(0);
-          setPhase('playing');
-          if (char._needsDeitySelection && isClericCharacter(char)) {
-            setDeityModalContext('oldSave');
-            setShowDeityModal(true);
-          }
-          setTimeout(()=>beginAdventure(char),100);
-        }}
+        onLoadFull={applyLoadedFull}
+        onLoadCharacter={applyLoadedCharacter}
       />}
       <div style={{maxWidth:500,padding:40}}>
         <div style={{fontSize:64,marginBottom:16}}>🐉</div>
@@ -934,48 +934,8 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         loadFromCode={save.loadFromCode}
         hasAutoSave={save.hasAutoSave}
         loadAutoSave={save.loadAutoSave}
-        onLoadFull={(char, msgs, summary = '') => {
-          loadCharacter(char);
-          setFullLog(msgs);
-          fullLogRef.current = msgs;
-          const tail = summary ? msgs.slice(-KEEP_RECENT) : msgs;
-          setMessages(tail);
-          setStorySummary(summary);
-          storySummaryRef.current = summary;
-          initSummarizedAt(msgs.length, summary);
-          setPhase('playing');
-          if (char._needsDeitySelection && isClericCharacter(char)) {
-            setDeityModalContext('oldSave');
-            setShowDeityModal(true);
-          }
-          const spellcasters = ['Artificer','Cleric','Wizard'];
-          const hasSpellClass = Object.keys(char.classLevels || {}).some(c => spellcasters.includes(c));
-          const needsAbilities = hasSpellClass && (!char.abilities || (
-            char.abilities.cantrips?.length === 0 &&
-            char.abilities.spells?.length === 0 &&
-            char.abilities.infusions?.length === 0
-          ));
-          if (needsAbilities) setTimeout(() => setShowAbilitiesModal(true), 500);
-        }}
-        onLoadCharacter={(char) => {
-          loadCharacter(char);
-          setMessages([]); setFullLog([]); fullLogRef.current = [];
-          initSummarizedAt(0);
-          setPhase('playing');
-          if (char._needsDeitySelection && isClericCharacter(char)) {
-            setDeityModalContext('oldSave');
-            setShowDeityModal(true);
-          }
-          const spellcasters = ['Artificer','Cleric','Wizard'];
-          const hasSpellClass = Object.keys(char.classLevels || {}).some(c => spellcasters.includes(c));
-          const needsAbilities = hasSpellClass && (!char.abilities || (
-            char.abilities.cantrips?.length === 0 &&
-            char.abilities.spells?.length === 0 &&
-            char.abilities.infusions?.length === 0
-          ));
-          if (needsAbilities) setTimeout(() => setShowAbilitiesModal(true), 500);
-          setTimeout(()=>beginAdventure(char),100);
-        }}
+        onLoadFull={applyLoadedFull}
+        onLoadCharacter={applyLoadedCharacter}
       />}
 
       {showAbilitiesModal && (
@@ -1029,7 +989,18 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
               setShowDeityModal(true);
             }
           }}
-          onChooseStat={(className, stat) => spendStatPoint(className, stat)}
+          onChooseStat={(className, stat) => {
+            spendStatPoint(className, stat);
+            // If this level-up crosses the class's subclass pick level (e.g.
+            // Druid 2, Monk 3), prompt now instead of waiting for a file load.
+            const cur = charRef.current;
+            const newLevels = { ...(cur.classLevels || {}), [className]: ((cur.classLevels || {})[className] || 0) + 1 };
+            const owed = owedSubclasses({ ...cur, classLevels: newLevels });
+            if (owed.length) {
+              setSubclassQueue(q => [...new Set([...q, ...owed])]);
+              setShowSubclassModal(true);
+            }
+          }}
         />
       )}
 

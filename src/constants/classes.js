@@ -49,14 +49,16 @@ export const STAT_DESC = {
 };
 
 export const STARTING_GEAR = {
-  Fighter:      { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword', offhand:'Shield', armor:'Chain Shirt' },  inventory:['Torch','Rations x3'] },
-  Wizard:       { slots:{ ...EMPTY_SLOTS, mainhand:'Dagger' },                                             inventory:['Spellbook','Arcane Focus','Torch','Rations x3'] },
-  Rogue:        { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword' },                                         inventory:['Dagger','Hunting Knife','Thieves\' Tools','Torch','Rations x3'] },
-  Cleric:       { slots:{ ...EMPTY_SLOTS, mainhand:'Mace', offhand:'Shield' },                             inventory:['Holy Symbol','Torch','Rations x3'] },
-  Artificer:    { slots:{ ...EMPTY_SLOTS, mainhand:'Arcane Pistol' },                                      inventory:['Thieves\' Tools','Tinker\'s Tools','Component Pouch','Torch','Rations x3'] },
-  Illrigger:    { slots:{ ...EMPTY_SLOTS, mainhand:'Longsword', armor:'Chain Shirt' },                     inventory:['Javelin x5','Torch','Rations x3'] },
-  Monk:         { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword' },                                         inventory:['10 Darts','Meditation Beads','Rations x3'] },
-  Barbarian:    { slots:{ ...EMPTY_SLOTS, mainhand:'Greataxe', armor:'Hide Armor' },                       inventory:['Handaxe x2','Torch','Rations x3'] },
-  Warlock:      { slots:{ ...EMPTY_SLOTS, mainhand:'Dagger' },                                             inventory:['Arcane Focus','Component Pouch','Torch','Rations x3'] },
-  'Blood Hunter': { slots:{ ...EMPTY_SLOTS, mainhand:'Longsword', armor:'Studded Leather' },               inventory:['Hunter\'s Kit','Torch','Rations x3'] },
+  Fighter:      { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword', offhand:'Shield', armor:'Chain Shirt' },  inventory:['Torch','Rations','Rations','Rations'] },
+  Wizard:       { slots:{ ...EMPTY_SLOTS, mainhand:'Dagger' },                                             inventory:['Spellbook','Arcane Focus','Torch','Rations','Rations','Rations'] },
+  Rogue:        { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword' },                                         inventory:['Dagger','Hunting Knife','Thieves\' Tools','Torch','Rations','Rations','Rations'] },
+  Cleric:       { slots:{ ...EMPTY_SLOTS, mainhand:'Mace', offhand:'Shield' },                             inventory:['Holy Symbol','Torch','Rations','Rations','Rations'] },
+  Artificer:    { slots:{ ...EMPTY_SLOTS, mainhand:'Arcane Pistol' },                                      inventory:['Thieves\' Tools','Tinker\'s Tools','Component Pouch','Torch','Rations','Rations','Rations'] },
+  Illrigger:    { slots:{ ...EMPTY_SLOTS, mainhand:'Longsword', armor:'Chain Shirt' },                     inventory:['Javelin','Javelin','Javelin','Javelin','Javelin','Torch','Rations','Rations','Rations'] },
+  Monk:         { slots:{ ...EMPTY_SLOTS, mainhand:'Shortsword' },                                         inventory:[...Array(10).fill('Dart'),'Meditation Beads','Rations','Rations','Rations'] },
+  Barbarian:    { slots:{ ...EMPTY_SLOTS, mainhand:'Greataxe', armor:'Hide Armor' },                       inventory:['Handaxe','Handaxe','Torch','Rations','Rations','Rations'] },
+  Warlock:      { slots:{ ...EMPTY_SLOTS, mainhand:'Dagger' },                                             inventory:['Arcane Focus','Component Pouch','Torch','Rations','Rations','Rations'] },
+  'Blood Hunter': { slots:{ ...EMPTY_SLOTS, mainhand:'Longsword', armor:'Studded Leather' },               inventory:['Hunter\'s Kit','Torch','Rations','Rations','Rations'] },
+  Sorcerer:     { slots:{ ...EMPTY_SLOTS, mainhand:'Dagger' },                                             inventory:['Arcane Focus','Component Pouch','Torch','Rations','Rations','Rations'] },
+  Druid:        { slots:{ ...EMPTY_SLOTS, mainhand:'Quarterstaff', offhand:'Shield' },                     inventory:['Druidic Focus','Herbalism Kit','Torch','Rations','Rations','Rations'] },
 };

@@ -87,11 +87,19 @@ export const equippableInSlot = (char, slotId) => {
   const slot = SLOTS.find(s => s.id === slotId);
   if (!slot) return [];
   const db = allItems(char.customItems);
+  const validSlotIds = SLOTS.map(s => s.id);
   return char.inventory.filter(name => {
     const data = db[name];
     if (!data) return slot.accepts.includes('magic');
     if (slotId === 'offhand' && data.type === 'shield') return true;
-    return slot.accepts.includes(data.type);
+    if (!slot.accepts.includes(data.type)) return false;
+    // Magic items with a declared slot only fit that slot ('ring' fits either ring slot).
+    // Items with a missing or unrecognized slot stay flexible so nothing gets stranded.
+    if (data.type === 'magic' && data.slot) {
+      if (data.slot === 'ring') return slotId === 'ring1' || slotId === 'ring2';
+      if (validSlotIds.includes(data.slot)) return data.slot === slotId;
+    }
+    return true;
   });
 };
 
@@ -234,7 +242,7 @@ export function useCharacter() {
       const classLevels  = { ...(c.classLevels || {}) };
       classLevels[className] = (classLevels[className] || 0) + 1;
       const newStats  = { ...c.stats, [stat]: c.stats[stat] + 1 };
-      const hpPerLevel = { Fighter:6, Wizard:4, Rogue:5, Cleric:5, Artificer:5, Illrigger:6, Monk:5, Barbarian:7, Warlock:5, 'Blood Hunter':5 }[className] || 5;
+      const hpPerLevel = HP_PER_LEVEL[className] || 5;
       const conMod     = statMod(newStats.con);
       const hpGain     = Math.max(1, hpPerLevel + conMod);
       const newMaxHp   = c.maxHp + hpGain;
@@ -256,10 +264,12 @@ export function useCharacter() {
 
     // HP -- [DAMAGE:] = player takes damage, [HEAL:] = player heals
     // Also supports [HP: +10] for healing and [HP: -5] for damage
-    const dmgM  = text.match(/\[DAMAGE:\s*(\d+)\]/i);
-    if (dmgM)  c.hp = Math.max(0, c.hp - parseInt(dmgM[1]));
-    const healM = text.match(/\[HEAL:\s*(\d+)\]/i);
-    if (healM) c.hp = Math.min(c.maxHp, c.hp + parseInt(healM[1]));
+    [...text.matchAll(/\[DAMAGE:\s*(\d+)\]/gi)].forEach(m => {
+      c.hp = Math.max(0, c.hp - parseInt(m[1]));
+    });
+    [...text.matchAll(/\[HEAL:\s*(\d+)\]/gi)].forEach(m => {
+      c.hp = Math.min(c.maxHp, c.hp + parseInt(m[1]));
+    });
     // [HP: +10] or [HP: -5] — sign determines heal vs damage
     [...text.matchAll(/\[HP:\s*([+-]?\d+)\]/gi)].forEach(m => {
       const val = parseInt(m[1]);
@@ -303,7 +313,7 @@ export function useCharacter() {
     if (locMatch) c.currentLocation = locMatch[1].trim();
 
     // Item update
-    [...text.matchAll(/\[UPDATE:\s*([^|^\]]+)\|([^\]]+)\]/gi)].forEach(m => {
+    [...text.matchAll(/\[UPDATE:\s*([^|\]]+)\|([^\]]+)\]/gi)].forEach(m => {
       const oldName = m[1].trim();
       const newName = m[2].trim();
       const idx = c.inventory.indexOf(oldName);
@@ -317,7 +327,7 @@ export function useCharacter() {
     });
 
     // DM equip -- only first occurrence removed from inventory
-    [...text.matchAll(/\[EQUIP:\s*([^|^\]]+)\|?\s*([^\]]*)\]/gi)].forEach(m => {
+    [...text.matchAll(/\[EQUIP:\s*([^|\]]+)\|?\s*([^\]]*)\]/gi)].forEach(m => {
       const name     = m[1].trim();
       const slotHint = m[2].trim().toLowerCase();
       const db       = allItems(c.customItems);

@@ -25,13 +25,6 @@ function DiceRollDisplay({ roll }) {
           </span>
         </div>
       )}
-      {roll.enemyDmg != null && (
-        <div style={{display:'inline-flex',alignItems:'center',gap:4,background:'#200808',border:'1px solid #e07030',borderRadius:6,padding:'4px 10px'}}>
-          <span style={{fontFamily:fonts.display,color:'#e07030',fontSize:11}}>
-            💀 Enemy dealt {roll.enemyDmg} damage
-          </span>
-        </div>
-      )}
     </div>
   );
 }

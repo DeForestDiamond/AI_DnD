@@ -10,11 +10,17 @@ export const WEAPON_DB = {
   'Longbow':       { type:'weapon', damage:'1d8', bonus:0, finesse:false, range:'ranged' },
   'Hand Crossbow': { type:'weapon', damage:'1d6', bonus:0, finesse:false, range:'ranged' },
   'Hunting Knife': { type:'weapon', damage:'1d4', bonus:0, finesse:true,  range:'melee'  },
+  'Greataxe':      { type:'weapon', damage:'1d12', bonus:0, finesse:false, range:'melee'  },
+  'Javelin':       { type:'weapon', damage:'1d6', bonus:0, finesse:false, range:'melee'  },
+  'Dart':          { type:'weapon', damage:'1d4', bonus:0, finesse:true,  range:'ranged' },
+  'Quarterstaff':  { type:'weapon', damage:'1d6', bonus:0, finesse:false, range:'melee'  },
   'Arcane Pistol': { type:'weapon', damage:'1d10', bonus:0, finesse:false, range:'ranged', label:'INT-based, arcane focus, no ammo required' },
 };
 
 export const ARMOR_DB = {
   'Leather Armor': { type:'armor', ac:11, dexBonus:true,  maxDex:null },
+  'Studded Leather': { type:'armor', ac:12, dexBonus:true, maxDex:null },
+  'Hide Armor':    { type:'armor', ac:12, dexBonus:true,  maxDex:2   },
   'Chain Shirt':   { type:'armor', ac:13, dexBonus:true,  maxDex:2   },
   'Scale Mail':    { type:'armor', ac:14, dexBonus:true,  maxDex:2   },
   'Chain Mail':    { type:'armor', ac:16, dexBonus:false, maxDex:0   },

@@ -38,15 +38,6 @@ export const performAttack = (weapon, stats, level) => {
   return { atkRoll, atkBonus, totalAtk, dmgRoll, dmgBonus, totalDmg, crit, fumble };
 };
 
-export const performEnemyRoll = (notation) => {
-  // Parse enemy attack/damage notation like "1d6+3"
-  const match = notation.match(/^(\d+d\d+)([+-]\d+)?$/i);
-  if (!match) return rollDie(6);
-  const base  = rollDice(match[1]);
-  const bonus = match[2] ? parseInt(match[2]) : 0;
-  return Math.max(1, base + bonus);
-};
-
 // ── Model configs ──────────────────────────────────────────────────────────────
 export const MODEL_CONFIGS = {
   sonnet: {
@@ -202,10 +193,10 @@ Gold: [GOLD: +10] or [GOLD: -10]
 Item gained: [ITEM: Health Potion]
 Item removed: [REMOVE: Health Potion]
 Skill check: [ROLL: dexterity difficulty 14] — wait for result before narrating outcome
-Enemy attack: [ENEMY ATTACK: 1d6+2]
+Enemy hits the player: [HP: -N] (roll the enemy's damage yourself and use the total)
 Environmental damage: [DAMAGE: 5]
 Player heal: [HP: +N]  |  Player damage: [HP: -N]
-  PLAYER ONLY: [HP:], [ENEMY ATTACK:], and [DAMAGE:] change the PLAYER's hit points and NOTHING ELSE. NEVER use any of them for damage the player deals to an enemy or NPC — a creature being wounded or killed is narrated in prose, with no tag. If it isn't the player's own HP changing, do not use an HP/damage tag.
+  PLAYER ONLY: [HP:] and [DAMAGE:] change the PLAYER's hit points and NOTHING ELSE. NEVER use them for damage the player deals to an enemy or NPC — a creature being wounded or killed is narrated in prose, with no tag. If it isn't the player's own HP changing, do not use an HP/damage tag.
 Location change: [LOCATION: Millhaven]
 Equip item: [EQUIP: Sword | mainhand]
   Slots: mainhand, offhand, armor, head, neck, cloak, hands, ring1, ring2, feet
@@ -240,10 +231,6 @@ Quest items — use regular [ITEM:] with a descriptive name so they sort correct
 Give and equip: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
 Quantities: [ITEM: Blast Powder | qty:3] — NEVER bake quantity into the item name
 Transform: [UPDATE: Sealed Letter | Opened Letter]
-New companion: [COMPANION: Name | relationship | description | location]
-Remove companion: [COMPANION REMOVE: Name]
-New NPC: [NPC: Name | role | description | location | relationship]
-New town: [TOWN: Name | description]
 
 CRITICAL: Mentioning an item in prose does NOT add it to inventory. Only [ITEM:] does.`;
 
@@ -461,7 +448,7 @@ GAIN HP with [HP: +N] for:
 - Long rest / full night's sleep — use [HP: +N] to restore to maximum
 
 LOSE HP with [HP: -N] for:
-- Damage not covered by [ENEMY ATTACK:] or [DAMAGE:] tags
+- An enemy hitting the player (roll the enemy's damage yourself and tag the total)
 - Poison damage over time
 - Blood Hunter Crimson Rite activation (costs player HP)
 - Falling damage
@@ -555,7 +542,6 @@ export function useGame({ charRef, apiKey }) {
         'Content-Type': 'application/json',
         'x-api-key': key,
         'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'prompt-caching-2024-07-31',
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
@@ -666,17 +652,5 @@ export function useGame({ charRef, apiKey }) {
     return { resultText, rollResult };
   };
 
-  // Handle enemy attack tags from DM
-  const processEnemyAttacks = (dmText, log) => {
-    let totalDamage = 0;
-    const matches = [...dmText.matchAll(/\[ENEMY ATTACK:\s*([^\]]+)\]/gi)];
-    matches.forEach(m => {
-      const dmg = performEnemyRoll(m[1].trim());
-      log?.(`[ENEMY ATTACK] ${m[1].trim()} = ${dmg} damage`);
-      totalDamage += dmg;
-    });
-    return totalDamage;
-  };
-
-  return { callDM, buildActionContext, interceptRollRequest, processEnemyAttacks };
+  return { callDM, buildActionContext, interceptRollRequest };
 }

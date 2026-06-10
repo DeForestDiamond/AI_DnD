@@ -4,7 +4,6 @@ import { btn, panel, colors, fonts } from '../../styles/theme.js';
 export function SaveModal({ onClose, generateFullSave, generateCharExport, loadFromFile, loadFromCode, hasAutoSave, loadAutoSave, onLoadFull, onLoadCharacter }) {
   const [msg, setMsg]           = useState('');
   const [loadCode, setLoadCode] = useState('');
-  const [compressing, setCompressing] = useState(false);
   const fileRef = useRef(null);
 
   const doFullSave = () => {
