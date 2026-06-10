@@ -315,6 +315,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       }
       // Persist the arc so every later turn's foreshadowing points at the same villain.
       const charWithArc = { ...char, arc: { antagonist: arcAntagonist } };
+      log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
       const system = selectedModel === 'sonnet'
         ? buildSystemPromptSonnet(charWithArc)
         : buildSystemPrompt(charWithArc);
@@ -666,6 +667,9 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       if (dmgMatch) log(`[DAMAGE] ${dmgMatch[1]} damage taken`);
 
       let newChar = applyEffects(finalText, charRef.current);
+      if (newChar.arc?.antagonist !== charRef.current.arc?.antagonist) {
+        log(`[ARC] Arc complete — new antagonist rolled: ${newChar.arc?.antagonist}`);
+      }
       updateChar(newChar);
       addMessage({ role:'dm', text:finalText, id:Date.now(), roll:finalRoll });
       voice.speak(finalText);
