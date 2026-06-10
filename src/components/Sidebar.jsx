@@ -309,7 +309,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
 
       {/* Pacing knob — how often the world pushes back */}
       {onTogglePacing && (
-        <button onClick={onTogglePacing} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,borderColor:pacing==='dangerous'?colors.red:pacing==='calm'?colors.border:colors.gold}}>
+        <button onClick={onTogglePacing} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,opacity:pacing==='off'?0.6:1,borderColor:pacing==='dangerous'?colors.red:pacing==='normal'?colors.gold:colors.border}}>
           {PACING[pacing]?.label || PACING.normal.label}
         </button>
       )}
