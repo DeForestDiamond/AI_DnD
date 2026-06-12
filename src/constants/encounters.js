@@ -5,19 +5,48 @@
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 // ── Arc antagonists (shared by adventure seeds and arc re-rolls) ───────────────
-const LOW_ANTAGONISTS = [
+// Three tiers, gated by level. An arc villain is built up over many sessions and
+// fought on the player's terms, so tiers run ahead of the random-encounter CR cap.
+const LOW_ANTAGONISTS = [ // levels 1+: local, mundane, street-level
   'a thieves guild', 'a corrupt local official', 'a gang of bandits', 'a goblin warband',
   'a pack of gnolls', 'a rogue hedge wizard', 'a smuggling ring', 'a rival adventuring party',
   'a cult (not cosmic horror — a mundane power-hungry cult)', 'a pirate captain',
   'a group of hobgoblin soldiers',
+  'a kobold nest with an ambitious chief', 'an orc raiding band', 'a press gang shanghaiing workers',
+  'a crooked merchant consortium', 'a poaching outfit stripping the land', 'a counterfeiting operation',
+  'a crew of grave robbers', 'a protection racket squeezing the district', 'deserters turned brigands',
+  'a cattle-rustling crew', 'a crooked sheriff and their deputies', 'a fence moving stolen goods through town',
+  'a den of wererats under the streets', 'an extortionist moneylender with hired muscle',
+  'a bugbear gang shaking down travelers', 'a kenku forgery ring', 'an arsonist-for-hire and whoever pays them',
 ];
-const HIGHER_ANTAGONISTS = [
+const MID_ANTAGONISTS = [ // levels 5+: regional threats, real monsters
   'a troll', 'a young dragon', 'a vampire and their thralls', 'a necromancer raising the local dead',
   'a yuan-ti slaver operation', 'a giant causing problems', 'a hag coven',
+  'an ogre warband under a cunning leader', 'a wight commanding restless dead',
+  'a doppelganger infiltration ring', 'a green hag quietly running a town',
+  'a werewolf pack claiming territory', 'a duergar slaving operation',
+  'the vanguard of a hobgoblin legion', 'a medusa building a court of statues',
+  'a cult with a real fiend on retainer', 'an oni preying on a town in disguise',
+  'a bandit army unifying the local gangs',
+];
+const HIGH_ANTAGONISTS = [ // levels 9+: campaign-scale villains
+  'a young adult dragon carving out a domain', 'a vampire lord and their web of thralls',
+  'a fire giant warlord forging a conquest', 'a necromancer on the verge of something terrible',
+  'a mind flayer cell harvesting a city', 'a beholder running a criminal empire',
+  'an archmage cabal bending a kingdom', 'a death knight raising an army',
+  'a yuan-ti conspiracy seated in high places', 'a frost giant jarl raiding the lowlands',
 ];
 
-export const rollAntagonist = (level) =>
-  pick(level >= 5 ? [...LOW_ANTAGONISTS, ...HIGHER_ANTAGONISTS] : LOW_ANTAGONISTS);
+export const rollAntagonist = (level, exclude = null) => {
+  let pool = [...LOW_ANTAGONISTS];
+  if (level >= 5) pool.push(...MID_ANTAGONISTS);
+  if (level >= 9) pool.push(...HIGH_ANTAGONISTS);
+  if (exclude) {
+    const filtered = pool.filter(a => a !== exclude);
+    if (filtered.length) pool = filtered;
+  }
+  return pick(pool);
+};
 
 // ── Pacing knob ────────────────────────────────────────────────────────────────
 // grace: turns with zero encounter chance. After that, chance = base + perTurn per turn, capped.

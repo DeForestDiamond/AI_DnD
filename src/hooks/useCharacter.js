@@ -313,9 +313,10 @@ export function useCharacter() {
     const locMatch = text.match(/\[LOCATION:\s*([^\]]+)\]/i);
     if (locMatch) c.currentLocation = locMatch[1].trim();
 
-    // Arc resolved — roll a fresh antagonist; the DM sees it next turn and starts seeding
+    // Arc resolved — roll a fresh antagonist (never the one just defeated);
+    // the DM sees it next turn and starts seeding
     if (/\[ARC COMPLETE\]/i.test(text)) {
-      c.arc = { antagonist: rollAntagonist(c.level) };
+      c.arc = { antagonist: rollAntagonist(c.level, c.arc?.antagonist) };
     }
 
     // Item update
