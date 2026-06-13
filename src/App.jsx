@@ -1087,6 +1087,17 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
               const next = PACING_ORDER[(PACING_ORDER.indexOf(cur) + 1) % PACING_ORDER.length];
               updateChar({ ...charRef.current, pacing: next });
             }}
+            arcAntagonist={character.arc?.antagonist || null}
+            onClearArc={() => {
+              const { arc, ...rest } = charRef.current;
+              updateChar(rest);
+              log('[ARC] Cleared by player — no antagonist, story is open');
+            }}
+            onRollArc={() => {
+              const a = rollAntagonist(charRef.current.level, charRef.current.arc?.antagonist);
+              updateChar({ ...charRef.current, arc: { antagonist: a } });
+              log(`[ARC] Rolled by player — new antagonist: ${a}`);
+            }}
             onToggleContextExclusion={toggleContextExclusion}
           />
         </div>

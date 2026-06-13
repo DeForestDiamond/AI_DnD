@@ -197,7 +197,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel, pacing, onTogglePacing, onToggleContextExclusion }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onToggleContextExclusion }) {
   const db       = allItems(character.customItems || {});
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
@@ -312,6 +312,20 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         <button onClick={onTogglePacing} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,opacity:pacing==='off'?0.6:1,borderColor:pacing==='dangerous'?colors.red:pacing==='normal'?colors.gold:colors.border}}>
           {PACING[pacing]?.label || PACING.normal.label}
         </button>
+      )}
+
+      {/* Story arc — the hidden antagonist all foreshadowing builds toward */}
+      {onClearArc && (
+        <div style={{marginTop:6,padding:'7px 9px',background:'rgba(0,0,0,0.25)',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>STORY ARC</div>
+          <div style={{fontSize:12,color:arcAntagonist?colors.textDim:colors.textFaint,fontStyle:arcAntagonist?'normal':'italic',marginBottom:6,lineHeight:1.35}}>
+            {arcAntagonist || 'Open — no antagonist. The story drifts where you take it.'}
+          </div>
+          <div style={{display:'flex',gap:6}}>
+            <button onClick={onRollArc} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>🎲 {arcAntagonist?'Reroll':'Roll'}</button>
+            {arcAntagonist && <button onClick={onClearArc} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✕ Clear</button>}
+          </div>
+        </div>
       )}
 
       {/* Identity */}
