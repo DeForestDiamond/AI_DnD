@@ -360,7 +360,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           {sectionLabel('WEAPON')}
           <div style={{fontSize:13,color:colors.gold,fontFamily:fonts.display}}>{weapon.name}</div>
           <div style={{fontSize:12,color:colors.textFaint}}>
-            Dmg: {weapon.damage}{weapon.bonus?`+${weapon.bonus}`:''} + {modStr(weapon.statBonus)} · Atk: +{weapon.statBonus+pb+(weapon.bonus||0)}
+            Dmg: {weapon.damage}{weapon.bonus?`+${weapon.bonus}`:''} {weapon.statBonus>=0?`+ ${weapon.statBonus}`:`- ${Math.abs(weapon.statBonus)}`} · Atk: +{weapon.statBonus+pb+(weapon.bonus||0)}
           </div>
           {weapon.finesse && <div style={{fontSize:12,color:colors.textDead}}>finesse · using DEX</div>}
         </div>
