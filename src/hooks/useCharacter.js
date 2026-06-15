@@ -319,18 +319,37 @@ export function useCharacter() {
       c.arc = { antagonist: rollAntagonist(c.level, c.arc?.antagonist) };
     }
 
-    // Item update
+    // Item update -- renames an item AND carries its custom stats/data to the new name
     [...text.matchAll(/\[UPDATE:\s*([^|\]]+)\|([^\]]+)\]/gi)].forEach(m => {
       const oldName = m[1].trim();
       const newName = m[2].trim();
-      const idx = c.inventory.indexOf(oldName);
+      // Move custom item data to the new key so stats/bonuses survive the rename
+      const oldKey = Object.keys(c.customItems).find(k => k.toLowerCase() === oldName.toLowerCase());
+      if (oldKey) {
+        c.customItems = { ...c.customItems, [newName]: c.customItems[oldKey] };
+        if (oldKey !== newName) { const ci = { ...c.customItems }; delete ci[oldKey]; c.customItems = ci; }
+      }
+      const idx = c.inventory.findIndex(n => n.toLowerCase() === oldName.toLowerCase());
       if (idx !== -1) {
         const inv = [...c.inventory];
         inv[idx] = newName;
         c.inventory = inv;
       }
-      const slotEntry = Object.entries(c.slots).find(([,v]) => v === oldName);
+      const slotEntry = Object.entries(c.slots).find(([,v]) => v?.toLowerCase() === oldName.toLowerCase());
       if (slotEntry) c.slots = { ...c.slots, [slotEntry[0]]: newName };
+    });
+
+    // DM unequip -- moves an equipped item back to inventory WITHOUT deleting it
+    [...text.matchAll(/\[UNEQUIP:\s*([^\]]+)\]/gi)].forEach(m => {
+      const name = m[1].trim().toLowerCase();
+      const slotEntry = Object.entries(c.slots).find(([,v]) => v?.toLowerCase() === name);
+      if (slotEntry) {
+        const [slotId, itemName] = slotEntry;
+        c.slots = { ...c.slots, [slotId]: null };
+        if (!c.inventory.some(n => n.toLowerCase() === name)) {
+          c.inventory = [...c.inventory, itemName];
+        }
+      }
     });
 
     // DM equip -- only first occurrence removed from inventory

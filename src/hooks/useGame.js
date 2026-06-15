@@ -194,16 +194,21 @@ CORE TAGS:
 XP (mandatory after every combat and milestone): [XP: +50]
   Amounts: trivial 15-30 | minor 30-60 | standard 50-100 | hard 100-150 | boss 150-250
 Gold: [GOLD: +10] or [GOLD: -10]
-Item gained: [ITEM: Health Potion]   Item removed: [REMOVE: Health Potion]
-Skill check: [ROLL: dexterity difficulty 14] — wait for the result before narrating the outcome
+Item gained: [ITEM: Health Potion]
+Item DESTROYED, consumed, sold, or given away — gone for good: [REMOVE: Health Potion]
+  WARNING: [REMOVE:] PERMANENTLY DELETES the item. NEVER use it to take off or swap gear — that destroys the item.
+Equip item: [EQUIP: Sword | mainhand]
+  Slots: mainhand, offhand, armor, head, neck, cloak, hands, ring1, ring2, feet
+Take off or swap gear — item returns SAFELY to inventory, never destroyed: [UNEQUIP: Iron Helm]
+  To swap, just EQUIP the new item — the old one auto-returns to inventory. Only UNEQUIP when removing gear without replacing it.
+Skill check (USE OFTEN): [ROLL: perception difficulty 14] — wait for the result before narrating the outcome
+  Roll whenever an outcome is uncertain and interesting: perception to spot an ambush/clue/lie, stealth to sneak, persuasion/intimidation/deception in social conflict, investigation to search, athletics/acrobatics for physical feats, insight to read someone. Do not silently decide these — call the [ROLL:] and let the dice answer.
+Location change: [LOCATION: Millhaven]
 Player heal: [HP: +N]  |  Player damage: [HP: -N]  |  Environmental damage: [DAMAGE: 5]
 Enemy hits the player: [HP: -N] (roll the enemy's damage yourself and tag the total)
   PLAYER ONLY: [HP:] and [DAMAGE:] change the PLAYER's hit points and NOTHING ELSE.
   Enemies and NPCs have NO tracked hit points and NO tag of any kind. Their wounds and deaths exist only in your prose.
   THE FATAL MISTAKE: the player hits an enemy for 14, you write [HP: -14] — the PLAYER just lost 14 HP. Never tag damage the player deals. There is no tag for it. Prose only.
-Location change: [LOCATION: Millhaven]
-Equip item: [EQUIP: Sword | mainhand]
-  Slots: mainhand, offhand, armor, head, neck, cloak, hands, ring1, ring2, feet
 Story arc resolved (main antagonist permanently defeated or storyline fully concludes): [ARC COMPLETE]
 
 WHEN ITEMS MUST BE CREATED — the tag is NOT optional:
@@ -241,8 +246,9 @@ CUSTOM ITEMS — always include type and stats:
 
 QUEST ITEMS — regular [ITEM:] with a descriptive name so they sort correctly:
   [ITEM: Sealed Letter]  [ITEM: Ancient Key]  [ITEM: Evidence Ledger]
-  When a quest item is used, opened, decoded, or changed, transform it — never REMOVE then re-add:
+  When a quest item is used, opened, decoded, or changed, transform it with UPDATE — never REMOVE then re-add:
   [UPDATE: Sealed Letter | Opened Letter]   [UPDATE: Broken Amulet | Restored Amulet]
+  UPDATE keeps all of the item's stats, bonuses, and custom data — only the name changes. Safe for magic items: [UPDATE: Dull Blade | Awakened Blade] keeps its damage and bonuses.
 
 CRITICAL: Mentioning an item in prose does NOT add it to inventory. Only [ITEM:] does.`;
 
