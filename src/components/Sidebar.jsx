@@ -318,8 +318,8 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {onClearArc && (
         <div style={{marginTop:6,padding:'7px 9px',background:'rgba(0,0,0,0.25)',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>
           <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>STORY ARC</div>
-          <div style={{fontSize:12,color:arcAntagonist?colors.textDim:colors.textFaint,fontStyle:arcAntagonist?'normal':'italic',marginBottom:6,lineHeight:1.35}}>
-            {arcAntagonist || 'Open — no antagonist. The story drifts where you take it.'}
+          <div style={{fontSize:12,color:arcAntagonist?colors.textDim:colors.textFaint,fontStyle:'italic',marginBottom:6,lineHeight:1.35}}>
+            {arcAntagonist ? 'A hidden antagonist is in play.' : 'Open — no antagonist. The story drifts where you take it.'}
           </div>
           <div style={{display:'flex',gap:6}}>
             <button onClick={onRollArc} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>🎲 {arcAntagonist?'Reroll':'Roll'}</button>
