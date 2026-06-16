@@ -136,7 +136,8 @@ const buildCtxSections = (char) => {
       const here = loc ? dloc.includes(loc.toLowerCase())||loc.toLowerCase().includes(dloc) : false;
       const desc = data.desc || [data.trueName?`True name: ${data.trueName}`:'',data.race?`Race: ${data.race}`:'',data.role?`Role: ${data.role}`:'',data.appearance?`Appearance: ${data.appearance}`:'',data.personality?`Personality: ${data.personality}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join(' | ') || '';
       const ab = data.abilities ? (Array.isArray(data.abilities)?data.abilities.join(', '):data.abilities) : '';
-      if (here||!data.location) present.push(`- ${name} [PRESENT]: ${desc}${ab?` | Abilities: ${ab}`:''}${data.notes?` | ${data.notes}`:''}`);
+      const gear = data.slots ? Object.values(data.slots).filter(Boolean).join(', ') : '';
+      if (here||!data.location) present.push(`- ${name} [PRESENT]: ${desc}${ab?` | Abilities: ${ab}`:''}${gear?` | Equipped: ${gear}`:''}${data.notes?` | ${data.notes}`:''}`);
       else distant.push(`- ${name} (at ${data.location}): ${data.relationship||data.role||'ally'}`);
     });
     const parts = [];
