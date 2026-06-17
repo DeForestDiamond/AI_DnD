@@ -197,7 +197,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onToggleContextExclusion }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onToggleContextExclusion }) {
   const db       = allItems(character.customItems || {});
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
@@ -209,6 +209,21 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   const [bagSelected, setBagSelected] = useState({});  // { itemName: count }
   const [bagName, setBagName] = useState('');
   const [addingToBag, setAddingToBag] = useState(null); // bag name we're adding to
+  const [expandedBags, setExpandedBags] = useState({});  // { bagName: true } — show contents
+  const [expandedLabels, setExpandedLabels] = useState({}); // { itemName: true } — show full label
+
+  // Select or deselect ALL copies of an item at once (fixes 100-click problem)
+  const toggleBagItemAll = (itemName, maxCount) => {
+    setBagSelected(prev => {
+      const next = { ...prev };
+      if (next[itemName] >= maxCount) delete next[itemName];
+      else next[itemName] = maxCount;
+      return next;
+    });
+  };
+
+  const iconBtn = {background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4};
+  const delBtn = {background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.redFaint||'#8a3a3a',fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4};
 
   const existingBags = Object.entries(character.customItems || {})
     .filter(([, v]) => v.type === 'bag')
@@ -535,7 +550,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             />
           )}
           <div style={{fontSize:10,color:colors.textGhost,marginBottom:6}}>
-            {Object.keys(bagSelected).length === 0 ? 'Tap items below to select' : Object.entries(bagSelected).map(([n,c]) => `${n}${c>1?` x${c}`:''}`).join(', ')}
+            {Object.keys(bagSelected).length === 0 ? 'Tap items to select · use "all" to grab a whole stack' : Object.entries(bagSelected).map(([n,c]) => `${n}${c>1?` x${c}`:''}`).join(', ')}
           </div>
           <div style={{display:'flex',gap:4}}>
             <button onClick={confirmBag} disabled={Object.keys(bagSelected).length === 0 || (!addingToBag && !bagName.trim())}
@@ -569,41 +584,90 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             {items.map(({ name, count }) => {
               const data = db[name];
               const isBag = data?.type === 'bag';
-              const statLabel = data?.type==='weapon'?` (${data.damage}${data.bonus?`+${data.bonus}`:''})`
-                : data?.type==='armor'?` (AC${data.ac})`
-                : data?.label?` [${data.label}]`:'';
+              const statLabel = data?.type==='weapon'?`(${data.damage}${data.bonus?`+${data.bonus}`:''})`
+                : data?.type==='armor'?`(AC${data.ac})`
+                : '';
+              const fullLabel = data?.label || (isBag ? data?.label : '');
               const selectedCount = bagSelected[name] || 0;
+              const labelOpen = expandedLabels[name];
+              const bagOpen = expandedBags[name];
               return (
-                <div key={name} style={{fontSize:12,color:data?colors.textFaint:colors.textGhost,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`,display:'flex',alignItems:'center',gap:4,
-                  background: bagMode && selectedCount > 0 ? 'rgba(201,168,76,0.08)' : 'transparent',
-                }}>
-                  {bagMode && !isBag && (
-                    <span onClick={() => toggleBagItem(name)}
-                      style={{cursor:'pointer',color:selectedCount>0?colors.gold:colors.textDead,fontSize:12,flexShrink:0,width:14,textAlign:'center'}}>
-                      {selectedCount > 0 ? `${selectedCount}` : '○'}
+                <div key={name} style={{borderBottom:`1px solid ${colors.borderFaint}`,
+                  background: bagMode && selectedCount > 0 ? 'rgba(201,168,76,0.08)' : 'transparent'}}>
+                  <div style={{fontSize:12,color:data?colors.textFaint:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
+                    {bagMode && !isBag && (
+                      <span style={{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
+                        <span onClick={() => toggleBagItem(name)}
+                          style={{cursor:'pointer',color:selectedCount>0?colors.gold:colors.textDead,fontSize:12,width:14,textAlign:'center'}}>
+                          {selectedCount > 0 ? `${selectedCount}` : '○'}
+                        </span>
+                        {count > 1 && (
+                          <button title={`Select all ${count}`} onClick={() => toggleBagItemAll(name, count)}
+                            style={{...iconBtn,color:selectedCount>=count?colors.gold:colors.textDead,borderColor:selectedCount>=count?colors.gold:colors.borderDim}}>
+                            all
+                          </button>
+                        )}
+                      </span>
+                    )}
+                    {/* name — truncated, tap to expand label if it has one */}
+                    <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0,cursor:(bagMode&&!isBag)?'pointer':(fullLabel?'pointer':'default')}}
+                      onClick={bagMode && !isBag ? () => toggleBagItem(name) : (fullLabel ? () => setExpandedLabels(p=>({...p,[name]:!p[name]})) : undefined)}>
+                      · {name} {statLabel && <span style={{color:colors.textDead}}>{statLabel}</span>}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
                     </span>
+                    {/* qty — pinned to the line, never pushed off */}
+                    {count > 1 && <span style={{color:colors.gold,fontFamily:fonts.mono,fontSize:12,flexShrink:0}}>x{count}</span>}
+                    {/* bag expand toggle */}
+                    {isBag && !bagMode && (
+                      <span onClick={()=>setExpandedBags(p=>({...p,[name]:!p[name]}))}
+                        style={{cursor:'pointer',color:colors.textDead,fontSize:10,flexShrink:0,padding:'0 2px'}}>{bagOpen?'▲':'▼'}</span>
+                    )}
+                    {!bagMode && (
+                      <span style={{display:'flex',gap:3,flexShrink:0}}>
+                        {onMoveToStash && (
+                          <>
+                            <button title="Move one to stash" onClick={() => onMoveToStash(name, false)} style={iconBtn}>📦</button>
+                            {count > 1 && <button title="Move all to stash" onClick={() => onMoveToStash(name, true)} style={iconBtn}>📦📦</button>}
+                          </>
+                        )}
+                        {onDeleteItem && (
+                          <button title={count>1?"Delete (hold-confirm: deletes one; use ✕✕ for all)":"Delete"} onClick={() => onDeleteItem(name, false)} style={delBtn}>✕</button>
+                        )}
+                        {onDeleteItem && count > 1 && (
+                          <button title="Delete all" onClick={() => onDeleteItem(name, true)} style={delBtn}>✕✕</button>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  {/* expanded full label */}
+                  {fullLabel && labelOpen && (
+                    <div style={{fontSize:11,color:colors.textDead,padding:'0 0 4px 12px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
                   )}
-                  <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,cursor:bagMode&&!isBag?'pointer':'default'}}
-                    onClick={bagMode && !isBag ? () => toggleBagItem(name) : undefined}>
-                    · {name}{statLabel}{count > 1 && <span style={{color:colors.gold,fontFamily:fonts.mono,fontSize:12,marginLeft:4}}>x{count}</span>}
-                  </span>
-                  {!bagMode && onMoveToStash && (
-                    <>
-                      <button title="Move one to stash" onClick={() => onMoveToStash(name, false)}
-                        style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
-                        onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
-                        onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}>
-                        📦
-                      </button>
-                      {count > 1 && (
-                        <button title="Move all to stash" onClick={() => onMoveToStash(name, true)}
-                          style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
-                          onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
-                          onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}>
-                          📦📦
-                        </button>
+                  {/* expanded bag contents */}
+                  {isBag && bagOpen && (
+                    <div style={{padding:'2px 0 6px 14px'}}>
+                      {Object.keys(data.contents||{}).length === 0 && (
+                        <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic'}}>Empty bag.</div>
                       )}
-                    </>
+                      {Object.entries(data.contents||{}).map(([itemName, itemCount]) => {
+                        const idata = db[itemName];
+                        const ilabel = idata?.label;
+                        return (
+                          <div key={itemName} style={{fontSize:11,color:colors.textDead,padding:'2px 0',display:'flex',alignItems:'center',gap:4,borderBottom:`1px solid ${colors.borderFaint}`}}>
+                            <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0}}>– {itemName}{ilabel?` [${ilabel}]`:''}</span>
+                            {itemCount > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,flexShrink:0}}>x{itemCount}</span>}
+                            {onRemoveFromBag && (
+                              <>
+                                <button title="Take one out" onClick={()=>onRemoveFromBag(name,itemName,false)} style={iconBtn}>↑</button>
+                                {itemCount>1 && <button title="Take all out" onClick={()=>onRemoveFromBag(name,itemName,true)} style={iconBtn}>↑↑</button>}
+                              </>
+                            )}
+                            {onDeleteFromBag && (
+                              <button title="Delete from bag" onClick={()=>onDeleteFromBag(name,itemName,itemCount>1?false:true)} style={delBtn}>✕</button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               );
@@ -631,29 +695,25 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             )}
             {stashEntries.map(([name, count]) => {
               const data = db[name] || (character.stashedCustomItems || {})[name];
-              const statLabel = data?.label ? ` [${data.label}]` : '';
+              const fullLabel = data?.label || '';
+              const labelOpen = expandedLabels['stash:'+name];
               return (
-                <div key={name} style={{fontSize:12,color:colors.textGhost,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`,display:'flex',alignItems:'center',gap:4}}>
-                  <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,opacity:0.7}}>
-                    · {name}{statLabel}{count > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,fontSize:12,marginLeft:4}}>x{count}</span>}
-                  </span>
-                  {onMoveToInventory && (
-                    <>
-                      <button title="Return one to inventory" onClick={() => onMoveToInventory(name, false)}
-                        style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
-                        onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
-                        onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}>
-                        ↑
-                      </button>
-                      {count > 1 && (
-                        <button title="Return all to inventory" onClick={() => onMoveToInventory(name, true)}
-                          style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4}}
-                          onMouseEnter={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.color=colors.gold;}}
-                          onMouseLeave={e=>{e.currentTarget.style.borderColor=colors.borderDim;e.currentTarget.style.color=colors.textDead;}}>
-                          ↑↑
-                        </button>
-                      )}
-                    </>
+                <div key={name} style={{borderBottom:`1px solid ${colors.borderFaint}`}}>
+                  <div style={{fontSize:12,color:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
+                    <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0,opacity:0.7,cursor:fullLabel?'pointer':'default'}}
+                      onClick={fullLabel?()=>setExpandedLabels(p=>({...p,['stash:'+name]:!p['stash:'+name]})):undefined}>
+                      · {name}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
+                    </span>
+                    {count > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,fontSize:12,flexShrink:0}}>x{count}</span>}
+                    {onMoveToInventory && (
+                      <>
+                        <button title="Return one to inventory" onClick={() => onMoveToInventory(name, false)} style={iconBtn}>↑</button>
+                        {count > 1 && <button title="Return all to inventory" onClick={() => onMoveToInventory(name, true)} style={iconBtn}>↑↑</button>}
+                      </>
+                    )}
+                  </div>
+                  {fullLabel && labelOpen && (
+                    <div style={{fontSize:11,color:colors.textDead,padding:'0 0 4px 12px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
                   )}
                 </div>
               );

@@ -87,7 +87,7 @@ export default function App() {
     applyEffects, spendStatPoint,
     equipToSlot, unequipSlot, equipCompanionItem, unequipCompanionItem,
     moveToStash, moveToInventory,
-    createBag, addToBag,
+    createBag, addToBag, removeFromBag, deleteItem, deleteFromBag,
     toggleContextExclusion,
     pendingStatPoint, setPendingStatPoint,
     levelUpMsg,
@@ -1079,6 +1079,9 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             onMoveToInventory={moveToInventory}
             onCreateBag={createBag}
             onAddToBag={addToBag}
+            onRemoveFromBag={removeFromBag}
+            onDeleteItem={deleteItem}
+            onDeleteFromBag={deleteFromBag}
             selectedModel={selectedModel}
             onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : 'sonnet')}
             pacing={character.pacing || 'normal'}

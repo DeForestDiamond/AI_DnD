@@ -493,6 +493,66 @@ export function useCharacter() {
     });
   };
 
+  // Move an item out of a bag back into inventory (one or all copies)
+  const removeFromBag = (bagName, itemName, all = false) => {
+    setCharacter(c => {
+      const existing = c.customItems[bagName];
+      if (!existing?.contents?.[itemName]) return c;
+      const counts = { ...existing.contents };
+      const moveCount = all ? counts[itemName] : 1;
+      counts[itemName] -= moveCount;
+      if (counts[itemName] <= 0) delete counts[itemName];
+      const label = Object.entries(counts)
+        .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
+        .join(', ');
+      const inventory = [...c.inventory, ...Array(moveCount).fill(itemName)];
+      const customItems = { ...c.customItems, [bagName]: { ...existing, label, contents: counts } };
+      const nc = { ...c, inventory, customItems };
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
+  // Permanently delete an item from inventory (one or all copies). Bags are deleted whole.
+  const deleteItem = (itemName, all = false) => {
+    setCharacter(c => {
+      let inventory = [...c.inventory];
+      if (all) {
+        inventory = inventory.filter(n => n !== itemName);
+      } else {
+        const idx = inventory.indexOf(itemName);
+        if (idx !== -1) inventory.splice(idx, 1);
+      }
+      // If no copies remain and it's a custom item, drop the definition too
+      let customItems = c.customItems;
+      if (!inventory.includes(itemName) && customItems[itemName]) {
+        customItems = { ...customItems };
+        delete customItems[itemName];
+      }
+      const nc = { ...c, inventory, customItems };
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
+  // Permanently delete an item from inside a bag (one or all copies)
+  const deleteFromBag = (bagName, itemName, all = false) => {
+    setCharacter(c => {
+      const existing = c.customItems[bagName];
+      if (!existing?.contents?.[itemName]) return c;
+      const counts = { ...existing.contents };
+      if (all) delete counts[itemName];
+      else { counts[itemName] -= 1; if (counts[itemName] <= 0) delete counts[itemName]; }
+      const label = Object.entries(counts)
+        .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
+        .join(', ');
+      const customItems = { ...c.customItems, [bagName]: { ...existing, label, contents: counts } };
+      const nc = { ...c, customItems };
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
   // Add more items to an existing bag
   const addToBag = (bagName, selectedItems) => {
     setCharacter(c => {
@@ -593,7 +653,7 @@ export function useCharacter() {
     applyEffects, spendStatPoint,
     equipToSlot, unequipSlot, equippableInSlot, equipCompanionItem, unequipCompanionItem,
     moveToStash, moveToInventory,
-    createBag, addToBag,
+    createBag, addToBag, removeFromBag, deleteItem, deleteFromBag,
     toggleContextExclusion,
     pendingStatPoint, setPendingStatPoint,
     levelUpMsg, setLevelUpMsg,
