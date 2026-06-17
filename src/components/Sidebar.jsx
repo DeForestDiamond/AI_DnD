@@ -262,10 +262,11 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
     setBagSelected({});
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const sidebarStyle = {
-    width:285, flexShrink:0,
+    width: isMobile ? '100vw' : 285, flexShrink:0,
     height:'100vh',
-    background:'rgba(10,7,3,0.95)',
+    background:'rgba(10,7,3,0.97)',
     borderRight:`1px solid ${colors.border}`,
     overflowY:'auto',
     overflowX:'hidden',
@@ -298,8 +299,8 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
 
       {/* Mobile close button */}
       {onClose && (
-        <button onClick={onClose} style={{alignSelf:'flex-end',background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textFaint,padding:'2px 8px',fontSize:12,borderRadius:3,cursor:'pointer',marginBottom:-4}}>
-          ✕
+        <button onClick={onClose} style={{width:'100%',background:'rgba(201,168,76,0.08)',border:`1px solid ${colors.border}`,color:colors.gold,padding:'12px 0',fontSize:16,fontFamily:fonts.display,letterSpacing:2,borderRadius:4,cursor:'pointer'}}>
+          ✕  CLOSE
         </button>
       )}
 
@@ -595,6 +596,12 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                 <div key={name} style={{borderBottom:`1px solid ${colors.borderFaint}`,
                   background: bagMode && selectedCount > 0 ? 'rgba(201,168,76,0.08)' : 'transparent'}}>
                   <div style={{fontSize:12,color:data?colors.textFaint:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
+                    {/* fixed-width delete column on the left — names line up regardless */}
+                    {!bagMode && (
+                      <span style={{width:22,flexShrink:0,display:'flex',justifyContent:'center'}}>
+                        {onDeleteItem && <button title={count>1?"Delete one (✕✕ deletes all)":"Delete"} onClick={() => onDeleteItem(name, false)} style={delBtn}>✕</button>}
+                      </span>
+                    )}
                     {bagMode && !isBag && (
                       <span style={{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
                         <span onClick={() => toggleBagItem(name)}
@@ -612,7 +619,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                     {/* name — truncated, tap to expand label if it has one */}
                     <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0,cursor:(bagMode&&!isBag)?'pointer':(fullLabel?'pointer':'default')}}
                       onClick={bagMode && !isBag ? () => toggleBagItem(name) : (fullLabel ? () => setExpandedLabels(p=>({...p,[name]:!p[name]})) : undefined)}>
-                      · {name} {statLabel && <span style={{color:colors.textDead}}>{statLabel}</span>}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
+                      {name} {statLabel && <span style={{color:colors.textDead}}>{statLabel}</span>}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
                     </span>
                     {/* qty — pinned to the line, never pushed off */}
                     {count > 1 && <span style={{color:colors.gold,fontFamily:fonts.mono,fontSize:12,flexShrink:0}}>x{count}</span>}
@@ -628,9 +635,6 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                             <button title="Move one to stash" onClick={() => onMoveToStash(name, false)} style={iconBtn}>📦</button>
                             {count > 1 && <button title="Move all to stash" onClick={() => onMoveToStash(name, true)} style={iconBtn}>📦📦</button>}
                           </>
-                        )}
-                        {onDeleteItem && (
-                          <button title={count>1?"Delete (hold-confirm: deletes one; use ✕✕ for all)":"Delete"} onClick={() => onDeleteItem(name, false)} style={delBtn}>✕</button>
                         )}
                         {onDeleteItem && count > 1 && (
                           <button title="Delete all" onClick={() => onDeleteItem(name, true)} style={delBtn}>✕✕</button>
@@ -700,9 +704,10 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
               return (
                 <div key={name} style={{borderBottom:`1px solid ${colors.borderFaint}`}}>
                   <div style={{fontSize:12,color:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
+                    <span style={{width:22,flexShrink:0}}/>
                     <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0,opacity:0.7,cursor:fullLabel?'pointer':'default'}}
                       onClick={fullLabel?()=>setExpandedLabels(p=>({...p,['stash:'+name]:!p['stash:'+name]})):undefined}>
-                      · {name}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
+                      {name}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
                     </span>
                     {count > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,fontSize:12,flexShrink:0}}>x{count}</span>}
                     {onMoveToInventory && (

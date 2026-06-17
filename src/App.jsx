@@ -1066,7 +1066,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 
       {/* Sidebar — hidden on mobile when closed */}
       {(!isMobile || sidebarOpen) && (
-        <div style={{position: isMobile ? 'fixed' : 'relative', zIndex: isMobile ? 50 : 'auto', top:0, left:0, height:'100vh'}}>
+        <div style={{position: isMobile ? 'fixed' : 'relative', zIndex: isMobile ? 50 : 'auto', top:0, left:0, height:'100vh', width: isMobile ? '100vw' : 'auto'}}>
           <Sidebar
             character={character}
             onSlotClick={handleSlotClick}
