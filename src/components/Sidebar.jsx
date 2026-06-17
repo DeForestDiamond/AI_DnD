@@ -595,7 +595,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
               return (
                 <div key={name} style={{borderBottom:`1px solid ${colors.borderFaint}`,
                   background: bagMode && selectedCount > 0 ? 'rgba(201,168,76,0.08)' : 'transparent'}}>
-                  <div style={{fontSize:12,color:data?colors.textFaint:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
+                  <div style={{fontSize:14,color:data?colors.textFaint:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
                     {/* fixed-width delete column on the left — names line up regardless */}
                     {!bagMode && (
                       <span style={{width:22,flexShrink:0,display:'flex',justifyContent:'center'}}>
@@ -622,7 +622,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                       {name} {statLabel && <span style={{color:colors.textDead}}>{statLabel}</span>}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
                     </span>
                     {/* qty — pinned to the line, never pushed off */}
-                    {count > 1 && <span style={{color:colors.gold,fontFamily:fonts.mono,fontSize:12,flexShrink:0}}>x{count}</span>}
+                    {count > 1 && <span style={{color:colors.gold,fontFamily:fonts.mono,fontSize:14,flexShrink:0}}>x{count}</span>}
                     {/* bag expand toggle */}
                     {isBag && !bagMode && (
                       <span onClick={()=>setExpandedBags(p=>({...p,[name]:!p[name]}))}
@@ -644,7 +644,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                   </div>
                   {/* expanded full label */}
                   {fullLabel && labelOpen && (
-                    <div style={{fontSize:11,color:colors.textDead,padding:'0 0 4px 12px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
+                    <div style={{fontSize:13,color:colors.textDead,padding:'0 0 4px 22px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
                   )}
                   {/* expanded bag contents */}
                   {isBag && bagOpen && (
@@ -656,9 +656,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                         const idata = db[itemName];
                         const ilabel = idata?.label;
                         return (
-                          <div key={itemName} style={{fontSize:11,color:colors.textDead,padding:'2px 0',display:'flex',alignItems:'center',gap:4,borderBottom:`1px solid ${colors.borderFaint}`}}>
+                          <div key={itemName} style={{fontSize:13,color:colors.textDead,padding:'2px 0',display:'flex',alignItems:'center',gap:4,borderBottom:`1px solid ${colors.borderFaint}`}}>
                             <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0}}>– {itemName}{ilabel?` [${ilabel}]`:''}</span>
-                            {itemCount > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,flexShrink:0}}>x{itemCount}</span>}
+                            {itemCount > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,fontSize:13,flexShrink:0}}>x{itemCount}</span>}
                             {onRemoveFromBag && (
                               <>
                                 <button title="Take one out" onClick={()=>onRemoveFromBag(name,itemName,false)} style={iconBtn}>↑</button>
@@ -703,13 +703,13 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
               const labelOpen = expandedLabels['stash:'+name];
               return (
                 <div key={name} style={{borderBottom:`1px solid ${colors.borderFaint}`}}>
-                  <div style={{fontSize:12,color:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
+                  <div style={{fontSize:14,color:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
                     <span style={{width:22,flexShrink:0}}/>
                     <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0,opacity:0.7,cursor:fullLabel?'pointer':'default'}}
                       onClick={fullLabel?()=>setExpandedLabels(p=>({...p,['stash:'+name]:!p['stash:'+name]})):undefined}>
                       {name}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
                     </span>
-                    {count > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,fontSize:12,flexShrink:0}}>x{count}</span>}
+                    {count > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,fontSize:14,flexShrink:0}}>x{count}</span>}
                     {onMoveToInventory && (
                       <>
                         <button title="Return one to inventory" onClick={() => onMoveToInventory(name, false)} style={iconBtn}>↑</button>
@@ -718,7 +718,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                     )}
                   </div>
                   {fullLabel && labelOpen && (
-                    <div style={{fontSize:11,color:colors.textDead,padding:'0 0 4px 12px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
+                    <div style={{fontSize:13,color:colors.textDead,padding:'0 0 4px 22px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
                   )}
                 </div>
               );
