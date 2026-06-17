@@ -598,8 +598,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                   <div style={{fontSize:14,color:data?colors.textFaint:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
                     {/* fixed-width delete column on the left — names line up regardless */}
                     {!bagMode && (
-                      <span style={{width:22,flexShrink:0,display:'flex',justifyContent:'center'}}>
-                        {onDeleteItem && <button title={count>1?"Delete one (✕✕ deletes all)":"Delete"} onClick={() => onDeleteItem(name, false)} style={delBtn}>✕</button>}
+                      <span style={{width:44,flexShrink:0,display:'flex',justifyContent:'flex-start',gap:3}}>
+                        {onDeleteItem && <button title="Delete one" onClick={() => onDeleteItem(name, false)} style={delBtn}>✕</button>}
+                        {onDeleteItem && count > 1 && <button title="Delete all" onClick={() => onDeleteItem(name, true)} style={delBtn}>✕✕</button>}
                       </span>
                     )}
                     {bagMode && !isBag && (
@@ -636,15 +637,12 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                             {count > 1 && <button title="Move all to stash" onClick={() => onMoveToStash(name, true)} style={iconBtn}>📦📦</button>}
                           </>
                         )}
-                        {onDeleteItem && count > 1 && (
-                          <button title="Delete all" onClick={() => onDeleteItem(name, true)} style={delBtn}>✕✕</button>
-                        )}
                       </span>
                     )}
                   </div>
                   {/* expanded full label */}
                   {fullLabel && labelOpen && (
-                    <div style={{fontSize:13,color:colors.textDead,padding:'0 0 4px 22px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
+                    <div style={{fontSize:13,color:colors.textDead,padding:'0 0 4px 44px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
                   )}
                   {/* expanded bag contents */}
                   {isBag && bagOpen && (
@@ -704,7 +702,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
               return (
                 <div key={name} style={{borderBottom:`1px solid ${colors.borderFaint}`}}>
                   <div style={{fontSize:14,color:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
-                    <span style={{width:22,flexShrink:0}}/>
+                    <span style={{width:44,flexShrink:0}}/>
                     <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0,opacity:0.7,cursor:fullLabel?'pointer':'default'}}
                       onClick={fullLabel?()=>setExpandedLabels(p=>({...p,['stash:'+name]:!p['stash:'+name]})):undefined}>
                       {name}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
@@ -718,7 +716,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                     )}
                   </div>
                   {fullLabel && labelOpen && (
-                    <div style={{fontSize:13,color:colors.textDead,padding:'0 0 4px 22px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
+                    <div style={{fontSize:13,color:colors.textDead,padding:'0 0 4px 44px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
                   )}
                 </div>
               );
