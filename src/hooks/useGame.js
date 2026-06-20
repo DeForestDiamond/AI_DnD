@@ -247,6 +247,9 @@ CUSTOM ITEMS — always include type and stats:
 
 QUEST ITEMS — regular [ITEM:] with a descriptive name so they sort correctly:
   [ITEM: Sealed Letter]  [ITEM: Ancient Key]  [ITEM: Evidence Ledger]
+  To add a description, use the misc type so it becomes a readable label:
+  [ITEM: Brass Token | misc | grants an audience with Lady Saryn Waeveran]
+  [ITEM: Waeveran Crest | misc | a noble house's sigil, opens doors in the city]
   When a quest item is used, opened, decoded, or changed, transform it with UPDATE — never REMOVE then re-add:
   [UPDATE: Sealed Letter | Opened Letter]   [UPDATE: Broken Amulet | Restored Amulet]
   UPDATE keeps all of the item's stats, bonuses, and custom data — only the name changes. Safe for magic items: [UPDATE: Dull Blade | Awakened Blade] keeps its damage and bonuses.

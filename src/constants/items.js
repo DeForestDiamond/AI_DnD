@@ -108,5 +108,14 @@ export const parseDMItem = (raw) => {
   if (kind === 'consumable') {
     return { name, data: { type:'consumable', label: parts[2] || '' } };
   }
+  if (kind === 'misc') {
+    return { name, data: { type:'misc', label: parts.slice(2).join(' | ') } };
+  }
+  // Unknown type field — treat everything after the name as the label so quest
+  // items like [ITEM: Brass Token | Grants an audience with Lady Saryn] keep their
+  // description instead of silently discarding it.
+  if (parts.length > 1) {
+    return { name, data: { type:'misc', label: parts.slice(1).join(' | ') } };
+  }
   return { name, data: { type:'misc' } };
 };
