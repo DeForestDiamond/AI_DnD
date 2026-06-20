@@ -278,6 +278,13 @@ INSTEAD, rotate the CATEGORY of the memorable detail:
   Smell and presence: woodsmoke and ink, lavender soap over horse sweat, crowds part without knowing why
 Invent fresh details inside these categories — the examples are a register, not a list to reuse.`;
 
+// ── Shared setting/geography (both models) ─────────────────────────────────────
+const SETTING_BLOCK = `── SETTING: FAERÛN (FORGOTTEN REALMS) ──
+The world is Faerûn from the Forgotten Realms. Major regions, cities, rivers, roads, and geography match published canon. Use real, canon places: Waterdeep, Baldur's Gate, Neverwinter, Daggerford, the Sword Coast, the Trackless Sea, Amn, Calimshan, Cormyr, the Dalelands, the Moonsea, the Underdark, the High Forest, the Anauroch desert, and so on.
+GEOGRAPHY IS FIXED: directions, distances, and what borders what must stay consistent with the real map. The Sword Coast runs north–south along the western shore; Waterdeep lies north of Baldur's Gate; the Underdark is below. If the player is in one canon city, the next town over must be one that is actually near it on the map — never teleport the world around the player.
+Smaller villages, inns, shrines, dungeons, and minor NPCs can be invented freely, but anchor them to a real region ("a logging village in the High Forest," "a roadhouse on the Trade Way south of Daggerford") so their place in the world is fixed.
+Deities, factions (Harpers, Zhentarim, Lords' Alliance, Flaming Fist), and lore follow Forgotten Realms canon. Use [LOCATION:] tags with canon place names whenever the player's location changes.`;
+
 // ── System Prompt — Haiku ──────────────────────────────────────────────────────
 export const buildSystemPrompt = (char) => {
   const ctx = buildCtxSections(char);
@@ -435,6 +442,8 @@ BIO RULE: Do not mine the player's backstory for antagonists or hooks unless the
 NAME YOUR CREATURES: Every enemy is a specific named type the player could look up — a ghoul, a bandit captain, a dire wolf. Never "a figure," "a presence," "a shape in the dark." If it is unknown to the player, still describe it so it maps to one real creature you have in mind.
 TONE VARIETY: Not every scene is dark and ominous. Use sunny days, busy markets, rowdy taverns, petty annoyances, comedy. Match the mood to what is actually happening.
 
+${SETTING_BLOCK}
+
 ${NPC_BLOCK}
 
 ── ENEMY POWER — DEFAULT LOW ──
@@ -534,6 +543,8 @@ NEVER tag damage the player deals. Enemies have no tracked HP and no tag — if 
 Every enemy must have a specific named type. No "a presence", "something that moves wrong", or "a shape in the darkness." Mystery resolves into something real.
 
 Default to the Monster Manual. Most enemies are ordinary creatures with ordinary lifespans and simple motives — goblins, orcs, bandits, kobolds, wolves, skeletons, cultists, gnolls, ogres, trolls. Hungry, greedy, territorial, scared, or paid is a complete motive. Retired enemy flavor: never describe an enemy as "ancient", "primordial", "elder", "older than", "predating" anything, "sealed", "bound", "slumbering", or "awakened after centuries" — an enemy's age is almost never what makes it interesting, and a backstory in geological time is a sign to send an orc instead. Nine of ten enemies were alive last week and want something simple; a rare major villain may have history measured in years, not eons. This applies to enemies — established allies and world figures keep their existing lore.
+
+${SETTING_BLOCK}
 
 ${NPC_BLOCK}
 
