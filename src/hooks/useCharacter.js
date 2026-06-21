@@ -289,7 +289,11 @@ export function useCharacter() {
       const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
       const cleanRaw = raw.replace(/\|\s*qty:\s*\d+/i, '').trim();
       const { name, data } = parseDMItem(cleanRaw);
-      if (!ITEM_DB[name] && data.type !== 'misc') c.customItems[name] = data;
+      // Store custom data when it's a real custom item, OR a misc item that
+      // carries a label (quest items with a description). Plain label-less misc
+      // items stay as bare inventory strings to avoid clutter.
+      const isCustom = !ITEM_DB[name] && (data.type !== 'misc' || (data.label && data.label.trim()));
+      if (isCustom) c.customItems[name] = data;
       for (let i = 0; i < qty; i++) {
         c.inventory = [...c.inventory, name];
       }
@@ -307,6 +311,13 @@ export function useCharacter() {
       }
       const slotEntry = Object.entries(c.slots).find(([,v]) => v?.toLowerCase() === removeName);
       if (slotEntry) c.slots = { ...c.slots, [slotEntry[0]]: null };
+      // Drop the custom definition once no copies remain (avoids orphaned customItems)
+      const stillHeld = c.inventory.some(n => n.toLowerCase() === removeName)
+        || Object.values(c.slots).some(v => v?.toLowerCase() === removeName);
+      if (!stillHeld) {
+        const ck = Object.keys(c.customItems).find(k => k.toLowerCase() === removeName);
+        if (ck) { const ci = { ...c.customItems }; delete ci[ck]; c.customItems = ci; }
+      }
     });
 
     // Location tracking -- updates currentLocation for tiered context system
