@@ -353,7 +353,7 @@ export const rollEncounterDirective = (char) => {
 
   const directive =
     `\n\n[ENCOUNTER — MANDATORY: This turn, the following occurs: ${desc}. ` +
-    `Weave it in at a natural moment of THIS response — do not defer it, do not summarize past it, do not resolve it without the player. ` +
+    `OPEN the encounter at the MOMENT OF FIRST CONTACT — the creature appears, the stranger steps out, the thing is noticed — and then STOP for the player's choice. Do NOT start the scene already in progress, do NOT narrate the player dodging, drawing, striking, or reacting, and do NOT resolve any of it. Do NOT call any [ROLL:] in this message — the player has made no choice yet, so there is nothing to roll for; the roll (if any) comes AFTER they state what they do. Describe only what happens TO them and around them, then hand control back. ` +
     crNote + npcNote +
     (arcTied ? `This connects to the active arc antagonist — let that show without naming them outright. Scale any threat to the player's level. ` : '') +
     `End with your usual 4 numbered choices.]`;

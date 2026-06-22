@@ -648,6 +648,13 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 
       // If DM requested a roll, send the result back for narration
       if (resultText) {
+        // Surface the DM's pre-roll message (the setup that called the roll) in the
+        // feed — otherwise the player only sees post-roll narration and the scene
+        // looks like it jumped mid-action. Strip the [ROLL:] tag from the display.
+        const setupText = dmText.replace(/\[ROLL:[^\]]*\]/gi, '').trim();
+        if (setupText) {
+          addMessage({ role:'dm', text: setupText, id: Date.now() - 1, roll: null });
+        }
         const { text: followUp, usage: followUpUsage } = await callDM(
           [...history,
            { role:'user', content: outgoing },
