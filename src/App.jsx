@@ -505,11 +505,12 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       const newEntry = data.content?.[0]?.text || '';
       if (!newEntry) { lastSummarizedAt.current = prevSummarizedAt; return; }
 
-      // Step 2 — append new entry
+      // From here the entry is real. Past this point we NEVER rewind
+      // lastSummarizedAt — doing so would re-summarize these same messages into a
+      // duplicate entry next fire. Compression is best-effort and isolated.
       const newId = Date.now();
       const updatedEntries = [...currentObj.entries, { id: newId, type: 'entry', text: newEntry }];
 
-      // Step 3 — if we have enough entries, compress the oldest ones into a frozen chunk
       let finalChunks = [...currentObj.chunks];
       let finalEntries = updatedEntries;
 
@@ -520,10 +521,20 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         const sessionStart = (chunkNum - 1) * toCompress.length * SUMMARIZE_AFTER + 1;
         const sessionEnd   = chunkNum * toCompress.length * SUMMARIZE_AFTER;
         const sessionLabel = `Sessions ${sessionStart}-${sessionEnd}`;
-        const chunkText = await compressEntries(toCompress, sessionLabel, key);
-        finalChunks = [...finalChunks, { id: newId + 1, type: 'archived', sessions: sessionLabel, text: chunkText, frozen: true }];
-        finalEntries = keepRaw;
-        log(`[SUMMARY] New archived chunk created, ${keepRaw.length} entries remain raw`);
+        let chunkText = '';
+        try {
+          chunkText = await compressEntries(toCompress, sessionLabel, key);
+        } catch (ce) {
+          log('[SUMMARY] Compression threw, keeping entries raw this cycle: ' + ce.message);
+        }
+        if (chunkText) {
+          // Compression succeeded — archive the old entries, keep the newest raw
+          finalChunks = [...finalChunks, { id: newId + 1, type: 'archived', sessions: sessionLabel, text: chunkText, frozen: true }];
+          finalEntries = keepRaw;
+          log(`[SUMMARY] New archived chunk created, ${keepRaw.length} entries remain raw`);
+        }
+        // If compression failed, finalEntries stays = updatedEntries (all kept raw).
+        // They'll be compressed next cycle. The new entry is NOT lost or duplicated.
       }
 
       const finalObj = { chunks: finalChunks, entries: finalEntries };
@@ -531,15 +542,12 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       setStorySummary(serialized);
       storySummaryRef.current = serialized;
       save.autoSave(charRef.current, fullLogRef.current);
-      // Verify it actually saved
-      const check = localStorage.getItem('dnd-autosave');
-      const parsed = check ? JSON.parse(check) : null;
-      log(`[SUMMARY] Autosave check — summary length in localStorage: ${(parsed?.storySummary||'').length}`);
       log(`[SUMMARY] Done — ${finalChunks.length} archived chunks, ${finalEntries.length} raw entries`);
-
     } catch (e) {
+      // Only reached if Step 1 (the entry write) itself threw — safe to rewind
+      // and retry next fire, because no entry was committed.
       lastSummarizedAt.current = prevSummarizedAt;
-      log('[SUMMARY] Failed: ' + e.message);
+      log('[SUMMARY] Failed before entry committed: ' + e.message);
     }
   };
 
