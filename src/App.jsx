@@ -645,6 +645,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       const { resultText, rollResult: skillRoll } = interceptRollRequest(dmText, charRef.current, log);
       let finalText = dmText;
       let finalRoll = actionRoll || skillRoll || null;
+      let rollSetupText = '';
 
       // If DM requested a roll, send the result back for narration
       if (resultText) {
@@ -653,6 +654,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         // looks like it jumped mid-action. Strip the [ROLL:] tag from the display.
         const setupText = dmText.replace(/\[ROLL:[^\]]*\]/gi, '').trim();
         if (setupText) {
+          rollSetupText = setupText;
           addMessage({ role:'dm', text: setupText, id: Date.now() - 1, roll: null });
         }
         const { text: followUp, usage: followUpUsage } = await callDM(
@@ -687,7 +689,9 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       }
       updateChar(newChar);
       addMessage({ role:'dm', text:finalText, id:Date.now(), roll:finalRoll });
-      voice.speak(finalText);
+      // Speak the setup AND the outcome together so TTS reads the whole scene,
+      // not just the post-roll half. cleanDisplayText strips tags before speaking.
+      voice.speak(rollSetupText ? `${rollSetupText}\n\n${finalText}` : finalText);
     } catch (e) {
       if (e.name === 'AbortError') {
         // User stopped the request — remove the pending user message from log
