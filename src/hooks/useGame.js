@@ -106,7 +106,13 @@ const buildCharBlock = (char) => {
 
   // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
   const arcLine = char.arc?.antagonist
-    ? `\nACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}. ALL foreshadowing, rumors, clues, and buildup MUST trace back to this antagonist. NEVER invent a competing main villain.\nGIVE THE PLAYER A REASON TO CARE: the player's character is not a hero and will not act "because it's right" or "because the village needs help." Before expecting them to pursue this antagonist, establish a concrete PERSONAL stake — paid coin or a lucrative contract, a threat to the player's own interests/property/people, a debt owed to or by them, blackmail leverage, a grudge, a profitable opportunity, or something the antagonist has that the player wants. No stake, no quest: never assume the player is invested just because a problem exists.\nWhen this antagonist is permanently defeated or the storyline fully resolves, output [ARC COMPLETE] — a new arc will be assigned.`
+    ? `\nACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}.
+ONE ANTAGONIST, AND ONLY ONE. This is the single driving threat of the entire arc. Every rumor, clue, complication, villain, and obstacle MUST connect back to THIS antagonist. You are FORBIDDEN from introducing a second major villain, a rival threat, a separate evil, or "meanwhile, a different danger" — if a new antagonist would appear, it is instead an agent, victim, rival, or symptom of the ONE above. Do not start a new plotline alongside this one. Do not let a side-encounter grow into a competing arc. When in doubt, tie it back. There is exactly one antagonist until [ARC COMPLETE] fires.
+
+GIVE THE PLAYER A REASON TO CARE — AND IT IS NEVER SYMPATHY. The player's character is selfish, pragmatic, and NOT a hero. They do not help the helpless, rescue children, avenge strangers, or right wrongs. A sad orphan, a missing father, a grieving widow, a village in peril — these are NOT hooks for this character and must NEVER be offered as the reason to act. They will be ignored, and rightly so.
+The ONLY valid hooks are things that serve the player directly: paid coin or a lucrative contract, a threat to the player's OWN property, people, or operations, a debt owed to or by them, blackmail leverage they can use, a personal grudge or insult, a rival cutting into their interests, or something valuable the antagonist has that the player wants. The stake must be on the table BEFORE you expect the player to engage — establish who is paying, what's threatened, or what's to be gained, concretely, up front. No selfish stake, no quest. A problem merely existing, or a person merely suffering, is not a reason for THIS character to lift a finger.
+
+When this antagonist is permanently defeated or the storyline fully resolves, output [ARC COMPLETE] — a new arc will be assigned.`
     : '';
   const dynamicPart = `CURRENT STATE:
 Level ${char.level} | ${char.xp||0} XP | Gold: ${char.gold}gp
@@ -491,9 +497,9 @@ INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${itemDetailLine}${dexBuild}${cle
 
 ══ ACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does) ══
 ${char.arc.antagonist}
-ALL foreshadowing, rumors, clues, and buildup MUST trace back to this antagonist. NEVER invent a competing main villain.
-GIVE THE PLAYER A REASON TO CARE: this character is NOT a hero — they will not act "because it's right" or "because people need help." Before expecting them to chase this antagonist, give a concrete PERSONAL stake: coin, a contract, a threat to their own interests or people, a debt, leverage, a grudge, or something they want. No stake, no quest. A problem existing is not a reason for THIS character to care.
-When this antagonist is permanently defeated or the storyline fully resolves, output [ARC COMPLETE] — a new arc will be assigned.` : ''}
+ONE ANTAGONIST, ONLY ONE. Every rumor, clue, villain, and obstacle connects back to the antagonist above. FORBIDDEN to introduce a second major villain or a separate threat — a new bad guy is an AGENT or SYMPTOM of the one above, never a rival arc. There is exactly one antagonist until [ARC COMPLETE] fires.
+REASON TO CARE — NEVER SYMPATHY. This character is selfish and NOT a hero. A sad kid, a missing father, a grieving widow, a village in danger — these are NOT hooks and must NEVER be the reason to act. The character will ignore them. ONLY these work: coin or a contract, a threat to the character's OWN property/people/operations, a debt, leverage, a grudge, a rival cutting in, or something valuable the antagonist has. Put the selfish stake on the table BEFORE expecting the player to act. No selfish stake, no quest. A person suffering is not a reason for THIS character to care.
+When the antagonist is permanently defeated or the storyline resolves, output [ARC COMPLETE].` : ''}
 
 ${directivesBlock(char)}`;
 
