@@ -18,6 +18,8 @@ export const CLASS_ABILITIES = {
       1: ['Cure Wounds', 'Detect Magic', 'Faerie Fire', 'False Life', 'Grease', 'Identify', 'Jump', 'Longstrider', 'Purify Food and Drink', 'Sanctuary', 'Shield of Faith', 'Thunderwave'],
       2: ['Aid', 'Alter Self', 'Arcane Lock', 'Blur', 'Continual Flame', 'Darkvision', 'Enhance Ability', 'Enlarge/Reduce', 'Heat Metal', 'Invisibility', 'Lesser Restoration', 'Levitate', 'Magic Mouth', 'Magic Weapon', 'Protection from Poison', 'Rope Trick', 'See Invisibility', 'Skywrite', 'Spider Climb', 'Web'],
       3: ['Blink', 'Catnap', 'Create Food and Water', 'Dispel Magic', 'Elemental Weapon', 'Fly', 'Glyph of Warding', 'Haste', 'Intellect Fortress', 'Protection from Energy', 'Revivify', 'Tiny Servant', 'Water Breathing', 'Water Walk'],
+      4: ['Arcane Eye', 'Elemental Bane', 'Fabricate', 'Freedom of Movement', 'Leomund\'s Secret Chest', 'Mordenkainen\'s Faithful Hound', 'Mordenkainen\'s Private Sanctum', 'Otiluke\'s Resilient Sphere', 'Stone Shape', 'Stoneskin', 'Summon Construct'],
+      5: ['Animate Objects', 'Bigby\'s Hand', 'Creation', 'Greater Restoration', 'Skill Empowerment', 'Transmute Rock', 'Wall of Stone'],
     },
     // Number of infusions known per level
     infusionsKnown: { 1:0, 2:4, 3:4, 4:4, 5:4, 6:6, 7:6, 8:6, 9:6, 10:8 },
@@ -36,6 +38,8 @@ export const CLASS_ABILITIES = {
       1: ['Bless', 'Command', 'Create or Destroy Water', 'Cure Wounds', 'Detect Evil and Good', 'Detect Magic', 'Detect Poison and Disease', 'Guiding Bolt', 'Healing Word', 'Inflict Wounds', 'Protection from Evil and Good', 'Purify Food and Drink', 'Sanctuary', 'Shield of Faith'],
       2: ['Aid', 'Augury', 'Blindness/Deafness', 'Calm Emotions', 'Continual Flame', 'Enhance Ability', 'Find Traps', 'Gentle Repose', 'Hold Person', 'Lesser Restoration', 'Locate Object', 'Prayer of Healing', 'Protection from Poison', 'Silence', 'Spiritual Weapon', 'Warding Bond', 'Zone of Truth'],
       3: ['Animate Dead', 'Beacon of Hope', 'Bestow Curse', 'Clairvoyance', 'Create Food and Water', 'Daylight', 'Dispel Magic', 'Feign Death', 'Glyph of Warding', 'Magic Circle', 'Mass Healing Word', 'Meld into Stone', 'Protection from Energy', 'Remove Curse', 'Revivify', 'Sending', 'Speak with Dead', 'Spirit Guardians', 'Tongues', 'Water Walk'],
+      4: ['Banishment', 'Control Water', 'Death Ward', 'Divination', 'Freedom of Movement', 'Guardian of Faith', 'Locate Creature', 'Stone Shape'],
+      5: ['Commune', 'Contagion', 'Dispel Evil and Good', 'Flame Strike', 'Geas', 'Greater Restoration', 'Hallow', 'Insect Plague', 'Mass Cure Wounds', 'Raise Dead', 'Scrying'],
     },
     cantripsKnown: { 1:3, 2:3, 3:3, 4:4, 5:4, 6:4, 7:4, 8:4, 9:4, 10:5 },
     spellsKnown: { 1:2, 2:3, 3:4, 4:5, 5:6, 6:7, 7:8, 8:9, 9:10, 10:11 },
@@ -53,6 +57,8 @@ export const CLASS_ABILITIES = {
       1: ['Alarm', 'Burning Hands', 'Charm Person', 'Chromatic Orb', 'Color Spray', 'Comprehend Languages', 'Detect Magic', 'Disguise Self', 'Expeditious Retreat', 'False Life', 'Feather Fall', 'Find Familiar', 'Fog Cloud', 'Grease', 'Ice Knife', 'Identify', 'Illusory Script', 'Jump', 'Longstrider', 'Mage Armor', 'Magic Missile', 'Protection from Evil and Good', 'Ray of Sickness', 'Shield', 'Silent Image', 'Sleep', 'Tasha\'s Hideous Laughter', 'Thunderwave', 'Unseen Servant', 'Witch Bolt'],
       2: ['Alter Self', 'Arcane Lock', 'Blindness/Deafness', 'Blur', 'Cloud of Daggers', 'Continual Flame', 'Crown of Madness', 'Darkness', 'Darkvision', 'Detect Thoughts', 'Enlarge/Reduce', 'Flaming Sphere', 'Gentle Repose', 'Hold Person', 'Invisibility', 'Knock', 'Levitate', 'Locate Object', 'Magic Mouth', 'Magic Weapon', 'Melf\'s Acid Arrow', 'Mirror Image', 'Misty Step', 'Nystul\'s Magic Aura', 'Phantasmal Force', 'Ray of Enfeeblement', 'Rope Trick', 'Scorching Ray', 'See Invisibility', 'Shatter', 'Spider Climb', 'Suggestion', 'Web'],
       3: ['Animate Dead', 'Bestow Curse', 'Blink', 'Clairvoyance', 'Counterspell', 'Dispel Magic', 'Erupting Earth', 'Fear', 'Feign Death', 'Fireball', 'Fly', 'Gaseous Form', 'Glyph of Warding', 'Haste', 'Hypnotic Pattern', 'Leomund\'s Tiny Hut', 'Lightning Bolt', 'Major Image', 'Nondetection', 'Phantom Steed', 'Protection from Energy', 'Remove Curse', 'Sending', 'Sleet Storm', 'Slow', 'Stinking Cloud', 'Tongues', 'Vampiric Touch', 'Water Breathing'],
+      4: ['Arcane Eye', 'Banishment', 'Blight', 'Confusion', 'Dimension Door', 'Evard\'s Black Tentacles', 'Fire Shield', 'Greater Invisibility', 'Ice Storm', 'Phantasmal Killer', 'Polymorph', 'Stone Shape', 'Stoneskin', 'Wall of Fire'],
+      5: ['Animate Objects', 'Bigby\'s Hand', 'Cloudkill', 'Cone of Cold', 'Conjure Elemental', 'Dominate Person', 'Geas', 'Hold Monster', 'Passwall', 'Scrying', 'Telekinesis', 'Teleportation Circle', 'Wall of Force', 'Wall of Stone'],
     },
     cantripsKnown: { 1:3, 2:3, 3:3, 4:4, 5:4, 6:4, 7:4, 8:4, 9:4, 10:5 },
     spellsKnown: { 1:6, 2:8, 3:10, 4:12, 5:14, 6:16, 7:18, 8:20, 9:22, 10:24 },
@@ -111,6 +117,8 @@ export const CLASS_ABILITIES = {
       1: ['Armor of Agathys', 'Arms of Hadar', 'Charm Person', 'Comprehend Languages', 'Expeditious Retreat', 'Hellish Rebuke', 'Hex', 'Illusory Script', 'Protection from Evil and Good', 'Unseen Servant', 'Witch Bolt'],
       2: ['Cloud of Daggers', 'Crown of Madness', 'Darkness', 'Enthrall', 'Hold Person', 'Invisibility', 'Mirror Image', 'Misty Step', 'Ray of Enfeeblement', 'Shatter', 'Spider Climb', 'Suggestion'],
       3: ['Counterspell', 'Dispel Magic', 'Fear', 'Fly', 'Gaseous Form', 'Hunger of Hadar', 'Hypnotic Pattern', 'Magic Circle', 'Major Image', 'Remove Curse', 'Tongues', 'Vampiric Touch'],
+      4: ['Banishment', 'Blight', 'Charm Monster', 'Dimension Door', 'Hallucinatory Terrain', 'Shadow of Moil', 'Summon Greater Demon'],
+      5: ['Contact Other Plane', 'Danse Macabre', 'Dream', 'Enervation', 'Hold Monster', 'Infernal Calling', 'Negative Energy Flood', 'Scrying', 'Synaptic Static'],
     },
     cantripsKnown: { 1:2, 2:2, 3:2, 4:3, 5:3, 6:3, 7:3, 8:3, 9:3, 10:4 },
     spellsKnown: { 1:2, 2:3, 3:4, 4:5, 5:6, 6:7, 7:8, 8:9, 9:10, 10:11 },
@@ -243,6 +251,27 @@ export const CLASS_ABILITIES = {
         "Tongues",
         "Wall of Water",
         "Water Breathing"
+      ],
+      "4": [
+        "Banishment",
+        "Blight",
+        "Confusion",
+        "Dimension Door",
+        "Greater Invisibility",
+        "Ice Storm",
+        "Polymorph",
+        "Stoneskin",
+        "Wall of Fire"
+      ],
+      "5": [
+        "Animate Objects",
+        "Cloudkill",
+        "Cone of Cold",
+        "Dominate Person",
+        "Hold Monster",
+        "Insect Plague",
+        "Telekinesis",
+        "Wall of Stone"
       ]
     },
     "cantripsKnown": {
@@ -344,6 +373,32 @@ export const CLASS_ABILITIES = {
         "Water Breathing",
         "Water Walk",
         "Wind Wall"
+      ],
+      "4": [
+        "Blight",
+        "Confusion",
+        "Conjure Woodland Beings",
+        "Control Water",
+        "Freedom of Movement",
+        "Giant Insect",
+        "Ice Storm",
+        "Polymorph",
+        "Stone Shape",
+        "Stoneskin",
+        "Wall of Fire"
+      ],
+      "5": [
+        "Antilife Shell",
+        "Awaken",
+        "Commune with Nature",
+        "Conjure Elemental",
+        "Geas",
+        "Greater Restoration",
+        "Insect Plague",
+        "Mass Cure Wounds",
+        "Reincarnate",
+        "Tree Stride",
+        "Wall of Stone"
       ]
     },
     "cantripsKnown": {
