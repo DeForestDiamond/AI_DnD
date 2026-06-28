@@ -8,6 +8,7 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 // Three tiers, gated by level. An arc villain is built up over many sessions and
 // fought on the player's terms, so tiers run ahead of the random-encounter CR cap.
 const LOW_ANTAGONISTS = [ // levels 1+: local, mundane, street-level
+  // — humanoid / organized —
   'a thieves guild', 'a corrupt local official', 'a gang of bandits', 'a goblin warband',
   'a pack of gnolls', 'a rogue hedge wizard', 'a smuggling ring', 'a rival adventuring party',
   'a cult (not cosmic horror — a mundane power-hungry cult)', 'a pirate captain',
@@ -18,23 +19,47 @@ const LOW_ANTAGONISTS = [ // levels 1+: local, mundane, street-level
   'a cattle-rustling crew', 'a crooked sheriff and their deputies', 'a fence moving stolen goods through town',
   'a den of wererats under the streets', 'an extortionist moneylender with hired muscle',
   'a bugbear gang shaking down travelers', 'a kenku forgery ring', 'an arsonist-for-hire and whoever pays them',
+  // — beasts & monsters (a hungry thing is a problem at any level) —
+  'a dire wolf pack hunting the roads', 'a giant spider infestation in the old mine',
+  'an owlbear gone territorial over a trade route', 'a swarm of stirges nesting in the rafters',
+  'a basilisk lairing in the quarry', 'a pack of ghouls rising from a plague pit',
+  'a chimera-sized predator nobody can name', 'a rampaging boar the size of a cart',
+  'a nest of giant scorpions under the dunes', 'a harpy flock preying on the cliff road',
+  'a cockatrice loose in the vineyards', 'a displacer beast stalking the woods',
+  'a giant constrictor in the sewers', 'a hungry pack of worgs with goblin riders',
 ];
 const MID_ANTAGONISTS = [ // levels 5+: regional threats, real monsters
-  'a troll', 'a young dragon', 'a vampire and their thralls', 'a necromancer raising the local dead',
-  'a yuan-ti slaver operation', 'a giant causing problems', 'a hag coven',
+  // — humanoid / organized —
+  'a vampire and their thralls', 'a necromancer raising the local dead',
+  'a yuan-ti slaver operation', 'a hag coven',
   'an ogre warband under a cunning leader', 'a wight commanding restless dead',
   'a doppelganger infiltration ring', 'a green hag quietly running a town',
   'a werewolf pack claiming territory', 'a duergar slaving operation',
   'the vanguard of a hobgoblin legion', 'a medusa building a court of statues',
   'a cult with a real fiend on retainer', 'an oni preying on a town in disguise',
   'a bandit army unifying the local gangs',
+  // — beasts & monsters —
+  'a troll terrorizing the lowlands', 'a young dragon claiming a territory',
+  'a giant rampaging across the farms', 'a manticore with a taste for travelers',
+  'a wyvern nesting above the only mountain pass', 'a bulette breaching the trade road',
+  'a hydra in the marsh that keeps coming back', 'a pack of hell hounds loosed from somewhere',
+  'a gorgon herd trampling the borderlands', 'a roc carrying off livestock and people',
+  'a chimera that has claimed the high country', 'a behir hunting the river canyon',
+  'an umber hulk collapsing the mine tunnels', 'a remorhaz under the ice fields',
 ];
 const HIGH_ANTAGONISTS = [ // levels 9+: campaign-scale villains
-  'a young adult dragon carving out a domain', 'a vampire lord and their web of thralls',
-  'a fire giant warlord forging a conquest', 'a necromancer on the verge of something terrible',
+  // — humanoid / organized —
+  'a vampire lord and their web of thralls',
+  'a necromancer on the verge of something terrible',
   'a mind flayer cell harvesting a city', 'a beholder running a criminal empire',
   'an archmage cabal bending a kingdom', 'a death knight raising an army',
-  'a yuan-ti conspiracy seated in high places', 'a frost giant jarl raiding the lowlands',
+  'a yuan-ti conspiracy seated in high places',
+  // — beasts & monsters & giants —
+  'a young adult dragon carving out a domain', 'a fire giant warlord forging a conquest',
+  'a frost giant jarl raiding the lowlands', 'an adult dragon waking to reclaim its old range',
+  'a kraken stirring off the coast', 'a purple worm devouring everything beneath a region',
+  'a colossal roc that has claimed the mountains', 'a pair of hunting chimeras no army can stop',
+  'an ancient guardian beast roused from a ruin', 'a storm giant whose moods are wrecking the coast',
 ];
 
 export const rollAntagonist = (level, exclude = null) => {

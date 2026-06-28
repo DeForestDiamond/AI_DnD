@@ -106,7 +106,7 @@ const buildCharBlock = (char) => {
 
   // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
   const arcLine = char.arc?.antagonist
-    ? `\nACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}. ALL foreshadowing, rumors, clues, and buildup MUST trace back to this antagonist. NEVER invent a competing main villain. When this antagonist is permanently defeated or the storyline fully resolves, output [ARC COMPLETE] — a new arc will be assigned.`
+    ? `\nACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}. ALL foreshadowing, rumors, clues, and buildup MUST trace back to this antagonist. NEVER invent a competing main villain.\nGIVE THE PLAYER A REASON TO CARE: the player's character is not a hero and will not act "because it's right" or "because the village needs help." Before expecting them to pursue this antagonist, establish a concrete PERSONAL stake — paid coin or a lucrative contract, a threat to the player's own interests/property/people, a debt owed to or by them, blackmail leverage, a grudge, a profitable opportunity, or something the antagonist has that the player wants. No stake, no quest: never assume the player is invested just because a problem exists.\nWhen this antagonist is permanently defeated or the storyline fully resolves, output [ARC COMPLETE] — a new arc will be assigned.`
     : '';
   const dynamicPart = `CURRENT STATE:
 Level ${char.level} | ${char.xp||0} XP | Gold: ${char.gold}gp
@@ -413,6 +413,8 @@ FORWARD PRESSURE: Something must always be at stake or in motion. If the player 
 
 SCENES MUST EARN THEIR MYSTERY: If you introduce something strange — ritual bodies, disappearing footprints, a presence in the room — you must give the player a reason to care and a way to engage with it. Strange things without context or consequence are not interesting, they are noise. Either the mystery has teeth or it does not belong in the scene.
 
+NOT EVERYTHING IS A MYSTERY: Do not turn every threat into a puzzle to investigate. Sometimes a monster is just a monster — it is hungry, it is territorial, it is in the way, and the answer is a fight, not an investigation. A troll on the bridge wants to eat the player; that needs no lore, no hidden cause, no "what is it really." Mix it up: some arcs are mysteries to unravel, but plenty should be straightforward action — a clear threat, a direct confrontation, a good fight with stakes. An action-packed adventure with no twist is a complete adventure. Do not make the player solve a riddle to get to every fight.
+
 ACTION OVER DESCRIPTION: When in doubt, make something happen. A merchant approaches. A guard challenges them. A noise echoes. Something moves. A figure appears. Push the story forward. The player is here to make decisions, not to read descriptions.
 
 ACTIONS HAVE CONSEQUENCES: When the player does something significant, the world must react. Always. Disrupting a ritual, cremating preserved bodies, challenging a presence, breaking a seal, stealing from a faction, killing a named NPC — these are not neutral events. Something changes. Something responds. An enemy notices. A power stirs. A faction retaliates. A door opens. Even if the consequence is subtle — a temperature drop, a sound, a shift in the air — something must acknowledge what the player just did. Silence and indifference are not valid responses to meaningful action. If the player spends significant time and effort on something, the world owes them a reaction.
@@ -489,7 +491,9 @@ INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${itemDetailLine}${dexBuild}${cle
 
 ══ ACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does) ══
 ${char.arc.antagonist}
-ALL foreshadowing, rumors, clues, and buildup MUST trace back to this antagonist. NEVER invent a competing main villain. When this antagonist is permanently defeated or the storyline fully resolves, output [ARC COMPLETE] — a new arc will be assigned.` : ''}
+ALL foreshadowing, rumors, clues, and buildup MUST trace back to this antagonist. NEVER invent a competing main villain.
+GIVE THE PLAYER A REASON TO CARE: this character is NOT a hero — they will not act "because it's right" or "because people need help." Before expecting them to chase this antagonist, give a concrete PERSONAL stake: coin, a contract, a threat to their own interests or people, a debt, leverage, a grudge, or something they want. No stake, no quest. A problem existing is not a reason for THIS character to care.
+When this antagonist is permanently defeated or the storyline fully resolves, output [ARC COMPLETE] — a new arc will be assigned.` : ''}
 
 ${directivesBlock(char)}`;
 
