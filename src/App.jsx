@@ -649,10 +649,13 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 
       // If DM requested a roll, send the result back for narration
       if (resultText) {
-        // Surface the DM's pre-roll message (the setup that called the roll) in the
-        // feed — otherwise the player only sees post-roll narration and the scene
-        // looks like it jumped mid-action. Strip the [ROLL:] tag from the display.
-        const setupText = dmText.replace(/\[ROLL:[^\]]*\]/gi, '').trim();
+        // Surface only the lead-up BEFORE the [ROLL:] tag. If the DM wrongly wrote
+        // the outcome AFTER the tag (pre-resolving the action), that text is cut —
+        // the real outcome comes from the post-roll call, so showing the DM's guess
+        // too would resolve the action twice.
+        const tagIdx = dmText.search(/\[ROLL:[^\]]*\]/i);
+        const setupText = (tagIdx >= 0 ? dmText.slice(0, tagIdx) : dmText)
+          .replace(/\[ROLL:[^\]]*\]/gi, '').trim();
         if (setupText) {
           rollSetupText = setupText;
           addMessage({ role:'dm', text: setupText, id: Date.now() - 1, roll: null });
