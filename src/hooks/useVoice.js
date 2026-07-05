@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 // Clean DM text for TTS — strip tags and fix abbreviations that sound wrong
 const cleanForSpeech = (text) => text
   .replace(/\[[^\]]+\]/g, '')           // remove all game tags
+  .replace(/[*_]/g, '')                 // strip markdown emphasis so TTS doesn't say "asterisk"
   .replace(/\d+\.\s/g, '')             // remove numbered list markers
   .replace(/\bDC\b/g, 'difficulty')    // DC → difficulty
   .replace(/\bAC\b/g, 'armor class')   // AC → armor class
