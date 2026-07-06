@@ -159,13 +159,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
   const slots = companion.slots || {};
   const slotDefs = companion.type === 'wolf'
     ? [{ id:'neck', label:'Collar', emoji:'📿' }, { id:'armor', label:'Barding', emoji:'🥋' }]
-    : [
-        { id:'mainhand', label:'Main Hand', emoji:'⚔️' },
-        { id:'offhand',  label:'Off Hand',  emoji:'🛡️' },
-        { id:'armor',    label:'Armor',     emoji:'🥋' },
-        { id:'head',     label:'Head',      emoji:'⛑️' },
-        { id:'neck',     label:'Neck',      emoji:'📿' },
-      ];
+    : SLOTS;
   return (
     <div style={{marginTop:4,paddingLeft:6,borderLeft:`1px solid ${colors.borderFaint}`}}>
       {slotDefs.map(slot => {
