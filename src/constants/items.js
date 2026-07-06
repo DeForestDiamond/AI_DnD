@@ -48,7 +48,7 @@ export const ITEM_DB = { ...WEAPON_DB, ...ARMOR_DB, ...MAGIC_ITEM_DB, ...FOCUS_D
 
 export const SLOTS = [
   { id:'mainhand', label:'Main Hand', emoji:'⚔️',  accepts:['weapon']                  },
-  { id:'offhand',  label:'Off Hand',  emoji:'🛡️',  accepts:['weapon','shield','focus']  },
+  { id:'offhand',  label:'Off Hand',  emoji:'🛡️',  accepts:['weapon','shield','focus','magic']  },
   { id:'armor',    label:'Armor',     emoji:'🥋',  accepts:['armor']                    },
   { id:'head',     label:'Helmet',    emoji:'⛑️',  accepts:['magic']                    },
   { id:'neck',     label:'Necklace',  emoji:'📿',  accepts:['magic']                    },
