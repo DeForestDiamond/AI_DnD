@@ -578,7 +578,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
 
       {/* Collapsible inventory sections */}
       {Object.entries(CATEGORY_META).map(([cat, meta]) => {
-        const items = categorized[cat] || [];
+        const items = (categorized[cat] || []).slice().sort((a, b) => a.name.localeCompare(b.name));
         if (items.length === 0) return null;
         return (
           <CollapsibleSection key={cat} title={meta.label} count={items.length} defaultOpen={false}>
@@ -682,7 +682,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {(() => {
         const stash = character.stash || [];
         const stackedStash = stackInventory(stash);
-        const stashEntries = Object.entries(stackedStash);
+        const stashEntries = Object.entries(stackedStash).sort((a, b) => a[0].localeCompare(b[0]));
         return (
           <CollapsibleSection
             title="📦 STASH"
