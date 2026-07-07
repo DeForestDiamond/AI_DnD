@@ -649,6 +649,11 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                         const ilabel = idata?.label;
                         return (
                           <div key={itemName} style={{fontSize:13,color:colors.textDead,padding:'2px 0',display:'flex',alignItems:'center',gap:4,borderBottom:`1px solid ${colors.borderFaint}`}}>
+                            {onDeleteFromBag && (
+                              <span style={{width:22,flexShrink:0,display:'flex',justifyContent:'flex-start'}}>
+                                <button title="Delete from bag" onClick={()=>onDeleteFromBag(name,itemName,itemCount>1?false:true)} style={delBtn}>✕</button>
+                              </span>
+                            )}
                             <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0}}>– {itemName}{ilabel?` [${ilabel}]`:''}</span>
                             {itemCount > 1 && <span style={{color:colors.goldFaint,fontFamily:fonts.mono,fontSize:13,flexShrink:0}}>x{itemCount}</span>}
                             {onRemoveFromBag && (
@@ -657,9 +662,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                                 {itemCount>1 && <button title="Take all out" onClick={()=>onRemoveFromBag(name,itemName,true)} style={iconBtn}>↑↑</button>}
                               </>
                             )}
-                            {onDeleteFromBag && (
-                              <button title="Delete from bag" onClick={()=>onDeleteFromBag(name,itemName,itemCount>1?false:true)} style={delBtn}>✕</button>
-                            )}
+                          </div>
                           </div>
                         );
                       })}
