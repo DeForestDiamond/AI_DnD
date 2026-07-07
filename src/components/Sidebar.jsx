@@ -663,7 +663,6 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                               </>
                             )}
                           </div>
-                          </div>
                         );
                       })}
                     </div>
