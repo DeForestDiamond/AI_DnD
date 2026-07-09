@@ -171,6 +171,32 @@ export const migrateCharacter = (char) => {
     // Subclass support. Add the field; owed choices are detected live on load.
     if (!c.subclasses) c.subclasses = {};
   }
+  if (v < 10) {
+    // World-state containers. Features that write NPCs/towns (extraction, edit
+    // panel) and the arc/pacing systems assume these exist; older saves may
+    // lack any of them. Guarantees shape so downstream code can stop guarding.
+    if (c.arc === undefined) c.arc = null;                    // no active antagonist
+    if (!c.pacing) c.pacing = 'normal';
+    if (!c.companions) c.companions = {};
+    if (!c.npcs) c.npcs = {};
+    if (!c.towns) { c.towns = {}; notes.push('Towns/locations store initialized'); }
+    if (!c.contextExclusions) c.contextExclusions = {};
+    ['companions','npcs','towns'].forEach(k => {
+      if (!c.contextExclusions[k]) c.contextExclusions[k] = {};
+    });
+    // Companion/NPC entries: guarantee the three core keys every consumer and
+    // the upcoming edit panel rely on. Light touch — optional flavor fields
+    // (race, appearance, personality, ...) stay absent unless authored, since
+    // the prompt builder skips missing fields cleanly.
+    ['companions','npcs'].forEach(group => {
+      Object.entries(c[group]).forEach(([name, entry]) => {
+        if (!entry || typeof entry !== 'object') { c[group][name] = { desc: String(entry ?? ''), location: '', relationship: '' }; return; }
+        if (entry.desc === undefined) entry.desc = '';
+        if (entry.location === undefined) entry.location = '';
+        if (entry.relationship === undefined) entry.relationship = '';
+      });
+    });
+  }
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
