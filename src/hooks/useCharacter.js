@@ -109,6 +109,24 @@ export const migrateCharacter = (char) => {
   const notes = [];
   const v = char._v || 1;
   let c = { ...char };
+  // Inventory/stash may arrive in compressed { name: count } form (how they're
+  // now stored on disk to avoid 4000 identical lines). Expand back to the array
+  // of individual strings that every in-memory consumer expects. Runs for ALL
+  // saves regardless of version — a plain array passes through untouched.
+  const expandList = (val) => {
+    if (Array.isArray(val)) return val;                 // old array-form save — as-is
+    if (val && typeof val === 'object') {               // compressed { name: count }
+      const out = [];
+      for (const [name, count] of Object.entries(val)) {
+        const n = Math.max(0, parseInt(count, 10) || 0);
+        for (let i = 0; i < n; i++) out.push(name);
+      }
+      return out;
+    }
+    return [];                                          // absent/garbage → empty
+  };
+  if (c.inventory !== undefined) c.inventory = expandList(c.inventory);
+  if (c.stash !== undefined) c.stash = expandList(c.stash);
   if (v < 2) {
     c.slots = { ...EMPTY_SLOTS };
     c.customItems = {};

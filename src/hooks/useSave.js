@@ -44,14 +44,32 @@ export function parseSaveJSON(raw) {
 
 export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoadCharacter }) {
 
+  // ── Inventory/stash storage compression ──────────────────────────────────────
+  // In memory, inventory & stash are arrays of individual item-name strings
+  // (4000 cigarillos = 4000 strings) — every consumer relies on that array shape,
+  // so we DON'T change it in memory. We only compress at the save boundary:
+  // arrays become { name: count } objects on disk, and expand back to arrays on
+  // load. A save with 4000 identical items stores one line instead of 4000.
+  const compressList = (arr) => {
+    if (!Array.isArray(arr)) return arr; // already compressed or absent — leave it
+    const counts = {};
+    for (const name of arr) counts[name] = (counts[name] || 0) + 1;
+    return counts;
+  };
+  const compressCharForSave = (char) => ({
+    ...char,
+    inventory: compressList(char.inventory),
+    stash: compressList(char.stash),
+  });
+
   const buildState = (type) => ({
     _type: type,
     _v: SAVE_VERSION,
     // Character exports are a clean start: the character and world the player
     // built, with no story arc attached. Full saves keep the arc.
     character: type === 'character'
-      ? (({ arc, ...rest }) => ({ ...rest, _v: SAVE_VERSION }))(charRef.current)
-      : { ...charRef.current, _v: SAVE_VERSION },
+      ? (({ arc, ...rest }) => compressCharForSave({ ...rest, _v: SAVE_VERSION }))(charRef.current)
+      : compressCharForSave({ ...charRef.current, _v: SAVE_VERSION }),
     ...(type === 'fullsave' ? { messages, storySummary: storySummaryRef.current || '' } : {}),
   });
 
@@ -84,7 +102,7 @@ export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoad
     try {
       localStorage.setItem('dnd-autosave', JSON.stringify({
         _type: 'fullsave', _v: SAVE_VERSION,
-        character: { ...char, _v: SAVE_VERSION },
+        character: compressCharForSave({ ...char, _v: SAVE_VERSION }),
         messages: msgs,
         storySummary: storySummaryRef.current || '',
       }));
