@@ -158,6 +158,15 @@ function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
   const [eLoc, setELoc]     = useState('');
   const [eRel, setERel]     = useState('');
   const [eDesc, setEDesc]   = useState('');
+  const [eNotes, setENotes] = useState('');
+  // companion-only structured fields (prompt uses these when desc is empty)
+  const [eRace, setERace]   = useState('');
+  const [eRole, setERole]   = useState('');
+  const [eApp, setEApp]     = useState('');
+  const [ePers, setEPers]   = useState('');
+  const [eStatus, setEStatus] = useState('');
+  const [eTrue, setETrue]   = useState('');
+  const [eAbil, setEAbil]   = useState('');
 
   const runExtract = async () => {
     const from = parseInt(exFrom, 10), to = parseInt(exTo, 10);
@@ -175,17 +184,31 @@ function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
     const e = character[group]?.[n] || {};
     setEditKey(group + '|' + n); setEGroup(group); setEName(n);
     setELoc(e.location || ''); setERel(e.relationship || ''); setEDesc(e.desc || '');
+    setENotes(e.notes || ''); setERace(e.race || ''); setERole(e.role || '');
+    setEApp(e.appearance || ''); setEPers(e.personality || ''); setEStatus(e.status || '');
+    setETrue(e.trueName || '');
+    setEAbil(Array.isArray(e.abilities) ? e.abilities.join(', ') : (e.abilities || ''));
   };
-  const openNew = () => { setEditKey('new'); setEGroup('npcs'); setEName(''); setELoc(''); setERel(''); setEDesc(''); };
+  const openNew = () => {
+    setEditKey('new'); setEGroup('npcs'); setEName(''); setELoc(''); setERel(''); setEDesc('');
+    setENotes(''); setERace(''); setERole(''); setEApp(''); setEPers(''); setEStatus(''); setETrue(''); setEAbil('');
+  };
   const closeEdit = () => setEditKey('');
   const saveEdit = () => {
     const finalName = eName.trim();
     if (!finalName) { setStatus('✗ Name required'); return; }
     const isNew = editKey === 'new';
     const [origGroup, origName] = isNew ? [eGroup, null] : editKey.split('|');
-    const base = (!isNew && origGroup === eGroup) ? (character[origGroup]?.[origName] || {}) : {};
+    // Carry ALL original fields (slots, tier, anything unknown) even across a
+    // group move, so promoting an NPC to companion never drops data.
+    const entry = { ...((!isNew && character[origGroup]?.[origName]) || {}) };
+    // Set-or-remove: an emptied field is deleted, not silently kept.
+    const put = (key, val) => { const v = val.trim(); if (v) entry[key] = v; else delete entry[key]; };
+    put('location', eLoc); put('relationship', eRel); put('desc', eDesc); put('notes', eNotes);
+    put('race', eRace); put('role', eRole); put('appearance', eApp);
+    put('personality', ePers); put('status', eStatus); put('trueName', eTrue); put('abilities', eAbil);
     if (!isNew && origGroup !== eGroup) onDeleteNPC(origGroup, origName);
-    onSaveNPC(eGroup, finalName, { ...base, location: eLoc, relationship: eRel, desc: eDesc }, (!isNew && origGroup === eGroup) ? origName : null);
+    onSaveNPC(eGroup, finalName, entry, (!isNew && origGroup === eGroup) ? origName : null);
     setStatus(`✓ Saved ${finalName}`); setEditKey('');
   };
   const deleteEdit = () => {
@@ -237,7 +260,24 @@ function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
           </div>
           <input value={eLoc} onChange={e=>setELoc(e.target.value)} placeholder="Location (e.g. Calimport - Gem Quarter)" style={{...npcInput, marginBottom:4}}/>
           <input value={eRel} onChange={e=>setERel(e.target.value)} placeholder="Relationship to the player" style={{...npcInput, marginBottom:4}}/>
-          <textarea value={eDesc} onChange={e=>setEDesc(e.target.value)} placeholder="Description — appearance, personality, notable facts" rows={4} style={{...npcInput, resize:'vertical', marginBottom:6}}/>
+          {eGroup === 'companions' && (
+            <>
+              <div style={{display:'flex',gap:4,marginBottom:4}}>
+                <input value={eRace} onChange={e=>setERace(e.target.value)} placeholder="Race" style={{...npcInput, flex:1}}/>
+                <input value={eRole} onChange={e=>setERole(e.target.value)} placeholder="Role" style={{...npcInput, flex:1}}/>
+              </div>
+              <input value={eApp} onChange={e=>setEApp(e.target.value)} placeholder="Appearance" style={{...npcInput, marginBottom:4}}/>
+              <input value={ePers} onChange={e=>setEPers(e.target.value)} placeholder="Personality" style={{...npcInput, marginBottom:4}}/>
+              <input value={eStatus} onChange={e=>setEStatus(e.target.value)} placeholder="Status (current state / condition)" style={{...npcInput, marginBottom:4}}/>
+              <input value={eTrue} onChange={e=>setETrue(e.target.value)} placeholder="True name (if any)" style={{...npcInput, marginBottom:4}}/>
+              <input value={eAbil} onChange={e=>setEAbil(e.target.value)} placeholder="Abilities (comma-separated)" style={{...npcInput, marginBottom:4}}/>
+            </>
+          )}
+          <textarea value={eDesc} onChange={e=>setEDesc(e.target.value)} placeholder="Description — appearance, personality, notable facts" rows={4} style={{...npcInput, resize:'vertical', marginBottom:2}}/>
+          {eGroup === 'companions' && (
+            <div style={{fontSize:10,color:colors.textGhost,marginBottom:4,lineHeight:1.4}}>If Description is filled, the AI uses it INSTEAD of the Race/Role/Appearance/Personality/Status fields above. Use one or the other.</div>
+          )}
+          <textarea value={eNotes} onChange={e=>setENotes(e.target.value)} placeholder="Notes (always sent alongside, e.g. behavior rules)" rows={2} style={{...npcInput, resize:'vertical', marginBottom:6}}/>
           <div style={{display:'flex',gap:4}}>
             <button onClick={saveEdit} style={{...btn, flex:1}}>✓ SAVE</button>
             {editKey !== 'new' && <button onClick={deleteEdit} style={{...btn, flex:1, color:'#c96a4c', borderColor:'#5a2a1a'}}>✕ DELETE</button>}
