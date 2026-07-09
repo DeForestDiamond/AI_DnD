@@ -551,6 +551,110 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     }
   };
 
+  // ── NPC extraction ─────────────────────────────────────────────────────────
+  // Player-driven: reads a range of RAW fullLog messages (primary text, not the
+  // degraded summary) via a dedicated API call and writes structured entries
+  // into character.npcs / character.companions. Three modes:
+  //   name given, not in store  -> create
+  //   name given, already exists -> update (existing entry sent for merging)
+  //   name blank                 -> multi-find (all significant characters)
+  const extractNPCs = async ({ name, from, to, asCompanion }) => {
+    const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+    const logArr = fullLogRef.current;
+    const lo = Math.max(0, Math.min(from, to));
+    const hi = Math.min(logArr.length - 1, Math.max(from, to));
+    if (!logArr.length || hi < lo) throw new Error('Invalid message range');
+    if (hi - lo + 1 > 80) throw new Error(`Range too large (${hi - lo + 1} messages, max 80) — narrow it down`);
+
+    const char = charRef.current;
+    const playerName = char?.name || 'the player';
+    const group = asCompanion ? 'companions' : 'npcs';
+    const trimmedName = (name || '').trim();
+    const existing = trimmedName
+      ? Object.entries({ ...char.npcs, ...char.companions }).find(([n]) => n.toLowerCase() === trimmedName.toLowerCase())
+      : null;
+
+    const shape = '{ "npcs": { "Character Name": { "location": "Town or Town - District, or empty string", "relationship": "their relationship to ' + playerName + ' in a short phrase", "desc": "2-4 vivid sentences: appearance, personality, role, notable facts — include their gender pronoun on first mention" } } }';
+    let task;
+    if (trimmedName && existing) {
+      task = `Extract an UPDATED record for the character named "${existing[0]}". Their existing record follows — MERGE it with new information from the messages. Keep established facts unless the messages contradict or supersede them; weave in what is new.\nEXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
+    } else if (trimmedName) {
+      task = `Extract a record for ONLY the character named "${trimmedName}". If they do not appear in these messages, return { "npcs": {} }.`;
+    } else {
+      task = `Extract every SIGNIFICANT named character: recurring people, anyone with a name and a role in events. SKIP: ${playerName} (the player), unnamed extras, and one-line walk-ons like a merchant who appears once to sell something. When in doubt about significance, include them — the player chooses what to keep.`;
+    }
+
+    const apiMsgs = logArr.slice(lo, hi + 1).map(m => ({
+      role: m.role === 'dm' ? 'assistant' : 'user',
+      content: m.text,
+    }));
+
+    log(`[NPC] Extracting ${trimmedName || 'all significant characters'} from messages #${lo}-#${hi} (${apiMsgs.length} msgs)`);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1500,
+        system: `You extract character records from D&D session transcripts. The player character is ${playerName} — never create a record for them. Base every record ONLY on what these messages establish; do not invent details. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
+        messages: [
+          ...apiMsgs,
+          { role: 'user', content: task + '\n\nRespond with ONLY the JSON now.' },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    const rawText = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(rawText); } catch { throw new Error('Extraction returned unparseable JSON — try again or narrow the range'); }
+    const found = parsed.npcs || {};
+    const names = Object.keys(found);
+    if (!names.length) { log('[NPC] Nothing found in range'); return { applied: [] }; }
+
+    // Sanitize to the three core keys and write. If a name already exists in
+    // the OTHER group, update it there instead of duplicating across groups.
+    const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions } };
+    const applied = [];
+    for (const [n, e] of Object.entries(found)) {
+      const entry = {
+        location: String(e?.location ?? ''),
+        relationship: String(e?.relationship ?? ''),
+        desc: String(e?.desc ?? ''),
+      };
+      const inComp = Object.keys(c.companions).find(k => k.toLowerCase() === n.toLowerCase());
+      const inNpc  = Object.keys(c.npcs).find(k => k.toLowerCase() === n.toLowerCase());
+      if (inComp)      c.companions[inComp] = { ...c.companions[inComp], ...entry };
+      else if (inNpc && !asCompanion) c.npcs[inNpc] = { ...c.npcs[inNpc], ...entry };
+      else if (inNpc && asCompanion)  { c.companions[n] = { ...c.npcs[inNpc], ...entry }; delete c.npcs[inNpc]; }
+      else             c[group][n] = entry;
+      applied.push(n);
+    }
+    updateChar(c);
+    log(`[NPC] Saved: ${applied.join(', ')}`);
+    return { applied };
+  };
+
+  // Shared write path for the NPC edit panel (Feature 3) and manual adds.
+  const saveNPCEntry = (group, name, entry, originalName = null) => {
+    const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions }, towns: { ...charRef.current.towns } };
+    if (originalName && originalName !== name) delete c[group][originalName];
+    c[group][name] = entry;
+    updateChar(c);
+    log(`[NPC] ${originalName && originalName !== name ? `Renamed ${originalName} -> ` : 'Saved '}${name} (${group})`);
+  };
+  const deleteNPCEntry = (group, name) => {
+    const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions }, towns: { ...charRef.current.towns } };
+    delete c[group][name];
+    updateChar(c);
+    log(`[NPC] Deleted ${name} (${group})`);
+  };
+
   const buildApiHistory = (overrideMsgs = null) => {
     const rawSummary = storySummaryRef.current;
     const base = overrideMsgs ?? fullLogRef.current;
@@ -1121,6 +1225,9 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
               log(`[ARC] Rolled by player — new antagonist: ${a}`);
             }}
             onToggleContextExclusion={toggleContextExclusion}
+            onExtractNPC={extractNPCs}
+            onSaveNPC={saveNPCEntry}
+            onDeleteNPC={deleteNPCEntry}
           />
         </div>
       )}

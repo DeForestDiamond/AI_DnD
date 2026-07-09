@@ -143,6 +143,112 @@ function CollapsibleSection({ title, count, defaultOpen = false, children }) {
   );
 }
 
+// ── NPC Manager: extract-from-log + edit/add/delete for npcs & companions ──────
+const npcInput = { width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.4)', border:`1px solid ${colors.borderDim}`, color:colors.text, fontFamily:fonts.body, fontSize:13, padding:'6px 8px', borderRadius:4, outline:'none' };
+function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
+  const [exName, setExName] = useState('');
+  const [exFrom, setExFrom] = useState('');
+  const [exTo, setExTo]     = useState('');
+  const [exComp, setExComp] = useState(false);
+  const [busy, setBusy]     = useState(false);
+  const [status, setStatus] = useState('');
+  const [editKey, setEditKey] = useState('');   // '' | 'new' | 'group|name'
+  const [eGroup, setEGroup] = useState('npcs');
+  const [eName, setEName]   = useState('');
+  const [eLoc, setELoc]     = useState('');
+  const [eRel, setERel]     = useState('');
+  const [eDesc, setEDesc]   = useState('');
+
+  const runExtract = async () => {
+    const from = parseInt(exFrom, 10), to = parseInt(exTo, 10);
+    if (Number.isNaN(from) || Number.isNaN(to)) { setStatus('✗ Enter the message # range (numbers next to messages)'); return; }
+    setBusy(true); setStatus('Extracting… (reads those messages via a separate AI call)');
+    try {
+      const { applied } = await onExtractNPC({ name: exName, from, to, asCompanion: exComp });
+      setStatus(applied.length ? `✓ Saved: ${applied.join(', ')}` : 'No one found in that range');
+      if (applied.length) { setExName(''); }
+    } catch (e) { setStatus('✗ ' + e.message); }
+    setBusy(false);
+  };
+
+  const openEdit = (group, n) => {
+    const e = character[group]?.[n] || {};
+    setEditKey(group + '|' + n); setEGroup(group); setEName(n);
+    setELoc(e.location || ''); setERel(e.relationship || ''); setEDesc(e.desc || '');
+  };
+  const openNew = () => { setEditKey('new'); setEGroup('npcs'); setEName(''); setELoc(''); setERel(''); setEDesc(''); };
+  const closeEdit = () => setEditKey('');
+  const saveEdit = () => {
+    const finalName = eName.trim();
+    if (!finalName) { setStatus('✗ Name required'); return; }
+    const isNew = editKey === 'new';
+    const [origGroup, origName] = isNew ? [eGroup, null] : editKey.split('|');
+    const base = (!isNew && origGroup === eGroup) ? (character[origGroup]?.[origName] || {}) : {};
+    if (!isNew && origGroup !== eGroup) onDeleteNPC(origGroup, origName);
+    onSaveNPC(eGroup, finalName, { ...base, location: eLoc, relationship: eRel, desc: eDesc }, (!isNew && origGroup === eGroup) ? origName : null);
+    setStatus(`✓ Saved ${finalName}`); setEditKey('');
+  };
+  const deleteEdit = () => {
+    if (editKey === 'new') { setEditKey(''); return; }
+    const [g, n] = editKey.split('|');
+    onDeleteNPC(g, n); setStatus(`✓ Deleted ${n}`); setEditKey('');
+  };
+
+  const npcNames  = Object.keys(character.npcs || {});
+  const compNames = Object.keys(character.companions || {});
+
+  return (
+    <CollapsibleSection title="📇 NPC MANAGER" count={npcNames.length + compNames.length} defaultOpen={false}>
+      {/* Extract from log */}
+      <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,margin:'4px 0 4px'}}>EXTRACT FROM LOG</div>
+      <input value={exName} onChange={e=>setExName(e.target.value)} placeholder="Name (blank = find everyone significant)" style={{...npcInput, marginBottom:4}}/>
+      <div style={{display:'flex', gap:4, marginBottom:4}}>
+        <input value={exFrom} onChange={e=>setExFrom(e.target.value)} placeholder="From #" inputMode="numeric" style={{...npcInput, flex:1}}/>
+        <input value={exTo} onChange={e=>setExTo(e.target.value)} placeholder="To #" inputMode="numeric" style={{...npcInput, flex:1}}/>
+      </div>
+      <label style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:colors.textDim,marginBottom:6,cursor:'pointer'}}>
+        <input type="checkbox" checked={exComp} onChange={()=>setExComp(v=>!v)} style={{accentColor:colors.gold}}/>
+        Save as companion
+      </label>
+      <button onClick={runExtract} disabled={busy} style={{...btn, width:'100%', opacity:busy?0.5:1}}>{busy ? '…' : '📥 EXTRACT'}</button>
+      {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:4,lineHeight:1.4}}>{status}</div>}
+
+      {/* Edit / add */}
+      <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,margin:'10px 0 4px'}}>EDIT ENTRIES</div>
+      <div style={{display:'flex',gap:4,marginBottom:4}}>
+        <select value={editKey.includes('|') ? editKey : ''} onChange={e=>{ const v=e.target.value; if (v) { const [g,n]=v.split('|'); openEdit(g,n);} }} style={{...npcInput, flex:1}}>
+          <option value="">Select an entry to edit…</option>
+          {npcNames.length > 0 && <optgroup label="NPCs">{npcNames.map(n=><option key={'n'+n} value={'npcs|'+n}>{n}</option>)}</optgroup>}
+          {compNames.length > 0 && <optgroup label="Companions">{compNames.map(n=><option key={'c'+n} value={'companions|'+n}>{n}</option>)}</optgroup>}
+        </select>
+        <button onClick={openNew} style={{...btn, flexShrink:0}}>+ New</button>
+      </div>
+
+      {editKey && (
+        <div style={{border:`1px solid ${colors.borderDim}`, borderRadius:4, padding:8, marginTop:2}}>
+          <input value={eName} onChange={e=>setEName(e.target.value)} placeholder="Name" style={{...npcInput, marginBottom:4}}/>
+          <div style={{display:'flex',gap:8,marginBottom:4,fontSize:12,color:colors.textDim}}>
+            <label style={{display:'flex',alignItems:'center',gap:4,cursor:'pointer'}}>
+              <input type="radio" checked={eGroup==='npcs'} onChange={()=>setEGroup('npcs')} style={{accentColor:colors.gold}}/> NPC
+            </label>
+            <label style={{display:'flex',alignItems:'center',gap:4,cursor:'pointer'}}>
+              <input type="radio" checked={eGroup==='companions'} onChange={()=>setEGroup('companions')} style={{accentColor:colors.gold}}/> Companion
+            </label>
+          </div>
+          <input value={eLoc} onChange={e=>setELoc(e.target.value)} placeholder="Location (e.g. Calimport - Gem Quarter)" style={{...npcInput, marginBottom:4}}/>
+          <input value={eRel} onChange={e=>setERel(e.target.value)} placeholder="Relationship to the player" style={{...npcInput, marginBottom:4}}/>
+          <textarea value={eDesc} onChange={e=>setEDesc(e.target.value)} placeholder="Description — appearance, personality, notable facts" rows={4} style={{...npcInput, resize:'vertical', marginBottom:6}}/>
+          <div style={{display:'flex',gap:4}}>
+            <button onClick={saveEdit} style={{...btn, flex:1}}>✓ SAVE</button>
+            {editKey !== 'new' && <button onClick={deleteEdit} style={{...btn, flex:1, color:'#c96a4c', borderColor:'#5a2a1a'}}>✕ DELETE</button>}
+            <button onClick={closeEdit} style={{...btn, flexShrink:0}}>CANCEL</button>
+          </div>
+        </div>
+      )}
+    </CollapsibleSection>
+  );
+}
+
 const slotItemLabel = (name, data) => {
   if (!data) return name;
   if (data.type === 'weapon') return `${name} (${data.damage}${data.bonus?`+${data.bonus}`:''})`;
@@ -191,7 +297,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onToggleContextExclusion }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onToggleContextExclusion, onExtractNPC, onSaveNPC, onDeleteNPC }) {
   const db       = allItems(character.customItems || {});
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
@@ -470,6 +576,11 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             );
           })}
         </CollapsibleSection>
+      )}
+
+      {/* NPC Manager — extract from log, edit, add, delete */}
+      {(onExtractNPC || onSaveNPC) && (
+        <NPCManager character={character} onExtractNPC={onExtractNPC} onSaveNPC={onSaveNPC} onDeleteNPC={onDeleteNPC} />
       )}
 
       {/* Key NPCs */}

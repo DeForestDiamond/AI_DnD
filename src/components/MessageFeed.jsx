@@ -82,7 +82,7 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
         </div>
       )}
 
-      {messages.map(msg => {
+      {messages.map((msg, msgIdx) => {
         const editable = isEditable(msg);
         const isLastDM = msg.role === 'dm' && msg.id === lastDMId;
 
@@ -93,6 +93,7 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
             {msg.role === 'dm' && <div style={{fontSize:20,flexShrink:0,marginTop:2}}>📜</div>}
 
             <div style={{maxWidth:'80%'}}>
+              <div style={{fontSize:9,color:'#3d3d2d',fontFamily:fonts.mono,textAlign:msg.role==='user'?'right':'left',marginBottom:1,userSelect:'none'}}>#{msgIdx}</div>
               <div style={{
                 background: msg.role==='dm' ? 'rgba(201,168,76,0.05)' : 'rgba(255,255,255,0.04)',
                 border:`1px solid ${msg.role==='dm' ? colors.borderDim : '#2a2a1a'}`,
