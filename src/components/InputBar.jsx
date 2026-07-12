@@ -31,6 +31,14 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
 
   return (
     <div style={{background:'rgba(10,7,3,0.9)',borderTop:`1px solid ${colors.border}`,padding:14,flexShrink:0}}>
+      <div style={{display:'flex',gap:6,marginBottom:8}}>
+        {[1,2,3,4].map(n => (
+          <button key={n} onClick={() => !loading && onSend(`Option ${n}`)} disabled={loading}
+            style={{flex:1,background:'transparent',border:'1px solid #4a3820',color:'#8a7a5a',padding:'8px 0',fontSize:14,fontFamily:fonts.display,letterSpacing:1,borderRadius:3,cursor:loading?'default':'pointer',opacity:loading?0.4:1}}>
+            {n}
+          </button>
+        ))}
+      </div>
       <div style={{display:'flex',gap:8}}>
         {sttSupported && (
           <button onClick={onMicClick} disabled={loading}
