@@ -147,6 +147,9 @@ export default function App() {
   const applyLoadedCharacter = (char) => {
     loadCharacter(char);
     setFullLog([]); fullLogRef.current = [];
+    // Character exports are a clean start — clear any previous story's summary
+    // so it doesn't leak into the new adventure.
+    setStorySummary(''); storySummaryRef.current = '';
     initSummarizedAt(0);
     queuePostLoadModals(char);
     setPhase('playing');
