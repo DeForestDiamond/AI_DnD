@@ -1227,6 +1227,10 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
               updateChar({ ...charRef.current, arc: { antagonist: a } });
               log(`[ARC] Rolled by player — new antagonist: ${a}`);
             }}
+            onSetArc={(text) => {
+              updateChar({ ...charRef.current, arc: { antagonist: text } });
+              log(`[ARC] Custom antagonist set by player: ${text}`);
+            }}
             onToggleContextExclusion={toggleContextExclusion}
             onExtractNPC={extractNPCs}
             onSaveNPC={saveNPCEntry}

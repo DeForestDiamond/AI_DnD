@@ -337,8 +337,10 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onToggleContextExclusion, onExtractNPC, onSaveNPC, onDeleteNPC }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onSaveNPC, onDeleteNPC }) {
   const db       = allItems(character.customItems || {});
+  const [arcCustomOpen, setArcCustomOpen] = useState(false);
+  const [arcCustomText, setArcCustomText] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
   const weapon   = character.stats.dex ? getMainWeapon(character.slots, character.stats, character.customItems||{}) : null;
@@ -479,8 +481,19 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           </div>
           <div style={{display:'flex',gap:6}}>
             <button onClick={onRollArc} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>🎲 {arcAntagonist?'Reroll':'Roll'}</button>
+            <button onClick={()=>setArcCustomOpen(v=>!v)} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✎ Custom</button>
             {arcAntagonist && <button onClick={onClearArc} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✕ Clear</button>}
           </div>
+          {arcCustomOpen && (
+            <div style={{marginTop:6}}>
+              <input value={arcCustomText} onChange={e=>setArcCustomText(e.target.value)}
+                placeholder="e.g. a rival dhampir elder and her brood"
+                style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:12,padding:'5px 8px',borderRadius:4,outline:'none',marginBottom:4}}/>
+              <div style={{fontSize:10,color:colors.textGhost,marginBottom:4,lineHeight:1.35}}>Write it as a noun phrase — it fills sentences like "scouts of ___ attack".</div>
+              <button onClick={()=>{ const t=arcCustomText.trim(); if(t){ onSetArc?.(t); setArcCustomText(''); setArcCustomOpen(false);} }}
+                style={{...btn(false),width:'100%',fontSize:11,padding:'4px 0'}}>✓ SET ANTAGONIST</button>
+            </div>
+          )}
         </div>
       )}
 
