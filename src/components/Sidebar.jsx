@@ -143,6 +143,22 @@ function CollapsibleSection({ title, count, defaultOpen = false, children }) {
   );
 }
 
+// ── Bio editor: view/edit the player's backstory (the DM's behavior anchor) ────
+function BioEditor({ character, onSaveBio }) {
+  const [text, setText] = useState(character.bio || '');
+  const [dirty, setDirty] = useState(false);
+  return (
+    <CollapsibleSection title="📖 BIO" defaultOpen={false}>
+      <textarea value={text} rows={7}
+        onChange={e=>{ setText(e.target.value); setDirty(true); }}
+        placeholder="Backstory / bio — who this character is, how they act, what drives them. The DM reads this every message."
+        style={{...npcInput, resize:'vertical', lineHeight:1.5, marginBottom:6}}/>
+      <button onClick={()=>{ onSaveBio(text.trim()); setDirty(false); }} disabled={!dirty}
+        style={{...btn, width:'100%', opacity:dirty?1:0.4}}>{dirty ? '✓ SAVE BIO' : 'SAVED'}</button>
+    </CollapsibleSection>
+  );
+}
+
 // ── NPC Manager: extract-from-log + edit/add/delete for npcs & companions ──────
 const npcInput = { width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.4)', border:`1px solid ${colors.borderDim}`, color:colors.text, fontFamily:fonts.body, fontSize:13, padding:'6px 8px', borderRadius:4, outline:'none' };
 function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
@@ -337,7 +353,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onSaveNPC, onDeleteNPC }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onSaveNPC, onDeleteNPC, onSaveBio }) {
   const db       = allItems(character.customItems || {});
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   const [arcCustomText, setArcCustomText] = useState('');
@@ -630,6 +646,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           })}
         </CollapsibleSection>
       )}
+
+      {/* Bio — the DM's behavior anchor */}
+      {onSaveBio && <BioEditor key={character.bio || 'empty'} character={character} onSaveBio={onSaveBio} />}
 
       {/* NPC Manager — extract from log, edit, add, delete */}
       {(onExtractNPC || onSaveNPC) && (

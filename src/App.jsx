@@ -51,6 +51,7 @@ export default function App() {
     setLoading(false);
   };
   const [nameInput, setNameInput] = useState('');
+  const [bioInput, setBioInput] = useState('');
   const [apiKey, setApiKey]     = useState('');
   const [apiError, setApiError] = useState('');
   const [showSave, setShowSave] = useState(false);
@@ -864,7 +865,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 
   // ── Character creation helpers ─────────────────────────────────────────────
   const handleFinalize = async () => {
-    const char = finalizeCharacter(nameInput);
+    const char = finalizeCharacter(nameInput, bioInput);
     setPhase('playing');
     beginAdventure(char);
   };
@@ -1057,7 +1058,10 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
           })}
         </div>
         <input value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleFinalize()} placeholder="Enter your hero's name..."
-          style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:16,padding:'10px 14px',borderRadius:4,marginBottom:16,outline:'none'}}/>
+          style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:16,padding:'10px 14px',borderRadius:4,marginBottom:10,outline:'none'}}/>
+        <textarea value={bioInput} onChange={e=>setBioInput(e.target.value)} rows={5}
+          placeholder="Backstory / bio (optional) — who this character is, how they act, what drives them. The DM reads this every message and anchors its behavior to it."
+          style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.5,padding:'10px 14px',borderRadius:4,marginBottom:16,outline:'none',resize:'vertical'}}/>
         <div style={{display:'flex',gap:8}}>
           <button style={{...btn(false),flex:1}} onClick={()=>setPhase(character.cls?.name==='Cleric'?'create-deity':'create-class')}>← BACK</button>
           <button style={{...btn(true),flex:2}} onClick={handleFinalize}>BEGIN THE ADVENTURE →</button>
@@ -1232,6 +1236,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
               log(`[ARC] Custom antagonist set by player: ${text}`);
             }}
             onToggleContextExclusion={toggleContextExclusion}
+            onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
             onExtractNPC={extractNPCs}
             onSaveNPC={saveNPCEntry}
             onDeleteNPC={deleteNPCEntry}

@@ -633,8 +633,8 @@ export function useCharacter() {
     });
   };
 
-  const finalizeCharacter = (name) => {
-    const char = { ...charRef.current, name: name.trim() || 'Adventurer', xp:0, _v:SAVE_VERSION };
+  const finalizeCharacter = (name, bio = '') => {
+    const char = { ...charRef.current, name: name.trim() || 'Adventurer', bio: bio.trim(), xp:0, _v:SAVE_VERSION };
     updateChar(char);
     return char;
   };
