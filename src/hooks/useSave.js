@@ -154,22 +154,10 @@ export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoad
     });
   };
 
-  // Legacy base64 string support for old saves
+  // Paste-a-save loading (JSON only; legacy base64 codes removed)
   const loadFromCode = (code) => {
-    try {
-      // Try JSON first (new format), tolerant of minor hand-edit slips
-      const { data: state } = parseSaveJSON(code);
-      return loadFromState(state);
-    } catch (jsonErr) {
-      // Fall back to base64 (old format)
-      try {
-        const state = JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
-        return loadFromState(state);
-      } catch {
-        // Not base64 either — the JSON error is the useful one to surface
-        throw jsonErr;
-      }
-    }
+    const { data: state } = parseSaveJSON(code);
+    return loadFromState(state);
   };
 
   return {
