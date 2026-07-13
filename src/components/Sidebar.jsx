@@ -159,6 +159,108 @@ function BioEditor({ character, onSaveBio }) {
   );
 }
 
+// ── Town Manager: extract-from-log + edit/add/delete for towns/locations ──────
+const dictToLines = (d) => Object.entries(d || {}).map(([k, v]) => `${k}: ${v}`).join('\n');
+const linesToDict = (text) => {
+  const out = {};
+  for (const raw of text.split('\n')) {
+    const line = raw.trim(); if (!line) continue;
+    const i = line.indexOf(':');
+    if (i > 0) out[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+    else out[line] = '';
+  }
+  return out;
+};
+function TownManager({ character, onExtractTown, onSaveNPC, onDeleteNPC }) {
+  const [exName, setExName] = useState('');
+  const [exFrom, setExFrom] = useState('');
+  const [exTo, setExTo]     = useState('');
+  const [busy, setBusy]     = useState(false);
+  const [status, setStatus] = useState('');
+  const [editKey, setEditKey] = useState('');   // '' | 'new' | name
+  const [tName, setTName]   = useState('');
+  const [tDesc, setTDesc]   = useState('');
+  const [tStatus, setTStatus] = useState('');
+  const [tLocs, setTLocs]   = useState('');
+  const [tRes, setTRes]     = useState('');
+
+  const runExtract = async () => {
+    const from = parseInt(exFrom, 10), to = parseInt(exTo, 10);
+    if (Number.isNaN(from) || Number.isNaN(to)) { setStatus('✗ Enter the message # range'); return; }
+    setBusy(true); setStatus('Extracting…');
+    try {
+      const { applied } = await onExtractTown({ name: exName, from, to });
+      setStatus(applied.length ? `✓ Saved: ${applied.join(', ')}` : 'No locations found in that range');
+      if (applied.length) setExName('');
+    } catch (e) { setStatus('✗ ' + e.message); }
+    setBusy(false);
+  };
+
+  const openEdit = (n) => {
+    const e = character.towns?.[n] || {};
+    setEditKey(n); setTName(n); setTDesc(e.desc || ''); setTStatus(e.status || '');
+    setTLocs(dictToLines(e.notable_locations)); setTRes(dictToLines(e.minor_residents));
+  };
+  const openNew = () => { setEditKey('new'); setTName(''); setTDesc(''); setTStatus(''); setTLocs(''); setTRes(''); };
+  const saveEdit = () => {
+    const finalName = tName.trim();
+    if (!finalName) { setStatus('✗ Name required'); return; }
+    const isNew = editKey === 'new';
+    const entry = { ...((!isNew && character.towns?.[editKey]) || {}) };
+    const put = (k, v) => { const t = v.trim(); if (t) entry[k] = t; else delete entry[k]; };
+    put('desc', tDesc); put('status', tStatus);
+    const locs = linesToDict(tLocs), res = linesToDict(tRes);
+    if (Object.keys(locs).length) entry.notable_locations = locs; else delete entry.notable_locations;
+    if (Object.keys(res).length) entry.minor_residents = res; else delete entry.minor_residents;
+    onSaveNPC('towns', finalName, entry, !isNew ? editKey : null);
+    setStatus(`✓ Saved ${finalName}`); setEditKey('');
+  };
+  const deleteEdit = () => {
+    if (editKey === 'new') { setEditKey(''); return; }
+    onDeleteNPC('towns', editKey); setStatus(`✓ Deleted ${editKey}`); setEditKey('');
+  };
+
+  const townNames = Object.keys(character.towns || {});
+  return (
+    <CollapsibleSection title="🏘️ TOWN MANAGER" count={townNames.length} defaultOpen={false}>
+      <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,margin:'4px 0 4px'}}>EXTRACT FROM LOG</div>
+      <input value={exName} onChange={e=>setExName(e.target.value)} placeholder="Town name (blank = find all significant)" style={{...npcInput, marginBottom:4}}/>
+      <div style={{display:'flex', gap:4, marginBottom:6}}>
+        <input value={exFrom} onChange={e=>setExFrom(e.target.value)} placeholder="From #" inputMode="numeric" style={{...npcInput, flex:1}}/>
+        <input value={exTo} onChange={e=>setExTo(e.target.value)} placeholder="To #" inputMode="numeric" style={{...npcInput, flex:1}}/>
+      </div>
+      <button onClick={runExtract} disabled={busy} style={{...btn, width:'100%', opacity:busy?0.5:1}}>{busy ? '…' : '📥 EXTRACT'}</button>
+      {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:4,lineHeight:1.4}}>{status}</div>}
+
+      <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,margin:'10px 0 4px'}}>EDIT ENTRIES</div>
+      <div style={{display:'flex',gap:4,marginBottom:4}}>
+        <select value={editKey !== 'new' ? editKey : ''} onChange={e=>{ if (e.target.value) openEdit(e.target.value); }} style={{...npcInput, flex:1}}>
+          <option value="">Select a town to edit…</option>
+          {townNames.map(n=><option key={n} value={n}>{n}</option>)}
+        </select>
+        <button onClick={openNew} style={{...btn, flexShrink:0}}>+ New</button>
+      </div>
+
+      {editKey && (
+        <div style={{border:`1px solid ${colors.borderDim}`, borderRadius:4, padding:8, marginTop:2}}>
+          <input value={tName} onChange={e=>setTName(e.target.value)} placeholder="Town name" style={{...npcInput, marginBottom:4}}/>
+          <input value={tStatus} onChange={e=>setTStatus(e.target.value)} placeholder="Status (e.g. established base, hostile)" style={{...npcInput, marginBottom:4}}/>
+          <textarea value={tDesc} onChange={e=>setTDesc(e.target.value)} placeholder="Description — what this place is" rows={3} style={{...npcInput, resize:'vertical', marginBottom:4}}/>
+          <textarea value={tLocs} onChange={e=>setTLocs(e.target.value)} placeholder={"Notable locations, one per line:\nGilded Peacock: high-end inn, Garden District"} rows={4} style={{...npcInput, resize:'vertical', marginBottom:4}}/>
+          <textarea value={tRes} onChange={e=>setTRes(e.target.value)} placeholder={"Minor residents, one per line:\nJhasso: nervous spice merchant, owes a favor"} rows={4} style={{...npcInput, resize:'vertical', marginBottom:6}}/>
+          <div style={{fontSize:10,color:colors.textGhost,marginBottom:6,lineHeight:1.4}}>Full detail is sent to the DM only while the location tag matches this town — otherwise just name, description and status.</div>
+          <div style={{display:'flex',gap:4}}>
+            <button onClick={saveEdit} style={{...btn, flex:1}}>✓ SAVE</button>
+            {editKey !== 'new' && <button onClick={deleteEdit} style={{...btn, flex:1, color:'#c96a4c', borderColor:'#5a2a1a'}}>✕ DELETE</button>}
+            <button onClick={closeEditTown(setEditKey)} style={{...btn, flexShrink:0}}>CANCEL</button>
+          </div>
+        </div>
+      )}
+    </CollapsibleSection>
+  );
+}
+const closeEditTown = (set) => () => set('');
+
 // ── NPC Manager: extract-from-log + edit/add/delete for npcs & companions ──────
 const npcInput = { width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.4)', border:`1px solid ${colors.borderDim}`, color:colors.text, fontFamily:fonts.body, fontSize:13, padding:'6px 8px', borderRadius:4, outline:'none' };
 function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
@@ -353,7 +455,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onSaveNPC, onDeleteNPC, onSaveBio }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio }) {
   const db       = allItems(character.customItems || {});
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   const [arcCustomText, setArcCustomText] = useState('');
@@ -653,6 +755,11 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {/* NPC Manager — extract from log, edit, add, delete */}
       {(onExtractNPC || onSaveNPC) && (
         <NPCManager character={character} onExtractNPC={onExtractNPC} onSaveNPC={onSaveNPC} onDeleteNPC={onDeleteNPC} />
+      )}
+
+      {/* Town Manager — extract from log, edit, add, delete */}
+      {(onExtractTown || onSaveNPC) && (
+        <TownManager character={character} onExtractTown={onExtractTown} onSaveNPC={onSaveNPC} onDeleteNPC={onDeleteNPC} />
       )}
 
       {/* Key NPCs */}

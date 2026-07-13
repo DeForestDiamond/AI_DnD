@@ -644,6 +644,73 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     return { applied };
   };
 
+
+  // ── Town/location extraction — same pattern as extractNPCs ─────────────────
+  const extractTowns = async ({ name, from, to }) => {
+    const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+    const logArr = fullLogRef.current;
+    const lo = Math.max(0, Math.min(from, to));
+    const hi = Math.min(logArr.length - 1, Math.max(from, to));
+    if (!logArr.length || hi < lo) throw new Error('Invalid message range');
+    if (hi - lo + 1 > 80) throw new Error(`Range too large (${hi - lo + 1} messages, max 80) — narrow it down`);
+
+    const char = charRef.current;
+    const playerName = char?.name || 'the player';
+    const trimmedName = (name || '').trim();
+    const existing = trimmedName
+      ? Object.entries(char.towns || {}).find(([n]) => n.toLowerCase() === trimmedName.toLowerCase())
+      : null;
+
+    const shape = '{ "towns": { "Town Name": { "desc": "1-3 sentences: what this place is, its character and atmosphere", "status": "current state relative to ' + playerName + ' (e.g. established base, hostile, just passing through)", "notable_locations": { "Place Name": "one-line description" }, "minor_residents": { "Person Name": "one-line description with pronoun" } } } }';
+    let task;
+    if (trimmedName && existing) {
+      task = `Extract an UPDATED record for the settlement/location named "${existing[0]}". Its existing record follows — MERGE it with new information from the messages: keep established facts unless contradicted, add new notable locations and residents alongside existing ones.\nEXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
+    } else if (trimmedName) {
+      task = `Extract a record for ONLY the settlement/location named "${trimmedName}". If it does not appear in these messages, return { "towns": {} }.`;
+    } else {
+      task = `Extract every SIGNIFICANT settlement or major location: towns, cities, and named places where events happened or that the player will likely return to. SKIP one-line pass-throughs. When in doubt, include it — the player chooses what to keep.`;
+    }
+
+    const apiMsgs = logArr.slice(lo, hi + 1).map(m => ({ role: m.role === 'dm' ? 'assistant' : 'user', content: m.text }));
+    log(`[TOWN] Extracting ${trimmedName || 'all significant locations'} from messages #${lo}-#${hi}`);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1500,
+        system: `You extract settlement/location records from D&D session transcripts. Base every record ONLY on what these messages establish; do not invent details. notable_locations and minor_residents are name-keyed objects, not arrays. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
+        messages: [...apiMsgs, { role: 'user', content: task + '\n\nRespond with ONLY the JSON now.' }],
+      }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    const rawText = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(rawText); } catch { throw new Error('Extraction returned unparseable JSON — try again or narrow the range'); }
+    const found = parsed.towns || {};
+    if (!Object.keys(found).length) { log('[TOWN] Nothing found in range'); return { applied: [] }; }
+
+    const c = { ...charRef.current, towns: { ...charRef.current.towns } };
+    const applied = [];
+    const asDict = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    for (const [n, e] of Object.entries(found)) {
+      const entry = {
+        desc: String(e?.desc ?? ''),
+        status: String(e?.status ?? ''),
+        notable_locations: asDict(e?.notable_locations),
+        minor_residents: asDict(e?.minor_residents),
+      };
+      const hit = Object.keys(c.towns).find(k => k.toLowerCase() === n.toLowerCase());
+      if (hit) c.towns[hit] = { ...c.towns[hit], ...entry };
+      else c.towns[n] = entry;
+      applied.push(n);
+    }
+    updateChar(c);
+    log(`[TOWN] Saved: ${applied.join(', ')}`);
+    return { applied };
+  };
+
   // Shared write path for the NPC edit panel (Feature 3) and manual adds.
   const saveNPCEntry = (group, name, entry, originalName = null) => {
     const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions }, towns: { ...charRef.current.towns } };
@@ -1238,6 +1305,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
             onExtractNPC={extractNPCs}
+            onExtractTown={extractTowns}
             onSaveNPC={saveNPCEntry}
             onDeleteNPC={deleteNPCEntry}
           />
