@@ -10,11 +10,77 @@
 export const SUBCLASS_PICK_LEVEL = {
   Cleric: 1, Warlock: 1, Wizard: 2,
   Fighter: 3, Rogue: 3, Monk: 3, Barbarian: 3, Artificer: 3,
-  Illrigger: 3, 'Blood Hunter': 3,
+  Illrigger: 3, 'Blood Hunter': 3, Paladin: 3, Ranger: 3,
   Sorcerer: 1, Druid: 2,
 };
 
 export const SUBCLASSES = {
+  Paladin: {
+    'Oath of Devotion': {
+      emoji: '🕊️',
+      desc: 'The classic knight — honesty, courage, compassion. A shining ideal made flesh, holding themselves to the highest code.',
+      features: [
+        { name: 'Sacred Weapon',       desc: 'Channel Divinity: imbue your weapon with radiant power — add your CHA modifier to attack rolls and it sheds bright light.' },
+        { name: 'Turn the Unholy',     desc: 'Channel Divinity: fiends and undead that fail a save must flee from you.' },
+        { name: 'Aura of Devotion',    desc: 'You and allies near you cannot be charmed while you are conscious.' },
+        { name: 'Purity of Spirit',    desc: 'You are permanently under Protection from Evil and Good.' },
+      ],
+    },
+    'Oath of Vengeance': {
+      emoji: '⚖️',
+      desc: 'The dark knight — an avenger who set aside purity to punish the guilty. The oath is a hunt, and mercy is not part of it.',
+      features: [
+        { name: 'Abjure Enemy',        desc: 'Channel Divinity: one creature must save or be frightened of you and rooted in place.' },
+        { name: 'Vow of Enmity',       desc: 'Channel Divinity: mark a creature — you gain advantage on all attacks against it for one minute.' },
+        { name: 'Relentless Avenger',  desc: 'When your opportunity attack hits, you can move without provoking to stay on your prey.' },
+        { name: 'Soul of Vengeance',   desc: 'When your Vow of Enmity target attacks, you can strike it as a reaction.' },
+      ],
+    },
+    'Oathbreaker': {
+      emoji: '💀',
+      desc: 'A paladin who broke their sacred vow and embraced the dark power left in its place. Feared by the faithful, courted by the wicked.',
+      features: [
+        { name: 'Control Undead',      desc: 'Channel Divinity: bend an undead creature to your will for 24 hours.' },
+        { name: 'Dreadful Aspect',     desc: 'Channel Divinity: nearby enemies must save or be frightened of you.' },
+        { name: 'Aura of Hate',        desc: 'You and nearby fiends and undead add your CHA modifier to melee weapon damage.' },
+        { name: 'Supernatural Resistance', desc: 'Resistance to bludgeoning, piercing, and slashing damage from nonmagical weapons.' },
+      ],
+    },
+  },
+
+  Ranger: {
+    'Hunter': {
+      emoji: '🎯',
+      desc: 'The purest form of the hunt — a specialist in killing dangerous prey, whatever shape it takes.',
+      features: [
+        { name: 'Colossus Slayer',     desc: 'Once per turn, deal an extra 1d8 when you hit a creature that is below its hit point maximum.' },
+        { name: 'Multiattack Defense', desc: 'After a creature hits you, its further attacks that turn take a penalty against you.' },
+        { name: 'Volley',              desc: 'Make a ranged attack against any number of creatures within 10 feet of a chosen point.' },
+        { name: 'Evasion',             desc: 'When a save-for-half effect hits you, take no damage on a success and half on a failure.' },
+      ],
+    },
+    'Gloom Stalker': {
+      emoji: '🌒',
+      desc: 'A hunter of the dark places — unseen in shadow, terrifying in ambush, at home where light fears to go.',
+      features: [
+        { name: 'Dread Ambusher',      desc: 'Bonus initiative, extra movement on your first turn, and an additional attack with +1d8 damage on it.' },
+        { name: 'Umbral Sight',        desc: 'Darkvision — and you are INVISIBLE to creatures relying on darkvision to see you in darkness.' },
+        { name: 'Iron Mind',           desc: 'Proficiency in Wisdom saving throws.' },
+        { name: 'Stalker\'s Flurry',   desc: 'When you miss with a weapon attack, make another attack immediately.' },
+      ],
+    },
+    'Beast Master': {
+      emoji: '🐺',
+      desc: 'Bonded to a loyal beast that fights at your side — two hunters moving as one.',
+      features: [
+        { name: 'Animal Companion',    desc: 'Gain a beast companion that travels and fights with you (it joins your COMPANIONS — equip and command it like any other).' },
+        { name: 'Exceptional Training', desc: 'Your companion can Dash, Disengage, or Help as a bonus-action command, and its attacks count as magical.' },
+        { name: 'Bestial Fury',        desc: 'Your companion attacks twice when commanded to attack.' },
+        { name: 'Share Spells',        desc: 'Spells you cast on yourself can also affect your companion.' },
+      ],
+    },
+  },
+
   Monk: {
     'Way of the Open Hand': {
       emoji: '👊',

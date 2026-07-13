@@ -101,10 +101,10 @@ export default function App() {
   // Which patron class is the deity/patron being chosen for? Prefers Warlock so a
   // Fighter/Warlock multiclass shows patrons, not the cleric deity list.
   const patronClassOf = (c) =>
-    ['Warlock', 'Cleric'].find(k => c?.classLevels?.[k] || c?.cls?.name === k) || c?.cls?.name || null;
+    ['Warlock', 'Cleric', 'Paladin'].find(k => c?.classLevels?.[k] || c?.cls?.name === k) || c?.cls?.name || null;
 
   const isClericCharacter = (char) => {
-    const patronClasses = ['Cleric', 'Warlock'];
+    const patronClasses = ['Cleric', 'Warlock', 'Paladin'];
     return patronClasses.includes(char.cls?.name) ||
       Object.keys(char.classLevels || {}).some(k => patronClasses.includes(k));
   };
@@ -112,7 +112,7 @@ export default function App() {
   // ── Unified load handlers ──────────────────────────────────────────────────
   // Every load path (file, legacy code, autosave — welcome or playing phase)
   // funnels through these two so behavior can't drift between entry points.
-  const SPELLCASTER_CLASSES = ['Artificer','Cleric','Wizard','Warlock','Sorcerer','Druid'];
+  const SPELLCASTER_CLASSES = ['Artificer','Cleric','Wizard','Warlock','Sorcerer','Druid','Paladin','Ranger'];
 
   const queuePostLoadModals = (char) => {
     const needsDeity = char._needsDeitySelection && isClericCharacter(char);
@@ -1052,7 +1052,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         </div>
         <div style={{display:'flex',gap:8}}>
           <button style={{...btn(false),flex:1}} onClick={()=>setPhase('create-race')}>← BACK</button>
-          <button style={{...btn(true),flex:2,opacity:character.cls?1:0.4}} disabled={!character.cls} onClick={()=>['Cleric','Warlock'].includes(character.cls?.name) ? setPhase('create-deity') : setPhase('create-name')}>CONTINUE →</button>
+          <button style={{...btn(true),flex:2,opacity:character.cls?1:0.4}} disabled={!character.cls} onClick={()=>['Cleric','Warlock','Paladin'].includes(character.cls?.name) ? setPhase('create-deity') : setPhase('create-name')}>CONTINUE →</button>
         </div>
       </div>
     </div>
@@ -1092,7 +1092,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     <div style={creationWrap}>
       <style>{animations}</style>
       <div style={{maxWidth:480,width:'100%',padding:24}}>
-        <p style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:4,marginBottom:8}}>CHARACTER CREATION — STEP {character.cls?.name==='Cleric'?'4':'3'} OF {character.cls?.name==='Cleric'?'4':'3'}</p>
+        <p style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:4,marginBottom:8}}>CHARACTER CREATION — STEP {['Cleric','Warlock','Paladin'].includes(character.cls?.name)?'4':'3'} OF {['Cleric','Warlock','Paladin'].includes(character.cls?.name)?'4':'3'}</p>
         <h2 style={{fontFamily:fonts.display,color:colors.gold,fontSize:22,margin:'0 0 24px'}}>Name Your Hero</h2>
         <div style={{...panel,marginBottom:20}}>
           <div style={{display:'flex',gap:16,alignItems:'center',marginBottom:16}}>
@@ -1130,7 +1130,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
           placeholder="Backstory / bio (optional) — who this character is, how they act, what drives them. The DM reads this every message and anchors its behavior to it."
           style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.5,padding:'10px 14px',borderRadius:4,marginBottom:16,outline:'none',resize:'vertical'}}/>
         <div style={{display:'flex',gap:8}}>
-          <button style={{...btn(false),flex:1}} onClick={()=>setPhase(character.cls?.name==='Cleric'?'create-deity':'create-class')}>← BACK</button>
+          <button style={{...btn(false),flex:1}} onClick={()=>setPhase(['Cleric','Warlock','Paladin'].includes(character.cls?.name)?'create-deity':'create-class')}>← BACK</button>
           <button style={{...btn(true),flex:2}} onClick={handleFinalize}>BEGIN THE ADVENTURE →</button>
         </div>
       </div>
@@ -1201,7 +1201,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
           classLevels={character.classLevels || { [character.cls?.name]: character.level }}
           deityPending={showDeityModal}
           onChooseClass={(cls) => {
-            if (['Cleric','Warlock'].includes(cls) && !character.deity) {
+            if (['Cleric','Warlock','Paladin'].includes(cls) && !character.deity) {
               setDeityModalContext('multiclass');
               setDeityModalClass(cls);
               setShowDeityModal(true);

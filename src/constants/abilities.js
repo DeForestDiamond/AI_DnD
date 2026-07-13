@@ -125,6 +125,30 @@ export const CLASS_ABILITIES = {
     infusionsKnown: {},
   },
 
+  Paladin: {
+    cantrips: [],
+    spells: {
+      1: ['Lay on Hands', 'Divine Sense', 'Divine Smite', 'Bless', 'Command', 'Compelled Duel', 'Cure Wounds', 'Heroism', 'Protection from Evil and Good', 'Searing Smite', 'Shield of Faith', 'Thunderous Smite', 'Wrathful Smite'],
+      2: ['Extra Attack', 'Aura of Protection', 'Aid', 'Branding Smite', 'Find Steed', 'Lesser Restoration', 'Magic Weapon', 'Zone of Truth'],
+      3: ['Aura of Courage', 'Improved Divine Smite', 'Blinding Smite', 'Crusader\'s Mantle', 'Dispel Magic', 'Elemental Weapon', 'Remove Curse', 'Revivify'],
+    },
+    cantripsKnown: {},
+    spellsKnown: { 1:2, 2:3, 3:4, 4:4, 5:5, 6:5, 7:6, 8:6, 9:7, 10:8 },
+    infusionsKnown: {},
+  },
+
+  Ranger: {
+    cantrips: [],
+    spells: {
+      1: ['Favored Enemy', 'Natural Explorer', 'Hunter\'s Mark', 'Absorb Elements', 'Cure Wounds', 'Ensnaring Strike', 'Fog Cloud', 'Goodberry', 'Hail of Thorns', 'Longstrider', 'Zephyr Strike'],
+      2: ['Extra Attack', 'Primeval Awareness', 'Beast Sense', 'Cordon of Arrows', 'Lesser Restoration', 'Pass Without Trace', 'Silence', 'Spike Growth'],
+      3: ['Land\'s Stride', 'Conjure Animals', 'Flame Arrows', 'Lightning Arrow', 'Nondetection', 'Plant Growth', 'Protection from Energy', 'Wind Wall'],
+    },
+    cantripsKnown: {},
+    spellsKnown: { 1:2, 2:3, 3:4, 4:4, 5:5, 6:5, 7:6, 8:6, 9:7, 10:8 },
+    infusionsKnown: {},
+  },
+
   'Blood Hunter': {
     cantrips: [],
     spells: {

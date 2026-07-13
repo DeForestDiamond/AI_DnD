@@ -80,7 +80,10 @@ const buildCharBlock = (char) => {
   const itemDetailLine = itemDetails ? `\nItem details: ${itemDetails}` : '';
   const hasCleric   = char.cls?.name==='Cleric'  || Object.keys(classLevels).includes('Cleric');
   const hasWarlock  = char.cls?.name==='Warlock' || Object.keys(classLevels).includes('Warlock');
-  const deityLine   = char.deity && hasCleric
+  const hasPaladin  = char.cls?.name==='Paladin' || Object.keys(classLevels).includes('Paladin');
+  const deityLine   = char.deity && hasPaladin && !hasCleric
+    ? `\n- DEITY & OATH: Sworn paladin of ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc}`
+    : char.deity && hasCleric
     ? `\n- DEITY: Devoted to ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc}`
     : char.deity && hasWarlock
     ? `\n- PATRON: Bound by pact to ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc}`
