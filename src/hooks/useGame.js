@@ -204,7 +204,8 @@ Place ALL tags at the END of your response, never mid-narrative. The app parses 
 
 CORE TAGS:
 XP (mandatory after every combat and milestone): [XP: +50]
-  Amounts: trivial 15-30 | minor 30-60 | standard 50-100 | hard 100-150 | boss 150-250
+  Amounts scale to the FOE'S MAGNITUDE, not the fight's length — a legendary creature dispatched in seconds still pays legendary:
+  trivial 10-25 | minor 30-60 | standard 50-100 | hard 100-200 | deadly (CR well above the player: young dragons, powerful named foes) 250-400 | legendary (adult dragons, archmages, faction leaders) 500-800 | mythic (ancient dragons, krakens, demon lords) 1000-2000
 Gold: [GOLD: +10] or [GOLD: -10]
 Item gained: [ITEM: Health Potion]
 Item DESTROYED, consumed, sold, or given away — gone for good: [REMOVE: Health Potion]
