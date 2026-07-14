@@ -156,6 +156,29 @@ export const MULTICLASS_OPTIONS = {
       5: ['Extra Attack', 'Grim Psychometry - read psychic impressions from objects'],
     },
   },
+  Paladin: {
+    emoji: '🛡️',
+    desc: 'Holy knight sworn to a deity. Smites, healing touch, protective auras. STR/CHA.',
+    hpPerLevel: 6,
+    features: {
+      1: ['Lay on Hands - heal with a touch from a pool of hit points', 'Divine Sense - detect celestials, fiends, and undead'],
+      2: ['Divine Smite - burn spell energy for radiant damage on a hit', 'Fighting style', 'Spellcasting (half-caster)'],
+      3: ['Sacred Oath subclass', 'Channel Divinity'],
+      5: ['Extra Attack'],
+      6: ['Aura of Protection - you and nearby allies add your CHA mod to saves'],
+    },
+  },
+  Ranger: {
+    emoji: '🏹',
+    desc: 'Wilderness hunter and tracker. Marked prey, nature magic. DEX/WIS.',
+    hpPerLevel: 6,
+    features: {
+      1: ['Favored Enemy - advantage tracking and recalling info on chosen prey', 'Natural Explorer - master of chosen terrain'],
+      2: ['Spellcasting (half-caster)', "Hunter's Mark - bonus damage and tracking on marked prey", 'Fighting style'],
+      3: ['Ranger Conclave subclass', 'Primeval Awareness'],
+      5: ['Extra Attack'],
+    },
+  },
   Sorcerer: {
     emoji: '🔥',
     desc: 'Innate arcane magic from your bloodline, shaped by Metamagic.',
