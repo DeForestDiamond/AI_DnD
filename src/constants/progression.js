@@ -41,4 +41,4 @@ export const HP_PER_LEVEL = { Paladin:6, Ranger:6, Fighter:6, Wizard:4, Rogue:5,
 // HP at level 1 (before CON modifier) per class
 export const HP_BASE = { Paladin:10, Ranger:10, Fighter:10, Wizard:6, Rogue:8, Cleric:8, Artificer:8, Illrigger:10, Monk:8, Barbarian:12, Warlock:8, 'Blood Hunter':8, Sorcerer:6, Druid:8 };
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;

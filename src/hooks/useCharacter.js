@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ITEM_DB, SLOTS, EMPTY_SLOTS, parseDMItem } from '../constants/items.js';
 import { STARTING_GEAR } from '../constants/classes.js';
 import { XP_THRESHOLDS, HP_PER_LEVEL, HP_BASE, SAVE_VERSION } from '../constants/progression.js';
+import { parseCoinAmount } from '../constants/currency.js';
 import { rollAntagonist } from '../constants/encounters.js';
 
 // -- Pure stat helpers ----------------------------------------------------------
@@ -215,6 +216,12 @@ export const migrateCharacter = (char) => {
       });
     });
   }
+  if (v < 11) {
+    // Currency: gp number -> one copper integer (1gp = 100cp). Old saves have
+    // char.gold; convert and retire the field.
+    if (c.coins === undefined) c.coins = Math.max(0, Math.round((c.gold || 0) * 100));
+    delete c.gold;
+  }
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
@@ -228,7 +235,7 @@ export const EMPTY_CHAR = {
   classLevels: {},
   subclasses: {},
   slots:{ ...EMPTY_SLOTS },
-  inventory:[], stash:[], gold:10,
+  inventory:[], stash:[], coins:1000,
   customItems:{},
   stashedCustomItems:{},
   contextExclusions: { companions:{}, npcs:{}, towns:{} },
@@ -302,9 +309,11 @@ export function useCharacter() {
   const applyEffects = (text, currentChar, skipLevelUp = false) => {
     let c = { ...currentChar, customItems:{ ...(currentChar.customItems||{}) }, slots:{ ...(currentChar.slots||EMPTY_SLOTS) } };
 
-    // Gold
-    [...text.matchAll(/\[GOLD:\s*([+-]?\d+)\]/gi)].forEach(m => {
-      c.gold = Math.max(0, c.gold + parseInt(m[1]));
+    // Coins — [GOLD:] and [COIN:]/[COINS:] both accepted; bare numbers are gp,
+    // denominations pp/gp/sp/cp all work ([GOLD: -5sp], [COIN: +2pp], [GOLD: +3gp 5sp]).
+    // Stored as one copper integer, so change-making is automatic.
+    [...text.matchAll(/\[(?:GOLD|COINS?):\s*([^\]]+)\]/gi)].forEach(m => {
+      c.coins = Math.max(0, (c.coins || 0) + parseCoinAmount(m[1]));
     });
 
     // HP -- [DAMAGE:] = player takes damage, [HEAL:] = player heals

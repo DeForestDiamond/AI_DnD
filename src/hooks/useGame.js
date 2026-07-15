@@ -120,7 +120,7 @@ The ONLY valid hooks are things that serve the player directly: paid coin or a l
 ARC COMPLETION — CHECK EVERY MESSAGE, THE PLAYER CANNOT SEE THE ARC. The antagonist above is hidden from the player: they will NOT remind you to close the arc, so missing it silently breaks the game (no new arc can be assigned until you emit the tag). At the end of any message where the antagonist was confronted, fought, negotiated with, or affected, ask: is this antagonist now dead, captured, permanently driven off, dismantled, or otherwise finished as a threat? If YES, [ARC COMPLETE] is MANDATORY in that same message — not next turn, not after an epilogue. The arc is complete when the ANTAGONIST is resolved, even if loose flavor threads remain. Do not wait for the player to wrap up side business, and do not keep a beaten antagonist on life support to extend the arc.`
     : '';
   const dynamicPart = `CURRENT STATE:
-Level ${char.level} | ${char.xp||0} XP | Gold: ${char.gold}gp
+Level ${char.level} | ${char.xp||0} XP | Coins: ${coinsToString(char.coins)}
 HP: ${char.hp}/${char.maxHp} | AC: ${ac} | Proficiency: +${pb}
 Stats: Strength ${effStats.str}(${modStr(effStats.str)}) Dexterity ${effStats.dex}(${modStr(effStats.dex)}) Constitution ${effStats.con}(${modStr(effStats.con)}) Intelligence ${effStats.int}(${modStr(effStats.int)}) Wisdom ${effStats.wis}(${modStr(effStats.wis)}) Charisma ${effStats.cha}(${modStr(effStats.cha)})
 Weapon: ${weaponLine}${sneakLine}${focusLine}
@@ -206,7 +206,7 @@ CORE TAGS:
 XP (mandatory after every combat and milestone): [XP: +50]
   Amounts scale to the FOE'S MAGNITUDE, not the fight's length — a legendary creature dispatched in seconds still pays legendary:
   trivial 10-25 | minor 30-60 | standard 50-100 | hard 100-200 | deadly (CR well above the player: young dragons, powerful named foes) 250-400 | legendary (adult dragons, archmages, faction leaders) 500-800 | mythic (ancient dragons, krakens, demon lords) 1000-2000
-Gold: [GOLD: +10] or [GOLD: -10]
+Coins: [GOLD: +10] (bare = gold) — denominations all work: [GOLD: -5sp], [GOLD: +2pp], [GOLD: +3gp 5sp]. pp/gp/sp/cp; change is made automatically. [COIN:] also accepted.
 Item gained: [ITEM: Health Potion]
 Item DESTROYED, consumed, sold, or given away — gone for good: [REMOVE: Health Potion]
   WARNING: [REMOVE:] PERMANENTLY DELETES the item. NEVER use it to take off or swap gear — that destroys the item.
@@ -507,7 +507,7 @@ CHARACTER: ${char.name} | ${char.race?.name} ${classDesc} | Total Level ${char.l
 STATS: STR ${effStats.str}(${modStr(effStats.str)}) DEX ${effStats.dex}(${modStr(effStats.dex)}) CON ${effStats.con}(${modStr(effStats.con)}) INT ${effStats.int}(${modStr(effStats.int)}) WIS ${effStats.wis}(${modStr(effStats.wis)}) CHA ${effStats.cha}(${modStr(effStats.cha)})
 COMBAT: Hit Points ${char.hp}/${char.maxHp} | Armor Class ${ac} | Proficiency Bonus +${pb} | Weapon: ${weaponLine}${sneakLine}${focusLine}
 EQUIPPED: ${equippedList}
-INVENTORY: ${invDisplay} | Gold: ${char.gold}gp${itemDetailLine}${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}${char.arc?.antagonist ? `
+INVENTORY: ${invDisplay} | Coins: ${coinsToString(char.coins)}${itemDetailLine}${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}${char.arc?.antagonist ? `
 
 ══ ACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does) ══
 ${char.arc.antagonist}

@@ -5,6 +5,7 @@ import { SLOTS } from '../constants/items.js';
 import { STAT_NAMES } from '../constants/classes.js';
 import { statMod, modStr, profBonus, calcAC, getMainWeapon, effectiveStats, equippableInSlot, allItems } from '../hooks/useCharacter.js';
 import { stackInventory } from '../hooks/useGame.js';
+import { coinsToString } from '../constants/currency.js';
 import { XP_THRESHOLDS } from '../constants/progression.js';
 
 // ── Inventory categorization ───────────────────────────────────────────────────
@@ -669,7 +670,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {/* Gold */}
       <div>
         {sectionLabel('GOLD')}
-        <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13}}>⚜ {character.gold}gp</div>
+        <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13}}>⚜ {coinsToString(character.coins)}</div>
       </div>
 
       {/* Equipment slots */}
