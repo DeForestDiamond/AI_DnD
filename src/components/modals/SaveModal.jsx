@@ -96,11 +96,11 @@ export function SaveModal({ onClose, generateFullSave, generateCharExport, loadF
             📂 Load from File (.json)
           </button>
 
-          {/* Legacy code support */}
-          <div style={{fontFamily:fonts.display,fontSize:9,color:colors.textGhost,letterSpacing:2,marginBottom:4}}>OR PASTE OLD SAVE CODE</div>
-          <textarea value={loadCode} onChange={e=>setLoadCode(e.target.value)} placeholder="Paste legacy base64 save code here..." style={{...ta,color:colors.text}}/>
+          {/* Paste raw save JSON (alternative to file load) */}
+          <div style={{fontFamily:fonts.display,fontSize:9,color:colors.textGhost,letterSpacing:2,marginBottom:4}}>OR PASTE SAVE JSON</div>
+          <textarea value={loadCode} onChange={e=>setLoadCode(e.target.value)} placeholder="Paste the contents of a .json save file here..." style={{...ta,color:colors.text}}/>
           <button style={{...btn(false),width:'100%',marginTop:6,opacity:loadCode.trim()?1:0.4}} disabled={!loadCode.trim()} onClick={doLoadCode}>
-            Load from Code →
+            Load from Pasted JSON →
           </button>
         </div>
 
