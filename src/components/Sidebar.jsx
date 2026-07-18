@@ -145,7 +145,17 @@ function CollapsibleSection({ title, count, defaultOpen = false, children }) {
 }
 
 // ── Voice settings: pick an installed TTS voice + speaking speed ──────────────
-function VoiceSettings({ voiceName, setVoiceName, rate, setRate, availableVoices, preview }) {
+function VoiceSettings({ voiceName, setVoiceName, rate, setRate, pitch, setPitch, availableVoices, preview }) {
+  // Android variants often share one display name — number the duplicates so
+  // "English (United States)" 1..N are individually selectable (keyed by voiceURI).
+  const nameCounts = {};
+  availableVoices.forEach(v => { nameCounts[v.name] = (nameCounts[v.name] || 0) + 1; });
+  const seen = {};
+  const labelFor = (v) => {
+    seen[v.name] = (seen[v.name] || 0) + 1;
+    const numbered = nameCounts[v.name] > 1 ? `${v.name} ${seen[v.name]}` : v.name;
+    return numbered + (v.localService === false ? ' (online)' : '');
+  };
   const [open, setOpen] = useState(false);
   return (
     <div style={{marginBottom:8}}>
@@ -158,11 +168,15 @@ function VoiceSettings({ voiceName, setVoiceName, rate, setRate, availableVoices
           <select value={voiceName} onChange={e=>setVoiceName(e.target.value)}
             style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:12,padding:'5px 8px',borderRadius:4,outline:'none',marginBottom:8}}>
             <option value="">Auto (system default)</option>
-            {availableVoices.map(v => <option key={v.name} value={v.name}>{v.name}{v.localService===false?' (online)':''}</option>)}
+            {availableVoices.map(v => <option key={v.voiceURI} value={v.voiceURI}>{labelFor(v)}</option>)}
           </select>
           <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>SPEED — {rate.toFixed(2)}×</div>
           <input type="range" min="0.5" max="1.5" step="0.05" value={rate}
             onChange={e=>setRate(parseFloat(e.target.value))}
+            style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>PITCH — {pitch.toFixed(2)}</div>
+          <input type="range" min="0.5" max="1.5" step="0.05" value={pitch}
+            onChange={e=>setPitch(parseFloat(e.target.value))}
             style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
           <button onClick={preview} style={{...btn(false),width:'100%',fontSize:11,padding:'4px 0'}}>▶ Preview</button>
           {availableVoices.length === 0 && (

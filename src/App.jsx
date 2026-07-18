@@ -1272,6 +1272,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             voiceSettings={voice.voiceSupported ? {
               voiceName: voice.voiceName, setVoiceName: voice.setVoiceName,
               rate: voice.rate, setRate: voice.setRate,
+              pitch: voice.pitch, setPitch: voice.setPitch,
               availableVoices: voice.availableVoices, preview: voice.previewVoice,
             } : null}
             character={character}
