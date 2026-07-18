@@ -51,11 +51,14 @@ export function useVoice() {
   // old name-hunt when nothing is chosen, so existing behavior is unchanged.
   const [voiceName, setVoiceNameState] = useState(() => localStorage.getItem('dnd-tts-voice') || '');
   const [rate, setRateState] = useState(() => parseFloat(localStorage.getItem('dnd-tts-rate')) || 0.88);
+  const [pitch, setPitchState] = useState(() => parseFloat(localStorage.getItem('dnd-tts-pitch')) || 0.85);
   const [availableVoices, setAvailableVoices] = useState([]);
   const voiceNameRef = useRef(voiceName);
   const rateRef = useRef(rate);
+  const pitchRef = useRef(pitch);
   useEffect(() => { voiceNameRef.current = voiceName; }, [voiceName]);
   useEffect(() => { rateRef.current = rate; }, [rate]);
+  useEffect(() => { pitchRef.current = pitch; }, [pitch]);
 
   // The voice list populates asynchronously; refresh on the change event.
   useEffect(() => {
@@ -68,12 +71,15 @@ export function useVoice() {
 
   const setVoiceName = (name) => { setVoiceNameState(name); localStorage.setItem('dnd-tts-voice', name); };
   const setRate = (r) => { setRateState(r); localStorage.setItem('dnd-tts-rate', String(r)); };
+  const setPitch = (v) => { setPitchState(v); localStorage.setItem('dnd-tts-pitch', String(v)); };
 
   const getPreferredVoice = () => {
     const voices = window.speechSynthesis.getVoices();
-    // 1. explicit saved choice wins
+    // 1. explicit saved choice wins — match by unique voiceURI first (Android
+    // variants often share one display name), fall back to name for old prefs
     if (voiceNameRef.current) {
-      const chosen = voices.find(v => v.name === voiceNameRef.current);
+      const chosen = voices.find(v => v.voiceURI === voiceNameRef.current)
+                  || voices.find(v => v.name === voiceNameRef.current);
       if (chosen) return chosen;
     }
     // 2. fall back to the old name-hunt for a decent default
@@ -86,7 +92,7 @@ export function useVoice() {
   const speakChunk = useCallback((chunk, isLast, voice) => {
     const utt = new SpeechSynthesisUtterance(chunk);
     if (voice) utt.voice = voice;
-    utt.rate = rateRef.current; utt.pitch = 0.85; utt.volume = 1;
+    utt.rate = rateRef.current; utt.pitch = pitchRef.current; utt.volume = 1;
     utt.onstart = () => setIsSpeaking(true);
     utt.onend   = () => {
       if (isLast) setIsSpeaking(false);
@@ -135,7 +141,7 @@ export function useVoice() {
     ttsEnabled, setTtsEnabled,
     isSpeaking, isListening,
     voiceSupported, sttSupported,
-    voiceName, setVoiceName, rate, setRate, availableVoices,
+    voiceName, setVoiceName, rate, setRate, pitch, setPitch, availableVoices,
     previewVoice: () => { window.speechSynthesis.cancel(); speakChunk('The road stretches on beneath a darkening sky.', true, getPreferredVoice()); },
     speak, stopSpeaking,
     startListening, stopListening,

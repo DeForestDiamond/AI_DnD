@@ -145,7 +145,17 @@ function CollapsibleSection({ title, count, defaultOpen = false, children }) {
 }
 
 // ── Voice settings: pick an installed TTS voice + speaking speed ──────────────
-function VoiceSettings({ voiceName, setVoiceName, rate, setRate, availableVoices, preview }) {
+function VoiceSettings({ voiceName, setVoiceName, rate, setRate, pitch, setPitch, availableVoices, preview }) {
+  // Android variants often share one display name — number the duplicates so
+  // "English (United States)" 1..N are individually selectable (keyed by voiceURI).
+  const nameCounts = {};
+  availableVoices.forEach(v => { nameCounts[v.name] = (nameCounts[v.name] || 0) + 1; });
+  const seen = {};
+  const labelFor = (v) => {
+    seen[v.name] = (seen[v.name] || 0) + 1;
+    const numbered = nameCounts[v.name] > 1 ? `${v.name} ${seen[v.name]}` : v.name;
+    return numbered + (v.localService === false ? ' (online)' : '');
+  };
   const [open, setOpen] = useState(false);
   return (
     <div style={{marginBottom:8}}>
@@ -158,11 +168,15 @@ function VoiceSettings({ voiceName, setVoiceName, rate, setRate, availableVoices
           <select value={voiceName} onChange={e=>setVoiceName(e.target.value)}
             style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:12,padding:'5px 8px',borderRadius:4,outline:'none',marginBottom:8}}>
             <option value="">Auto (system default)</option>
-            {availableVoices.map(v => <option key={v.name} value={v.name}>{v.name}{v.localService===false?' (online)':''}</option>)}
+            {availableVoices.map(v => <option key={v.voiceURI} value={v.voiceURI}>{labelFor(v)}</option>)}
           </select>
           <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>SPEED — {rate.toFixed(2)}×</div>
           <input type="range" min="0.5" max="1.5" step="0.05" value={rate}
             onChange={e=>setRate(parseFloat(e.target.value))}
+            style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>PITCH — {pitch.toFixed(2)}</div>
+          <input type="range" min="0.5" max="1.5" step="0.05" value={pitch}
+            onChange={e=>setPitch(parseFloat(e.target.value))}
             style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
           <button onClick={preview} style={{...btn(false),width:'100%',fontSize:11,padding:'4px 0'}}>▶ Preview</button>
           {availableVoices.length === 0 && (
@@ -171,6 +185,35 @@ function VoiceSettings({ voiceName, setVoiceName, rate, setRate, availableVoices
         </div>
       )}
     </div>
+  );
+}
+
+// ── Standing instructions: always-sent DM directives (moved from the header) ──
+function DirectivesEditor({ directives, onChangeDirectives }) {
+  return (
+    <CollapsibleSection title="📌 STANDING INSTRUCTIONS" defaultOpen={false}>
+      <div style={{fontSize:10,color:colors.textFaint,marginBottom:6,lineHeight:1.4}}>Sent to the DM every turn — lasting directions that should not be forgotten. Leave blank for none.</div>
+      <textarea
+        value={directives}
+        onChange={e => onChangeDirectives(e.target.value)}
+        placeholder={'e.g. The current journey should play out as its own arc — give it encounters and events along the way, not a single skip.'}
+        rows={4}
+        style={{...npcInput, resize:'vertical', lineHeight:1.5}}
+      />
+    </CollapsibleSection>
+  );
+}
+
+// ── Debug log viewer (moved from the header) ──────────────────────────────────
+function DebugViewer({ debugLog, debugStatus }) {
+  return (
+    <CollapsibleSection title="🐛 DEBUG LOG" count={debugLog?.length || 0} defaultOpen={false}>
+      <div style={{fontFamily:'monospace',fontSize:9,color:'#7fc97f',maxHeight:220,overflowY:'auto'}}>
+        {debugStatus && <div style={{color:'#c9a84c',marginBottom:4}}>{debugStatus}</div>}
+        {(debugLog||[]).map((entry, i) => <div key={i} style={{borderBottom:'1px solid #1a1208',paddingBottom:2,marginBottom:2,wordBreak:'break-all'}}>{entry}</div>)}
+        {(!debugLog || debugLog.length === 0) && <div style={{color:'#4a3a20'}}>no logs yet</div>}
+      </div>
+    </CollapsibleSection>
   );
 }
 
@@ -486,8 +529,9 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
+  const [activeTab, setActiveTab] = useState('character');
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   const [arcCustomText, setArcCustomText] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
@@ -595,18 +639,29 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </button>
       )}
 
+      {/* Tab bar */}
+      <div style={{display:'flex',gap:6,marginBottom:4}}>
+        <button onClick={()=>setActiveTab('character')} style={{flex:1,background:activeTab==='character'?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab==='character'?colors.gold:colors.borderDim}`,color:activeTab==='character'?colors.gold:colors.textFaint,padding:'8px 0',fontSize:12,fontFamily:fonts.display,letterSpacing:2,borderRadius:3,cursor:'pointer'}}>🎲 CHARACTER</button>
+        <button onClick={()=>setActiveTab('settings')} style={{flex:1,background:activeTab==='settings'?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab==='settings'?colors.gold:colors.borderDim}`,color:activeTab==='settings'?colors.gold:colors.textFaint,padding:'8px 0',fontSize:12,fontFamily:fonts.display,letterSpacing:2,borderRadius:3,cursor:'pointer'}}>⚙️ SETTINGS</button>
+      </div>
+
+      {activeTab==='settings' && <>
       {/* Save button */}
       <button onClick={onSaveClick} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>
         💾 Save / Load
       </button>
+      </>}
 
+      {activeTab==='character' && <>
       {/* Abilities button */}
       {onAbilitiesClick && (
         <button onClick={onAbilitiesClick} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>
           📚 Manage Abilities
         </button>
       )}
+      </>}
 
+      {activeTab==='settings' && <>
       {/* Model toggle */}
       {onToggleModel && (
         <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:colors.border}}>
@@ -648,6 +703,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </div>
       )}
 
+      </>}
+
+      {activeTab==='character' && <>
       {/* Identity */}
       <div>
         {sectionLabel('ADVENTURER')}
@@ -782,6 +840,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </CollapsibleSection>
       )}
 
+      </>}
+
+      {activeTab==='settings' && <>
       {/* Bio — the DM's behavior anchor */}
       {onSaveBio && <BioEditor key={character.bio || 'empty'} character={character} onSaveBio={onSaveBio} />}
 
@@ -795,6 +856,21 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         <TownManager character={character} onExtractTown={onExtractTown} onSaveNPC={onSaveNPC} onDeleteNPC={onDeleteNPC} />
       )}
 
+      {/* Raw tag visibility (moved from the header) */}
+      {onToggleRawTags && (
+        <button onClick={onToggleRawTags} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,borderColor:showRawTags?colors.gold:colors.border}}>
+          🏷️ Raw tags: {showRawTags ? 'shown' : 'hidden'}
+        </button>
+      )}
+
+      {/* Standing instructions (moved from the header) */}
+      {onChangeDirectives && <DirectivesEditor directives={directives} onChangeDirectives={onChangeDirectives} />}
+
+      {/* Debug log (moved from the header) */}
+      {debugLog !== undefined && <DebugViewer debugLog={debugLog} debugStatus={debugStatus} />}
+      </>}
+
+      {activeTab==='character' && <>
       {/* Key NPCs */}
       {character.npcs && Object.keys(character.npcs).length > 0 && (
         <CollapsibleSection title="KEY NPCs" count={Object.keys(character.npcs).length} defaultOpen={false}>
@@ -1043,6 +1119,8 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           </CollapsibleSection>
         );
       })()}
+
+      </>}
 
       <button style={{...btn(false),width:'100%',fontSize:12,marginTop:'auto'}} onClick={onSaveClick}>
         💾 Save / Export
