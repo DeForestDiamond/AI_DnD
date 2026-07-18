@@ -488,6 +488,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
 export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings }) {
   const db       = allItems(character.customItems || {});
+  const [activeTab, setActiveTab] = useState('character');
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   const [arcCustomText, setArcCustomText] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
@@ -595,18 +596,29 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </button>
       )}
 
+      {/* Tab bar */}
+      <div style={{display:'flex',gap:6,marginBottom:4}}>
+        <button onClick={()=>setActiveTab('character')} style={{flex:1,background:activeTab==='character'?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab==='character'?colors.gold:colors.borderDim}`,color:activeTab==='character'?colors.gold:colors.textFaint,padding:'8px 0',fontSize:12,fontFamily:fonts.display,letterSpacing:2,borderRadius:3,cursor:'pointer'}}>🎲 CHARACTER</button>
+        <button onClick={()=>setActiveTab('settings')} style={{flex:1,background:activeTab==='settings'?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab==='settings'?colors.gold:colors.borderDim}`,color:activeTab==='settings'?colors.gold:colors.textFaint,padding:'8px 0',fontSize:12,fontFamily:fonts.display,letterSpacing:2,borderRadius:3,cursor:'pointer'}}>⚙️ SETTINGS</button>
+      </div>
+
+      {activeTab==='settings' && <>
       {/* Save button */}
       <button onClick={onSaveClick} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>
         💾 Save / Load
       </button>
+      </>}
 
+      {activeTab==='character' && <>
       {/* Abilities button */}
       {onAbilitiesClick && (
         <button onClick={onAbilitiesClick} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>
           📚 Manage Abilities
         </button>
       )}
+      </>}
 
+      {activeTab==='settings' && <>
       {/* Model toggle */}
       {onToggleModel && (
         <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:colors.border}}>
@@ -648,6 +660,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </div>
       )}
 
+      </>}
+
+      {activeTab==='character' && <>
       {/* Identity */}
       <div>
         {sectionLabel('ADVENTURER')}
@@ -782,6 +797,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </CollapsibleSection>
       )}
 
+      </>}
+
+      {activeTab==='settings' && <>
       {/* Bio — the DM's behavior anchor */}
       {onSaveBio && <BioEditor key={character.bio || 'empty'} character={character} onSaveBio={onSaveBio} />}
 
@@ -795,6 +813,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         <TownManager character={character} onExtractTown={onExtractTown} onSaveNPC={onSaveNPC} onDeleteNPC={onDeleteNPC} />
       )}
 
+      </>}
+
+      {activeTab==='character' && <>
       {/* Key NPCs */}
       {character.npcs && Object.keys(character.npcs).length > 0 && (
         <CollapsibleSection title="KEY NPCs" count={Object.keys(character.npcs).length} defaultOpen={false}>
@@ -1043,6 +1064,8 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           </CollapsibleSection>
         );
       })()}
+
+      </>}
 
       <button style={{...btn(false),width:'100%',fontSize:12,marginTop:'auto'}} onClick={onSaveClick}>
         💾 Save / Export
