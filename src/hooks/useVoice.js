@@ -47,8 +47,36 @@ export function useVoice() {
   const voiceSupported = 'speechSynthesis' in window;
   const sttSupported   = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 
+  // Persisted voice preferences (voice name + speaking rate). Falls back to the
+  // old name-hunt when nothing is chosen, so existing behavior is unchanged.
+  const [voiceName, setVoiceNameState] = useState(() => localStorage.getItem('dnd-tts-voice') || '');
+  const [rate, setRateState] = useState(() => parseFloat(localStorage.getItem('dnd-tts-rate')) || 0.88);
+  const [availableVoices, setAvailableVoices] = useState([]);
+  const voiceNameRef = useRef(voiceName);
+  const rateRef = useRef(rate);
+  useEffect(() => { voiceNameRef.current = voiceName; }, [voiceName]);
+  useEffect(() => { rateRef.current = rate; }, [rate]);
+
+  // The voice list populates asynchronously; refresh on the change event.
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
+    const load = () => setAvailableVoices(window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en')));
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
+    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  }, []);
+
+  const setVoiceName = (name) => { setVoiceNameState(name); localStorage.setItem('dnd-tts-voice', name); };
+  const setRate = (r) => { setRateState(r); localStorage.setItem('dnd-tts-rate', String(r)); };
+
   const getPreferredVoice = () => {
     const voices = window.speechSynthesis.getVoices();
+    // 1. explicit saved choice wins
+    if (voiceNameRef.current) {
+      const chosen = voices.find(v => v.name === voiceNameRef.current);
+      if (chosen) return chosen;
+    }
+    // 2. fall back to the old name-hunt for a decent default
     return voices.find(v =>
       v.name.includes('Daniel') || v.name.includes('David') ||
       v.name.includes('Alex')   || v.name.includes('Google UK')
@@ -58,7 +86,7 @@ export function useVoice() {
   const speakChunk = useCallback((chunk, isLast, voice) => {
     const utt = new SpeechSynthesisUtterance(chunk);
     if (voice) utt.voice = voice;
-    utt.rate = 0.88; utt.pitch = 0.85; utt.volume = 1;
+    utt.rate = rateRef.current; utt.pitch = 0.85; utt.volume = 1;
     utt.onstart = () => setIsSpeaking(true);
     utt.onend   = () => {
       if (isLast) setIsSpeaking(false);
@@ -107,6 +135,8 @@ export function useVoice() {
     ttsEnabled, setTtsEnabled,
     isSpeaking, isListening,
     voiceSupported, sttSupported,
+    voiceName, setVoiceName, rate, setRate, availableVoices,
+    previewVoice: () => { window.speechSynthesis.cancel(); speakChunk('The road stretches on beneath a darkening sky.', true, getPreferredVoice()); },
     speak, stopSpeaking,
     startListening, stopListening,
   };

@@ -144,6 +144,36 @@ function CollapsibleSection({ title, count, defaultOpen = false, children }) {
   );
 }
 
+// ── Voice settings: pick an installed TTS voice + speaking speed ──────────────
+function VoiceSettings({ voiceName, setVoiceName, rate, setRate, availableVoices, preview }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{marginBottom:8}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>
+        🔊 Voice {open ? '▲' : '▼'}
+      </button>
+      {open && (
+        <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:4}}>
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>VOICE</div>
+          <select value={voiceName} onChange={e=>setVoiceName(e.target.value)}
+            style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:12,padding:'5px 8px',borderRadius:4,outline:'none',marginBottom:8}}>
+            <option value="">Auto (system default)</option>
+            {availableVoices.map(v => <option key={v.name} value={v.name}>{v.name}{v.localService===false?' (online)':''}</option>)}
+          </select>
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>SPEED — {rate.toFixed(2)}×</div>
+          <input type="range" min="0.5" max="1.5" step="0.05" value={rate}
+            onChange={e=>setRate(parseFloat(e.target.value))}
+            style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
+          <button onClick={preview} style={{...btn(false),width:'100%',fontSize:11,padding:'4px 0'}}>▶ Preview</button>
+          {availableVoices.length === 0 && (
+            <div style={{fontSize:10,color:colors.textGhost,marginTop:6,lineHeight:1.4}}>No voices detected yet — they load a moment after the page. To add better ones, install a TTS engine in your device's accessibility settings.</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Bio editor: view/edit the player's backstory (the DM's behavior anchor) ────
 function BioEditor({ character, onSaveBio }) {
   const [text, setText] = useState(character.bio || '');
@@ -456,7 +486,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings }) {
   const db       = allItems(character.customItems || {});
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   const [arcCustomText, setArcCustomText] = useState('');
@@ -583,6 +613,8 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           {selectedModel==='sonnet' ? '✨ DM: Sonnet' : '⚡ DM: Haiku'}
         </button>
       )}
+
+      {voiceSettings && <VoiceSettings {...voiceSettings} />}
 
       {/* Pacing knob — how often the world pushes back */}
       {onTogglePacing && (

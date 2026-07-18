@@ -1265,6 +1265,11 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       {(!isMobile || sidebarOpen) && (
         <div style={{position: isMobile ? 'fixed' : 'relative', zIndex: isMobile ? 50 : 'auto', top:0, left:0, height:'100vh', width: isMobile ? '100vw' : 'auto'}}>
           <Sidebar
+            voiceSettings={voice.voiceSupported ? {
+              voiceName: voice.voiceName, setVoiceName: voice.setVoiceName,
+              rate: voice.rate, setRate: voice.setRate,
+              availableVoices: voice.availableVoices, preview: voice.previewVoice,
+            } : null}
             character={character}
             onSlotClick={handleSlotClick}
             onCompanionSlotClick={handleCompanionSlotClick}
