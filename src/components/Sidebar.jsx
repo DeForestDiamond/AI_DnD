@@ -174,6 +174,35 @@ function VoiceSettings({ voiceName, setVoiceName, rate, setRate, availableVoices
   );
 }
 
+// ── Standing instructions: always-sent DM directives (moved from the header) ──
+function DirectivesEditor({ directives, onChangeDirectives }) {
+  return (
+    <CollapsibleSection title="📌 STANDING INSTRUCTIONS" defaultOpen={false}>
+      <div style={{fontSize:10,color:colors.textFaint,marginBottom:6,lineHeight:1.4}}>Sent to the DM every turn — lasting directions that should not be forgotten. Leave blank for none.</div>
+      <textarea
+        value={directives}
+        onChange={e => onChangeDirectives(e.target.value)}
+        placeholder={'e.g. The current journey should play out as its own arc — give it encounters and events along the way, not a single skip.'}
+        rows={4}
+        style={{...npcInput, resize:'vertical', lineHeight:1.5}}
+      />
+    </CollapsibleSection>
+  );
+}
+
+// ── Debug log viewer (moved from the header) ──────────────────────────────────
+function DebugViewer({ debugLog, debugStatus }) {
+  return (
+    <CollapsibleSection title="🐛 DEBUG LOG" count={debugLog?.length || 0} defaultOpen={false}>
+      <div style={{fontFamily:'monospace',fontSize:9,color:'#7fc97f',maxHeight:220,overflowY:'auto'}}>
+        {debugStatus && <div style={{color:'#c9a84c',marginBottom:4}}>{debugStatus}</div>}
+        {(debugLog||[]).map((entry, i) => <div key={i} style={{borderBottom:'1px solid #1a1208',paddingBottom:2,marginBottom:2,wordBreak:'break-all'}}>{entry}</div>)}
+        {(!debugLog || debugLog.length === 0) && <div style={{color:'#4a3a20'}}>no logs yet</div>}
+      </div>
+    </CollapsibleSection>
+  );
+}
+
 // ── Bio editor: view/edit the player's backstory (the DM's behavior anchor) ────
 function BioEditor({ character, onSaveBio }) {
   const [text, setText] = useState(character.bio || '');
@@ -486,7 +515,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
@@ -813,6 +842,18 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         <TownManager character={character} onExtractTown={onExtractTown} onSaveNPC={onSaveNPC} onDeleteNPC={onDeleteNPC} />
       )}
 
+      {/* Raw tag visibility (moved from the header) */}
+      {onToggleRawTags && (
+        <button onClick={onToggleRawTags} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,borderColor:showRawTags?colors.gold:colors.border}}>
+          🏷️ Raw tags: {showRawTags ? 'shown' : 'hidden'}
+        </button>
+      )}
+
+      {/* Standing instructions (moved from the header) */}
+      {onChangeDirectives && <DirectivesEditor directives={directives} onChangeDirectives={onChangeDirectives} />}
+
+      {/* Debug log (moved from the header) */}
+      {debugLog !== undefined && <DebugViewer debugLog={debugLog} debugStatus={debugStatus} />}
       </>}
 
       {activeTab==='character' && <>

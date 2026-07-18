@@ -58,8 +58,6 @@ export default function App() {
   const [slotTarget, setSlotTarget] = useState(null);
   const [companionSlotTarget, setCompanionSlotTarget] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
-  const [showDebug, setShowDebug] = useState(false);
-  const [showDirectives, setShowDirectives] = useState(false);
   const [adventureStartChar, setAdventureStartChar] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(true);
@@ -1265,6 +1263,12 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       {(!isMobile || sidebarOpen) && (
         <div style={{position: isMobile ? 'fixed' : 'relative', zIndex: isMobile ? 50 : 'auto', top:0, left:0, height:'100vh', width: isMobile ? '100vw' : 'auto'}}>
           <Sidebar
+            showRawTags={showRawTags}
+            onToggleRawTags={()=>setShowRawTags(v=>!v)}
+            debugLog={debugLog}
+            debugStatus={`char: lv${character.level} xp:${character.xp} pending:${String(pendingStatPoint)}`}
+            directives={character.directives || ''}
+            onChangeDirectives={(text)=>updateChar({ ...charRef.current, directives: text })}
             voiceSettings={voice.voiceSupported ? {
               voiceName: voice.voiceName, setVoiceName: voice.setVoiceName,
               rate: voice.rate, setRate: voice.setRate,
@@ -1334,22 +1338,6 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             <span style={{fontFamily:fonts.display,fontSize:13,color:colors.gold,letterSpacing:2}}>🐉 TALES OF THE REALM</span>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:6}}>
-            {/* Tag toggle */}
-            <button onClick={()=>setShowRawTags(v=>!v)}
-              style={{background:showRawTags?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${showRawTags?colors.gold:colors.borderDim}`,color:showRawTags?colors.gold:colors.textFaint,padding:'4px 8px',fontSize:10,borderRadius:3,cursor:'pointer',fontFamily:fonts.display,letterSpacing:1}}>
-              🏷️
-            </button>
-            {/* Debug toggle */}
-            <button onClick={()=>setShowDebug(v=>!v)}
-              style={{background:showDebug?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${showDebug?colors.gold:colors.borderDim}`,color:showDebug?colors.gold:colors.textFaint,padding:'4px 8px',fontSize:10,borderRadius:3,cursor:'pointer',fontFamily:fonts.display,letterSpacing:1}}>
-              🐛
-            </button>
-            {/* Standing instructions toggle */}
-            <button onClick={()=>setShowDirectives(v=>!v)}
-              title="Standing instructions to the DM (always sent)"
-              style={{background:showDirectives?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${showDirectives?colors.gold:colors.borderDim}`,color:showDirectives?colors.gold:colors.textFaint,padding:'4px 8px',fontSize:10,borderRadius:3,cursor:'pointer',fontFamily:fonts.display,letterSpacing:1}}>
-              📌
-            </button>
             {/* Story log toggle */}
             {storySummary && (
               <button onClick={()=>setSummaryOpen(v=>!v)}
@@ -1360,34 +1348,6 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             )}
           </div>
         </div>
-
-        {/* Debug panel — drops down like story log */}
-        {showDebug && (
-          <div style={{background:'rgba(0,0,0,0.95)',borderBottom:`1px solid #3a2a10`,padding:'7px 16px',flexShrink:0,maxHeight:200,overflowY:'auto'}}>
-            <div style={{fontFamily:'monospace',fontSize:9,color:'#7fc97f'}}>
-              <div style={{color:'#c9a84c',marginBottom:4,display:'flex',justifyContent:'space-between'}}>
-                <span style={{fontFamily:fonts.display,fontSize:10,letterSpacing:2}}>DEBUG LOG</span>
-                <span>char: lv{character.level} xp:{character.xp} pending:{String(pendingStatPoint)}</span>
-              </div>
-              {debugLog.map((entry, i) => <div key={i} style={{borderBottom:'1px solid #1a1208',paddingBottom:2,marginBottom:2,wordBreak:'break-all'}}>{entry}</div>)}
-              {debugLog.length === 0 && <div style={{color:'#4a3a20'}}>no logs yet</div>}
-            </div>
-          </div>
-        )}
-
-        {showDirectives && (
-          <div style={{background:'rgba(30,20,5,0.85)',borderBottom:`1px solid ${colors.borderDim}`,padding:'7px 16px',flexShrink:0}}>
-            <div style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:4}}>📌 STANDING INSTRUCTIONS TO THE DM</div>
-            <div style={{fontSize:10,color:colors.textFaint,marginBottom:6,lineHeight:1.4}}>Sent to the DM every turn — use it for lasting directions that should not be forgotten. Leave blank for none.</div>
-            <textarea
-              value={character.directives || ''}
-              onChange={e => updateChar({ ...charRef.current, directives: e.target.value })}
-              placeholder={'e.g. The current journey should play out as its own arc — give it encounters and events along the way, not a single skip.'}
-              rows={3}
-              style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:12,fontFamily:'inherit',padding:'6px 8px',resize:'vertical',boxSizing:'border-box'}}
-            />
-          </div>
-        )}
 
         {storySummary && summaryOpen && (
           <div style={{background:'rgba(30,20,5,0.85)',borderBottom:`1px solid ${colors.borderDim}`,padding:'7px 16px',display:'flex',alignItems:'flex-start',gap:8,flexShrink:0,maxHeight:160,overflowY:'auto'}}>
