@@ -222,6 +222,7 @@ Item gained: [ITEM: Health Potion]
 Item DESTROYED, consumed, sold, or given away — gone for good: [REMOVE: Health Potion]
   WARNING: [REMOVE:] PERMANENTLY DELETES the item. NEVER use it to take off or swap gear — that destroys the item.
 Equip item: [EQUIP: Sword | mainhand]
+Equip onto a companion (use the companion's exact name in place of a slot): [EQUIP: Sword | Vashaera]
   Slots: mainhand, offhand, armor, head, neck, cloak, hands, ring1, ring2, feet
 Take off or swap gear — item returns SAFELY to inventory, never destroyed: [UNEQUIP: Iron Helm]
   To swap, just EQUIP the new item — the old one auto-returns to inventory. Only UNEQUIP when removing gear without replacing it.

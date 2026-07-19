@@ -407,17 +407,38 @@ export function useCharacter() {
     // DM equip -- only first occurrence removed from inventory
     [...text.matchAll(/\[EQUIP:\s*([^|\]]+)\|?\s*([^\]]*)\]/gi)].forEach(m => {
       const name     = m[1].trim();
-      const slotHint = m[2].trim().toLowerCase();
+      const target   = m[2].trim();
       const db       = allItems(c.customItems);
       const data     = db[name];
-      let slotId     = slotHint || null;
-      if (!slotId) {
-        if (data?.type === 'weapon') slotId = 'mainhand';
-        else if (data?.type === 'armor')  slotId = 'armor';
-        else if (data?.type === 'shield') slotId = 'offhand';
-        else slotId = 'neck';
+
+      const slotFromType = () => {
+        if (data?.type === 'weapon') return 'mainhand';
+        if (data?.type === 'armor')  return 'armor';
+        if (data?.type === 'shield') return 'offhand';
+        if (data?.type === 'magic' && data?.slot) return data.slot;
+        return 'neck';
+      };
+
+      // The second field may be a SLOT (mainhand, ring1, ...) or a COMPANION
+      // NAME. If it matches a companion, equip onto that companion instead of
+      // misreading the name as a slot (which used to evict the player's item).
+      const compKey = target && Object.keys(c.companions || {}).find(n => n.toLowerCase() === target.toLowerCase());
+      const targetIsSlot = target && SLOTS.find(s => s.id === target.toLowerCase());
+
+      if (compKey) {
+        const comp      = c.companions[compKey];
+        const compSlots = comp.slots || {};
+        const slotId    = slotFromType();
+        const prev = compSlots[slotId];
+        const idx  = c.inventory.indexOf(name);
+        if (idx !== -1) c.inventory = [...c.inventory.slice(0,idx), ...c.inventory.slice(idx+1)];
+        if (prev) c.inventory = [...c.inventory, prev];
+        c.companions = { ...c.companions, [compKey]: { ...comp, slots: { ...compSlots, [slotId]: name } } };
+        return;
       }
-      if (!SLOTS.find(s => s.id === slotId)) slotId = 'neck';
+
+      let slotId = targetIsSlot ? target.toLowerCase() : slotFromType();
+      if (!SLOTS.find(s => s.id === slotId)) slotId = slotFromType();
       const prev = c.slots[slotId];
       const idx  = c.inventory.indexOf(name);
       if (idx !== -1) c.inventory = [...c.inventory.slice(0,idx), ...c.inventory.slice(idx+1)];
