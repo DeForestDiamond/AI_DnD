@@ -1,4 +1,4 @@
-import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod } from './useCharacter.js';
+import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod, allItems } from './useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
 import { ITEM_DB } from '../constants/items.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
@@ -17,13 +17,23 @@ export const cleanDisplayText = (text) => text.replace(/\[[^\]]+\]/g, '').trim()
 // ── Dice Engine ────────────────────────────────────────────────────────────────
 // All dice rolling happens here in the app, never in the DM
 
-export const performSkillCheck = (statValue, difficulty, addProfBonus = false, level = 1) => {
+// 5e skill -> governing ability. Rolls named by skill use the right stat
+// instead of silently defaulting to 10 (+0).
+export const SKILL_ABILITY = {
+  athletics:'str',
+  acrobatics:'dex', stealth:'dex', sleight:'dex', sleightofhand:'dex',
+  arcana:'int', history:'int', investigation:'int', nature:'int', religion:'int',
+  animal:'wis', animalhandling:'wis', insight:'wis', medicine:'wis', perception:'wis', survival:'wis',
+  deception:'cha', intimidation:'cha', performance:'cha', persuasion:'cha',
+};
+
+export const performSkillCheck = (statValue, difficulty, addProfBonus = false, level = 1, gearBonus = 0) => {
   const d20    = rollDie(20);
   const mod    = statMod(statValue);
   const prof   = addProfBonus ? profBonus(level) : 0;
-  const total  = d20 + mod + prof;
+  const total  = d20 + mod + prof + gearBonus;
   const hit    = total >= difficulty;
-  return { d20, mod, prof, total, difficulty, hit };
+  return { d20, mod, prof, gearBonus, total, difficulty, hit };
 };
 
 export const performAttack = (weapon, stats, level) => {
@@ -251,6 +261,7 @@ CUSTOM ITEMS — always include type and stats:
     NOTE: only the main chest/body armor piece uses armor type with a flat AC value.
     bonus stats on armor: add after label e.g. | con:1
   Magic item: [ITEM: Ring of Protection | magic | ring | ac:1 | +1 to AC]
+  Magic items can also carry SKILL bonuses that mechanically apply to [ROLL:] checks while equipped — e.g. [ITEM: Cloak of Elvenkind | magic | cloak | stealth:3 | blends into shadow], [ITEM: Eyes of the Eagle | magic | head | perception:5 | distant details leap into focus]. Use skill:N in the bonus field (stealth, perception, persuasion, etc.) so the item's effect is real, not just flavor text.
     fields: slot | bonuses (stat:value, comma separated) | label
     bonus options: ac, str, dex, con, int, wis, cha
     e.g. ac:1 = +1 AC bonus | dex:2 = +2 Dexterity | ac:1,str:1 = +1 AC and +1 Strength
@@ -788,14 +799,21 @@ export function useGame({ charRef, apiKey }) {
     const statName = rollMatch[1].toLowerCase();
     const diff     = parseInt(rollMatch[2]);
     const statMap  = { strength:'str', dexterity:'dex', constitution:'con', intelligence:'int', wisdom:'wis', charisma:'cha' };
-    const statKey  = statMap[statName] || statName;
+    const statKey  = statMap[statName] || SKILL_ABILITY[statName] || statName;
     const effStats = effectiveStats(char.stats, char.slots, char.customItems || {});
     const statVal  = effStats[statKey] || 10;
-    const check    = performSkillCheck(statVal, diff, true, char.level);
+    // Equipped gear with a bonus for this exact skill (e.g. stealth:+3) adds flat
+    const db = allItems(char.customItems || {});
+    let gearBonus = 0;
+    Object.values(char.slots || {}).forEach(itemName => {
+      const b = itemName && db[itemName]?.bonuses;
+      if (b && typeof b[statName] === 'number') gearBonus += b[statName];
+    });
+    const check    = performSkillCheck(statVal, diff, true, char.level, gearBonus);
 
-    log?.(`[ROLL] ${statName} check: d20=${check.d20}+${check.mod}+${check.prof}=${check.total} vs DC${diff} — ${check.hit?'SUCCESS':'FAILURE'}`);
+    log?.(`[ROLL] ${statName} check (${statKey}): d20=${check.d20}+${check.mod}+${check.prof}${gearBonus?`+${gearBonus}gear`:''}=${check.total} vs DC${diff} — ${check.hit?'SUCCESS':'FAILURE'}`);
 
-    const resultText = `[ROLL RESULT: ${statName} check — d20 rolled ${check.d20} + ${check.mod} stat modifier + ${check.prof} proficiency = ${check.total} vs difficulty ${diff} — ${check.hit ? 'SUCCESS' : 'FAILURE'}]`;
+    const resultText = `[ROLL RESULT: ${statName} check — d20 rolled ${check.d20} + ${check.mod} ${statKey.toUpperCase()} modifier + ${check.prof} proficiency${gearBonus ? ` + ${gearBonus} equipment` : ''} = ${check.total} vs difficulty ${diff} — ${check.hit ? 'SUCCESS' : 'FAILURE'}]`;
     const rollResult = {
       label: `${statName.charAt(0).toUpperCase() + statName.slice(1)} Check`,
       value: check.total,

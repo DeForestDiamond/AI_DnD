@@ -100,7 +100,7 @@ export const parseDMItem = (raw) => {
     const slot = parts[2] || 'neck';
     const bonuses = {};
     (parts[3] || '').split(',').forEach(b => {
-      const m = b.trim().match(/^(ac|str|dex|con|int|wis|cha):(-?\d+)$/i);
+      const m = b.trim().match(/^(ac|str|dex|con|int|wis|cha|athletics|acrobatics|stealth|sleightofhand|sleight|arcana|history|investigation|nature|religion|animalhandling|animal|insight|medicine|perception|survival|deception|intimidation|performance|persuasion):(-?\d+)$/i);
       if (m) bonuses[m[1].toLowerCase()] = parseInt(m[2]);
     });
     return { name, data: { type:'magic', slot, bonuses, label: parts[4] || '' } };
