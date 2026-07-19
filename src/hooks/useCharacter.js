@@ -143,18 +143,6 @@ export const migrateCharacter = (char) => {
   }
   if (v < 3) { if (c.xp === undefined) { c.xp = 0; notes.push('XP initialized'); } }
   if (v < 4) { if (!c.customItems) { c.customItems = {}; } }
-  if (v < 5) {
-    if (c.customItems['Chitin Bracers']?.type === 'armor') {
-      c.customItems['Chitin Bracers'] = { type:'magic', slot:'hands', bonuses:{ ac:1 }, label:'+1 AC' };
-      notes.push('Chitin Bracers upgraded');
-    }
-    if (c.customItems['Chitin Greaves']?.type === 'armor') {
-      c.customItems['Chitin Greaves'] = { type:'magic', slot:'feet', bonuses:{ ac:1 }, label:'+1 AC' };
-      notes.push('Chitin Greaves upgraded');
-    }
-    if (c.slots.armor === 'Chitin Bracers') { c.slots.armor = null; c.slots.hands = 'Chitin Bracers'; }
-    if (c.slots.armor === 'Chitin Greaves') { c.slots.armor = null; c.slots.feet  = 'Chitin Greaves'; }
-  }
   if (v < 6) {
     // Add classLevels if missing -- infer from primary class
     if (!c.classLevels) {
