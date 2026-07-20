@@ -416,6 +416,19 @@ export function useCharacter() {
         if (data?.type === 'armor')  return 'armor';
         if (data?.type === 'shield') return 'offhand';
         if (data?.type === 'magic' && data?.slot) return data.slot;
+        // Item not in the DB (DM equipped something it never granted, or a name
+        // mismatch) — guess from the NAME so a weapon doesn't fall to 'neck'.
+        // Order matters: check specific worn slots before the broad 'armor'.
+        const n = name.toLowerCase();
+        if (/shield|buckler/.test(n)) return 'offhand';
+        if (/helm|helmet|hood|circlet|crown|coif/.test(n)) return 'head';
+        if (/boots|greaves|sabaton|shoes|footwear/.test(n)) return 'feet';
+        if (/gloves|gauntlet|bracer|vambrace/.test(n)) return 'hands';
+        if (/cloak|cape|mantle/.test(n)) return 'cloak';
+        if (/\bring\b/.test(n)) return 'ring1';
+        if (/amulet|necklace|pendant|torc|collar/.test(n)) return 'neck';
+        if (/knife|dagger|sword|blade|axe|mace|hammer|spear|staff|wand|bow|crossbow|club|flail|scimitar|rapier|glaive|halberd|whip|sickle|pistol|gun|cannon|katana|sabre|saber|dirk|kukri|falchion/.test(n)) return 'mainhand';
+        if (/armor|armour|mail|plate|breastplate|cuirass|robe|leather|hide|brigandine|chain/.test(n)) return 'armor';
         return 'neck';
       };
 
