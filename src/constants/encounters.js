@@ -75,13 +75,17 @@ export const rollAntagonist = (level, exclude = null) => {
 
 // ── Pacing knob ────────────────────────────────────────────────────────────────
 // grace: turns with zero encounter chance. After that, chance = base + perTurn per turn, capped.
+// perTurn is the key knob: a gentle slope means the chance climbs gradually
+// instead of spiking to near-certainty a few turns past grace (which stacked
+// encounters back-to-back). Ladder runs off → calm → sparse → normal → dangerous.
 export const PACING = {
-  off:       { label: '🚫 Encounters: Off',   grace: Infinity, base: 0, perTurn: 0 },
-  calm:      { label: '🕊️ Pacing: Calm',      grace: 8, base: 0.10, perTurn: 0.08 },
-  normal:    { label: '⚖️ Pacing: Normal',    grace: 4, base: 0.20, perTurn: 0.12 },
-  dangerous: { label: '⚔️ Pacing: Dangerous', grace: 2, base: 0.30, perTurn: 0.18 },
+  off:       { label: '🚫 Encounters: Off',   grace: Infinity, base: 0,    perTurn: 0 },
+  calm:      { label: '🕊️ Pacing: Calm',      grace: 8, base: 0.08, perTurn: 0.04 },
+  sparse:    { label: '🍃 Pacing: Sparse',    grace: 6, base: 0.10, perTurn: 0.05 },
+  normal:    { label: '⚖️ Pacing: Normal',    grace: 4, base: 0.12, perTurn: 0.07 },
+  dangerous: { label: '⚔️ Pacing: Dangerous', grace: 3, base: 0.20, perTurn: 0.11 },
 };
-export const PACING_ORDER = ['off', 'calm', 'normal', 'dangerous'];
+export const PACING_ORDER = ['off', 'calm', 'sparse', 'normal', 'dangerous'];
 
 export const encounterChance = (turnsSince, pacing) => {
   const p = PACING[pacing] || PACING.normal;
