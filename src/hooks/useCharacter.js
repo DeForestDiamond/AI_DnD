@@ -184,6 +184,7 @@ export const migrateCharacter = (char) => {
     // lack any of them. Guarantees shape so downstream code can stop guarding.
     if (c.arc === undefined) c.arc = null;                    // no active antagonist
     if (!c.pacing) c.pacing = 'normal';
+    if (!c.environment) c.environment = 'wilderness';
     if (!c.companions) c.companions = {};
     if (!c.npcs) c.npcs = {};
     if (!c.towns) { c.towns = {}; notes.push('Towns/locations store initialized'); }
@@ -223,7 +224,7 @@ export const EMPTY_CHAR = {
   classLevels: {},
   subclasses: {},
   slots:{ ...EMPTY_SLOTS },
-  inventory:[], stash:[], coins:1000,
+  inventory:[], stash:[], coins:1000, environment:'wilderness',
   customItems:{},
   stashedCustomItems:{},
   contextExclusions: { companions:{}, npcs:{}, towns:{} },
