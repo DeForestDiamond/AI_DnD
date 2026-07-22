@@ -1292,6 +1292,8 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             selectedModel={selectedModel}
             onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : 'sonnet')}
             pacing={character.pacing || 'normal'}
+            environment={character.environment || 'wilderness'}
+            onChangeEnvironment={(env)=>updateChar({ ...charRef.current, environment: env })}
             onTogglePacing={() => {
               const cur = charRef.current.pacing || 'normal';
               const next = PACING_ORDER[(PACING_ORDER.indexOf(cur) + 1) % PACING_ORDER.length];

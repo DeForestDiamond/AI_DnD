@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PACING } from '../constants/encounters.js';
+import { PACING, ENVIRONMENTS } from '../constants/encounters.js';
 import { colors, fonts, btn } from '../styles/theme.js';
 import { SLOTS } from '../constants/items.js';
 import { STAT_NAMES } from '../constants/classes.js';
@@ -529,7 +529,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
@@ -676,6 +676,14 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         <button onClick={onTogglePacing} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,opacity:pacing==='off'?0.6:1,borderColor:pacing==='dangerous'?colors.red:pacing==='normal'?colors.gold:colors.border}}>
           {PACING[pacing]?.label || PACING.normal.label}
         </button>
+      )}
+
+      {onChangeEnvironment && (
+        <select value={environment || 'wilderness'} onChange={e=>onChangeEnvironment(e.target.value)}
+          title="Where you are — encounters match your surroundings"
+          style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:13,padding:'7px 8px',borderRadius:4,outline:'none',marginTop:6,cursor:'pointer'}}>
+          {ENVIRONMENTS.map(env => <option key={env.id} value={env.id}>📍 {env.label}</option>)}
+        </select>
       )}
 
       {/* Story arc — the hidden antagonist all foreshadowing builds toward */}
