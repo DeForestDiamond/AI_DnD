@@ -266,13 +266,19 @@ CUSTOM ITEMS — always include type and stats:
     fields: slot | bonuses (stat:value, comma separated) | label
     bonus options: ac, str, dex, con, int, wis, cha
     e.g. ac:1 = +1 AC bonus | dex:2 = +2 Dexterity | ac:1,str:1 = +1 AC and +1 Strength
-    WEARABLES — these are ALL magic type with bonus stats, never armor type:
-      Boots/Greaves (feet):    [ITEM: Serpent-Drake Greaves | magic | feet | ac:2 | +2 AC]
-      Gloves/Bracers (hands):  [ITEM: Dragonsteel Bracers | magic | hands | ac:1,str:1 | +1 AC +1 Str]
+    WEARABLES — these are ALL magic type with bonus stats, never armor type. Slot values:
+      Boots (feet):            [ITEM: Serpent-Drake Greaves | magic | feet | ac:2 | +2 AC]
+      Bracers (arms):          [ITEM: Dragonsteel Bracers | magic | arms | ac:1,str:1 | +1 AC +1 Str]
+      Gloves (hands):          [ITEM: Gloves of Thievery | magic | hands | dex:1 | nimble fingers]
       Cloak (cloak):           [ITEM: Cloak of Protection | magic | cloak | ac:1 | +1 AC]
-      Helmet (head):           [ITEM: Helm of Clarity | magic | head | int:1 | +1 Intelligence]
-      Necklace (neck):         [ITEM: Amulet of Health | magic | neck | con:2 | +2 Constitution]
+      Shoulders (shoulders):   [ITEM: Mantle of the Sentinel | magic | shoulders | wis:1 | pauldrons that never let you be surprised]  ← pauldrons/mantle, SEPARATE from cloak
+      Shirt/vest (torso):      [ITEM: Shirt of the Owl | magic | torso | dex:1 | worn under armor]  ← a layer beneath the chest armor
+      Belt (waist):            [ITEM: Belt of Giant Strength | magic | waist | str:2 | girdles, sashes]
+      Face (face):             [ITEM: Eyes of the Eagle | magic | face | perception:5 | goggles, lenses, masks, spectacles]
+      Head (head):             [ITEM: Helm of Clarity | magic | head | int:1 | circlets, crowns, hats, helmets]
+      Necklace (neck):         [ITEM: Amulet of Health | magic | neck | con:2 | amulets, torcs, pendants]
       Ring (ring1 or ring2):   [ITEM: Ring of Protection | magic | ring1 | ac:1 | +1 AC]
+    Full worn-slot list to choose from: face, head, neck, shoulders, cloak, torso, arms, hands, waist, ring1, ring2, feet. Pick the anatomically correct slot for each item so it can be equipped.
   Consumable: [ITEM: Antitoxin Vial | consumable | cures poison]
   Give and equip together: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
   Quantities: [ITEM: Blast Powder | qty:3] — NEVER bake quantity into the item name

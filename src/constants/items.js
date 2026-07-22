@@ -47,16 +47,21 @@ export const FOCUS_DB = {
 export const ITEM_DB = { ...WEAPON_DB, ...ARMOR_DB, ...MAGIC_ITEM_DB, ...FOCUS_DB };
 
 export const SLOTS = [
-  { id:'mainhand', label:'Main Hand', emoji:'⚔️',  accepts:['weapon']                  },
-  { id:'offhand',  label:'Off Hand',  emoji:'🛡️',  accepts:['weapon','shield','focus','magic']  },
-  { id:'armor',    label:'Armor',     emoji:'🥋',  accepts:['armor']                    },
-  { id:'head',     label:'Helmet',    emoji:'⛑️',  accepts:['magic']                    },
-  { id:'neck',     label:'Necklace',  emoji:'📿',  accepts:['magic']                    },
-  { id:'cloak',    label:'Cloak',     emoji:'🧣',  accepts:['magic']                    },
-  { id:'hands',    label:'Gloves',    emoji:'🧤',  accepts:['magic']                    },
-  { id:'ring1',    label:'Ring',      emoji:'💍',  accepts:['magic']                    },
-  { id:'ring2',    label:'Ring',      emoji:'💍',  accepts:['magic']                    },
-  { id:'feet',     label:'Boots',     emoji:'👢',  accepts:['magic']                    },
+  { id:'mainhand',  label:'Main Hand', emoji:'⚔️',  accepts:['weapon']                  },
+  { id:'offhand',   label:'Off Hand',  emoji:'🛡️',  accepts:['weapon','shield','focus','magic']  },
+  { id:'armor',     label:'Armor',     emoji:'🥋',  accepts:['armor']                    },
+  { id:'face',      label:'Face',      emoji:'👓',  accepts:['magic']                    },
+  { id:'head',      label:'Head',      emoji:'⛑️',  accepts:['magic']                    },
+  { id:'neck',      label:'Necklace',  emoji:'📿',  accepts:['magic']                    },
+  { id:'shoulders', label:'Shoulders', emoji:'🎖️',  accepts:['magic']                    },
+  { id:'cloak',     label:'Cloak',     emoji:'🧣',  accepts:['magic']                    },
+  { id:'torso',     label:'Shirt',     emoji:'👕',  accepts:['magic']                    },
+  { id:'arms',      label:'Bracers',   emoji:'💪',  accepts:['magic']                    },
+  { id:'hands',     label:'Gloves',    emoji:'🧤',  accepts:['magic']                    },
+  { id:'waist',     label:'Belt',      emoji:'🎗️',  accepts:['magic']                    },
+  { id:'ring1',     label:'Ring',      emoji:'💍',  accepts:['magic']                    },
+  { id:'ring2',     label:'Ring',      emoji:'💍',  accepts:['magic']                    },
+  { id:'feet',      label:'Boots',     emoji:'👢',  accepts:['magic']                    },
 ];
 
 export const EMPTY_SLOTS = Object.fromEntries(SLOTS.map(s => [s.id, null]));

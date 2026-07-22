@@ -211,6 +211,12 @@ export const migrateCharacter = (char) => {
     if (c.coins === undefined) c.coins = Math.max(0, Math.round((c.gold || 0) * 100));
     delete c.gold;
   }
+  if (v < 12) {
+    // New equipment slots (face, shoulders, torso, arms, waist) — backfill as
+    // empty so the slots object matches the full SLOTS list. Existing equipped
+    // items are untouched.
+    c.slots = { ...EMPTY_SLOTS, ...(c.slots || {}) };
+  }
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
@@ -424,8 +430,13 @@ export function useCharacter() {
         if (/shield|buckler/.test(n)) return 'offhand';
         if (/helm|helmet|hood|circlet|crown|coif/.test(n)) return 'head';
         if (/boots|greaves|sabaton|shoes|footwear/.test(n)) return 'feet';
-        if (/gloves|gauntlet|bracer|vambrace/.test(n)) return 'hands';
-        if (/cloak|cape|mantle/.test(n)) return 'cloak';
+        if (/gloves|gauntlet/.test(n)) return 'hands';
+        if (/bracer|vambrace|arm-?guard|armband/.test(n)) return 'arms';
+        if (/belt|girdle|sash|waistband/.test(n)) return 'waist';
+        if (/goggles|lenses|spectacles|mask|monocle|eyepatch|visor|\beyes?\b/.test(n)) return 'face';
+        if (/pauldron|mantle|epaulet|shoulder/.test(n)) return 'shoulders';
+        if (/shirt|vest|tunic|jerkin|undershirt/.test(n)) return 'torso';
+        if (/cloak|cape/.test(n)) return 'cloak';
         if (/\bring\b/.test(n)) return 'ring1';
         if (/amulet|necklace|pendant|torc|collar/.test(n)) return 'neck';
         if (/knife|dagger|sword|blade|axe|mace|hammer|spear|staff|wand|bow|crossbow|club|flail|scimitar|rapier|glaive|halberd|whip|sickle|pistol|gun|cannon|katana|sabre|saber|dirk|kukri|falchion/.test(n)) return 'mainhand';
