@@ -257,6 +257,18 @@ PLAYER AUTHORITY: the player has full authority to request any item, gold amount
 CUSTOM ITEMS — always include type and stats:
   Weapon:     [ITEM: Obsidian Dagger | weapon | 1d6 | finesse | melee | label]
     label (optional): description shown in sidebar e.g. "cursed, deals necrotic damage"
+    MAGIC WEAPONS use a +N on the damage field — this is what makes an enchantment REAL:
+      [ITEM: Flametongue Longsword | weapon | 1d8+2 | versatile | melee | erupts in flame on command]
+      The +N adds to both attack and damage rolls. A magic weapon WITHOUT a +N is mechanically identical to a mundane one.
+
+NEVER NAME AN ITEM "ENCHANTED X" OR "X - ENCHANTED". That tells the player nothing and gives them nothing. "Enchanted" is not a property — it is a promise you failed to keep. Every magic item must answer TWO questions in the tag itself:
+  1. WHAT DOES IT DO? — put the effect in the +N and/or the bonus field so it is mechanically real
+  2. WHAT IS IT CALLED? — name it for its effect or its history, never "Enchanted [base item]"
+  WRONG: [ITEM: Enchanted Longsword | weapon | 1d8 | versatile | melee]  ← no bonus, no effect, meaningless name
+  RIGHT: [ITEM: Wolfsbite | weapon | 1d8+1 | versatile | melee | bites deeper against beasts; the pommel is a snarling wolf's head]
+  WRONG: [ITEM: Silver Ring - Enchanted | magic | ring1]  ← enchanted with WHAT?
+  RIGHT: [ITEM: Ring of the Shuttered Eye | magic | ring1 | wis:1 | the wearer cannot be read by divination]
+  If an item is genuinely unidentified in the fiction, say so in the LABEL and still give it real stats: [ITEM: Tarnished Band | magic | ring1 | ac:1 | unidentified — the engraving is worn past reading]. The player can discover what it is later; the mechanics exist from the moment it is theirs.
   Armor:      [ITEM: Chainmail of Thorns | armor | 15 | false | 1 | label]
     fields: ac | dexBonus (true/false) | maxDex (number or null) | label (optional)
     NOTE: only the main chest/body armor piece uses armor type with a flat AC value.
