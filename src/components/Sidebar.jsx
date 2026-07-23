@@ -9,87 +9,62 @@ import { coinsToString } from '../constants/currency.js';
 import { XP_THRESHOLDS } from '../constants/progression.js';
 
 // ── Inventory categorization ───────────────────────────────────────────────────
+// Item categorisation. Tuned against ~1,600 real item names across five
+// characters' saves — most inventory entries are bare strings with no type
+// data, so this is name-based inference with the declared type winning when
+// present. Order matters: specific rules before broad ones.
 const categorizeItem = (name, data) => {
   const n = name.toLowerCase();
-  // Check explicit type first
+  // 1. Explicit type wins (but magic falls through to name checks for better sorting)
   if (data?.type === 'weapon') return 'weapons';
-  if (data?.type === 'armor' || data?.type === 'shield' || data?.type === 'magic') return 'armor';
-  if (data?.type === 'bag') return 'misc';
-  if (data?.type === 'loot' || data?.type === 'crafting') return 'loot';
-  if (data?.type === 'valuable' || data?.type === 'gem' || data?.type === 'currency') return 'valuables';
-  if (data?.type === 'quest') return 'quest';
+  if (data?.type === 'armor' || data?.type === 'shield') return 'worn';
+  if (data?.type === 'bag') return 'gear';
   if (data?.type === 'consumable' || data?.type === 'potion') return 'consumables';
-  // Keyword fallback
-  if (n.includes('book') || n.includes('codex') || n.includes('tome') ||
-      n.includes('compendium') || n.includes('guide') || n.includes('liturgy') ||
-      n.includes('accord') || n.includes('testimony') ||
-      n.includes('contracts of') || n.includes('scholar') || n.includes('fundamentals') ||
-      n.includes('theory') || n.includes('artisan') || n.includes('binding magic') ||
-      n.includes('sacred materials') || n.includes('construct design') ||
-      n.includes('nocturnal') || n.includes('lunar binding') || n.includes('lunar sight') ||
-      n.includes('advanced lunar') || n.includes('grimoire') || n.includes('scroll')) return 'books';
-  if (n.includes('potion') || n.includes('vial') || n.includes('oil') ||
-      n.includes('holy water') || n.includes('antitoxin') || n.includes('draught') ||
-      n.includes('tincture') || n.includes('alchemist') || n.includes('knockout') ||
-      n.includes('resistance') || n.includes('fortitude') || n.includes('acuity') ||
-      n.includes('berserk') || n.includes('clarity') || n.includes('incendiary') ||
-      n.includes('elixir') || n.includes('salve') || n.includes('moonwater')) return 'consumables';
-  if (n.includes('camping') || n.includes('bedroll') || n.includes('torch') ||
-      n.includes('rope') || n.includes('hook') || n.includes('lantern') ||
-      n.includes('flint') || n.includes('rations') || n.includes('cooking') ||
-      n.includes('water skin') || n.includes('waterskin') || n.includes('oilskin') ||
-      n.includes('satchel') || n.includes('dried meat') || n.includes('hard biscuit') ||
-      n.includes('blanket') || n.includes('honey')) return 'camping';
-  if (n.includes('document') || n.includes('token') || n.includes('insignia') ||
-      n.includes('vessel') || n.includes('sealed') || n.includes('communication') ||
-      n.includes('wolf insignia') || n.includes('glass jar') || n.includes('binding kit') ||
-      n.includes('wire spool') || n.includes('binding stone') ||
-      n.includes('shar') || n.includes('ammunition') || n.includes('key') ||
-      n.includes('relic') || n.includes('artifact') || n.includes('seal') ||
-      n.includes('sigil') || n.includes('ward') || n.includes('journal') ||
-      n.includes('map') || n.includes('letter') || n.includes('note') ||
-      n.includes('contract') || n.includes('deed') || n.includes('orders') ||
-      n.includes('mission') || n.includes('blueprint') || n.includes('plans')) return 'quest';
-  // Armor, shields, and jewelry
-  if (n.includes('armor') || n.includes('armour') || n.includes('mail') ||
-      n.includes('plate') || n.includes('leather') || n.includes('shield') ||
-      n.includes('bracer') || n.includes('gauntlet') || n.includes('helm') ||
-      n.includes('helmet') || n.includes('pauldron') || n.includes('greave') ||
-      n.includes('ring') || n.includes('necklace') || n.includes('crown') ||
-      n.includes('circlet') || n.includes('amulet') || n.includes('brooch') ||
-      n.includes('earring') || n.includes('bracelet') || n.includes('choker') ||
-      n.includes('tiara') || n.includes('diadem') || n.includes('locket') ||
-      n.includes('pendant')) return 'armor';
-  // Monster parts, crafting materials, harvested loot
-  if (n.includes('scale') || n.includes('claw') || n.includes('tooth') || n.includes('fang') ||
-      n.includes('bone') || n.includes('hide') || n.includes('pelt') || n.includes('skin') ||
-      n.includes('wing') || n.includes('talon') || n.includes('tentacle') || n.includes('eye') ||
-      n.includes('horn') || n.includes('hoof') || n.includes('carapace') || n.includes('shell') ||
-      n.includes('venom') || n.includes('ichor') || n.includes('essence') || n.includes('gland') ||
-      n.includes('heart') || n.includes('brain') || n.includes('liver') || n.includes('plate') ||
-      n.includes('dust') || n.includes('ore') || n.includes('ingot') || n.includes('shard') ||
-      n.includes('fragment') || n.includes('chunk') || n.includes('sample') ||
-      n.includes('parts') || n.includes('components') || n.includes('materials') ||
-      n.includes('reagent') || n.includes('herb') || n.includes('root') || n.includes('bark') ||
-      n.includes('feather') || n.includes('fur') || n.includes('wool')) return 'loot';
-  // Gems, coins, valuables
-  if (n.includes('gem') || n.includes('ruby') || n.includes('sapphire') || n.includes('emerald') ||
-      n.includes('diamond') || n.includes('pearl') || n.includes('opal') || n.includes('topaz') ||
-      n.includes('amethyst') || n.includes('gold') || n.includes('silver') || n.includes('platinum') ||
-      n.includes('jewel') || n.includes('coin') || n.includes('treasure') || n.includes('crown')) return 'valuables';
+
+  // 2. Name-based. Order matters: most specific first.
+  // Books & written knowledge
+  if (/\b(book|codex|tome|grimoire|compendium|manual|treatise|primer|almanac|bestiary|folio)\b|scroll|principles of|mechanisms of|fundamentals|theory|theories|liturgy|liturgies|catechism|scripture/.test(n)) return 'books';
+  // Documents & records (split out of the old bloated 'quest')
+  if (/\b(journals?|ledgers?|logs?|letters?|notes?|missives?|dispatch(es)?|orders?|contracts?|deeds?|manifests?|receipts?|invoices?|rosters?|census|reports?|testimony|confessions?|records?|correspondence|dossiers?|memos?|tablets?|parchment|documents?)\b|logbook|address|blueprint|schematic|plans\b|charter|papers|envelope|\bchit\b|contact card|licens|permit|writ\b/.test(n)) return 'documents';
+  // Maps get their own visual grouping inside documents
+  if (/\bmaps?\b|\bcharts?\b|wayfinder/.test(n)) return 'documents';
+  // Keys, seals, tokens, credentials
+  if (/\b(key|keys|seal|seals|sigil|token|insignia|badge|pass|writ|stamp|stamps|signet|emblem|crest|brand)\b/.test(n)) return 'keys';
+  // Weapons — THE BIG MISS in the old version (no name fallback existed)
+  if (/\b(sword|longsword|shortsword|greatsword|broadsword|scimitar|rapier|sabre|saber|katana|falchion|dagger|daggers|knife|knives|dirk|kukri|stiletto|axe|handaxe|greataxe|hatchet|mace|maul|hammer|warhammer|flail|morningstar|club|quarterstaff|staff|spear|lance|pike|halberd|glaive|trident|javelin|bow|longbow|shortbow|crossbow|sling|whip|rod|scythe|sickle|cleaver|blade|pistol|musket|rifle|firearm|hilt)\b/.test(n)) return 'weapons';
+  // Ammunition
+  if (/\b(arrows?|bolts?|bullets?|darts?|quiver|ammunition|shot)\b/.test(n) && !/silk|wool|cloth|linen|fabric|velvet/.test(n)) return 'ammo';
+  // Worn: armor, shields, jewelry, clothing — anything you put on
+  if (/\b(armor|armour|mail|chainmail|plate|breastplate|cuirass|brigandine|shield|buckler|helm|helmet|coif|circlet|crown|tiara|diadem|bracer|bracers|vambrace|gauntlet|gauntlets|glove|gloves|greave|greaves|boot|boots|sabaton|pauldron|mantle|cloak|cape|robe|robes|vestment|vestments|dress|outfit|tunic|shirt|vest|jerkin|garb|attire|uniform|belt|girdle|sash|ring|rings|necklace|amulet|pendant|choker|torc|brooch|earring|bracelet|locket|collar|mask|goggles|spectacles|lenses)\b/.test(n)) return 'worn';
+  // Consumables — potions, vials of liquid, oils, bombs, food
+  if (/\b(potion|elixir|draught|tincture|philter|antitoxin|antidote|salve|ointment|poison|venom vial|bomb|flask|incense|candle|candles|ration|rations|food|bread|cheese|wine|ale|meat|biscuit)\b|healing|alchemist'?s|holy water|smoke ?bomb|\bvials?\b|\boils?\b|booze|flashpowder|concentrate|\bsalt\b|sedative|suppression/.test(n)) return 'consumables';
+  // Reagents, monster parts, crafting materials
+  if (/\b(scale|scales|claw|claws|talon|fang|fangs|tooth|teeth|bone|bones|hide|pelt|leather|skin|wing|wings|tentacle|eye|eyes|horn|hoof|hooves|carapace|shell|chitin|gland|heart|liver|brain|organ|organs|blood|ichor|essence|dust|powder|ash|ore|ingot|shard|fragment|chunk|sample|specimen|component|components|reagent|reagents|material|materials|extract|resin|silk|feather|hair|corpse|carcass|remains|head|hand|hands)\b|preserved|harvested|powdered|crystallized|\bvenoms?\b|\btendons?\b|\bbark\b|\beggs?\b|\bcores?\b|filings|grave dirt|claw|fang|scale|tongue|membrane|sinew|marrow|\bsilks?\b/.test(n)) return 'materials';
+  // Tools & kits
+  if (/\b(tools?|kits?|lockpicks?|lock ?picks?|quills?|ink|brush(es)?|chisel|saw|needle|thread|instruments?|apparatus|abacus|compass|astrolabe|spyglass|lens|lenses)\b|tinker|artisan|smithing|masonry/.test(n)) return 'tools';
+  // Valuables & trade goods
+  if (/\b(gems?|gemstones?|rub(y|ies)|sapphires?|emeralds?|diamonds?|opals?|pearls?|topaz|amethyst|jade|carnelian|turquoise|lapis|moonstone|garnet|onyx|beads?|jewel(ry|s)?|bullion|chalice|goblet|statuette|figurine|painting|portrait|tapestry|rugs?|carpet|perfume|spices?|trade goods|treasure|coins?|bullion)\b|bolts? of (silk|wool|cloth|linen)|(silk|wool|cloth|linen) bolts?/.test(n)) return 'valuables';
+  // Containers & camping gear
+  if (/\b(pouch(es)?|sacks?|bags?|backpacks?|box(es)?|chests?|crates?|barrels?|jars?|jugs?|bottles?|cases?|satchels?|bedrolls?|blankets?|tents?|torch(es)?|lanterns?|ropes?|grappling|hooks?|flint|tinderbox|waterskins?|whistles?|mirrors?|chalk|soap|shovel|crowbar|piton|nets?|sheet set|linens?)\b|camping|portable hole/.test(n)) return 'gear';
+  // Magic items that didn't match a worn slot (wands, orbs, charms, foci)
+  if (data?.type === 'magic' || /\b(wand|orb|charm|talisman|totem|focus|crystal|stone|relic|artifact|idol)\b|enchanted|of the |rune|runic|arcane|holy symbol|\bvessel\b/.test(n)) return 'magic';
   return 'misc';
 };
 
 const CATEGORY_META = {
-  weapons:     { label: '⚔️ Weapons',          emoji: '⚔️' },
-  armor:       { label: '🛡️ Armor & Jewelry',  emoji: '🛡️' },
-  books:       { label: '📚 Books & Scrolls',  emoji: '📚' },
-  consumables: { label: '⚗️ Consumables',      emoji: '⚗️' },
-  camping:     { label: '🎒 Camping & Food',   emoji: '🎒' },
-  quest:       { label: '📜 Quest Items',      emoji: '📜' },
-  loot:        { label: '🦴 Loot & Materials', emoji: '🦴' },
-  valuables:   { label: '💎 Gems & Valuables', emoji: '💎' },
-  misc:        { label: '🗃️ Misc',             emoji: '🗃️' },
+  weapons:     { label: '⚔️ Weapons',           emoji: '⚔️' },
+  ammo:        { label: '🏹 Ammunition',        emoji: '🏹' },
+  worn:        { label: '🛡️ Armor & Worn',      emoji: '🛡️' },
+  consumables: { label: '⚗️ Consumables',       emoji: '⚗️' },
+  magic:       { label: '✨ Magic Items',       emoji: '✨' },
+  tools:       { label: '🔧 Tools & Kits',      emoji: '🔧' },
+  gear:        { label: '🎒 Gear & Containers', emoji: '🎒' },
+  materials:   { label: '🦴 Materials & Parts', emoji: '🦴' },
+  valuables:   { label: '💎 Valuables',         emoji: '💎' },
+  books:       { label: '📚 Books & Scrolls',   emoji: '📚' },
+  documents:   { label: '📜 Documents',         emoji: '📜' },
+  keys:        { label: '🔑 Keys & Seals',      emoji: '🔑' },
+  misc:        { label: '🗃️ Misc',              emoji: '🗃️' },
 };
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
