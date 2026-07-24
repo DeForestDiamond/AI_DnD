@@ -507,6 +507,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
+  const [stashFilter, setStashFilter] = useState('');
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   const [arcCustomText, setArcCustomText] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
@@ -1060,18 +1061,44 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {(() => {
         const stash = character.stash || [];
         const stackedStash = stackInventory(stash);
-        const stashEntries = Object.entries(stackedStash).sort((a, b) => a[0].localeCompare(b[0]));
+        const allStashEntries = Object.entries(stackedStash).sort((a, b) => a[0].localeCompare(b[0]));
+        // Case-insensitive substring filter — stashes run to hundreds of distinct
+        // entries, so scrolling to find one thing is impractical.
+        const q = stashFilter.trim().toLowerCase();
+        const stashEntries = q
+          ? allStashEntries.filter(([name]) => {
+              const data = db[name] || (character.stashedCustomItems || {})[name];
+              return name.toLowerCase().includes(q) || (data?.label || '').toLowerCase().includes(q);
+            })
+          : allStashEntries;
         return (
           <CollapsibleSection
             title="📦 STASH"
-            count={stashEntries.length}
+            count={allStashEntries.length}
             defaultOpen={false}
           >
             <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
               Stored items — invisible to the DM. Quest relics, old gear, keepsakes.
             </div>
-            {stashEntries.length === 0 && (
+            {allStashEntries.length > 0 && (
+              <div style={{display:'flex',gap:4,marginBottom:6}}>
+                <input
+                  value={stashFilter}
+                  onChange={e => setStashFilter(e.target.value)}
+                  placeholder={`Search ${allStashEntries.length} entries…`}
+                  style={{flex:1,minWidth:0,boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:12,padding:'5px 8px',borderRadius:4,outline:'none'}}
+                />
+                {stashFilter && (
+                  <button onClick={()=>setStashFilter('')} title="Clear search"
+                    style={{...btn(false),flexShrink:0,fontSize:11,padding:'0 8px'}}>✕</button>
+                )}
+              </div>
+            )}
+            {allStashEntries.length === 0 && (
               <div style={{fontSize:12,color:colors.textDead,fontStyle:'italic',padding:'2px 0'}}>Empty — move items here to hide them from the DM.</div>
+            )}
+            {allStashEntries.length > 0 && stashEntries.length === 0 && (
+              <div style={{fontSize:12,color:colors.textDead,fontStyle:'italic',padding:'2px 0'}}>No stash items match “{stashFilter}”.</div>
             )}
             {stashEntries.map(([name, count]) => {
               const data = db[name] || (character.stashedCustomItems || {})[name];
