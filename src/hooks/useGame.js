@@ -229,6 +229,7 @@ Take off or swap gear — item returns SAFELY to inventory, never destroyed: [UN
 Skill check (USE OFTEN): [ROLL: perception difficulty 14] — then STOP and END your message. The moment you write a [ROLL:] tag, your turn is OVER. Write nothing after it: no outcome, no result, no "what happens next" — you do not know it yet. The system rolls the dice and sends you the result, and you narrate what happens on your NEXT turn. Calling a roll and then continuing to narrate in the same message is a failure — you are guessing at a result the dice have not given you.
   WHEN to roll: ONLY after the player has stated an action whose outcome is uncertain. The roll tests THE PLAYER'S CHOICE — never your guess at what they'd do. Never call a roll in the same message a threat or situation first appears; that message ends with the player's choice unmade. A roll resolves an action the player already typed (attack, sneak, persuade, leap), or a passive sense the WORLD forces on them (a perception check to notice an ambush before it strikes). Never roll for an active choice the player hasn't made yet.
   Roll whenever an outcome is uncertain and interesting: perception to spot an ambush/clue/lie, stealth to sneak, persuasion/intimidation/deception in social conflict, investigation to search, athletics/acrobatics for physical feats, insight to read someone. Do not silently decide these — call the [ROLL:] and let the dice answer.
+  SAVING THROWS use the same tag — say so and the system rolls it as a save: [ROLL: dexterity saving throw difficulty 15], [ROLL: constitution save DC 13], [ROLL: wisdom save difficulty 16]. Call for a save when something is done TO the player that they resist rather than attempt: a trap springs, a spell lands, poison takes hold, a fear effect hits, they must keep their footing. 'difficulty' and 'DC' are interchangeable, and multi-word skills work: [ROLL: sleight of hand difficulty 15].
 Location change: [LOCATION: Millhaven]
 Player heal: [HP: +N]  |  Player damage: [HP: -N]  |  Environmental damage: [DAMAGE: 5]
 Enemy hits the player: [HP: -N] (roll the enemy's damage yourself and tag the total)
@@ -812,11 +813,17 @@ export function useGame({ charRef, apiKey }) {
 
   // When DM requests a skill roll, intercept and roll it
   const interceptRollRequest = (dmText, char, log) => {
-    const rollMatch = dmText.match(/\[ROLL:\s*(\w+)\s+difficulty\s+(\d+)\]/i);
+    // Tolerant of how the DM phrases it: "[ROLL: dexterity difficulty 15]",
+    // "[ROLL: dexterity saving throw difficulty 15]", "[ROLL: perception check DC 14]".
+    // Previously only the bare "<stat> difficulty <N>" form matched, so every
+    // saving throw silently failed to roll at all.
+    const rollMatch = dmText.match(/\[ROLL:\s*([a-z' ]+?)\s*(saving throw|save|check)?\s*(?:difficulty|dc)\s*(\d+)\]/i);
     if (!rollMatch) return { resultText: null, rollResult: null };
 
-    const statName = rollMatch[1].toLowerCase();
-    const diff     = parseInt(rollMatch[2]);
+    const statLabel = rollMatch[1].trim().toLowerCase();          // as written, for display
+    const statName  = statLabel.replace(/\s+/g, '');                // normalised, for lookup
+    const isSave   = /sav/i.test(rollMatch[2] || '');
+    const diff     = parseInt(rollMatch[3]);
     const statMap  = { strength:'str', dexterity:'dex', constitution:'con', intelligence:'int', wisdom:'wis', charisma:'cha' };
     const statKey  = statMap[statName] || SKILL_ABILITY[statName] || statName;
     const effStats = effectiveStats(char.stats, char.slots, char.customItems || {});
@@ -829,10 +836,11 @@ export function useGame({ charRef, apiKey }) {
       if (b && typeof b[statName] === 'number') gearBonus += b[statName];
     });
     const check    = performSkillCheck(statVal, diff, true, char.level, gearBonus);
+    const kind     = isSave ? 'saving throw' : 'check';
 
-    log?.(`[ROLL] ${statName} check (${statKey}): d20=${check.d20}+${check.mod}+${check.prof}${gearBonus?`+${gearBonus}gear`:''}=${check.total} vs DC${diff} — ${check.hit?'SUCCESS':'FAILURE'}`);
+    log?.(`[ROLL] ${statLabel} ${kind} (${statKey}): d20=${check.d20}+${check.mod}+${check.prof}${gearBonus?`+${gearBonus}gear`:''}=${check.total} vs DC${diff} — ${check.hit?'SUCCESS':'FAILURE'}`);
 
-    const resultText = `[ROLL RESULT: ${statName} check — d20 rolled ${check.d20} + ${check.mod} ${statKey.toUpperCase()} modifier + ${check.prof} proficiency${gearBonus ? ` + ${gearBonus} equipment` : ''} = ${check.total} vs difficulty ${diff} — ${check.hit ? 'SUCCESS' : 'FAILURE'}]`;
+    const resultText = `[ROLL RESULT: ${statLabel} ${kind} — d20 rolled ${check.d20} + ${check.mod} ${statKey.toUpperCase()} modifier + ${check.prof} proficiency${gearBonus ? ` + ${gearBonus} equipment` : ''} = ${check.total} vs difficulty ${diff} — ${check.hit ? 'SUCCESS' : 'FAILURE'}]`;
     const rollResult = {
       label: `${statName.charAt(0).toUpperCase() + statName.slice(1)} Check`,
       value: check.total,
