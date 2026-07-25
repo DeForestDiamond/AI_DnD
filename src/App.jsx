@@ -810,6 +810,98 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     return option.name;
   };
 
+  // ── Salvage: break an item down into materials ────────────────────────────
+  // The inverse of crafting, same two-phase shape. Recovery is deliberately
+  // LOSSY — you never get back everything that went in, so craft->salvage->craft
+  // can't be farmed into infinite materials.
+  const proposeDismantle = async ({ items }) => {
+    const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+    const char = charRef.current;
+    if (!items.length) throw new Error('Select something to break down');
+
+    const db = { ...(char.customItems || {}), ...(char.stashedCustomItems || {}) };
+    const itemList = items.map(it => {
+      const d = db[it.name];
+      const bits = [];
+      if (d?.type) bits.push(d.type);
+      if (d?.damage) bits.push(`damage ${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
+      if (d?.ac) bits.push(`AC ${d.ac}`);
+      if (d?.bonuses && Object.keys(d.bonuses).length) bits.push(Object.entries(d.bonuses).map(([k, v]) => `${k}:${v}`).join(','));
+      if (d?.label) bits.push(d.label);
+      return `${it.name}${it.count > 1 ? ` x${it.count}` : ''}${bits.length ? ` — ${bits.join('; ')}` : ''}`;
+    }).join('\n');
+
+    const shape = `{ "results": [ { "recovers": [{"name":"Material Name","count":2}], "destroyed": ["Item Name"], "note": "one sentence on what survived the process and what was lost" } ] }`;
+
+    log(`[SALVAGE] Proposing breakdown of ${items.length} item(s)`);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1200,
+        system: `You are a salvager in a D&D 5e game (Forgotten Realms). Given finished items, determine what raw materials are recovered by breaking them down.
+
+RULES:
+- Recovery is ALWAYS LOSSY. Breaking something apart ruins some of it — recover meaningfully less than went into making it. Never return more material than the item plausibly contains.
+- Recover the item's actual substance: a steel blade yields steel, a drake-hide cloak yields hide and maybe scales, a wand yields its focus crystal and rare wood. Magical items may yield a residue or spent component alongside the physical parts.
+- Some things are NOT worth salvaging or cannot be: state that in the note and return an empty recovers array rather than inventing materials.
+- Material names should be simple and reusable ("Steel Scrap", "Drake Hide", "Spent Arcane Crystal") so they can be crafted with again — not one-off names.
+- Return exactly ONE result object covering all the submitted items together.
+Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
+        messages: [{ role: 'user', content: `ITEMS TO BREAK DOWN:\n${itemList}\n\nRespond with ONLY the JSON now.` }],
+      }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch { throw new Error('Salvage returned unparseable JSON — try again'); }
+    const result = (parsed.results || [])[0];
+    if (!result) throw new Error('Nothing could be recovered');
+    log(`[SALVAGE] Recovers: ${(result.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
+    return result;
+  };
+
+  // Consume the submitted items (inventory first, then stash) and add whatever
+  // was recovered. Mirrors executeCrafting's split-source handling.
+  const executeDismantle = (result, submitted) => {
+    const c = charRef.current;
+    const invCount = {}, stashCount = {};
+    (c.inventory || []).forEach(n => { invCount[n] = (invCount[n] || 0) + 1; });
+    (c.stash || []).forEach(n => { stashCount[n] = (stashCount[n] || 0) + 1; });
+    for (const it of submitted) {
+      const held = (invCount[it.name] || 0) + (stashCount[it.name] || 0);
+      if (held < it.count) throw new Error(`Not enough ${it.name} (have ${held}, need ${it.count})`);
+    }
+
+    const addTags = (result.recovers || [])
+      .map(r => `[ITEM: ${r.name}${(r.count || 1) > 1 ? ` | qty:${r.count}` : ''}]`)
+      .join('');
+    const stashTakes = [];
+    const removeTags = submitted.map(it => {
+      const fromInv = Math.min(it.count, invCount[it.name] || 0);
+      const fromStash = it.count - fromInv;
+      if (fromStash > 0) stashTakes.push({ name: it.name, count: fromStash });
+      return fromInv > 0 ? `[REMOVE: ${it.name}${fromInv > 1 ? ` | qty:${fromInv}` : ''}]` : '';
+    }).join('');
+
+    let next = applyEffects(addTags + removeTags, c);
+    if (stashTakes.length) {
+      const stash = [...(next.stash || [])];
+      for (const t of stashTakes) {
+        for (let i = 0; i < t.count; i++) {
+          const idx = stash.findIndex(n => n.toLowerCase() === t.name.toLowerCase());
+          if (idx !== -1) stash.splice(idx, 1);
+        }
+      }
+      next = { ...next, stash };
+    }
+    updateChar(next);
+    log(`[SALVAGE] Broke down ${submitted.map(i => `${i.name} x${i.count}`).join(', ')}`);
+    return (result.recovers || []).map(r => `${r.name} x${r.count || 1}`).join(', ') || 'nothing';
+  };
+
   // Shared write path for the NPC edit panel (Feature 3) and manual adds.
   const saveNPCEntry = (group, name, entry, originalName = null) => {
     const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions }, towns: { ...charRef.current.towns } };
@@ -1418,6 +1510,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
             onProposeCrafting={proposeCrafting}
+            onProposeDismantle={proposeDismantle}
+            onExecuteDismantle={executeDismantle}
             onExecuteCrafting={executeCrafting}
             onExtractNPC={extractNPCs}
             onExtractTown={extractTowns}
