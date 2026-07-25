@@ -39,8 +39,10 @@ export const effectiveStats = (baseStats, slots, customItems) => {
   Object.values(slots).forEach(name => {
     if (!name) return;
     const d = db[name];
-    // Apply bonuses from magic AND focus items
-    if ((d?.type === 'magic' || d?.type === 'focus') && d.bonuses) {
+    // Any equipped item may grant stat bonuses — a hammer that grants STR, a
+    // breastplate that grants CON — not just magic/focus items. (AC is handled
+    // separately in calcAC.)
+    if (d?.bonuses) {
       Object.entries(d.bonuses).forEach(([k, v]) => { if (k !== 'ac') s[k] = (s[k]||0) + v; });
     }
   });
@@ -62,7 +64,9 @@ export const calcAC = (slots, baseStats, customItems) => {
   Object.values(slots).forEach(name => {
     if (!name) return;
     const d = db[name];
-    if (d?.type === 'magic' && d.bonuses?.ac) ac += d.bonuses.ac;
+    // AC bonuses from any equipped item, not just magic ones. Skip the worn
+    // armor itself — its AC is the base value applied above, not an addition.
+    if (d?.bonuses?.ac && name !== slots.armor) ac += d.bonuses.ac;
   });
   return ac;
 };

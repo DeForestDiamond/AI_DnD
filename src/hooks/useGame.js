@@ -273,6 +273,10 @@ CUSTOM ITEMS — always include type and stats:
       [ITEM: Dawnbringer | weapon | 1d8+1 plus 1d4 radiant | versatile | melee | a shard of captured sunlight]
       [ITEM: Flame Tongue | weapon | 1d8 plus 2d6 fire | versatile | melee | ignites on command]
       Multiple types stack: 1d6+2 plus 1d4 lightning plus 1d4 thunder. Use this for elemental and divine weapons instead of describing the damage only in the label — text in the label is never rolled.
+    STAT BONUSES on a weapon or armour go in a trailing field as stat:N pairs — these are real and apply while equipped:
+      [ITEM: Deathrender | weapon | 2d8+10 plus 3d10 necrotic | | melee | a hammer of endings | str:6 con:6]
+      [ITEM: Breastplate of Fortitude | armor | 14 | true | 2 | sturdy plate | con:2]
+      Valid keys are ac, str, dex, con, int, wis, cha. Anything else (resistances, immunities, once-per-day powers) belongs in the LABEL as text you honour in narration — only stat:N pairs are calculated.
 
 NEVER NAME AN ITEM "ENCHANTED X" OR "X - ENCHANTED". That tells the player nothing and gives them nothing. "Enchanted" is not a property — it is a promise you failed to keep. Every magic item must answer TWO questions in the tag itself:
   1. WHAT DOES IT DO? — put the effect in the +N and/or the bonus field so it is mechanically real

@@ -775,9 +775,11 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     }
     let tag;
     if (option.type === 'weapon') {
-      tag = `[ITEM: ${option.name} | weapon | ${option.damage || '1d6'} | | melee | ${option.label || ''}]`;
+      // Carry stat bonuses through as a trailing field — the weapon parser
+      // scans for stat:N tokens, so dropping them here made them vanish.
+      tag = `[ITEM: ${option.name} | weapon | ${option.damage || '1d6'} | | melee | ${option.label || ''}${option.bonuses ? ` | ${option.bonuses}` : ''}]`;
     } else if (option.type === 'armor') {
-      tag = `[ITEM: ${option.name} | armor | ${option.ac || 13} | true | null | ${option.label || ''}]`;
+      tag = `[ITEM: ${option.name} | armor | ${option.ac || 13} | true | null | ${option.label || ''}${option.bonuses ? ` | ${option.bonuses}` : ''}]`;
     } else if (option.type === 'consumable') {
       tag = `[ITEM: ${option.name} | consumable | ${option.label || ''}]`;
     } else {

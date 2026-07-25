@@ -114,7 +114,22 @@ export const parseDMItem = (raw) => {
     const bonusMatch = damage.match(/\+(\d+)$/);
     const bonus = bonusMatch ? parseInt(bonusMatch[1]) : 0;
     const baseDmg = damage.replace(/\+\d+$/, '');
-    return { name, data: { type:'weapon', damage:baseDmg, bonus, finesse, range, label, ...(extras.length ? { extras } : {}) } };
+    // Stat bonuses on a weapon (a hammer that grants str:2, etc.). Scan every
+    // field from the finesse slot onward for stat:N tokens so they're picked up
+    // whether the DM adds them as a trailing field or mixes them into the label.
+    const bonuses = {};
+    parts.slice(3).forEach(part => {
+      part.split(/[\s,]+/).forEach(tok => {
+        const m = tok.trim().match(/^(ac|str|dex|con|int|wis|cha):(-?\d+)$/i);
+        if (m) bonuses[m[1].toLowerCase()] = parseInt(m[2]);
+      });
+    });
+    // Keep the label readable: drop any stat tokens that landed inside it.
+    const cleanLabel = label.split(/[\s,]+/)
+      .filter(tok => !/^(ac|str|dex|con|int|wis|cha):-?\d+$/i.test(tok.trim()))
+      .join(' ').replace(/\s{2,}/g, ' ').trim();
+    return { name, data: { type:'weapon', damage:baseDmg, bonus, finesse, range, label: cleanLabel,
+      ...(Object.keys(bonuses).length ? { bonuses } : {}), ...(extras.length ? { extras } : {}) } };
   }
   if (kind === 'armor') {
     const ac = parseInt(parts[2]) || 13;
