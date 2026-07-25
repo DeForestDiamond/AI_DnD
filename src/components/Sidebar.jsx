@@ -253,7 +253,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
     try {
       const made = onExecuteCrafting(opt);
       setStatus(`✓ Crafted ${made}`);
-      setOptions(null); setSelected({}); setIntent('');
+      setOptions(null); setSelected({}); setIntent(''); setFilter('');
     } catch (e) { setStatus('✗ ' + e.message); }
   };
 
@@ -352,9 +352,9 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     .sort((a, b) => a.localeCompare(b))
     .map(nm => [nm, (invCount[nm] || 0) + (stashCount[nm] || 0), { stash: stashCount[nm] || 0, inv: invCount[nm] || 0 }]);
 
-  const toggle = (nm) => setSelected(prev => {
+  const toggle = (nm, max) => setSelected(prev => {
     const next = { ...prev };
-    if (next[nm]) delete next[nm]; else next[nm] = 1;
+    if (next[nm]) delete next[nm]; else next[nm] = max;   // default to the whole stack
     return next;
   });
   const setCount = (nm, val, max) => setSelected(prev => ({ ...prev, [nm]: Math.max(1, Math.min(max, parseInt(val, 10) || 1)) }));
@@ -373,7 +373,9 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     try {
       const got = onExecuteDismantle(result, submitted());
       setStatus(`✓ Recovered ${got}`);
-      setResult(null); setSelected({});
+      // Clear the search too: a filter matching the item just consumed would
+      // leave the list looking empty until the panel is closed and reopened.
+      setResult(null); setSelected({}); setFilter('');
     } catch (e) { setStatus('✗ ' + e.message); }
   };
 
@@ -400,7 +402,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
           const on = selected[nm] !== undefined;
           return (
             <div key={nm} style={{display:'flex',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
-              <input type="checkbox" checked={on} onChange={()=>toggle(nm)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
+              <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
               <span style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                 {nm}
                 {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}}>{src.inv > 0 ? '📦+🎒' : '📦'}</span>}
