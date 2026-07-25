@@ -259,7 +259,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
 
   const selCount = Object.keys(selected).length;
   return (
-    <CollapsibleSection title="🔨 CRAFTING" count={selCount || undefined} defaultOpen={false}>
+    <CollapsibleSection title="🔨 CRAFTING" count={selCount || undefined} defaultOpen={true}>
       <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
         Select materials, then ask what they could become. Nothing is consumed until you confirm.
       </div>
@@ -274,7 +274,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
         </label>
       )}
 
-      <div style={{maxHeight:190,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
+      <div style={{maxHeight:340,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
         {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>No materials in inventory.</div>}
         {candidates.map(([nm, max, src]) => {
           const on = selected[nm] !== undefined;
@@ -396,7 +396,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
         </label>
       )}
 
-      <div style={{maxHeight:190,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
+      <div style={{maxHeight:340,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
         {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>Nothing to break down.</div>}
         {candidates.map(([nm, max, src]) => {
           const on = selected[nm] !== undefined;
@@ -868,8 +868,16 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
 
       {/* Tab bar */}
       <div style={{display:'flex',gap:6,marginBottom:4}}>
-        <button onClick={()=>setActiveTab('character')} style={{flex:1,background:activeTab==='character'?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab==='character'?colors.gold:colors.borderDim}`,color:activeTab==='character'?colors.gold:colors.textFaint,padding:'8px 0',fontSize:12,fontFamily:fonts.display,letterSpacing:2,borderRadius:3,cursor:'pointer'}}>🎲 CHARACTER</button>
-        <button onClick={()=>setActiveTab('settings')} style={{flex:1,background:activeTab==='settings'?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab==='settings'?colors.gold:colors.borderDim}`,color:activeTab==='settings'?colors.gold:colors.textFaint,padding:'8px 0',fontSize:12,fontFamily:fonts.display,letterSpacing:2,borderRadius:3,cursor:'pointer'}}>⚙️ SETTINGS</button>
+        {[
+          ['character', '🎲 CHARACTER'],
+          ['crafting',  '🔨 CRAFTING'],
+          ['settings',  '⚙️ SETTINGS'],
+        ].map(([id, label]) => (
+          <button key={id} onClick={()=>setActiveTab(id)}
+            style={{flex:1,background:activeTab===id?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab===id?colors.gold:colors.borderDim}`,color:activeTab===id?colors.gold:colors.textFaint,padding:'8px 2px',fontSize:10,fontFamily:fonts.display,letterSpacing:0.5,borderRadius:3,cursor:'pointer',whiteSpace:'nowrap'}}>
+            {label}
+          </button>
+        ))}
       </div>
 
       {activeTab==='settings' && <>
@@ -1080,7 +1088,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
 
       </>}
 
-      {activeTab==='settings' && <>
+      {activeTab==='crafting' && <>
       {/* Crafting — turn materials into gear */}
       {onProposeCrafting && (
         <CraftingPanel character={character} db={db} onProposeCrafting={onProposeCrafting} onExecuteCrafting={onExecuteCrafting} />
@@ -1090,7 +1098,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {onProposeDismantle && (
         <SalvagePanel character={character} db={db} onProposeDismantle={onProposeDismantle} onExecuteDismantle={onExecuteDismantle} />
       )}
+      </>}
 
+      {activeTab==='settings' && <>
       {/* Bio — the DM's behavior anchor */}
       {onSaveBio && <BioEditor key={character.bio || 'empty'} character={character} onSaveBio={onSaveBio} />}
 
