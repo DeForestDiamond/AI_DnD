@@ -763,11 +763,15 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
   // same parser as DM-granted loot.
   const executeCrafting = (option) => {
     const c = charRef.current;
-    // Verify the player still has everything (guards against a stale panel)
-    const stacked = {};
-    (c.inventory || []).forEach(n => { stacked[n] = (stacked[n] || 0) + 1; });
+    // Materials can come from inventory OR stash. Count both, verify the player
+    // still holds enough (guards a stale panel), then consume inventory first
+    // and take the remainder from the stash.
+    const invCount = {}, stashCount = {};
+    (c.inventory || []).forEach(n => { invCount[n] = (invCount[n] || 0) + 1; });
+    (c.stash || []).forEach(n => { stashCount[n] = (stashCount[n] || 0) + 1; });
     for (const m of option.consumes || []) {
-      if ((stacked[m.name] || 0) < (m.count || 1)) throw new Error(`Not enough ${m.name}`);
+      const held = (invCount[m.name] || 0) + (stashCount[m.name] || 0);
+      if (held < (m.count || 1)) throw new Error(`Not enough ${m.name} (have ${held}, need ${m.count || 1})`);
     }
     let tag;
     if (option.type === 'weapon') {
@@ -779,10 +783,28 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     } else {
       tag = `[ITEM: ${option.name} | magic | ${option.slot || 'neck'} | ${option.bonuses || ''} | ${option.label || ''}]`;
     }
-    const removeTags = (option.consumes || [])
-      .map(m => `[REMOVE: ${m.name}${(m.count || 1) > 1 ? ` | qty:${m.count}` : ''}]`)
-      .join('');
-    const next = applyEffects(tag + removeTags, c);
+    // [REMOVE:] only touches inventory, so split the consumption: take what we
+    // can from inventory via tags, and splice the rest out of the stash here.
+    const stashTakes = [];
+    const removeTags = (option.consumes || []).map(m => {
+      const want = m.count || 1;
+      const fromInv = Math.min(want, invCount[m.name] || 0);
+      const fromStash = want - fromInv;
+      if (fromStash > 0) stashTakes.push({ name: m.name, count: fromStash });
+      return fromInv > 0 ? `[REMOVE: ${m.name}${fromInv > 1 ? ` | qty:${fromInv}` : ''}]` : '';
+    }).join('');
+
+    let next = applyEffects(tag + removeTags, c);
+    if (stashTakes.length) {
+      const stash = [...(next.stash || [])];
+      for (const t of stashTakes) {
+        for (let i = 0; i < t.count; i++) {
+          const idx = stash.findIndex(n => n.toLowerCase() === t.name.toLowerCase());
+          if (idx !== -1) stash.splice(idx, 1);
+        }
+      }
+      next = { ...next, stash };
+    }
     updateChar(next);
     log(`[CRAFT] Made ${option.name}; consumed ${(option.consumes || []).map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
     return option.name;
