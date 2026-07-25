@@ -53,13 +53,13 @@ export const performAttack = (weapon, stats, level) => {
 export const MODEL_CONFIGS = {
   sonnet: {
     model: 'claude-sonnet-4-5',
-    max_tokens: 800,
+    max_tokens: 2048,
     label: 'Sonnet',
     emoji: '✨',
   },
   haiku: {
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 450,
+    max_tokens: 1536,
     label: 'Haiku',
     emoji: '⚡',
   },
