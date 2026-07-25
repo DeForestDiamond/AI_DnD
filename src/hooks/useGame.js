@@ -43,10 +43,18 @@ export const performAttack = (weapon, stats, level) => {
   const totalAtk = atkRoll + atkBonus;
   const dmgRoll  = rollDice(weapon.damage);
   const dmgBonus = weapon.statBonus + (weapon.bonus || 0);
-  const totalDmg = Math.max(1, dmgRoll + dmgBonus);
   const crit     = atkRoll === 20;
   const fumble   = atkRoll === 1;
-  return { atkRoll, atkBonus, totalAtk, dmgRoll, dmgBonus, totalDmg, crit, fumble };
+  // Extra damage dice of another type (1d4 radiant, 2d6 fire...). Rolled
+  // separately so the DM can narrate the damage types, and — per 5e — the dice
+  // double on a critical hit just like the base weapon dice.
+  const extras = (weapon.extras || []).map(e => {
+    const roll = rollDice(e.dice) + (crit ? rollDice(e.dice) : 0);
+    return { ...e, roll };
+  });
+  const extraTotal = extras.reduce((sum, e) => sum + e.roll, 0);
+  const totalDmg = Math.max(1, dmgRoll + dmgBonus + extraTotal);
+  return { atkRoll, atkBonus, totalAtk, dmgRoll, dmgBonus, extras, extraTotal, totalDmg, crit, fumble };
 };
 
 // ── Model configs ──────────────────────────────────────────────────────────────
@@ -78,7 +86,7 @@ const buildCharBlock = (char) => {
   const classDesc   = Object.entries(classLevels).map(([c,l]) => `${c} ${l}`).join(' / ');
   const db          = { ...ITEM_DB, ...(char.customItems||{}) };
   const equippedList = Object.entries(char.slots).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join(', ') || 'nothing';
-  const weaponLine  = weapon ? `${weapon.name} (${weapon.damage}${weapon.bonus?`+${weapon.bonus}`:''}, Attack bonus +${weapon.statBonus+pb+(weapon.bonus||0)}, ${weapon.finesse?'finesse/Dexterity':'Strength'}${weapon.label?', '+weapon.label:''})` : 'Unarmed (1 damage)';
+  const weaponLine  = weapon ? `${weapon.name} (${weapon.damage}${weapon.bonus?`+${weapon.bonus}`:''}${(weapon.extras||[]).map(e=>` plus ${e.dice} ${e.type}`).join('')}, Attack bonus +${weapon.statBonus+pb+(weapon.bonus||0)}, ${weapon.finesse?'finesse/Dexterity':'Strength'}${weapon.label?', '+weapon.label:''})` : 'Unarmed (1 damage)';
   const sneakLine   = char.sneakAttackDice ? `\n- SNEAK ATTACK: ${char.sneakAttackDice} extra damage when attacking with advantage or from hiding` : '';
   const offhandData = char.slots.offhand ? db[char.slots.offhand] : null;
   const focusLine   = offhandData?.type==='focus' ? `\n- HOLY FOCUS: ${char.slots.offhand} equipped (${offhandData.label})` : '';
@@ -261,6 +269,10 @@ CUSTOM ITEMS — always include type and stats:
     MAGIC WEAPONS use a +N on the damage field — this is what makes an enchantment REAL:
       [ITEM: Flametongue Longsword | weapon | 1d8+2 | versatile | melee | erupts in flame on command]
       The +N adds to both attack and damage rolls. A magic weapon WITHOUT a +N is mechanically identical to a mundane one.
+    EXTRA DAMAGE DICE of another type use "plus <dice> <type>" in the same field — the app rolls these separately and doubles them on a critical hit:
+      [ITEM: Dawnbringer | weapon | 1d8+1 plus 1d4 radiant | versatile | melee | a shard of captured sunlight]
+      [ITEM: Flame Tongue | weapon | 1d8 plus 2d6 fire | versatile | melee | ignites on command]
+      Multiple types stack: 1d6+2 plus 1d4 lightning plus 1d4 thunder. Use this for elemental and divine weapons instead of describing the damage only in the label — text in the label is never rolled.
 
 NEVER NAME AN ITEM "ENCHANTED X" OR "X - ENCHANTED". That tells the player nothing and gives them nothing. "Enchanted" is not a property — it is a promise you failed to keep. Every magic item must answer TWO questions in the tag itself:
   1. WHAT DOES IT DO? — put the effect in the +N and/or the bonus field so it is mechanically real
@@ -392,7 +404,7 @@ export const buildSystemPrompt = (char) => {
   const equippedList = Object.entries(char.slots)
     .filter(([,v]) => v).map(([k,v]) => `${k}: ${v}`).join(', ') || 'nothing';
   const weaponLine   = weapon
-    ? `${weapon.name} (${weapon.damage}${weapon.bonus ? `+${weapon.bonus}` : ''}, Attack bonus +${weapon.statBonus + pb + (weapon.bonus||0)}, ${weapon.finesse ? 'finesse/DEX' : 'STR'}${weapon.label ? ', ' + weapon.label : ''})`
+    ? `${weapon.name} (${weapon.damage}${weapon.bonus ? `+${weapon.bonus}` : ''}${(weapon.extras||[]).map(e=>` plus ${e.dice} ${e.type}`).join('')}, Attack bonus +${weapon.statBonus + pb + (weapon.bonus||0)}, ${weapon.finesse ? 'finesse/DEX' : 'STR'}${weapon.label ? ', ' + weapon.label : ''})`
     : 'Unarmed (1 damage)';
 
   // Stack inventory for display in prompt
@@ -795,12 +807,14 @@ export function useGame({ charRef, apiKey }) {
         if (result.crit) {
           const bonusDmg = rollDice(weapon.damage);
           result.totalDmg += bonusDmg + sneakDmg;
-          context += `\n\n[GAME DATA — CRITICAL HIT with ${weapon.name}. Attack: ${result.atkRoll}(nat20)=${result.totalAtk} to hit. Damage: ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit bonus${sneakDmg?`+${sneakDmg} sneak`:''} = ${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
+          const extraDesc = result.extras?.length ? result.extras.map(e => `+${e.roll} ${e.type} (${e.dice}, doubled)`).join('') : '';
+          context += `\n\n[GAME DATA — CRITICAL HIT with ${weapon.name}. Attack: ${result.atkRoll}(nat20)=${result.totalAtk} to hit. Damage: ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit bonus${sneakDmg?`+${sneakDmg} sneak`:''}${extraDesc} = ${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
         } else if (result.fumble) {
           context += `\n\n[GAME DATA — FUMBLE with ${weapon.name}. Attack roll: 1 (nat 1) — automatic miss. Narrate the player's action first, then the fumble.]`;
         } else {
           result.totalDmg += sneakDmg;
-          context += `\n\n[GAME DATA — ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
+          const extraDesc2 = result.extras?.length ? result.extras.map(e => `+${e.roll} ${e.type} (${e.dice})`).join('') : '';
+          context += `\n\n[GAME DATA — ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
         }
         rollResult = {
           label: `${weapon.name}${sneakDmg?' + Sneak Attack':''}`,

@@ -98,14 +98,23 @@ export const parseDMItem = (raw) => {
   if (parts.length === 1) return { name, data: ITEM_DB[name] || { type:'misc' } };
   const kind = parts[1]?.toLowerCase();
   if (kind === 'weapon') {
-    const damage = parts[2] || '1d6';
+    const damageField = parts[2] || '1d6';
     const finesse = parts[3]?.toLowerCase() === 'finesse';
     const range   = parts[4]?.toLowerCase() === 'ranged' ? 'ranged' : 'melee';
     const label   = parts[5] || '';
+    // Extra damage dice of another type: "1d8+1 plus 1d4 radiant plus 1d6 fire".
+    // The first segment is the base damage (with optional +N enchantment); each
+    // "plus" segment is an extra die that rolls separately and doubles on a crit.
+    const segments = damageField.split(/\s+plus\s+/i);
+    const damage   = segments[0].trim();
+    const extras   = segments.slice(1).map(seg => {
+      const m = seg.trim().match(/^(\d*d\d+)\s*(.*)$/i);
+      return m ? { dice: m[1].toLowerCase(), type: (m[2] || '').trim().toLowerCase() } : null;
+    }).filter(Boolean);
     const bonusMatch = damage.match(/\+(\d+)$/);
     const bonus = bonusMatch ? parseInt(bonusMatch[1]) : 0;
     const baseDmg = damage.replace(/\+\d+$/, '');
-    return { name, data: { type:'weapon', damage:baseDmg, bonus, finesse, range, label } };
+    return { name, data: { type:'weapon', damage:baseDmg, bonus, finesse, range, label, ...(extras.length ? { extras } : {}) } };
   }
   if (kind === 'armor') {
     const ac = parseInt(parts[2]) || 13;
