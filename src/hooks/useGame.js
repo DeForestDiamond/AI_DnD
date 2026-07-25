@@ -780,7 +780,7 @@ export function useGame({ charRef, apiKey }) {
   };
 
   // Process player action — handle attacks, intercepted skill rolls etc
-  const buildActionContext = (userMsg) => {
+  const buildActionContext = (userMsg, log) => {
     const char   = charRef.current;
     const rolls  = [];
     let context  = '';
@@ -793,6 +793,7 @@ export function useGame({ charRef, apiKey }) {
     const insideQuotes = /["'「][^"'「」]*\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge)\b[^"'「」]*["'」]/i;
     if (attackWords.test(userMsg) && !insideQuotes.test(userMsg) && !/\b(don't|dont|not|no|avoid|retreat|run|flee|hide|sneak)\b/i.test(userMsg)) {
       const weapon = getMainWeapon(char.slots, char.stats, char.customItems || {});
+      if (!weapon) log?.('[ATTACK] Attack word detected but no weapon equipped in mainhand — no roll made');
       if (weapon) {
         const result = performAttack(weapon, char.stats, char.level);
         const pb     = profBonus(char.level);
@@ -812,12 +813,15 @@ export function useGame({ charRef, apiKey }) {
           const bonusDmg = rollDice(weapon.damage);
           result.totalDmg += bonusDmg + sneakDmg;
           const extraDesc = result.extras?.length ? result.extras.map(e => `+${e.roll} ${e.type} (${e.dice}, doubled)`).join('') : '';
+          log?.(`[ATTACK] CRIT ${weapon.name}: d20=20 (nat) → dmg ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit${sneakDmg?`+${sneakDmg} sneak`:''}${extraDesc} = ${result.totalDmg}`);
           context += `\n\n[GAME DATA — CRITICAL HIT with ${weapon.name}. Attack: ${result.atkRoll}(nat20)=${result.totalAtk} to hit. Damage: ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit bonus${sneakDmg?`+${sneakDmg} sneak`:''}${extraDesc} = ${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
         } else if (result.fumble) {
+          log?.(`[ATTACK] FUMBLE ${weapon.name}: d20=1 (nat) → automatic miss`);
           context += `\n\n[GAME DATA — FUMBLE with ${weapon.name}. Attack roll: 1 (nat 1) — automatic miss. Narrate the player's action first, then the fumble.]`;
         } else {
           result.totalDmg += sneakDmg;
           const extraDesc2 = result.extras?.length ? result.extras.map(e => `+${e.roll} ${e.type} (${e.dice})`).join('') : '';
+          log?.(`[ATTACK] ${weapon.name}: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit → dmg ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}`);
           context += `\n\n[GAME DATA — ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
         }
         rollResult = {

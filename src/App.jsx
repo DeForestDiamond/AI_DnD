@@ -958,7 +958,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     // Build attack context if player is attacking (skip for continue requests)
     const { context: actionCtx, rollResult: actionRoll } = isContinue
       ? { context: '', rollResult: null }
-      : buildActionContext(userMsg);
+      : buildActionContext(userMsg, log);
 
     // ── Encounter clock ──────────────────────────────────────────────────────
     // The app decides WHEN an encounter fires and WHAT it is; the DM only narrates.
