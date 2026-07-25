@@ -124,10 +124,13 @@ export const parseDMItem = (raw) => {
         if (m) bonuses[m[1].toLowerCase()] = parseInt(m[2]);
       });
     });
-    // Keep the label readable: drop any stat tokens that landed inside it.
-    const cleanLabel = label.split(/[\s,]+/)
-      .filter(tok => !/^(ac|str|dex|con|int|wis|cha):-?\d+$/i.test(tok.trim()))
-      .join(' ').replace(/\s{2,}/g, ' ').trim();
+    // Keep the label readable: drop any stat tokens that landed inside it,
+    // without disturbing the surrounding punctuation.
+    const cleanLabel = label
+      .replace(/\b(ac|str|dex|con|int|wis|cha):-?\d+\b/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\s+([,.;])/g, '$1')
+      .trim();
     return { name, data: { type:'weapon', damage:baseDmg, bonus, finesse, range, label: cleanLabel,
       ...(Object.keys(bonuses).length ? { bonuses } : {}), ...(extras.length ? { extras } : {}) } };
   }
