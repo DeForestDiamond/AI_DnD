@@ -39,8 +39,10 @@ export const effectiveStats = (baseStats, slots, customItems) => {
   Object.values(slots).forEach(name => {
     if (!name) return;
     const d = db[name];
-    // Apply bonuses from magic AND focus items
-    if ((d?.type === 'magic' || d?.type === 'focus') && d.bonuses) {
+    // Any equipped item may grant stat bonuses — a hammer that grants STR, a
+    // breastplate that grants CON — not just magic/focus items. (AC is handled
+    // separately in calcAC.)
+    if (d?.bonuses) {
       Object.entries(d.bonuses).forEach(([k, v]) => { if (k !== 'ac') s[k] = (s[k]||0) + v; });
     }
   });
@@ -62,7 +64,9 @@ export const calcAC = (slots, baseStats, customItems) => {
   Object.values(slots).forEach(name => {
     if (!name) return;
     const d = db[name];
-    if (d?.type === 'magic' && d.bonuses?.ac) ac += d.bonuses.ac;
+    // AC bonuses from any equipped item, not just magic ones. Skip the worn
+    // armor itself — its AC is the base value applied above, not an addition.
+    if (d?.bonuses?.ac && name !== slots.armor) ac += d.bonuses.ac;
   });
   return ac;
 };
@@ -217,6 +221,50 @@ export const migrateCharacter = (char) => {
     // items are untouched.
     c.slots = { ...EMPTY_SLOTS, ...(c.slots || {}) };
   }
+  if (v < 13) {
+    // Quantity baked into the NAME ("Pit Fiend Scale x200") — one string
+    // pretending to be many items. Breaks [REMOVE: name | qty:N] (the stored
+    // name never matches), shows as a single item in the sidebar, and makes
+    // crafting/selling propose consuming quantities that do not exist.
+    // Expand into real individual entries; the save-boundary compression turns
+    // them back into { name: count } on disk, so file size is unaffected.
+    const QTY_IN_NAME = /^(.*?)\s*[xX]\s*(\d+)$/;
+    const MAX_EXPAND = 500;                       // guard against a typo'd x99999
+    const expandQty = (list) => {
+      if (!Array.isArray(list)) return list;
+      const out = [];
+      for (const entry of list) {
+        const m = typeof entry === 'string' && entry.match(QTY_IN_NAME);
+        if (m && m[1].trim()) {
+          const base = m[1].trim();
+          const n = Math.min(MAX_EXPAND, Math.max(1, parseInt(m[2], 10) || 1));
+          for (let i = 0; i < n; i++) out.push(base);
+        } else out.push(entry);
+      }
+      return out;
+    };
+    const invBefore = (c.inventory || []).length;
+    c.inventory = expandQty(c.inventory);
+    c.stash = expandQty(c.stash);
+    // Re-key any custom definition stored under the full "name xN" so the
+    // expanded items keep their stats/label instead of orphaning.
+    ['customItems', 'stashedCustomItems'].forEach(store => {
+      if (!c[store]) return;
+      const next = { ...c[store] };
+      Object.keys(c[store]).forEach(key => {
+        const m = key.match(QTY_IN_NAME);
+        if (m && m[1].trim()) {
+          const base = m[1].trim();
+          if (!next[base]) next[base] = c[store][key];
+          delete next[key];
+        }
+      });
+      c[store] = next;
+    });
+    if ((c.inventory || []).length !== invBefore) {
+      notes.push('Quantity-in-name items expanded into real stacks');
+    }
+  }
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
@@ -336,13 +384,19 @@ export function useCharacter() {
       const qtyMatch = raw.match(/\|\s*qty:\s*(\d+)/i);
       const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
       const cleanRaw = raw.replace(/\|\s*qty:\s*\d+/i, '').trim();
-      const { name, data } = parseDMItem(cleanRaw);
-      // Store custom data when it's a real custom item, OR a misc item that
-      // carries a label (quest items with a description). Plain label-less misc
-      // items stay as bare inventory strings to avoid clutter.
+      const { name: rawName, data } = parseDMItem(cleanRaw);
+      // The DM sometimes bakes the count into the name ("Pit Fiend Scale x200")
+      // instead of using qty:. Split it out here so the item is stored as real
+      // individual entries — otherwise removal, crafting and stacking all see
+      // one item that claims to be many.
+      const bakedQty = rawName.match(/^(.*?)\s*[xX]\s*(\d+)$/);
+      const name = bakedQty && bakedQty[1].trim() ? bakedQty[1].trim() : rawName;
+      const totalQty = bakedQty && bakedQty[1].trim()
+        ? qty * Math.min(500, Math.max(1, parseInt(bakedQty[2], 10) || 1))
+        : qty;
       const isCustom = !ITEM_DB[name] && (data.type !== 'misc' || (data.label && data.label.trim()));
       if (isCustom) c.customItems[name] = data;
-      for (let i = 0; i < qty; i++) {
+      for (let i = 0; i < totalQty; i++) {
         c.inventory = [...c.inventory, name];
       }
     });

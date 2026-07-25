@@ -192,6 +192,257 @@ function DebugViewer({ debugLog, debugStatus }) {
   );
 }
 
+// ── Crafting: pick materials, ask what they could become, confirm, create ─────
+function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) {
+  const [selected, setSelected] = useState({});   // { name: count }
+  const [intent, setIntent]     = useState('');
+  const [busy, setBusy]         = useState(false);
+  const [options, setOptions]   = useState(null);
+  const [status, setStatus]     = useState('');
+  const [filter, setFilter]     = useState('');
+  const [showAll, setShowAll]   = useState(false);
+
+  // Default to things that read as crafting stock, but categorisation is
+  // keyword-based and imperfect — 'Carapace Plates' lands in armor, scale mail
+  // you mean to melt down lands in worn. 'Show all' is the escape hatch so
+  // nothing is ever unreachable because of a misfiled category.
+  // Materials mostly live in the STASH, not carried inventory, so draw from
+  // both. Track which source each stack came from — consumption has to remove
+  // from the right list.
+  const invCount = {}, stashCount = {};
+  (character.inventory || []).forEach(nm => { invCount[nm] = (invCount[nm] || 0) + 1; });
+  (character.stash || []).forEach(nm => { stashCount[nm] = (stashCount[nm] || 0) + 1; });
+  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount)])];
+  const stockData = (nm) => db[nm] || (character.stashedCustomItems || {})[nm];
+  const isStock = (nm) => {
+    const cat = categorizeItem(nm, stockData(nm));
+    return cat === 'materials' || cat === 'misc' || cat === 'valuables';
+  };
+  const q = filter.trim().toLowerCase();
+  const hiddenCount = allNames.filter(nm => !isStock(nm)).length;
+  const candidates = allNames
+    .filter(nm => showAll || isStock(nm))
+    .filter(nm => !q || nm.toLowerCase().includes(q))
+    .sort((a, b) => a.localeCompare(b))
+    .map(nm => [nm, (invCount[nm] || 0) + (stashCount[nm] || 0), {
+      inv: invCount[nm] || 0,
+      stash: stashCount[nm] || 0,
+    }]);
+
+  const toggle = (nm, max) => setSelected(prev => {
+    const next = { ...prev };
+    if (next[nm]) delete next[nm]; else next[nm] = max;
+    return next;
+  });
+  const setCount = (nm, val, max) => setSelected(prev => {
+    const v = Math.max(1, Math.min(max, parseInt(val, 10) || 1));
+    return { ...prev, [nm]: v };
+  });
+
+  const propose = async () => {
+    setBusy(true); setStatus('Consulting the forge…'); setOptions(null);
+    try {
+      const mats = Object.entries(selected).map(([nm, count]) => ({ name: nm, count, label: stockData(nm)?.label || '' }));
+      const opts = await onProposeCrafting({ materials: mats, intent });
+      setOptions(opts); setStatus('');
+    } catch (e) { setStatus('✗ ' + e.message); }
+    setBusy(false);
+  };
+
+  const make = (opt) => {
+    try {
+      const made = onExecuteCrafting(opt);
+      setStatus(`✓ Crafted ${made}`);
+      setOptions(null); setSelected({}); setIntent(''); setFilter('');
+    } catch (e) { setStatus('✗ ' + e.message); }
+  };
+
+  const selCount = Object.keys(selected).length;
+  return (
+    <CollapsibleSection title="🔨 CRAFTING" count={selCount || undefined} defaultOpen={true}>
+      <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
+        Select materials, then ask what they could become. Nothing is consumed until you confirm.
+      </div>
+
+      <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder={`Search ${candidates.length} ${showAll ? 'items' : 'materials'}…`}
+        style={{...npcInput, marginBottom:4}}/>
+
+      {hiddenCount > 0 && (
+        <label style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:colors.textDim,marginBottom:6,cursor:'pointer'}}>
+          <input type="checkbox" checked={showAll} onChange={()=>setShowAll(v=>!v)} style={{accentColor:colors.gold,flexShrink:0}}/>
+          Show all inventory ({hiddenCount} hidden — categories are guesses, tick this if something's missing)
+        </label>
+      )}
+
+      <div style={{maxHeight:340,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
+        {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>No materials in inventory.</div>}
+        {candidates.map(([nm, max, src]) => {
+          const on = selected[nm] !== undefined;
+          return (
+            <div key={nm} style={{display:'flex',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+              <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
+              <span style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                {nm}
+                {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}}>{src.inv > 0 ? '📦+🎒' : '📦'}</span>}
+              </span>
+              {max > 1 && (
+                on
+                  ? <input value={selected[nm]} onChange={e=>setCount(nm, e.target.value, max)} inputMode="numeric"
+                      style={{width:38,flexShrink:0,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:11,padding:'1px 4px',borderRadius:3,textAlign:'center',outline:'none'}}/>
+                  : <span style={{fontSize:11,color:colors.goldFaint,fontFamily:fonts.mono,flexShrink:0}}>x{max}</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <input value={intent} onChange={e=>setIntent(e.target.value)} placeholder="What do you want made? (optional)"
+        style={{...npcInput, marginBottom:6}}/>
+
+      <button onClick={propose} disabled={busy || selCount === 0}
+        style={{...btn(false), width:'100%', opacity:(busy||selCount===0)?0.4:1}}>
+        {busy ? '…' : `🔨 WHAT CAN I MAKE?${selCount ? ` (${selCount})` : ''}`}
+      </button>
+      {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:6,lineHeight:1.4}}>{status}</div>}
+
+      {options && options.map((o, i) => (
+        <div key={i} style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:6}}>
+          <div style={{fontFamily:fonts.display,fontSize:13,color:colors.gold,marginBottom:2}}>{o.name}</div>
+          <div style={{fontSize:11,color:colors.textDim,marginBottom:4,lineHeight:1.4}}>{o.label}</div>
+          <div style={{fontSize:10,color:colors.textGhost,marginBottom:4,lineHeight:1.4}}>
+            {o.type}{o.slot ? ` · ${o.slot}` : ''}{o.damage ? ` · ${o.damage}` : ''}{o.bonuses ? ` · ${o.bonuses}` : ''}
+          </div>
+          <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
+            Consumes: {(o.consumes||[]).map(m=>`${m.name}${m.count>1?` x${m.count}`:''}`).join(', ') || 'nothing'}
+            {o.reason ? ` — ${o.reason}` : ''}
+          </div>
+          <button onClick={()=>make(o)} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>✓ FORGE THIS</button>
+        </div>
+      ))}
+    </CollapsibleSection>
+  );
+}
+
+// ── Salvage: break finished items back down into materials ───────────────────
+function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle }) {
+  const [selected, setSelected] = useState({});
+  const [busy, setBusy]         = useState(false);
+  const [result, setResult]     = useState(null);
+  const [status, setStatus]     = useState('');
+  const [filter, setFilter]     = useState('');
+  const [showAll, setShowAll]   = useState(false);
+
+  const invCount = {}, stashCount = {};
+  (character.inventory || []).forEach(nm => { invCount[nm] = (invCount[nm] || 0) + 1; });
+  (character.stash || []).forEach(nm => { stashCount[nm] = (stashCount[nm] || 0) + 1; });
+  const equipped = new Set(Object.values(character.slots || {}).filter(Boolean));
+  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount)])];
+  const stockData = (nm) => db[nm] || (character.stashedCustomItems || {})[nm];
+  // Inverse of crafting: finished goods, not raw materials.
+  const isSalvageable = (nm) => {
+    const cat = categorizeItem(nm, stockData(nm));
+    return ['weapons','worn','magic','tools','gear','ammo'].includes(cat);
+  };
+  const q = filter.trim().toLowerCase();
+  const hiddenCount = allNames.filter(nm => !isSalvageable(nm) && !equipped.has(nm)).length;
+  const candidates = allNames
+    .filter(nm => !equipped.has(nm))                       // never offer worn gear
+    .filter(nm => showAll || isSalvageable(nm))
+    .filter(nm => !q || nm.toLowerCase().includes(q))
+    .sort((a, b) => a.localeCompare(b))
+    .map(nm => [nm, (invCount[nm] || 0) + (stashCount[nm] || 0), { stash: stashCount[nm] || 0, inv: invCount[nm] || 0 }]);
+
+  const toggle = (nm, max) => setSelected(prev => {
+    const next = { ...prev };
+    if (next[nm]) delete next[nm]; else next[nm] = max;   // default to the whole stack
+    return next;
+  });
+  const setCount = (nm, val, max) => setSelected(prev => ({ ...prev, [nm]: Math.max(1, Math.min(max, parseInt(val, 10) || 1)) }));
+
+  const submitted = () => Object.entries(selected).map(([name, count]) => ({ name, count }));
+
+  const propose = async () => {
+    setBusy(true); setStatus('Taking it apart…'); setResult(null);
+    try {
+      const r = await onProposeDismantle({ items: submitted() });
+      setResult(r); setStatus('');
+    } catch (e) { setStatus('✗ ' + e.message); }
+    setBusy(false);
+  };
+  const confirm = () => {
+    try {
+      const got = onExecuteDismantle(result, submitted());
+      setStatus(`✓ Recovered ${got}`);
+      // Clear the search too: a filter matching the item just consumed would
+      // leave the list looking empty until the panel is closed and reopened.
+      setResult(null); setSelected({}); setFilter('');
+    } catch (e) { setStatus('✗ ' + e.message); }
+  };
+
+  const selCount = Object.keys(selected).length;
+  return (
+    <CollapsibleSection title="🔧 SALVAGE" count={selCount || undefined} defaultOpen={false}>
+      <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
+        Break items down into materials. Recovery is lossy — you never get everything back. Equipped gear is not listed.
+      </div>
+
+      <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder={`Search ${candidates.length} items…`}
+        style={{...npcInput, marginBottom:4}}/>
+
+      {hiddenCount > 0 && (
+        <label style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:colors.textDim,marginBottom:6,cursor:'pointer'}}>
+          <input type="checkbox" checked={showAll} onChange={()=>setShowAll(v=>!v)} style={{accentColor:colors.gold,flexShrink:0}}/>
+          Show all inventory ({hiddenCount} hidden)
+        </label>
+      )}
+
+      <div style={{maxHeight:340,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
+        {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>Nothing to break down.</div>}
+        {candidates.map(([nm, max, src]) => {
+          const on = selected[nm] !== undefined;
+          return (
+            <div key={nm} style={{display:'flex',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+              <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
+              <span style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                {nm}
+                {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}}>{src.inv > 0 ? '📦+🎒' : '📦'}</span>}
+              </span>
+              {max > 1 && (
+                on
+                  ? <input value={selected[nm]} onChange={e=>setCount(nm, e.target.value, max)} inputMode="numeric"
+                      style={{width:38,flexShrink:0,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:11,padding:'1px 4px',borderRadius:3,textAlign:'center',outline:'none'}}/>
+                  : <span style={{fontSize:11,color:colors.goldFaint,fontFamily:fonts.mono,flexShrink:0}}>x{max}</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <button onClick={propose} disabled={busy || selCount === 0}
+        style={{...btn(false), width:'100%', opacity:(busy||selCount===0)?0.4:1}}>
+        {busy ? '…' : `🔧 WHAT DO I GET BACK?${selCount ? ` (${selCount})` : ''}`}
+      </button>
+      {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:6,lineHeight:1.4}}>{status}</div>}
+
+      {result && (
+        <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:6}}>
+          <div style={{fontFamily:fonts.display,fontSize:12,color:colors.gold,marginBottom:4}}>RECOVERS</div>
+          {(result.recovers || []).length === 0
+            ? <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',marginBottom:6}}>Nothing usable.</div>
+            : <div style={{fontSize:12,color:colors.text,marginBottom:6,lineHeight:1.5}}>
+                {result.recovers.map(r => `${r.name}${r.count > 1 ? ` x${r.count}` : ''}`).join(', ')}
+              </div>}
+          {result.note && <div style={{fontSize:10,color:colors.textGhost,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>{result.note}</div>}
+          <div style={{fontSize:10,color:'#c96a4c',marginBottom:6,lineHeight:1.4}}>
+            Destroys: {submitted().map(i => `${i.name}${i.count > 1 ? ` x${i.count}` : ''}`).join(', ')}
+          </div>
+          <button onClick={confirm} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>✓ BREAK IT DOWN</button>
+        </div>
+      )}
+    </CollapsibleSection>
+  );
+}
+
 // ── Bio editor: view/edit the player's backstory (the DM's behavior anchor) ────
 function BioEditor({ character, onSaveBio }) {
   const [text, setText] = useState(character.bio || '');
@@ -504,7 +755,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
@@ -617,8 +868,16 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
 
       {/* Tab bar */}
       <div style={{display:'flex',gap:6,marginBottom:4}}>
-        <button onClick={()=>setActiveTab('character')} style={{flex:1,background:activeTab==='character'?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab==='character'?colors.gold:colors.borderDim}`,color:activeTab==='character'?colors.gold:colors.textFaint,padding:'8px 0',fontSize:12,fontFamily:fonts.display,letterSpacing:2,borderRadius:3,cursor:'pointer'}}>🎲 CHARACTER</button>
-        <button onClick={()=>setActiveTab('settings')} style={{flex:1,background:activeTab==='settings'?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab==='settings'?colors.gold:colors.borderDim}`,color:activeTab==='settings'?colors.gold:colors.textFaint,padding:'8px 0',fontSize:12,fontFamily:fonts.display,letterSpacing:2,borderRadius:3,cursor:'pointer'}}>⚙️ SETTINGS</button>
+        {[
+          ['character', '🎲 CHARACTER'],
+          ['crafting',  '🔨 CRAFTING'],
+          ['settings',  '⚙️ SETTINGS'],
+        ].map(([id, label]) => (
+          <button key={id} onClick={()=>setActiveTab(id)}
+            style={{flex:1,background:activeTab===id?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab===id?colors.gold:colors.borderDim}`,color:activeTab===id?colors.gold:colors.textFaint,padding:'8px 2px',fontSize:10,fontFamily:fonts.display,letterSpacing:0.5,borderRadius:3,cursor:'pointer',whiteSpace:'nowrap'}}>
+            {label}
+          </button>
+        ))}
       </div>
 
       {activeTab==='settings' && <>
@@ -723,6 +982,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           <div style={{fontSize:13,color:colors.gold,fontFamily:fonts.display}}>{weapon.name}</div>
           <div style={{fontSize:12,color:colors.textFaint}}>
             Dmg: {weapon.damage}{weapon.bonus?`+${weapon.bonus}`:''} {weapon.statBonus>=0?`+ ${weapon.statBonus}`:`- ${Math.abs(weapon.statBonus)}`} · Atk: +{weapon.statBonus+pb+(weapon.bonus||0)}
+            {(weapon.extras||[]).map((e,i) => (
+              <span key={i} style={{color:colors.goldFaint}}> + {e.dice} {e.type}</span>
+            ))}
           </div>
           {weapon.finesse && <div style={{fontSize:12,color:colors.textDead}}>finesse · using DEX</div>}
         </div>
@@ -824,6 +1086,18 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </CollapsibleSection>
       )}
 
+      </>}
+
+      {activeTab==='crafting' && <>
+      {/* Crafting — turn materials into gear */}
+      {onProposeCrafting && (
+        <CraftingPanel character={character} db={db} onProposeCrafting={onProposeCrafting} onExecuteCrafting={onExecuteCrafting} />
+      )}
+
+      {/* Salvage — break items back into materials */}
+      {onProposeDismantle && (
+        <SalvagePanel character={character} db={db} onProposeDismantle={onProposeDismantle} onExecuteDismantle={onExecuteDismantle} />
+      )}
       </>}
 
       {activeTab==='settings' && <>
