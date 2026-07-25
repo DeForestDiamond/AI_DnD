@@ -192,6 +192,112 @@ function DebugViewer({ debugLog, debugStatus }) {
   );
 }
 
+// ── Crafting: pick materials, ask what they could become, confirm, create ─────
+function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) {
+  const [selected, setSelected] = useState({});   // { name: count }
+  const [intent, setIntent]     = useState('');
+  const [busy, setBusy]         = useState(false);
+  const [options, setOptions]   = useState(null);
+  const [status, setStatus]     = useState('');
+  const [filter, setFilter]     = useState('');
+
+  // Only offer things that read as crafting stock — materials, and anything
+  // uncategorised — so the list isn't the player's whole inventory.
+  const stacked = {};
+  (character.inventory || []).forEach(nm => { stacked[nm] = (stacked[nm] || 0) + 1; });
+  const q = filter.trim().toLowerCase();
+  const candidates = Object.entries(stacked)
+    .filter(([nm]) => {
+      const cat = categorizeItem(nm, db[nm]);
+      return cat === 'materials' || cat === 'misc' || cat === 'valuables';
+    })
+    .filter(([nm]) => !q || nm.toLowerCase().includes(q))
+    .sort((a, b) => a[0].localeCompare(b[0]));
+
+  const toggle = (nm, max) => setSelected(prev => {
+    const next = { ...prev };
+    if (next[nm]) delete next[nm]; else next[nm] = max;
+    return next;
+  });
+  const setCount = (nm, val, max) => setSelected(prev => {
+    const v = Math.max(1, Math.min(max, parseInt(val, 10) || 1));
+    return { ...prev, [nm]: v };
+  });
+
+  const propose = async () => {
+    setBusy(true); setStatus('Consulting the forge…'); setOptions(null);
+    try {
+      const mats = Object.entries(selected).map(([nm, count]) => ({ name: nm, count, label: db[nm]?.label || '' }));
+      const opts = await onProposeCrafting({ materials: mats, intent });
+      setOptions(opts); setStatus('');
+    } catch (e) { setStatus('✗ ' + e.message); }
+    setBusy(false);
+  };
+
+  const make = (opt) => {
+    try {
+      const made = onExecuteCrafting(opt);
+      setStatus(`✓ Crafted ${made}`);
+      setOptions(null); setSelected({}); setIntent('');
+    } catch (e) { setStatus('✗ ' + e.message); }
+  };
+
+  const selCount = Object.keys(selected).length;
+  return (
+    <CollapsibleSection title="🔨 CRAFTING" count={selCount || undefined} defaultOpen={false}>
+      <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
+        Select materials, then ask what they could become. Nothing is consumed until you confirm.
+      </div>
+
+      <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder={`Search ${candidates.length} materials…`}
+        style={{...npcInput, marginBottom:4}}/>
+
+      <div style={{maxHeight:190,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
+        {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>No materials in inventory.</div>}
+        {candidates.map(([nm, max]) => {
+          const on = selected[nm] !== undefined;
+          return (
+            <div key={nm} style={{display:'flex',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+              <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
+              <span style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{nm}</span>
+              {max > 1 && (
+                on
+                  ? <input value={selected[nm]} onChange={e=>setCount(nm, e.target.value, max)} inputMode="numeric"
+                      style={{width:38,flexShrink:0,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:11,padding:'1px 4px',borderRadius:3,textAlign:'center',outline:'none'}}/>
+                  : <span style={{fontSize:11,color:colors.goldFaint,fontFamily:fonts.mono,flexShrink:0}}>x{max}</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <input value={intent} onChange={e=>setIntent(e.target.value)} placeholder="What do you want made? (optional)"
+        style={{...npcInput, marginBottom:6}}/>
+
+      <button onClick={propose} disabled={busy || selCount === 0}
+        style={{...btn(false), width:'100%', opacity:(busy||selCount===0)?0.4:1}}>
+        {busy ? '…' : `🔨 WHAT CAN I MAKE?${selCount ? ` (${selCount})` : ''}`}
+      </button>
+      {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:6,lineHeight:1.4}}>{status}</div>}
+
+      {options && options.map((o, i) => (
+        <div key={i} style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:6}}>
+          <div style={{fontFamily:fonts.display,fontSize:13,color:colors.gold,marginBottom:2}}>{o.name}</div>
+          <div style={{fontSize:11,color:colors.textDim,marginBottom:4,lineHeight:1.4}}>{o.label}</div>
+          <div style={{fontSize:10,color:colors.textGhost,marginBottom:4,lineHeight:1.4}}>
+            {o.type}{o.slot ? ` · ${o.slot}` : ''}{o.damage ? ` · ${o.damage}` : ''}{o.bonuses ? ` · ${o.bonuses}` : ''}
+          </div>
+          <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
+            Consumes: {(o.consumes||[]).map(m=>`${m.name}${m.count>1?` x${m.count}`:''}`).join(', ') || 'nothing'}
+            {o.reason ? ` — ${o.reason}` : ''}
+          </div>
+          <button onClick={()=>make(o)} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>✓ FORGE THIS</button>
+        </div>
+      ))}
+    </CollapsibleSection>
+  );
+}
+
 // ── Bio editor: view/edit the player's backstory (the DM's behavior anchor) ────
 function BioEditor({ character, onSaveBio }) {
   const [text, setText] = useState(character.bio || '');
@@ -504,7 +610,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onProposeCrafting, onExecuteCrafting, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
@@ -827,6 +933,11 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       </>}
 
       {activeTab==='settings' && <>
+      {/* Crafting — turn materials into gear */}
+      {onProposeCrafting && (
+        <CraftingPanel character={character} db={db} onProposeCrafting={onProposeCrafting} onExecuteCrafting={onExecuteCrafting} />
+      )}
+
       {/* Bio — the DM's behavior anchor */}
       {onSaveBio && <BioEditor key={character.bio || 'empty'} character={character} onSaveBio={onSaveBio} />}
 

@@ -709,6 +709,85 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     return { applied };
   };
 
+  // ── Crafting: propose, then execute ────────────────────────────────────────
+  // Two-phase like a real commission. proposeCrafting() asks a dedicated call
+  // what the selected materials could become and returns options WITHOUT
+  // touching the save. executeCrafting() consumes the materials and creates the
+  // item only after the player confirms a choice.
+  const proposeCrafting = async ({ materials, intent }) => {
+    const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+    const char = charRef.current;
+    if (!materials.length) throw new Error('Select at least one material');
+
+    const matList = materials.map(m => `${m.name}${m.count > 1 ? ` x${m.count}` : ''}${m.label ? ` (${m.label})` : ''}`).join('\n');
+    const levelNote = `The character is level ${char.level}.`;
+    const wantNote = intent?.trim()
+      ? `The player specifically wants: "${intent.trim()}". Honour this if the materials plausibly allow it; if they do not, say why in the reason field and propose the closest achievable thing.`
+      : 'The player has no specific request — propose what these materials most naturally become.';
+
+    const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring1 ring2 feet — omit for weapon/consumable", "damage": "1d8+1 (weapons only, +N for enchantment)", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
+
+    log(`[CRAFT] Proposing from ${materials.length} material stacks`);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1500,
+        system: `You are a master crafter in a D&D 5e game (Forgotten Realms). Given raw materials, propose 2-3 DISTINCT items that could plausibly be made from them — different in function, not just renamed versions of each other.
+
+RULES:
+- Power must fit the materials AND the character's level. Ordinary parts make ordinary gear; rare/monstrous parts make genuinely magical items. Do not hand out legendary power for common scraps.
+- Only consume materials that make sense for that item, and never more than the player has.
+- Every magical item must have a REAL mechanical effect: a +N on weapon damage, or stat:N bonuses, or both. "Enchanted" with no effect is forbidden.
+- Name items for what they do or where they came from — never "Enchanted X".
+- The label states the effect in plain words. Charges and per-day effects are narrative text; there is no charge counter.
+- ${levelNote}
+Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
+        messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
+      }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch { throw new Error('Crafting returned unparseable JSON — try again'); }
+    const options = (parsed.options || []).filter(o => o?.name);
+    if (!options.length) throw new Error('Nothing could be made from those materials');
+    log(`[CRAFT] ${options.length} options proposed: ${options.map(o => o.name).join(', ')}`);
+    return options;
+  };
+
+  // Build the [ITEM:] tag for a chosen option and apply it, then remove the
+  // consumed materials. Reuses applyEffects so the item goes through the exact
+  // same parser as DM-granted loot.
+  const executeCrafting = (option) => {
+    const c = charRef.current;
+    // Verify the player still has everything (guards against a stale panel)
+    const stacked = {};
+    (c.inventory || []).forEach(n => { stacked[n] = (stacked[n] || 0) + 1; });
+    for (const m of option.consumes || []) {
+      if ((stacked[m.name] || 0) < (m.count || 1)) throw new Error(`Not enough ${m.name}`);
+    }
+    let tag;
+    if (option.type === 'weapon') {
+      tag = `[ITEM: ${option.name} | weapon | ${option.damage || '1d6'} | | melee | ${option.label || ''}]`;
+    } else if (option.type === 'armor') {
+      tag = `[ITEM: ${option.name} | armor | ${option.ac || 13} | true | null | ${option.label || ''}]`;
+    } else if (option.type === 'consumable') {
+      tag = `[ITEM: ${option.name} | consumable | ${option.label || ''}]`;
+    } else {
+      tag = `[ITEM: ${option.name} | magic | ${option.slot || 'neck'} | ${option.bonuses || ''} | ${option.label || ''}]`;
+    }
+    const removeTags = (option.consumes || [])
+      .map(m => `[REMOVE: ${m.name}${(m.count || 1) > 1 ? ` | qty:${m.count}` : ''}]`)
+      .join('');
+    const next = applyEffects(tag + removeTags, c);
+    updateChar(next);
+    log(`[CRAFT] Made ${option.name}; consumed ${(option.consumes || []).map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
+    return option.name;
+  };
+
   // Shared write path for the NPC edit panel (Feature 3) and manual adds.
   const saveNPCEntry = (group, name, entry, originalName = null) => {
     const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions }, towns: { ...charRef.current.towns } };
@@ -1316,6 +1395,8 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
             }}
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
+            onProposeCrafting={proposeCrafting}
+            onExecuteCrafting={executeCrafting}
             onExtractNPC={extractNPCs}
             onExtractTown={extractTowns}
             onSaveNPC={saveNPCEntry}
