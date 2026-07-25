@@ -66,6 +66,28 @@ export const SLOTS = [
 
 export const EMPTY_SLOTS = Object.fromEntries(SLOTS.map(s => [s.id, null]));
 
+// Infer an equipment slot from an item's NAME alone — used when the item has no
+// type/slot data (DM equipped something it never granted, or misformatted a tag).
+// Order matters: specific worn slots before the broad armor rule.
+export const slotFromItemName = (name) => {
+  const n = (name || '').toLowerCase();
+  if (/shield|buckler/.test(n)) return 'offhand';
+  if (/helm|helmet|hood|circlet|crown|coif/.test(n)) return 'head';
+  if (/boots|greaves|sabaton|shoes|footwear/.test(n)) return 'feet';
+  if (/gloves|gauntlet/.test(n)) return 'hands';
+  if (/bracer|vambrace|arm-?guard|armband/.test(n)) return 'arms';
+  if (/belt|girdle|sash|waistband/.test(n)) return 'waist';
+  if (/goggles|lenses|spectacles|mask|monocle|eyepatch|visor|\beyes?\b/.test(n)) return 'face';
+  if (/pauldron|mantle|epaulet|shoulder/.test(n)) return 'shoulders';
+  if (/shirt|vest|tunic|jerkin|undershirt/.test(n)) return 'torso';
+  if (/cloak|cape/.test(n)) return 'cloak';
+  if (/\bring\b/.test(n)) return 'ring1';
+  if (/amulet|necklace|pendant|torc|collar/.test(n)) return 'neck';
+  if (/knife|dagger|sword|blade|axe|mace|hammer|spear|staff|wand|bow|crossbow|club|flail|scimitar|rapier|glaive|halberd|whip|sickle|pistol|gun|cannon|katana|sabre|saber|dirk|kukri|falchion|rod/.test(n)) return 'mainhand';
+  if (/armor|armour|mail|plate|breastplate|cuirass|robe|leather|hide|brigandine|chain/.test(n)) return 'armor';
+  return null;
+};
+
 // Parse a DM-generated item tag
 // [ITEM: Flame Tongue | weapon | 1d8 | finesse | melee]
 // [ITEM: Mithral Shirt | armor | 15 | true | 2]
@@ -102,13 +124,36 @@ export const parseDMItem = (raw) => {
     return { name, data: { type:'shield', ac: parseInt(parts[2]) || 2 } };
   }
   if (kind === 'magic') {
-    const slot = parts[2] || 'neck';
+    const BONUS_RE = /^(ac|str|dex|con|int|wis|cha|athletics|acrobatics|stealth|sleightofhand|sleight|arcana|history|investigation|nature|religion|animalhandling|animal|insight|medicine|perception|survival|deception|intimidation|performance|persuasion):(-?\d+)$/i;
+
+    // — Slot: the DM sometimes writes prose here ("main hand when used",
+    //   "equipped on ring1 currently"). Clean it to a real slot id: exact match,
+    //   then a slot id mentioned anywhere in the phrase, then infer from the item
+    //   name, else default to neck.
+    const rawSlot = (parts[2] || '').trim().toLowerCase();
+    const validIds = SLOTS.map(s => s.id);
+    let slot = validIds.includes(rawSlot) ? rawSlot : null;
+    if (!slot) slot = validIds.find(id => new RegExp(`\\b${id}\\b`).test(rawSlot))
+                   || (/main\s*hand/.test(rawSlot) ? 'mainhand'
+                     : /off\s*hand/.test(rawSlot) ? 'offhand'
+                     : /ring/.test(rawSlot) ? 'ring1' : null);
+    if (!slot) slot = slotFromItemName(name) || 'neck';
+
+    // — Bonuses field: parse stat:N pairs. If the field is present but contains
+    //   NO valid pairs, it's actually a description the DM misplaced — capture it
+    //   as the label instead of silently dropping it (a hollow item).
     const bonuses = {};
+    let stray = '';
     (parts[3] || '').split(',').forEach(b => {
-      const m = b.trim().match(/^(ac|str|dex|con|int|wis|cha|athletics|acrobatics|stealth|sleightofhand|sleight|arcana|history|investigation|nature|religion|animalhandling|animal|insight|medicine|perception|survival|deception|intimidation|performance|persuasion):(-?\d+)$/i);
+      const m = b.trim().match(BONUS_RE);
       if (m) bonuses[m[1].toLowerCase()] = parseInt(m[2]);
+      else if (b.trim()) stray += (stray ? ', ' : '') + b.trim();
     });
-    return { name, data: { type:'magic', slot, bonuses, label: parts[4] || '' } };
+    // Label is parts[4] if given; otherwise the stray prose recovered from the
+    // bonus field (so a misformatted item still shows its effect).
+    const label = (parts[4] || '').trim() || stray;
+
+    return { name, data: { type:'magic', slot, bonuses, label } };
   }
   if (kind === 'consumable') {
     return { name, data: { type:'consumable', label: parts[2] || '' } };

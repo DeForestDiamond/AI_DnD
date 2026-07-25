@@ -292,6 +292,12 @@ NEVER NAME AN ITEM "ENCHANTED X" OR "X - ENCHANTED". That tells the player nothi
       Necklace (neck):         [ITEM: Amulet of Health | magic | neck | con:2 | amulets, torcs, pendants]
       Ring (ring1 or ring2):   [ITEM: Ring of Protection | magic | ring1 | ac:1 | +1 AC]
     Full worn-slot list to choose from: face, head, neck, shoulders, cloak, torso, arms, hands, waist, ring1, ring2, feet. Pick the anatomically correct slot for each item so it can be equipped.
+    MAGIC ITEM FORMAT IS STRICT — [ITEM: Name | magic | SLOT | BONUSES | DESCRIPTION]:
+      • SLOT (field 3) is ONE bare slot id from the list above — never a phrase. WRONG: "main hand when used", "equipped on ring1". RIGHT: mainhand, ring1.
+      • BONUSES (field 4) is ONLY stat:N pairs (ac:1, str:2, perception:3) or EMPTY. NEVER put the item's effect text here. If the item has no stat bonus, leave field 4 blank but KEEP the bar: [ITEM: Boots of the Tundra | magic | feet | | walk on ice without tracks].
+      • DESCRIPTION (field 5) is where the effect goes in plain words: "once per day assume any humanoid form", "3 charges of Cone of Cold, recharges at dawn". Charges and per-day effects live here as text you honor in narration — the app has no charge counter.
+      WRONG: [ITEM: Rod of Frost | magic | main hand when used | Ice Storm (4 charges), Cone of Cold]  ← prose in slot AND bonus fields
+      RIGHT: [ITEM: Rod of Frost | magic | mainhand | | Ice Storm, Wall of Ice, and Cone of Cold; 7 charges, recharges 1d6+1 at dawn]
   Consumable: [ITEM: Antitoxin Vial | consumable | cures poison]
   Give and equip together: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
   Quantities: [ITEM: Blast Powder | qty:3] — NEVER bake quantity into the item name
