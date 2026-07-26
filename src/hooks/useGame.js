@@ -178,9 +178,10 @@ const buildCtxSections = (char) => {
 
   // Constructs & bound entities — owned and commanded, not worn. Listed so the
   // DM knows what the player can call on (and what is merely dormant).
-  const allInv = [...(char.inventory || []), ...(char.stash || [])];
-  const cdb = { ...(char.customItems || {}), ...(char.stashedCustomItems || {}) };
-  const constructNames = [...new Set(allInv)].filter(nm => cdb[nm]?.type === 'construct');
+  // Carried inventory only — the stash is invisible to the DM by design, and
+  // that's the player's switch for putting a construct out of play.
+  const cdb = char.customItems || {};
+  const constructNames = [...new Set(char.inventory || [])].filter(nm => cdb[nm]?.type === 'construct');
   const constructSection = constructNames.length
     ? `\nCONSTRUCTS & BOUND ENTITIES (owned by the player, commanded — not carried gear):\n` +
       constructNames.map(nm => {
