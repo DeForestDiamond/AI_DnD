@@ -236,10 +236,17 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
     if (next[nm]) delete next[nm]; else next[nm] = max;
     return next;
   });
-  const setCount = (nm, val, max) => setSelected(prev => {
-    const v = Math.max(1, Math.min(max, parseInt(val, 10) || 1));
-    return { ...prev, [nm]: v };
-  });
+  // Keep the raw text while typing so deleting a digit doesn't instantly snap
+  // back to 1; clamp only when the field loses focus.
+  const [draft, setDraft] = useState({});
+  const commitCount = (nm, max) => {
+    const raw = draft[nm];
+    if (raw === undefined) return;
+    const parsed = parseInt(raw, 10);
+    const v = Number.isNaN(parsed) ? 1 : Math.max(1, Math.min(max, parsed));
+    setSelected(prev => ({ ...prev, [nm]: v }));
+    setDraft(prev => { const next = { ...prev }; delete next[nm]; return next; });
+  };
 
   const propose = async () => {
     setBusy(true); setStatus('Consulting the forge…'); setOptions(null);
@@ -255,7 +262,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
     try {
       const made = onExecuteCrafting(opt);
       setStatus(`✓ Crafted ${made}`);
-      setOptions(null); setSelected({}); setIntent(''); setFilter('');
+      setOptions(null); setSelected({}); setDraft({}); setIntent(''); setFilter('');
     } catch (e) { setStatus('✗ ' + e.message); }
   };
 
@@ -289,7 +296,11 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
               </span>
               {max > 1 && (
                 on
-                  ? <input value={selected[nm]} onChange={e=>setCount(nm, e.target.value, max)} inputMode="numeric"
+                  ? <input value={draft[nm] ?? selected[nm]}
+                      onChange={e=>setDraft(prev=>({...prev,[nm]:e.target.value}))}
+                      onBlur={()=>commitCount(nm, max)}
+                      onKeyDown={e=>{ if (e.key === 'Enter') e.currentTarget.blur(); }}
+                      inputMode="numeric"
                       style={{width:38,flexShrink:0,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:11,padding:'1px 4px',borderRadius:3,textAlign:'center',outline:'none'}}/>
                   : <span style={{fontSize:11,color:colors.goldFaint,fontFamily:fonts.mono,flexShrink:0}}>x{max}</span>
               )}
@@ -359,7 +370,16 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     if (next[nm]) delete next[nm]; else next[nm] = max;   // default to the whole stack
     return next;
   });
-  const setCount = (nm, val, max) => setSelected(prev => ({ ...prev, [nm]: Math.max(1, Math.min(max, parseInt(val, 10) || 1)) }));
+  // Raw text while typing, clamped on blur (see crafting panel).
+  const [draft, setDraft] = useState({});
+  const commitCount = (nm, max) => {
+    const raw = draft[nm];
+    if (raw === undefined) return;
+    const parsed = parseInt(raw, 10);
+    const v = Number.isNaN(parsed) ? 1 : Math.max(1, Math.min(max, parsed));
+    setSelected(prev => ({ ...prev, [nm]: v }));
+    setDraft(prev => { const next = { ...prev }; delete next[nm]; return next; });
+  };
 
   const submitted = () => Object.entries(selected).map(([name, count]) => ({ name, count }));
 
@@ -377,7 +397,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
       setStatus(`✓ Recovered ${got}`);
       // Clear the search too: a filter matching the item just consumed would
       // leave the list looking empty until the panel is closed and reopened.
-      setResult(null); setSelected({}); setFilter('');
+      setResult(null); setSelected({}); setDraft({}); setFilter('');
     } catch (e) { setStatus('✗ ' + e.message); }
   };
 
@@ -411,7 +431,11 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
               </span>
               {max > 1 && (
                 on
-                  ? <input value={selected[nm]} onChange={e=>setCount(nm, e.target.value, max)} inputMode="numeric"
+                  ? <input value={draft[nm] ?? selected[nm]}
+                      onChange={e=>setDraft(prev=>({...prev,[nm]:e.target.value}))}
+                      onBlur={()=>commitCount(nm, max)}
+                      onKeyDown={e=>{ if (e.key === 'Enter') e.currentTarget.blur(); }}
+                      inputMode="numeric"
                       style={{width:38,flexShrink:0,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:11,padding:'1px 4px',borderRadius:3,textAlign:'center',outline:'none'}}/>
                   : <span style={{fontSize:11,color:colors.goldFaint,fontFamily:fonts.mono,flexShrink:0}}>x{max}</span>
               )}
