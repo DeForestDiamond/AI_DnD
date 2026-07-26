@@ -725,7 +725,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       ? `The player specifically wants: "${intent.trim()}". Honour this if the materials plausibly allow it; if they do not, say why in the reason field and propose the closest achievable thing.`
       : 'The player has no specific request — propose what these materials most naturally become.';
 
-    const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable — use armor ONLY for a main chest piece; every other wearable is magic", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring1 ring2 feet — omit for weapon/consumable", "damage": "1d8+1 (weapons only, +N for enchantment)", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
+    const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable — use armor ONLY for a main chest piece; every other wearable is magic", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring1 ring2 feet — omit for weapon/consumable", "damage": "weapons only — base dice, optional +N enchantment, and optional extra damage dice of another type: 1d8, 1d8+2, or 1d8+1 plus 1d4 radiant, or 2d6 plus 2d6 fire", "heavy": "armor only — true if it is heavy armour that ignores the wearer's Dexterity, false otherwise", "maxDex": "armor only — a number if the armour caps the Dexterity bonus (medium armour is usually 2), otherwise null", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
 
     log(`[CRAFT] Proposing from ${materials.length} material stacks`);
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -743,6 +743,8 @@ RULES:
 - Name items for what they do or where they came from — never "Enchanted X".
 - ITEM TYPE IS STRICT. Use type "armor" ONLY for a main chest/body piece (breastplate, chain shirt, plate) — it takes the armor slot and its AC REPLACES the wearer's armour. EVERY other wearable is type "magic" with the matching slot: a cloak is magic/cloak, boots are magic/feet, a helm is magic/head, bracers are magic/arms, a belt is magic/waist, a shirt is magic/torso, gloves are magic/hands, a mask or goggles are magic/face, pauldrons are magic/shoulders, an amulet is magic/neck, a ring is magic/ring1. Giving a cloak type "armor" puts it in the armour slot and throws away the wearer's real armour — never do this.
 - A magic wearable's power lives in its bonuses (ac:N, str:N, dex:N ...). Protective effects that aren't calculable — disadvantage on attacks against you, advantage on saves, resistances — should be represented by a sensible ac:N bonus AND described in the label, so the item does something mechanically as well as narratively.
+- ELEMENTAL AND DIVINE WEAPONS express their extra damage in the damage field as "plus <dice> <type>" — e.g. "1d8+1 plus 1d4 radiant", "2d6 plus 3d10 necrotic", and these stack: "1d6+2 plus 1d4 lightning plus 1d4 thunder". The app rolls these separately and doubles them on a critical hit. Damage described ONLY in the label is never rolled, so a flaming sword whose fire lives in the label is mechanically a plain sword.
+- ONLY these bonus keys are calculated: ac, str, dex, con, int, wis, cha, and skill names (perception, stealth, athletics, persuasion ...). Invented keys like "necrotic_resistance:full" or "fire_immunity:true" do nothing — express resistances, immunities and per-day powers in the LABEL instead.
 - The label states the effect in plain words. Charges and per-day effects are narrative text; there is no charge counter.
 - ${levelNote}
 Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
@@ -781,7 +783,10 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       // scans for stat:N tokens, so dropping them here made them vanish.
       tag = `[ITEM: ${option.name} | weapon | ${option.damage || '1d6'} | | melee | ${option.label || ''}${option.bonuses ? ` | ${option.bonuses}` : ''}]`;
     } else if (option.type === 'armor') {
-      tag = `[ITEM: ${option.name} | armor | ${option.ac || 13} | true | null | ${option.label || ''}${option.bonuses ? ` | ${option.bonuses}` : ''}]`;
+      // dexBonus false = heavy armour (Dex ignored); maxDex caps it for medium.
+      const dexBonus = option.heavy === true || option.heavy === 'true' ? 'false' : 'true';
+      const maxDex = (option.maxDex === null || option.maxDex === undefined || option.maxDex === '') ? 'null' : option.maxDex;
+      tag = `[ITEM: ${option.name} | armor | ${option.ac || 13} | ${dexBonus} | ${maxDex} | ${option.label || ''}${option.bonuses ? ` | ${option.bonuses}` : ''}]`;
     } else if (option.type === 'consumable') {
       tag = `[ITEM: ${option.name} | consumable | ${option.label || ''}]`;
     } else {
