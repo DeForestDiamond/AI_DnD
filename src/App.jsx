@@ -725,7 +725,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       ? `The player specifically wants: "${intent.trim()}". Honour this if the materials plausibly allow it; if they do not, say why in the reason field and propose the closest achievable thing.`
       : 'The player has no specific request — propose what these materials most naturally become.';
 
-    const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring1 ring2 feet — omit for weapon/consumable", "damage": "1d8+1 (weapons only, +N for enchantment)", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
+    const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable — use armor ONLY for a main chest piece; every other wearable is magic", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring1 ring2 feet — omit for weapon/consumable", "damage": "1d8+1 (weapons only, +N for enchantment)", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
 
     log(`[CRAFT] Proposing from ${materials.length} material stacks`);
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -741,6 +741,8 @@ RULES:
 - Only consume materials that make sense for that item, and never more than the player has.
 - Every magical item must have a REAL mechanical effect: a +N on weapon damage, or stat:N bonuses, or both. "Enchanted" with no effect is forbidden.
 - Name items for what they do or where they came from — never "Enchanted X".
+- ITEM TYPE IS STRICT. Use type "armor" ONLY for a main chest/body piece (breastplate, chain shirt, plate) — it takes the armor slot and its AC REPLACES the wearer's armour. EVERY other wearable is type "magic" with the matching slot: a cloak is magic/cloak, boots are magic/feet, a helm is magic/head, bracers are magic/arms, a belt is magic/waist, a shirt is magic/torso, gloves are magic/hands, a mask or goggles are magic/face, pauldrons are magic/shoulders, an amulet is magic/neck, a ring is magic/ring1. Giving a cloak type "armor" puts it in the armour slot and throws away the wearer's real armour — never do this.
+- A magic wearable's power lives in its bonuses (ac:N, str:N, dex:N ...). Protective effects that aren't calculable — disadvantage on attacks against you, advantage on saves, resistances — should be represented by a sensible ac:N bonus AND described in the label, so the item does something mechanically as well as narratively.
 - The label states the effect in plain words. Charges and per-day effects are narrative text; there is no charge counter.
 - ${levelNote}
 Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
