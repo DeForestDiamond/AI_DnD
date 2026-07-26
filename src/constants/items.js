@@ -182,6 +182,13 @@ export const parseDMItem = (raw) => {
 
     return { name, data: { type:'magic', slot, bonuses, label } };
   }
+  if (kind === 'construct') {
+    // Constructs, golems and bound entities: owned and commanded, never worn.
+    // No slot is assigned, so they can never be equipped.
+    const status = (parts[2] || 'dormant').trim();
+    const label  = parts.slice(3).join(' | ').trim();
+    return { name, data: { type:'construct', status, label } };
+  }
   if (kind === 'consumable') {
     return { name, data: { type:'consumable', label: parts[2] || '' } };
   }

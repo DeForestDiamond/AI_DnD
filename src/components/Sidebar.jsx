@@ -16,6 +16,7 @@ import { XP_THRESHOLDS } from '../constants/progression.js';
 const categorizeItem = (name, data) => {
   const n = name.toLowerCase();
   // 1. Explicit type wins (but magic falls through to name checks for better sorting)
+  if (data?.type === 'construct') return 'constructs';
   if (data?.type === 'weapon') return 'weapons';
   if (data?.type === 'armor' || data?.type === 'shield') return 'worn';
   if (data?.type === 'bag') return 'gear';
@@ -52,6 +53,7 @@ const categorizeItem = (name, data) => {
 };
 
 const CATEGORY_META = {
+  constructs:  { label: '🗿 Constructs',        emoji: '🗿' },
   weapons:     { label: '⚔️ Weapons',           emoji: '⚔️' },
   ammo:        { label: '🏹 Ammunition',        emoji: '🏹' },
   worn:        { label: '🛡️ Armor & Worn',      emoji: '🛡️' },
@@ -217,7 +219,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   const isStock = (nm) => {
     const cat = categorizeItem(nm, stockData(nm));
     return cat === 'materials' || cat === 'misc' || cat === 'valuables';
-  };
+  };  // constructs excluded — breaking one down should be a deliberate choice
   const q = filter.trim().toLowerCase();
   const hiddenCount = allNames.filter(nm => !isStock(nm)).length;
   const candidates = allNames

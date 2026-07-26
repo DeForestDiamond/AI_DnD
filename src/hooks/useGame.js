@@ -176,6 +176,19 @@ const buildCtxSections = (char) => {
     companionSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
+  // Constructs & bound entities — owned and commanded, not worn. Listed so the
+  // DM knows what the player can call on (and what is merely dormant).
+  const allInv = [...(char.inventory || []), ...(char.stash || [])];
+  const cdb = { ...(char.customItems || {}), ...(char.stashedCustomItems || {}) };
+  const constructNames = [...new Set(allInv)].filter(nm => cdb[nm]?.type === 'construct');
+  const constructSection = constructNames.length
+    ? `\nCONSTRUCTS & BOUND ENTITIES (owned by the player, commanded — not carried gear):\n` +
+      constructNames.map(nm => {
+        const d = cdb[nm];
+        return `- ${nm} [${(d.status || 'dormant').toUpperCase()}]${d.label ? `: ${d.label}` : ''}`;
+      }).join('\n') + '\n'
+    : '';
+
   // NPCs
   const npcs = char.npcs || {};
   let npcSection = '';
@@ -214,7 +227,7 @@ const buildCtxSections = (char) => {
     townsSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
-  return { bio, companionSection, npcSection, townsSection };
+  return { bio, companionSection, constructSection, npcSection, townsSection };
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
@@ -314,6 +327,8 @@ NEVER NAME AN ITEM "ENCHANTED X" OR "X - ENCHANTED". That tells the player nothi
       • DESCRIPTION (field 5) is where the effect goes in plain words: "once per day assume any humanoid form", "3 charges of Cone of Cold, recharges at dawn". Charges and per-day effects live here as text you honor in narration — the app has no charge counter.
       WRONG: [ITEM: Rod of Frost | magic | main hand when used | Ice Storm (4 charges), Cone of Cold]  ← prose in slot AND bonus fields
       RIGHT: [ITEM: Rod of Frost | magic | mainhand | | Ice Storm, Wall of Ice, and Cone of Cold; 7 charges, recharges 1d6+1 at dawn]
+  Construct / bound entity: [ITEM: Bone Colossus | construct | dormant | a 40-foot golem of fused bone; obeys a command word; waking it is loud and visible]
+    For golems, animated things, bound spirits and war machines — anything the player OWNS AND COMMANDS rather than wears. Takes NO equipment slot. Status is dormant, active, or bound. Everything it does goes in the label; constructs have no stat bonuses.
   Consumable: [ITEM: Antitoxin Vial | consumable | cures poison]
   Give and equip together: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
   Quantities: [ITEM: Blast Powder | qty:3] — NEVER bake quantity into the item name
@@ -439,6 +454,7 @@ export const buildSystemPrompt = (char) => {
   // intended difference between the two models is the directives section.
   const bioSection       = ctx.bio;
   const companionSection = ctx.companionSection;
+  const constructSection = ctx.constructSection;
   const npcSection       = ctx.npcSection;
   const townsSection     = ctx.townsSection;
 
@@ -484,7 +500,7 @@ NOT EVERYTHING IS A MYSTERY: Do not turn every threat into a puzzle to investiga
 ACTION OVER DESCRIPTION: When in doubt, make something happen. A merchant approaches. A guard challenges them. A noise echoes. Something moves. A figure appears. Push the story forward. The player is here to make decisions, not to read descriptions.
 
 ACTIONS HAVE CONSEQUENCES: When the player does something significant, the world must react. Always. Disrupting a ritual, cremating preserved bodies, challenging a presence, breaking a seal, stealing from a faction, killing a named NPC — these are not neutral events. Something changes. Something responds. An enemy notices. A power stirs. A faction retaliates. A door opens. Even if the consequence is subtle — a temperature drop, a sound, a shift in the air — something must acknowledge what the player just did. Silence and indifference are not valid responses to meaningful action. If the player spends significant time and effort on something, the world owes them a reaction.
-${bioSection}${companionSection}${npcSection}${townsSection}${abilitiesLine}
+${bioSection}${companionSection}${constructSection}${npcSection}${townsSection}${abilitiesLine}
 
 ${TAGS_BLOCK}
 
@@ -601,7 +617,7 @@ export const buildSystemPromptSonnet = (char) => {
 
 ${directivesBlock(char)}── CHARACTER (STATIC) ──
 ${cb.staticPart}
-${ctx.bio}${ctx.companionSection}${ctx.npcSection}${ctx.townsSection}
+${ctx.bio}${ctx.companionSection}${ctx.constructSection}${ctx.npcSection}${ctx.townsSection}
 ── HARD RULES ──
 - Maximum 3 paragraphs, 200 words. Hard limit — if you're writing a fourth paragraph, stop and cut. Front-load the narrative, the choices go last.
 - Show don't tell. "He shifts his weight and won't meet your eyes" not "he seems uncomfortable and suspicious." One vivid detail beats three explanatory sentences. If you've said it, don't say it again with different words.
