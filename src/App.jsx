@@ -914,6 +914,20 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     return (result.recovers || []).map(r => `${r.name} x${r.count || 1}`).join(', ') || 'nothing';
   };
 
+  // Cycle a construct's status: dormant -> active -> bound -> dormant.
+  // Works whether the construct is carried or stashed.
+  const cycleConstructStatus = (name) => {
+    const c = charRef.current;
+    const ORDER = ['dormant', 'active', 'bound'];
+    const store = c.customItems?.[name] ? 'customItems' : (c.stashedCustomItems?.[name] ? 'stashedCustomItems' : null);
+    if (!store) return;
+    const item = c[store][name];
+    if (item?.type !== 'construct') return;
+    const next = ORDER[(ORDER.indexOf(item.status || 'dormant') + 1) % ORDER.length];
+    updateChar({ ...c, [store]: { ...c[store], [name]: { ...item, status: next } } });
+    log(`[CONSTRUCT] ${name} -> ${next}`);
+  };
+
   // Shared write path for the NPC edit panel (Feature 3) and manual adds.
   const saveNPCEntry = (group, name, entry, originalName = null) => {
     const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions }, towns: { ...charRef.current.towns } };
@@ -1521,6 +1535,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             }}
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
+            onCycleConstructStatus={cycleConstructStatus}
             onProposeCrafting={proposeCrafting}
             onProposeDismantle={proposeDismantle}
             onExecuteDismantle={executeDismantle}

@@ -757,7 +757,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
@@ -1275,6 +1275,17 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                       onClick={bagMode && !isBag ? () => toggleBagItem(name) : (fullLabel ? () => setExpandedLabels(p=>({...p,[name]:!p[name]})) : undefined)}>
                       {name} {statLabel && <span style={{color:colors.textDead}}>{statLabel}</span>}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
                     </span>
+                    {/* construct status — tap to cycle dormant/active/bound */}
+                    {data?.type === 'construct' && onCycleConstructStatus && !bagMode && (
+                      <button
+                        title="Tap to cycle: dormant → active → bound"
+                        onClick={(e) => { e.stopPropagation(); onCycleConstructStatus(name); }}
+                        style={{flexShrink:0,background:'transparent',border:`1px solid ${(data.status||'dormant')==='active'?colors.gold:colors.borderDim}`,
+                          color:(data.status||'dormant')==='active'?colors.gold:colors.textDead,
+                          fontFamily:fonts.display,fontSize:9,letterSpacing:1,padding:'1px 5px',borderRadius:3,cursor:'pointer'}}>
+                        {(data.status || 'dormant').toUpperCase()}
+                      </button>
+                    )}
                     {/* qty — pinned to the line, never pushed off */}
                     {count > 1 && <span style={{color:colors.gold,fontFamily:fonts.mono,fontSize:14,flexShrink:0}}>x{count}</span>}
                     {/* bag expand toggle */}
