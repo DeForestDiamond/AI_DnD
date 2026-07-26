@@ -719,7 +719,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     const char = charRef.current;
     if (!materials.length) throw new Error('Select at least one material');
 
-    const matList = materials.map(m => `${m.name}${m.count > 1 ? ` x${m.count}` : ''}${m.label ? ` (${m.label})` : ''}`).join('\n');
+    const matList = materials.map(m => `NAME: ${m.name} | HAVE: ${m.count}${m.label ? ` | NOTE: ${m.label}` : ''}`).join('\n');
     const levelNote = `The character is level ${char.level}.`;
     const wantNote = intent?.trim()
       ? `The player specifically wants: "${intent.trim()}". Honour this if the materials plausibly allow it; if they do not, say why in the reason field and propose the closest achievable thing.`
@@ -739,6 +739,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 RULES:
 - Power must fit the materials AND the character's level. Ordinary parts make ordinary gear; rare/monstrous parts make genuinely magical items. Do not hand out legendary power for common scraps.
 - Only consume materials that make sense for that item, and never more than the player has.
+- In "consumes", the "name" MUST be copied EXACTLY as it appears after NAME: in the material list — no quantity, no description, no parenthetical. Writing "Iron Ingot (dwarven, high carbon)" instead of "Iron Ingot" means the material cannot be found and the craft fails.
 - Every magical item must have a REAL mechanical effect: a +N on weapon damage, or stat:N bonuses, or both. "Enchanted" with no effect is forbidden.
 - Name items for what they do or where they came from — never "Enchanted X".
 - CONSTRUCTS, GOLEMS AND BOUND ENTITIES use type "construct" — a thing the player OWNS AND COMMANDS rather than wears or carries: golems, animated skeletons, bound spirits and elementals, war machines, a wraith sealed in a gem. They take no equipment slot. Give a status ("dormant", "active", or "bound") and put everything else — what it is, what it can do, what commanding it costs — in the label. Their power is narrative, so do not give them stat bonuses; describe what they do instead.
@@ -766,6 +767,25 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
   // Build the [ITEM:] tag for a chosen option and apply it, then remove the
   // consumed materials. Reuses applyEffects so the item goes through the exact
   // same parser as DM-granted loot.
+  // Resolve a material name returned by the model back to an item the player
+  // actually holds. Models sometimes echo the descriptive form ("Iron Ingot
+  // (dwarven)") or a quantity suffix; match exactly first, then progressively
+  // looser, so a formatting slip doesn't fail an otherwise valid craft.
+  const resolveHeldName = (wanted, held) => {
+    const w = (wanted || '').trim();
+    const exact = held.find(h => h.toLowerCase() === w.toLowerCase());
+    if (exact) return exact;
+    const stripped = w.replace(/\s*\([^)]*\)\s*$/, '').replace(/\s+x\d+$/i, '').trim();
+    const onStripped = held.find(h => h.toLowerCase() === stripped.toLowerCase());
+    if (onStripped) return onStripped;
+    // longest held name that the requested string begins with (handles a
+    // trailing description appended without brackets)
+    const prefix = held
+      .filter(h => stripped.toLowerCase().startsWith(h.toLowerCase()))
+      .sort((a, b) => b.length - a.length)[0];
+    return prefix || w;
+  };
+
   const executeCrafting = (option) => {
     const c = charRef.current;
     // Materials can come from inventory OR stash. Count both, verify the player
@@ -774,7 +794,10 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     const invCount = {}, stashCount = {};
     (c.inventory || []).forEach(n => { invCount[n] = (invCount[n] || 0) + 1; });
     (c.stash || []).forEach(n => { stashCount[n] = (stashCount[n] || 0) + 1; });
-    for (const m of option.consumes || []) {
+    // Normalise every requested material to a name the player actually holds
+    const heldNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount)])];
+    const consumes = (option.consumes || []).map(m => ({ ...m, name: resolveHeldName(m.name, heldNames) }));
+    for (const m of consumes) {
       const held = (invCount[m.name] || 0) + (stashCount[m.name] || 0);
       if (held < (m.count || 1)) throw new Error(`Not enough ${m.name} (have ${held}, need ${m.count || 1})`);
     }
@@ -798,7 +821,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     // [REMOVE:] only touches inventory, so split the consumption: take what we
     // can from inventory via tags, and splice the rest out of the stash here.
     const stashTakes = [];
-    const removeTags = (option.consumes || []).map(m => {
+    const removeTags = consumes.map(m => {
       const want = m.count || 1;
       const fromInv = Math.min(want, invCount[m.name] || 0);
       const fromStash = want - fromInv;
@@ -818,7 +841,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       next = { ...next, stash };
     }
     updateChar(next);
-    log(`[CRAFT] Made ${option.name}; consumed ${(option.consumes || []).map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
+    log(`[CRAFT] Made ${option.name}; consumed ${consumes.map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
     return option.name;
   };
 
