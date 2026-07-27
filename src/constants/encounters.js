@@ -62,16 +62,51 @@ const HIGH_ANTAGONISTS = [ // levels 9+: campaign-scale villains
   'an ancient guardian beast roused from a ruin', 'a storm giant whose moods are wrecking the coast',
 ];
 
-export const rollAntagonist = (level, exclude = null) => {
+
+// ── Named antagonists ──────────────────────────────────────────────────────────
+// Specific Faerûnian villains rather than archetypes. Once an arc against one is
+// completed they're recorded in character.defeatedAntagonists and never rolled
+// again — no being sent after a dragon you killed last week. The ledger is
+// editable in Settings, because in the Realms almost nothing stays dead.
+const NAMED_MID = [ // levels 5+
+  'Xanathar, the beholder crime lord of Waterdeep',
+  'Manshoon, the Zhentarim founder — and his clones',
+  'Claugiyliamatar, "Old Gnawbone", the green dragon of Kryptgarden Forest',
+  'Jarlaxle Baenre, whose schemes are never what they appear',
+  'the Cult of the Dragon, working to raise a dracolich',
+  'Ythryn cultists digging up something better left buried',
+];
+const NAMED_HIGH = [ // levels 9+
+  'Klauth, "Old Snarl", the ancient red dragon of the Sword Coast North',
+  'Szass Tam, lich and Zulkir of Necromancy, ruler of Thay',
+  'Halaster Blackcloak, the mad archmage of Undermountain',
+  'Larloch, the Shadow King, demilich of Warlock\'s Crypt',
+  'Iymrith, the ancient blue dragon of Anauroch',
+  'Arauthator, "Old White Death", the ancient white dragon',
+  'Acererak, the demilich, and the tombs he leaves as traps',
+  'Zariel, Archduchess of Avernus, and her Blood War legions',
+  'Tiamat\'s faithful, working to bring the Dragon Queen through',
+];
+
+export const rollAntagonist = (level, exclude = null, defeated = []) => {
   let pool = [...LOW_ANTAGONISTS];
-  if (level >= 5) pool.push(...MID_ANTAGONISTS);
-  if (level >= 9) pool.push(...HIGH_ANTAGONISTS);
+  if (level >= 5) pool.push(...MID_ANTAGONISTS, ...NAMED_MID);
+  if (level >= 9) pool.push(...HIGH_ANTAGONISTS, ...NAMED_HIGH);
+  // Never re-roll a named foe whose arc is already finished.
+  if (defeated?.length) {
+    const done = new Set(defeated.map(d => String(d).toLowerCase()));
+    const filtered = pool.filter(a => !done.has(a.toLowerCase()));
+    if (filtered.length) pool = filtered;
+  }
   if (exclude) {
     const filtered = pool.filter(a => a !== exclude);
     if (filtered.length) pool = filtered;
   }
   return pick(pool);
 };
+
+// Exposed so the UI can tell a named foe from a generic one.
+export const NAMED_ANTAGONISTS = [...NAMED_MID, ...NAMED_HIGH];
 
 // ── Pacing knob ────────────────────────────────────────────────────────────────
 // grace: turns with zero encounter chance. After that, chance = base + perTurn per turn, capped.

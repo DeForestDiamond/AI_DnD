@@ -221,6 +221,11 @@ export const migrateCharacter = (char) => {
     // items are untouched.
     c.slots = { ...EMPTY_SLOTS, ...(c.slots || {}) };
   }
+  if (v < 14) {
+    // Ledger of antagonists whose arcs are finished — filters them out of future
+    // rolls so the player isn't sent after someone they already dealt with.
+    if (!Array.isArray(c.defeatedAntagonists)) c.defeatedAntagonists = [];
+  }
   if (v < 13) {
     // Quantity baked into the NAME ("Pit Fiend Scale x200") — one string
     // pretending to be many items. Breaks [REMOVE: name | qty:N] (the stored
@@ -278,7 +283,7 @@ export const EMPTY_CHAR = {
   classLevels: {},
   subclasses: {},
   slots:{ ...EMPTY_SLOTS },
-  inventory:[], stash:[], coins:1000, environment:'wilderness',
+  inventory:[], stash:[], coins:1000, environment:'wilderness', defeatedAntagonists:[],
   customItems:{},
   stashedCustomItems:{},
   contextExclusions: { companions:{}, npcs:{}, towns:{} },
@@ -429,7 +434,14 @@ export function useCharacter() {
     // Arc resolved — roll a fresh antagonist (never the one just defeated);
     // the DM sees it next turn and starts seeding
     if (/\[ARC COMPLETE\]/i.test(text)) {
-      c.arc = { antagonist: rollAntagonist(c.level, c.arc?.antagonist) };
+      // Record the finished foe so it's never rolled again, then pick the next.
+      const finished = c.arc?.antagonist;
+      const defeated = [...(c.defeatedAntagonists || [])];
+      if (finished && !defeated.some(d => d.toLowerCase() === finished.toLowerCase())) {
+        defeated.push(finished);
+      }
+      c.defeatedAntagonists = defeated;
+      c.arc = { antagonist: rollAntagonist(c.level, finished, defeated) };
     }
 
     // Item update -- renames an item AND carries its custom stats/data to the new name

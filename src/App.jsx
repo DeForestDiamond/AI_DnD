@@ -291,7 +291,7 @@ export default function App() {
       let arcAntagonist;
       if (openingOverride && openingOverride.trim()) {
         // Player wrote the opening — use their antagonist if given, else roll a hidden one.
-        arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level);
+        arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level, null, char.defeatedAntagonists);
         seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}`;
       } else {
         const seed = rollAdventureSeed(char.level);
@@ -937,6 +937,14 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     return (result.recovers || []).map(r => `${r.name} x${r.count || 1}`).join(', ') || 'nothing';
   };
 
+  // Remove a foe from the defeated ledger — they become rollable again. In the
+  // Realms very little stays dead, so this is a normal thing to want.
+  const reviveAntagonist = (name) => {
+    const c = charRef.current;
+    updateChar({ ...c, defeatedAntagonists: (c.defeatedAntagonists || []).filter(d => d !== name) });
+    log(`[ARC] ${name} removed from the defeated ledger — rollable again`);
+  };
+
   // Cycle a construct's status: dormant -> active -> bound -> dormant.
   // Works whether the construct is carried or stashed.
   const cycleConstructStatus = (name) => {
@@ -1548,7 +1556,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
               log('[ARC] Cleared by player — no antagonist, story is open');
             }}
             onRollArc={() => {
-              const a = rollAntagonist(charRef.current.level, charRef.current.arc?.antagonist);
+              const a = rollAntagonist(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists);
               updateChar({ ...charRef.current, arc: { antagonist: a } });
               log(`[ARC] Rolled by player — new antagonist: ${a}`);
             }}
@@ -1558,6 +1566,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             }}
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
+            defeatedAntagonists={character.defeatedAntagonists || []}
+            onReviveAntagonist={reviveAntagonist}
             onCycleConstructStatus={cycleConstructStatus}
             onProposeCrafting={proposeCrafting}
             onProposeDismantle={proposeDismantle}

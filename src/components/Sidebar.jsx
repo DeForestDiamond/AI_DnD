@@ -781,7 +781,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
@@ -972,6 +972,21 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </div>
       )}
 
+      {onReviveAntagonist && (defeatedAntagonists?.length > 0) && (
+        <CollapsibleSection title="⚰️ DEFEATED FOES" count={defeatedAntagonists.length} defaultOpen={false}>
+          <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
+            Arcs you've finished. These are never rolled as a new antagonist again — remove one to let it return.
+          </div>
+          {defeatedAntagonists.map(name => (
+            <div key={name} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+              <span style={{flex:1,minWidth:0,fontSize:12,color:colors.textDim,lineHeight:1.4}}>{name}</span>
+              <button title="Let this foe return — makes it rollable again"
+                onClick={()=>onReviveAntagonist(name)}
+                style={{...btn(false),flexShrink:0,fontSize:10,padding:'2px 6px'}}>↺</button>
+            </div>
+          ))}
+        </CollapsibleSection>
+      )}
       </>}
 
       {activeTab==='character' && <>
