@@ -334,7 +334,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
               <div key={j} style={{borderLeft:`1px solid ${colors.borderDim}`,paddingLeft:6,marginBottom:4}}>
                 <div style={{fontSize:12,color:colors.text}}>{pc.name}</div>
                 <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.4}}>
-                  {pc.type}{pc.slot ? ` · ${pc.slot}` : ''}{pc.damage ? ` · ${pc.damage}` : ''}{pc.bonuses ? ` · ${pc.bonuses}` : ''}
+                  {pc.type}{pc.slot && pc.slot !== pc.type ? ` · ${pc.slot}` : ''}{pc.damage ? ` · ${pc.damage}` : ''}{pc.bonuses ? ` · ${pc.bonuses}` : ''}
                 </div>
                 {pc.label && <div style={{fontSize:10,color:colors.textDim,lineHeight:1.4}}>{pc.label}</div>}
               </div>

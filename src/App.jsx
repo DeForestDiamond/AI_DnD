@@ -735,7 +735,7 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. K
 - Typical sets run 3-6 pieces: armour + head + hands + feet, or cloak + torso + arms + waist.
 - BALANCE: the set's TOTAL power should be comparable to a single item made from the same materials — spread the bonuses thin rather than giving every piece full-item power. Five pieces at ac:1 each is a +5 AC set, which is too much unless the materials are extraordinary.
 - A set consumes proportionally more material than one item. Do not propose a six-piece set from three bones.
-- Give the set a collective name AND each piece its own name.` : '';
+- NAMING: every piece name must clearly belong to the set. Derive each from the set's name or motif — for a set called "Apocalypse Plate": "Apocalypse Helm", "Apocalypse Gauntlets", "Greaves of the Apocalypse". Do NOT name pieces after the material they came from ("Tarrasque Breastplate", "Demogorgon Helm") — that reads as a pile of loot, not a matched set. The materials belong in the label, not the name.` : '';
 
     log(`[CRAFT] Proposing ${asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -780,8 +780,26 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         ? 'The forge ran long and the answer was cut off — select fewer materials, or try again'
         : 'Crafting returned unreadable JSON — try again');
     }
+    // Bonuses may come back as a string ("ac:2"), an object ({ac:2}) or an
+    // array. Normalise to the string form the tag builder and parser expect —
+    // an object silently stringified to "[object Object]" and the piece ended
+    // up with no bonuses at all.
+    const normBonuses = (b) => {
+      if (!b) return '';
+      if (typeof b === 'string') return b;
+      if (Array.isArray(b)) return b.map(normBonuses).filter(Boolean).join(',');
+      if (typeof b === 'object') {
+        return Object.entries(b)
+          .filter(([, v]) => v !== null && v !== undefined && v !== '')
+          .map(([k, v]) => `${k}:${v}`).join(',');
+      }
+      return String(b);
+    };
+    const normOpt = (o) => ({ ...o, bonuses: normBonuses(o.bonuses) });
     const options = (parsed.options || []).filter(o => o?.name).map(o => (
-      asSet && Array.isArray(o.pieces) ? { ...o, pieces: o.pieces.filter(pc => pc?.name) } : o
+      asSet && Array.isArray(o.pieces)
+        ? { ...o, pieces: o.pieces.filter(pc => pc?.name).map(normOpt) }
+        : normOpt(o)
     ));
     if (!options.length) throw new Error('Nothing could be made from those materials');
     log(`[CRAFT] ${options.length} options proposed: ${options.map(o => o.name).join(', ')}`);
