@@ -198,6 +198,7 @@ function DebugViewer({ debugLog, debugStatus }) {
 function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) {
   const [selected, setSelected] = useState({});   // { name: count }
   const [intent, setIntent]     = useState('');
+  const [asSet, setAsSet]       = useState(false);
   const [busy, setBusy]         = useState(false);
   const [options, setOptions]   = useState(null);
   const [status, setStatus]     = useState('');
@@ -252,7 +253,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
     setBusy(true); setStatus('Consulting the forge…'); setOptions(null);
     try {
       const mats = Object.entries(selected).map(([nm, count]) => ({ name: nm, count, label: stockData(nm)?.label || '' }));
-      const opts = await onProposeCrafting({ materials: mats, intent });
+      const opts = await onProposeCrafting({ materials: mats, intent, asSet });
       setOptions(opts); setStatus('');
     } catch (e) { setStatus('✗ ' + e.message); }
     setBusy(false);
@@ -310,26 +311,47 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
       </div>
 
       <input value={intent} onChange={e=>setIntent(e.target.value)} placeholder="What do you want made? (optional)"
-        style={{...npcInput, marginBottom:6}}/>
+        style={{...npcInput, marginBottom:4}}/>
+
+      <label style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:colors.textDim,marginBottom:6,cursor:'pointer'}}>
+        <input type="checkbox" checked={asSet} onChange={()=>setAsSet(v=>!v)} style={{accentColor:colors.gold,flexShrink:0}}/>
+        Forge a matched set (several pieces, different slots — costs more material)
+      </label>
 
       <button onClick={propose} disabled={busy || selCount === 0}
         style={{...btn(false), width:'100%', opacity:(busy||selCount===0)?0.4:1}}>
-        {busy ? '…' : `🔨 WHAT CAN I MAKE?${selCount ? ` (${selCount})` : ''}`}
+        {busy ? '…' : `🔨 WHAT CAN I ${asSet ? 'FORGE AS A SET' : 'MAKE'}?${selCount ? ` (${selCount})` : ''}`}
       </button>
       {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:6,lineHeight:1.4}}>{status}</div>}
 
       {options && options.map((o, i) => (
         <div key={i} style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:6}}>
-          <div style={{fontFamily:fonts.display,fontSize:13,color:colors.gold,marginBottom:2}}>{o.name}</div>
-          <div style={{fontSize:11,color:colors.textDim,marginBottom:4,lineHeight:1.4}}>{o.label}</div>
-          <div style={{fontSize:10,color:colors.textGhost,marginBottom:4,lineHeight:1.4}}>
-            {o.type}{o.slot ? ` · ${o.slot}` : ''}{o.damage ? ` · ${o.damage}` : ''}{o.bonuses ? ` · ${o.bonuses}` : ''}
+          <div style={{fontFamily:fonts.display,fontSize:13,color:colors.gold,marginBottom:2}}>
+            {o.name}{o.pieces?.length ? <span style={{color:colors.textGhost,fontSize:10}}> · {o.pieces.length} pieces</span> : null}
           </div>
+          {o.pieces?.length ? (
+            o.pieces.map((pc, j) => (
+              <div key={j} style={{borderLeft:`1px solid ${colors.borderDim}`,paddingLeft:6,marginBottom:4}}>
+                <div style={{fontSize:12,color:colors.text}}>{pc.name}</div>
+                <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.4}}>
+                  {pc.type}{pc.slot ? ` · ${pc.slot}` : ''}{pc.damage ? ` · ${pc.damage}` : ''}{pc.bonuses ? ` · ${pc.bonuses}` : ''}
+                </div>
+                {pc.label && <div style={{fontSize:10,color:colors.textDim,lineHeight:1.4}}>{pc.label}</div>}
+              </div>
+            ))
+          ) : (
+            <>
+              <div style={{fontSize:11,color:colors.textDim,marginBottom:4,lineHeight:1.4}}>{o.label}</div>
+              <div style={{fontSize:10,color:colors.textGhost,marginBottom:4,lineHeight:1.4}}>
+                {o.type}{o.slot ? ` · ${o.slot}` : ''}{o.damage ? ` · ${o.damage}` : ''}{o.bonuses ? ` · ${o.bonuses}` : ''}
+              </div>
+            </>
+          )}
           <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
             Consumes: {(o.consumes||[]).map(m=>`${m.name}${m.count>1?` x${m.count}`:''}`).join(', ') || 'nothing'}
             {o.reason ? ` — ${o.reason}` : ''}
           </div>
-          <button onClick={()=>make(o)} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>✓ FORGE THIS</button>
+          <button onClick={()=>make(o)} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>{o.pieces?.length ? '✓ FORGE THE SET' : '✓ FORGE THIS'}</button>
         </div>
       ))}
     </CollapsibleSection>

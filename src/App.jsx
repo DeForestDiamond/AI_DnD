@@ -714,7 +714,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
   // what the selected materials could become and returns options WITHOUT
   // touching the save. executeCrafting() consumes the materials and creates the
   // item only after the player confirms a choice.
-  const proposeCrafting = async ({ materials, intent }) => {
+  const proposeCrafting = async ({ materials, intent, asSet }) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     const char = charRef.current;
     if (!materials.length) throw new Error('Select at least one material');
@@ -725,9 +725,19 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       ? `The player specifically wants: "${intent.trim()}". Honour this if the materials plausibly allow it; if they do not, say why in the reason field and propose the closest achievable thing.`
       : 'The player has no specific request — propose what these materials most naturally become.';
 
+    const setShape = `{ "options": [ { "name": "Set Name", "pieces": [ { "name": "Piece Name", "type": "weapon|armor|magic", "slot": "the slot this piece occupies", "damage": "weapons only", "heavy": "armor only", "maxDex": "armor only", "bonuses": "stat:N pairs or empty", "label": "what this piece does" } ], "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on the set and why these materials make it" } ] }`;
     const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable|construct — use armor ONLY for a main chest piece; every other wearable is magic; use construct for golems, animated things and bound entities", "status": "construct only — dormant, active, or bound", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring1 ring2 feet — omit for weapon/consumable", "damage": "weapons only — base dice, optional +N enchantment, and optional extra damage dice of another type: 1d8, 1d8+2, or 1d8+1 plus 1d4 radiant, or 2d6 plus 2d6 fire", "heavy": "armor only — true if it is heavy armour that ignores the wearer's Dexterity, false otherwise", "maxDex": "armor only — a number if the armour caps the Dexterity bonus (medium armour is usually 2), otherwise null", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
 
-    log(`[CRAFT] Proposing from ${materials.length} material stacks`);
+    const setRules = asSet ? `
+
+CRAFTING A MATCHED SET: propose 2-3 alternative SETS. Each set is a group of pieces that clearly belong together — shared material, shared motif, a shared name. Rules specific to sets:
+- Use a DIFFERENT slot for each piece so the whole set can be worn at once. At most ONE piece may be the main chest armour (type "armor"); every other worn piece is type "magic" with its own slot. A weapon may be included if the materials suit it.
+- Typical sets run 3-6 pieces: armour + head + hands + feet, or cloak + torso + arms + waist.
+- BALANCE: the set's TOTAL power should be comparable to a single item made from the same materials — spread the bonuses thin rather than giving every piece full-item power. Five pieces at ac:1 each is a +5 AC set, which is too much unless the materials are extraordinary.
+- A set consumes proportionally more material than one item. Do not propose a six-piece set from three bones.
+- Give the set a collective name AND each piece its own name.` : '';
+
+    log(`[CRAFT] Proposing ${asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -749,7 +759,7 @@ RULES:
 - ONLY these bonus keys are calculated: ac, str, dex, con, int, wis, cha, and skill names (perception, stealth, athletics, persuasion ...). Invented keys like "necrotic_resistance:full" or "fire_immunity:true" do nothing — express resistances, immunities and per-day powers in the LABEL instead.
 - The label states the effect in plain words. Charges and per-day effects are narrative text; there is no charge counter.
 - ${levelNote}
-Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
+Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asSet ? setShape : shape}${setRules}`,
         messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
       }),
     });
@@ -758,7 +768,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
     try { parsed = JSON.parse(raw); } catch { throw new Error('Crafting returned unparseable JSON — try again'); }
-    const options = (parsed.options || []).filter(o => o?.name);
+    const options = (parsed.options || []).filter(o => o?.name).map(o => (
+      asSet && Array.isArray(o.pieces) ? { ...o, pieces: o.pieces.filter(pc => pc?.name) } : o
+    ));
     if (!options.length) throw new Error('Nothing could be made from those materials');
     log(`[CRAFT] ${options.length} options proposed: ${options.map(o => o.name).join(', ')}`);
     return options;
@@ -801,23 +813,28 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       const held = (invCount[m.name] || 0) + (stashCount[m.name] || 0);
       if (held < (m.count || 1)) throw new Error(`Not enough ${m.name} (have ${held}, need ${m.count || 1})`);
     }
-    let tag;
-    if (option.type === 'weapon') {
-      // Carry stat bonuses through as a trailing field — the weapon parser
-      // scans for stat:N tokens, so dropping them here made them vanish.
-      tag = `[ITEM: ${option.name} | weapon | ${option.damage || '1d6'} | | melee | ${option.label || ''}${option.bonuses ? ` | ${option.bonuses}` : ''}]`;
-    } else if (option.type === 'armor') {
-      // dexBonus false = heavy armour (Dex ignored); maxDex caps it for medium.
-      const dexBonus = option.heavy === true || option.heavy === 'true' ? 'false' : 'true';
-      const maxDex = (option.maxDex === null || option.maxDex === undefined || option.maxDex === '') ? 'null' : option.maxDex;
-      tag = `[ITEM: ${option.name} | armor | ${option.ac || 13} | ${dexBonus} | ${maxDex} | ${option.label || ''}${option.bonuses ? ` | ${option.bonuses}` : ''}]`;
-    } else if (option.type === 'construct') {
-      tag = `[ITEM: ${option.name} | construct | ${option.status || 'dormant'} | ${option.label || ''}]`;
-    } else if (option.type === 'consumable') {
-      tag = `[ITEM: ${option.name} | consumable | ${option.label || ''}]`;
-    } else {
-      tag = `[ITEM: ${option.name} | magic | ${option.slot || 'neck'} | ${option.bonuses || ''} | ${option.label || ''}]`;
-    }
+    // Build the [ITEM:] tag for one piece (also used for single items).
+    const tagFor = (o) => {
+      if (o.type === 'weapon') {
+        return `[ITEM: ${o.name} | weapon | ${o.damage || '1d6'} | | melee | ${o.label || ''}${o.bonuses ? ` | ${o.bonuses}` : ''}]`;
+      }
+      if (o.type === 'armor') {
+        const dexBonus = o.heavy === true || o.heavy === 'true' ? 'false' : 'true';
+        const maxDex = (o.maxDex === null || o.maxDex === undefined || o.maxDex === '') ? 'null' : o.maxDex;
+        return `[ITEM: ${o.name} | armor | ${o.ac || 13} | ${dexBonus} | ${maxDex} | ${o.label || ''}${o.bonuses ? ` | ${o.bonuses}` : ''}]`;
+      }
+      if (o.type === 'construct') {
+        return `[ITEM: ${o.name} | construct | ${o.status || 'dormant'} | ${o.label || ''}]`;
+      }
+      if (o.type === 'consumable') {
+        return `[ITEM: ${o.name} | consumable | ${o.label || ''}]`;
+      }
+      return `[ITEM: ${o.name} | magic | ${o.slot || 'neck'} | ${o.bonuses || ''} | ${o.label || ''}]`;
+    };
+    // A set creates every piece from one craft; the materials are consumed once.
+    const isSet = Array.isArray(option.pieces) && option.pieces.length > 0;
+    const tag = isSet ? option.pieces.map(tagFor).join('') : tagFor(option);
+
     // [REMOVE:] only touches inventory, so split the consumption: take what we
     // can from inventory via tags, and splice the rest out of the stash here.
     const stashTakes = [];
@@ -841,8 +858,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       next = { ...next, stash };
     }
     updateChar(next);
-    log(`[CRAFT] Made ${option.name}; consumed ${consumes.map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
-    return option.name;
+    const madeDesc = isSet ? `${option.name} (${option.pieces.length} pieces)` : option.name;
+    log(`[CRAFT] Made ${madeDesc}; consumed ${consumes.map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
+    return isSet ? `${option.name} — ${option.pieces.map(pc => pc.name).join(', ')}` : option.name;
   };
 
   // ── Salvage: break an item down into materials ────────────────────────────
