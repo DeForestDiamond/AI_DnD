@@ -427,10 +427,21 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 800,
-          system: `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. Be concise — facts only, no scene-setting or atmosphere.
+          system: `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. This is the ONLY record that will survive of these events, so what you keep matters more than how you say it. Facts only, no scene-setting or atmosphere.
 
-PRESERVE: every named NPC and their role, locations visited, items gained/lost, gold changes, decisions and consequences, active quest threads, faction changes, character state changes.
-DROP: scene descriptions, dialogue, atmosphere, combat blow-by-blow details. Just the facts.
+PRESERVE ABOVE ALL — these are what the story is built on:
+- OBLIGATIONS IN BOTH DIRECTIONS: debts owed to the player and by the player, promises made, bargains struck, favours banked, contracts signed, terms agreed. Who owes what to whom, and for what. Never drop these.
+- RELATIONSHIPS AND HOW THEY CHANGED: who became an ally, enemy, employee, lover, rival; who was betrayed, spared, recruited, crossed. Record the change, not just the state.
+- CONSEQUENTIAL DECISIONS and what followed from them, including who witnessed them and who will remember.
+- DEATHS, disappearances, and who was responsible.
+- QUEST THREADS opened, advanced, closed or abandoned; FACTION standing changes.
+- PERMANENT CHANGES to the player: powers gained, oaths taken, curses, transformations, property or titles acquired.
+
+NAMED PEOPLE: on first mention of any named NPC, give their pronoun AND race — "Harren (he, human)", "Vashaera (she, tiefling)", "Kess (they, kenku)". This is how future entries keep them consistent; without it a human becomes a kenku three sessions later.
+
+RECORD BRIEFLY: significant items — named, magical, or quest-relevant — and only those. Locations visited and where the player ended up.
+
+DROP ENTIRELY: routine loot and coin (a purse of gold from a bandit, ordinary supplies — the app tracks money and inventory itself), scene descriptions, dialogue, atmosphere, combat blow-by-blow, investigation detail that led nowhere, conversation that changed nothing.
 
 RETCON RULE: if any events were walked back or declared not to have happened, omit them entirely.
 
@@ -494,7 +505,20 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 800,
-          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Write 3-5 sentences. PRIORITIZE: combat outcomes, items gained/lost, decisions made, locations visited, quest threads opened or closed, gold changes, NPC relationships changed. DE-PRIORITIZE: conversation content, investigation details, world-building exposition — summarize these in one clause if they mattered, skip them if they didn't advance the story. IMPORTANT: for every named NPC mentioned, always include their gender pronoun on first reference (e.g. "Harren (he)", "Mara (she)") so future recalls use the correct pronouns. GROUND TRUTH (authoritative — never contradict): the player character is ${charRef.current?.name || 'the adventurer'}; their current location at the END of this section is ${charRef.current?.currentLocation || 'unknown'}. Refer to the player by that exact name, and treat that location as where they are now — do NOT infer the player's name or current location from place names mentioned in the log text. Begin the entry with the current location in brackets, e.g. [${charRef.current?.currentLocation || 'Location'}]. Plain text only. No bullet points. No preamble. Just the new log entry.`,
+          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Write 3-5 sentences.
+
+WRITE DOWN FIRST, always, if any occurred:
+- OBLIGATIONS BOTH WAYS: what someone now owes the player, what the player owes someone, promises made, bargains struck, terms agreed, favours banked or called in. These outlive everything else in the log — never omit one.
+- RELATIONSHIP CHANGES with named people: who warmed, cooled, allied, betrayed, was hired, was spared, was crossed. Record the CHANGE, not a description of the person.
+- Decisions with consequences, and who saw them made.
+- Deaths and who caused them; quest threads opened or closed; faction standing shifts.
+- Permanent changes to the player: oaths, curses, powers, titles, property.
+
+THEN, briefly: significant items only — named, magical or quest-relevant — and where the player ended up.
+
+DO NOT RECORD: routine loot and coin. Finding a purse of gold in a hoard is noise; the app tracks money and inventory itself. Ordinary supplies, ammunition and common gear are likewise not story. Skip conversation that changed nothing, investigation that led nowhere, and combat blow-by-blow — the outcome is enough.
+
+NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren (he, human), Vashaera (she, tiefling), Kess (they, kenku). Future entries rely on this; without it a human turns into a kenku three sessions later. GROUND TRUTH (authoritative — never contradict): the player character is ${charRef.current?.name || 'the adventurer'}; their current location at the END of this section is ${charRef.current?.currentLocation || 'unknown'}. Refer to the player by that exact name, and treat that location as where they are now — do NOT infer the player's name or current location from place names mentioned in the log text. Begin the entry with the current location in brackets, e.g. [${charRef.current?.currentLocation || 'Location'}]. Plain text only. No bullet points. No preamble. Just the new log entry.`,
           messages: [
             ...historyForSummary,
             { role: 'user', content: 'Write only the new log entry now.' },
