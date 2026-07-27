@@ -524,6 +524,7 @@ function TownManager({ character, onExtractTown, onSaveNPC, onDeleteNPC }) {
   const [exFrom, setExFrom] = useState('');
   const [exTo, setExTo]     = useState('');
   const [busy, setBusy]     = useState(false);
+  const [exNote, setExNote] = useState('');
   const [status, setStatus] = useState('');
   const [editKey, setEditKey] = useState('');   // '' | 'new' | name
   const [tName, setTName]   = useState('');
@@ -537,9 +538,9 @@ function TownManager({ character, onExtractTown, onSaveNPC, onDeleteNPC }) {
     if (Number.isNaN(from) || Number.isNaN(to)) { setStatus('✗ Enter the message # range'); return; }
     setBusy(true); setStatus('Extracting…');
     try {
-      const { applied } = await onExtractTown({ name: exName, from, to });
+      const { applied } = await onExtractTown({ name: exName, from, to, note: exNote });
       setStatus(applied.length ? `✓ Saved: ${applied.join(', ')}` : 'No locations found in that range');
-      if (applied.length) setExName('');
+      if (applied.length) { setExName(''); setExNote(''); }
     } catch (e) { setStatus('✗ ' + e.message); }
     setBusy(false);
   };
@@ -577,6 +578,9 @@ function TownManager({ character, onExtractTown, onSaveNPC, onDeleteNPC }) {
         <input value={exFrom} onChange={e=>setExFrom(e.target.value)} placeholder="From #" inputMode="numeric" style={{...npcInput, flex:1}}/>
         <input value={exTo} onChange={e=>setExTo(e.target.value)} placeholder="To #" inputMode="numeric" style={{...npcInput, flex:1}}/>
       </div>
+      <input value={exNote} onChange={e=>setExNote(e.target.value)}
+        placeholder="What changed? (optional)"
+        style={{...npcInput, marginBottom:6}}/>
       <button onClick={runExtract} disabled={busy} style={{...btn, width:'100%', opacity:busy?0.5:1}}>{busy ? '…' : '📥 EXTRACT'}</button>
       {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:4,lineHeight:1.4}}>{status}</div>}
 
@@ -616,6 +620,7 @@ function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
   const [exFrom, setExFrom] = useState('');
   const [exTo, setExTo]     = useState('');
   const [exComp, setExComp] = useState(false);
+  const [exNote, setExNote] = useState('');
   const [busy, setBusy]     = useState(false);
   const [status, setStatus] = useState('');
   const [editKey, setEditKey] = useState('');   // '' | 'new' | 'group|name'
@@ -639,9 +644,9 @@ function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
     if (Number.isNaN(from) || Number.isNaN(to)) { setStatus('✗ Enter the message # range (numbers next to messages)'); return; }
     setBusy(true); setStatus('Extracting… (reads those messages via a separate AI call)');
     try {
-      const { applied } = await onExtractNPC({ name: exName, from, to, asCompanion: exComp });
+      const { applied } = await onExtractNPC({ name: exName, from, to, asCompanion: exComp, note: exNote });
       setStatus(applied.length ? `✓ Saved: ${applied.join(', ')}` : 'No one found in that range');
-      if (applied.length) { setExName(''); }
+      if (applied.length) { setExName(''); setExNote(''); }
     } catch (e) { setStatus('✗ ' + e.message); }
     setBusy(false);
   };
@@ -695,6 +700,9 @@ function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
         <input value={exFrom} onChange={e=>setExFrom(e.target.value)} placeholder="From #" inputMode="numeric" style={{...npcInput, flex:1}}/>
         <input value={exTo} onChange={e=>setExTo(e.target.value)} placeholder="To #" inputMode="numeric" style={{...npcInput, flex:1}}/>
       </div>
+      <input value={exNote} onChange={e=>setExNote(e.target.value)}
+        placeholder="What changed? (optional — e.g. 'she married Grimjaw')"
+        style={{...npcInput, marginBottom:4}}/>
       <label style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:colors.textDim,marginBottom:6,cursor:'pointer'}}>
         <input type="checkbox" checked={exComp} onChange={()=>setExComp(v=>!v)} style={{accentColor:colors.gold}}/>
         Save as companion

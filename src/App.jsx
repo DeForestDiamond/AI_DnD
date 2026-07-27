@@ -584,7 +584,7 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
   //   name given, not in store  -> create
   //   name given, already exists -> update (existing entry sent for merging)
   //   name blank                 -> multi-find (all significant characters)
-  const extractNPCs = async ({ name, from, to, asCompanion }) => {
+  const extractNPCs = async ({ name, from, to, asCompanion, note }) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     const logArr = fullLogRef.current;
     const lo = Math.max(0, Math.min(from, to));
@@ -603,7 +603,15 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
     const shape = '{ "npcs": { "Character Name": { "location": "Town or Town - District, or empty string", "relationship": "their relationship to ' + playerName + ' in a short phrase", "desc": "2-4 vivid sentences: appearance, personality, role, notable facts — include their gender pronoun on first mention" } } }';
     let task;
     if (trimmedName && existing) {
-      task = `Extract an UPDATED record for the character named "${existing[0]}". Their existing record follows — MERGE it with new information from the messages. Keep established facts unless the messages contradict or supersede them; weave in what is new.\nEXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
+      task = `UPDATE the existing record for "${existing[0]}". The record below is ESTABLISHED TRUTH — treat it exactly as if it had appeared in the messages. Start from it, keep everything in it, and change only what these messages actually change.
+
+The messages do NOT need to re-describe this character. They only need to show what happened. A range covering a single event is enough — read it for: how their relationship to ${playerName} changed, significant events they took part in, where they are now, obligations or promises between them, and any new facts. Fold those into the existing text and preserve the rest where nothing contradicts it.
+
+NEVER return an empty result for an update. If the messages genuinely add nothing about this character, return the existing record unchanged.${note ? `
+
+THE PLAYER SAYS THIS IS WHAT CHANGED — treat it as true and make sure the updated record reflects it: "${note}"` : ''}
+
+EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
     } else if (trimmedName) {
       task = `Extract a record for ONLY the character named "${trimmedName}". If they do not appear in these messages, return { "npcs": {} }.`;
     } else {
@@ -627,7 +635,7 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
         max_tokens: 4000,
-        system: `You extract character records from D&D session transcripts. The player character is ${playerName} — never create a record for them. Base every record ONLY on what these messages establish; do not invent details. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
+        system: `You extract character records from D&D session transcripts. The player character is ${playerName} — never create a record for them. Base every record on what these messages establish PLUS, when updating, the existing record supplied in the task — that record is established truth, not invention, and must be preserved. Do not invent anything beyond those two sources. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
         messages: [
           ...apiMsgs,
           { role: 'user', content: task + '\n\nRespond with ONLY the JSON now.' },
@@ -675,7 +683,7 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
 
 
   // ── Town/location extraction — same pattern as extractNPCs ─────────────────
-  const extractTowns = async ({ name, from, to }) => {
+  const extractTowns = async ({ name, from, to, note }) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     const logArr = fullLogRef.current;
     const lo = Math.max(0, Math.min(from, to));
@@ -693,7 +701,15 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
     const shape = '{ "towns": { "Town Name": { "desc": "1-3 sentences: what this place is, its character and atmosphere", "status": "current state relative to ' + playerName + ' (e.g. established base, hostile, just passing through)", "notable_locations": { "Place Name": "one-line description" }, "minor_residents": { "Person Name": "one-line description with pronoun" } } } }';
     let task;
     if (trimmedName && existing) {
-      task = `Extract an UPDATED record for the settlement/location named "${existing[0]}". Its existing record follows — MERGE it with new information from the messages: keep established facts unless contradicted, add new notable locations and residents alongside existing ones.\nEXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
+      task = `UPDATE the existing record for "${existing[0]}". The record below is ESTABLISHED TRUTH — treat it as if it had appeared in the messages. Start from it, keep everything in it, and change only what these messages change.
+
+The messages do NOT need to re-describe the place. Read them for what is NEW: locations discovered, residents met, how the place changed, the player's standing there. ADD new notable_locations and minor_residents alongside the existing ones rather than replacing them.
+
+NEVER return an empty result for an update. If the messages add nothing, return the existing record unchanged.${note ? `
+
+THE PLAYER SAYS THIS IS WHAT CHANGED — treat it as true and reflect it: "${note}"` : ''}
+
+EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
     } else if (trimmedName) {
       task = `Extract a record for ONLY the settlement/location named "${trimmedName}". If it does not appear in these messages, return { "towns": {} }.`;
     } else {
@@ -708,7 +724,7 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
         max_tokens: 4000,
-        system: `You extract settlement/location records from D&D session transcripts. Base every record ONLY on what these messages establish; do not invent details. notable_locations and minor_residents are name-keyed objects, not arrays. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
+        system: `You extract settlement/location records from D&D session transcripts. Base every record on what these messages establish PLUS, when updating, the existing record supplied in the task — that record is established truth and must be preserved. notable_locations and minor_residents are name-keyed objects, not arrays. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
         messages: [...apiMsgs, { role: 'user', content: task + '\n\nRespond with ONLY the JSON now.' }],
       }),
     });
