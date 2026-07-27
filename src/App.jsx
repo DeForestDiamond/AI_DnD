@@ -426,7 +426,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
-          max_tokens: 500,
+          max_tokens: 800,
           system: `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. Be concise — facts only, no scene-setting or atmosphere.
 
 PRESERVE: every named NPC and their role, locations visited, items gained/lost, gold changes, decisions and consequences, active quest threads, faction changes, character state changes.
@@ -602,7 +602,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1500,
+        max_tokens: 4000,
         system: `You extract character records from D&D session transcripts. The player character is ${playerName} — never create a record for them. Base every record ONLY on what these messages establish; do not invent details. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
         messages: [
           ...apiMsgs,
@@ -614,7 +614,14 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     const data = await res.json();
     const rawText = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
-    try { parsed = JSON.parse(rawText); } catch { throw new Error('Extraction returned unparseable JSON — try again or narrow the range'); }
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      const cut = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(rawText);
+      throw new Error(cut
+        ? 'The reply was cut off before it finished — narrow the message range and try again'
+        : 'Extraction returned unreadable JSON — try again or narrow the range');
+    }
     const found = parsed.npcs || {};
     const names = Object.keys(found);
     if (!names.length) { log('[NPC] Nothing found in range'); return { applied: [] }; }
@@ -676,7 +683,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1500,
+        max_tokens: 4000,
         system: `You extract settlement/location records from D&D session transcripts. Base every record ONLY on what these messages establish; do not invent details. notable_locations and minor_residents are name-keyed objects, not arrays. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
         messages: [...apiMsgs, { role: 'user', content: task + '\n\nRespond with ONLY the JSON now.' }],
       }),
@@ -685,7 +692,14 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     const data = await res.json();
     const rawText = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
-    try { parsed = JSON.parse(rawText); } catch { throw new Error('Extraction returned unparseable JSON — try again or narrow the range'); }
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      const cut = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(rawText);
+      throw new Error(cut
+        ? 'The reply was cut off before it finished — narrow the message range and try again'
+        : 'Extraction returned unreadable JSON — try again or narrow the range');
+    }
     const found = parsed.towns || {};
     if (!Object.keys(found).length) { log('[TOWN] Nothing found in range'); return { applied: [] }; }
 
@@ -750,7 +764,7 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. K
         // A set is several pieces per option, each with name/slot/stats/label —
         // far more output than single items. Too small a ceiling truncates the
         // JSON mid-object and it fails to parse.
-        max_tokens: asSet ? 4000 : 1500,
+        max_tokens: asSet ? 4000 : 3000,
         system: `You are a master crafter in a D&D 5e game (Forgotten Realms). Given raw materials, propose 2-3 DISTINCT items that could plausibly be made from them — different in function, not just renamed versions of each other.
 
 RULES:
@@ -926,7 +940,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1200,
+        max_tokens: 2500,
         system: `You are a salvager in a D&D 5e game (Forgotten Realms). Given finished items, determine what raw materials are recovered by breaking them down.
 
 RULES:
@@ -943,7 +957,14 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     const data = await res.json();
     const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
-    try { parsed = JSON.parse(raw); } catch { throw new Error('Salvage returned unparseable JSON — try again'); }
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      const cut = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
+      throw new Error(cut
+        ? 'The reply was cut off before it finished — select fewer items and try again'
+        : 'Salvage returned unreadable JSON — try again');
+    }
     const result = (parsed.results || [])[0];
     if (!result) throw new Error('Nothing could be recovered');
     log(`[SALVAGE] Recovers: ${(result.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
