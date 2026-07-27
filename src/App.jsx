@@ -730,7 +730,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 
     const setRules = asSet ? `
 
-CRAFTING A MATCHED SET: propose 2-3 alternative SETS. Each set is a group of pieces that clearly belong together — shared material, shared motif, a shared name. Rules specific to sets:
+CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. Keep every label to ONE short sentence — brevity matters here, a long response gets cut off. Each set is a group of pieces that clearly belong together — shared material, shared motif, a shared name. Rules specific to sets:
 - Use a DIFFERENT slot for each piece so the whole set can be worn at once. At most ONE piece may be the main chest armour (type "armor"); every other worn piece is type "magic" with its own slot. A weapon may be included if the materials suit it.
 - Typical sets run 3-6 pieces: armour + head + hands + feet, or cloak + torso + arms + waist.
 - BALANCE: the set's TOTAL power should be comparable to a single item made from the same materials — spread the bonuses thin rather than giving every piece full-item power. Five pieces at ac:1 each is a +5 AC set, which is too much unless the materials are extraordinary.
@@ -743,7 +743,10 @@ CRAFTING A MATCHED SET: propose 2-3 alternative SETS. Each set is a group of pie
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1500,
+        // A set is several pieces per option, each with name/slot/stats/label —
+        // far more output than single items. Too small a ceiling truncates the
+        // JSON mid-object and it fails to parse.
+        max_tokens: asSet ? 4000 : 1500,
         system: `You are a master crafter in a D&D 5e game (Forgotten Realms). Given raw materials, propose 2-3 DISTINCT items that could plausibly be made from them — different in function, not just renamed versions of each other.
 
 RULES:
@@ -758,8 +761,8 @@ RULES:
 - ELEMENTAL AND DIVINE WEAPONS express their extra damage in the damage field as "plus <dice> <type>" — e.g. "1d8+1 plus 1d4 radiant", "2d6 plus 3d10 necrotic", and these stack: "1d6+2 plus 1d4 lightning plus 1d4 thunder". The app rolls these separately and doubles them on a critical hit. Damage described ONLY in the label is never rolled, so a flaming sword whose fire lives in the label is mechanically a plain sword.
 - ONLY these bonus keys are calculated: ac, str, dex, con, int, wis, cha, and skill names (perception, stealth, athletics, persuasion ...). Invented keys like "necrotic_resistance:full" or "fire_immunity:true" do nothing — express resistances, immunities and per-day powers in the LABEL instead.
 - The label states the effect in plain words. Charges and per-day effects are narrative text; there is no charge counter.
-- ${levelNote}
-Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asSet ? setShape : shape}${setRules}`,
+- ${levelNote}${setRules}
+Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asSet ? setShape : shape}`,
         messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
       }),
     });
@@ -767,7 +770,16 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     const data = await res.json();
     const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
-    try { parsed = JSON.parse(raw); } catch { throw new Error('Crafting returned unparseable JSON — try again'); }
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // A response cut off by the token ceiling ends mid-object rather than
+      // with a closing brace — say so instead of a generic parse failure.
+      const truncated = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
+      throw new Error(truncated
+        ? 'The forge ran long and the answer was cut off — select fewer materials, or try again'
+        : 'Crafting returned unreadable JSON — try again');
+    }
     const options = (parsed.options || []).filter(o => o?.name).map(o => (
       asSet && Array.isArray(o.pieces) ? { ...o, pieces: o.pieces.filter(pc => pc?.name) } : o
     ));
