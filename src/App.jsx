@@ -733,7 +733,11 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
 CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. Keep every label to ONE short sentence — brevity matters here, a long response gets cut off. Each set is a group of pieces that clearly belong together — shared material, shared motif, a shared name. Rules specific to sets:
 - Use a DIFFERENT slot for each piece so the whole set can be worn at once. At most ONE piece may be the main chest armour (type "armor"); every other worn piece is type "magic" with its own slot. A weapon may be included if the materials suit it.
 - Typical sets run 3-6 pieces: armour + head + hands + feet, or cloak + torso + arms + waist.
-- BALANCE: the set's TOTAL power should be comparable to a single item made from the same materials — spread the bonuses thin rather than giving every piece full-item power. Five pieces at ac:1 each is a +5 AC set, which is too much unless the materials are extraordinary.
+- BALANCE: the set's TOTAL power scales with the MATERIALS, then gets spread across the pieces. Rough guide for the whole set combined, not per piece:
+    ordinary hide, iron, common beast parts        -> about +2 total across all bonuses
+    rare or monstrous parts (drake, troll, giant)   -> about +4 total
+    legendary parts (ancient dragon, tarrasque, demon lord, archfiend, god-touched) -> +6 to +9 total, and pieces may carry damage resistances, regeneration or other named effects in their labels
+  Spread that total across the pieces however suits them — a set may be +3 AC on the chest and helm with +2 STR on the gauntlets and +1 CON on the greaves. Do NOT hand a legendary set a single +1: materials of that calibre must produce armour worth wearing.
 - A set consumes proportionally more material than one item. Do not propose a six-piece set from three bones.
 - NAMING: every piece name must clearly belong to the set. Derive each from the set's name or motif — for a set called "Apocalypse Plate": "Apocalypse Helm", "Apocalypse Gauntlets", "Greaves of the Apocalypse". Do NOT name pieces after the material they came from ("Tarrasque Breastplate", "Demogorgon Helm") — that reads as a pile of loot, not a matched set. The materials belong in the label, not the name.` : '';
 
