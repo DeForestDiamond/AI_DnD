@@ -328,8 +328,9 @@ NEVER NAME AN ITEM "ENCHANTED X" OR "X - ENCHANTED". That tells the player nothi
       • DESCRIPTION (field 5) is where the effect goes in plain words: "once per day assume any humanoid form", "3 charges of Cone of Cold, recharges at dawn". Charges and per-day effects live here as text you honor in narration — the app has no charge counter.
       WRONG: [ITEM: Rod of Frost | magic | main hand when used | Ice Storm (4 charges), Cone of Cold]  ← prose in slot AND bonus fields
       RIGHT: [ITEM: Rod of Frost | magic | mainhand | | Ice Storm, Wall of Ice, and Cone of Cold; 7 charges, recharges 1d6+1 at dawn]
-  Construct / bound entity: [ITEM: Bone Colossus | construct | dormant | a 40-foot golem of fused bone; obeys a command word; waking it is loud and visible]
+  Construct / bound entity: [ITEM: Bone Colossus | construct | dormant | CR 14. A 40-foot golem of fused bone; obeys a command word; waking it is loud and visible]
     For golems, animated things, bound spirits and war machines — anything the player OWNS AND COMMANDS rather than wears. Takes NO equipment slot. Status is dormant, active, or bound. Everything it does goes in the label; constructs have no stat bonuses.
+    THE LABEL MUST OPEN WITH A CHALLENGE RATING so its power is unambiguous when it acts — "CR 14." then the description. Scale it to what it was made from: ordinary parts CR 3-8, monstrous parts CR 10-16, legendary remains CR 20+.
   Consumable: [ITEM: Antitoxin Vial | consumable | cures poison]
   Give and equip together: [ITEM: Elven Blade | weapon | 1d8 | finesse | melee][EQUIP: Elven Blade | mainhand]
   Quantities: [ITEM: Blast Powder | qty:3] — NEVER bake quantity into the item name
