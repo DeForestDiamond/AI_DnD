@@ -784,7 +784,7 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
 
     const setRules = asSet ? `
 
-CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. Keep every label to ONE short sentence — brevity matters here, a long response gets cut off. Each set is a group of pieces that clearly belong together — shared material, shared motif, a shared name. Rules specific to sets:
+CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. Give every piece a proper label of 3-4 sentences — what it looks like, what it does, and what it was made from — the same care you would give a single crafted item. A set is a showpiece; describe it like one. Each set is a group of pieces that clearly belong together — shared material, shared motif, a shared name. Rules specific to sets:
 - Use a DIFFERENT slot for each piece so the whole set can be worn at once. At most ONE piece may be the main chest armour (type "armor"); every other worn piece is type "magic" with its own slot. A weapon may be included if the materials suit it.
 - Typical sets run 3-6 pieces: armour + head + hands + feet, or cloak + torso + arms + waist.
 - POWER: judge each piece the way you would judge a single item made from a fair share of these materials, and give it that much. A set forged from tarrasque hide and demon lord remains must be LEGENDARY IN EVERY PIECE — real stat bonuses, meaningful AC, resistances, regeneration, named effects in the labels. Do NOT water pieces down to keep some total low; that produces a legendary set no better than one of drake hide, which is the opposite of the point. Ordinary materials still make ordinary gear — the scaling comes from what went in, exactly as it does for a single item.
