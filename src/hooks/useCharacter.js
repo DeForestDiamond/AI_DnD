@@ -33,6 +33,8 @@ export const applyRaceBonus = (baseStats, race) => {
 // -- Item / slot helpers --------------------------------------------------------
 export const allItems = (customItems) => ({ ...ITEM_DB, ...customItems });
 
+export const ABILITY_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
 export const effectiveStats = (baseStats, slots, customItems) => {
   const db = allItems(customItems);
   const s  = { ...baseStats };
@@ -40,13 +42,36 @@ export const effectiveStats = (baseStats, slots, customItems) => {
     if (!name) return;
     const d = db[name];
     // Any equipped item may grant stat bonuses — a hammer that grants STR, a
-    // breastplate that grants CON — not just magic/focus items. (AC is handled
-    // separately in calcAC.)
+    // breastplate that grants CON. Only the six ABILITY scores belong here:
+    // skill bonuses (intimidation, stealth ...) used to land in this object too
+    // and rendered as unnamed ability rows with nonsense modifiers. AC is
+    // handled separately in calcAC; skills via skillBonuses below.
     if (d?.bonuses) {
-      Object.entries(d.bonuses).forEach(([k, v]) => { if (k !== 'ac') s[k] = (s[k]||0) + v; });
+      Object.entries(d.bonuses).forEach(([k, v]) => {
+        if (ABILITY_KEYS.includes(k)) s[k] = (s[k] || 0) + v;
+      });
     }
   });
   return s;
+};
+
+// Accumulated SKILL bonuses from equipped gear, e.g. { intimidation: 4 }.
+// Keyed by whatever skill names the items use; the roll system matches on the
+// same names when a [ROLL:] names a skill.
+export const skillBonuses = (slots, customItems) => {
+  const db = allItems(customItems);
+  const out = {};
+  Object.values(slots || {}).forEach(name => {
+    if (!name) return;
+    const b = db[name]?.bonuses;
+    if (!b) return;
+    Object.entries(b).forEach(([k, v]) => {
+      if (k !== 'ac' && !ABILITY_KEYS.includes(k) && typeof v === 'number') {
+        out[k] = (out[k] || 0) + v;
+      }
+    });
+  });
+  return out;
 };
 
 export const calcAC = (slots, baseStats, customItems) => {

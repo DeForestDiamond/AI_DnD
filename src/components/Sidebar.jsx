@@ -3,8 +3,8 @@ import { PACING, ENVIRONMENTS } from '../constants/encounters.js';
 import { colors, fonts, btn } from '../styles/theme.js';
 import { SLOTS } from '../constants/items.js';
 import { STAT_NAMES } from '../constants/classes.js';
-import { statMod, modStr, profBonus, calcAC, getMainWeapon, effectiveStats, equippableInSlot, allItems } from '../hooks/useCharacter.js';
-import { stackInventory } from '../hooks/useGame.js';
+import { statMod, modStr, profBonus, calcAC, getMainWeapon, effectiveStats, equippableInSlot, allItems, skillBonuses } from '../hooks/useCharacter.js';
+import { stackInventory, SKILL_ABILITY } from '../hooks/useGame.js';
 import { coinsToString } from '../constants/currency.js';
 import { XP_THRESHOLDS } from '../constants/progression.js';
 
@@ -835,6 +835,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   const [arcCustomText, setArcCustomText] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
+  const gearSkills = skillBonuses(character.slots, character.customItems || {});
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
   const weapon   = character.stats.dex ? getMainWeapon(character.slots, character.stats, character.customItems||{}) : null;
   const pb       = profBonus(character.level);
@@ -1090,6 +1091,31 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           </div>
         ))}
       </div>
+
+      {/* Skills — only those your gear actually boosts, showing the full roll */}
+      {Object.keys(gearSkills).length > 0 && (
+        <div>
+          {sectionLabel('SKILLS')}
+          {Object.entries(gearSkills).sort((a,b)=>a[0].localeCompare(b[0])).map(([skill, gear]) => {
+            const abil  = SKILL_ABILITY[skill.toLowerCase()] || null;
+            const aMod  = abil ? statMod(effStats[abil]) : 0;
+            const total = aMod + pb + gear;
+            const pretty = skill.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, c => c.toUpperCase());
+            return (
+              <div key={skill} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+                <span style={{fontSize:12,color:colors.textFaint}}>
+                  {pretty}
+                  {abil && <span style={{color:colors.textGhost,fontSize:10}}> {abil.toUpperCase()}</span>}
+                </span>
+                <span style={{fontFamily:fonts.mono,fontSize:13,color:colors.gold,fontWeight:'bold'}}>
+                  {total >= 0 ? `+${total}` : total}
+                  <span style={{color:colors.textDead,fontSize:11}}> ({aMod>=0?`+${aMod}`:aMod} +{pb} prof +{gear} gear)</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Gold */}
       <div>
