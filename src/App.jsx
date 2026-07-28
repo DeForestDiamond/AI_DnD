@@ -773,7 +773,22 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
     const char = charRef.current;
     if (!materials.length) throw new Error('Select at least one material');
 
-    const matList = materials.map(m => `NAME: ${m.name} | HAVE: ${m.count}${m.label ? ` | NOTE: ${m.label}` : ''}`).join('\n');
+    // Describe each material fully. For FINISHED equipment this is what the model
+    // needs in order to upgrade it — without the current numbers it reconstructs
+    // them from prose and silently drops or lowers stats.
+    const describeMat = (m) => {
+      const d = m.data || {};
+      const bits = [];
+      if (d.type) bits.push(`type ${d.type}`);
+      if (d.slot) bits.push(`slot ${d.slot}`);
+      if (d.ac !== undefined) bits.push(`ARMOUR RATING ac ${d.ac}${d.dexBonus === false ? ' (heavy)' : d.maxDex != null ? ` (max dex ${d.maxDex})` : ''}`);
+      if (d.damage) bits.push(`damage ${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
+      if (Array.isArray(d.extras) && d.extras.length) bits.push(`extra damage ${d.extras.map(e => `${e.dice} ${e.type}`).join(' + ')}`);
+      if (d.bonuses && Object.keys(d.bonuses).length) bits.push(`CURRENT BONUSES ${Object.entries(d.bonuses).map(([k, v]) => `${k}:${v}`).join(',')}`);
+      if (d.label) bits.push(`"${d.label}"`);
+      return `NAME: ${m.name} | HAVE: ${m.count}${bits.length ? ` | ${bits.join(' | ')}` : ''}`;
+    };
+    const matList = materials.map(describeMat).join('\n');
     const levelNote = `The character is level ${char.level}.`;
     const wantNote = intent?.trim()
       ? `The player specifically wants: "${intent.trim()}". Honour this if the materials plausibly allow it; if they do not, say why in the reason field and propose the closest achievable thing.`
@@ -791,7 +806,12 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
 - A set consumes proportionally more material than one item. Do not propose a six-piece set from three bones.
 - NAMING: every piece name must clearly belong to the set. Derive each from the set's name or motif — for a set called "Apocalypse Plate": "Apocalypse Helm", "Apocalypse Gauntlets", "Greaves of the Apocalypse". Do NOT name pieces after the material they came from ("Tarrasque Breastplate", "Demogorgon Helm") — that reads as a pile of loot, not a matched set. The materials belong in the label, not the name.
 - UPGRADING AN EXISTING SET: if the selection includes FINISHED EQUIPMENT (weapons, armour, worn magic items) rather than raw parts, those are pieces the player already owns and wants improved. Consume them and return their upgraded versions — keep each piece's identity and name lineage (an "Apocalypse Helm" becomes "Apocalypse Helm Reforged" or similar).
-  AN UPGRADE MUST BE A REAL INCREASE, NOT A REARRANGEMENT. Every upgraded piece keeps everything it already had and gains more on top: a higher armour ac value, larger or additional stat bonuses, an added damage die, a new named effect. Do NOT move a bonus from one piece to another and call it an upgrade, and do NOT reduce anything to pay for an increase elsewhere. If the new materials are modest, add modestly — but each piece must end up strictly better than the one consumed. You may add NEW pieces to the set as well if the materials allow and a slot is free.` : '';
+  AN UPGRADE MUST BE A REAL INCREASE, NOT A REARRANGEMENT. Each existing piece is listed above with its CURRENT BONUSES and, for armour, its ARMOUR RATING. Those numbers are a FLOOR:
+    • every stat key present on the old piece must appear on the upgraded piece at an EQUAL OR HIGHER value — never drop a key, never lower a number
+    • armour keeps or raises its ac value
+    • weapons keep or raise their damage dice, enchantment and extra damage dice
+    • everything the label promised still works, plus whatever the new materials add
+  Do NOT move a bonus from one piece to another and call it an upgrade, and do NOT reduce or delete anything to pay for an increase elsewhere. If the player asks to focus on one stat, ADD to that stat — do not strip the others to fund it. If the new materials are modest, add modestly, but every piece must end up strictly better than the one consumed. You may add NEW pieces to the set as well if the materials allow and a slot is free.` : '';
 
     log(`[CRAFT] Proposing ${asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
     const res = await fetch('https://api.anthropic.com/v1/messages', {
