@@ -64,9 +64,10 @@ export const calcAC = (slots, baseStats, customItems) => {
   Object.values(slots).forEach(name => {
     if (!name) return;
     const d = db[name];
-    // AC bonuses from any equipped item, not just magic ones. Skip the worn
-    // armor itself — its AC is the base value applied above, not an addition.
-    if (d?.bonuses?.ac && name !== slots.armor) ac += d.bonuses.ac;
+    // AC bonuses from any equipped item, including the worn armour itself: its
+    // base AC comes from the `ac` field, so an ac:N in its bonuses is a genuine
+    // addition (masterwork, reinforcement) rather than a duplicate of the base.
+    if (d?.bonuses?.ac) ac += d.bonuses.ac;
   });
   return ac;
 };

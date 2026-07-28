@@ -139,11 +139,15 @@ export const parseDMItem = (raw) => {
     const dexBonus = parts[3]?.toLowerCase() !== 'false';
     const maxDex = parts[4] && parts[4] !== 'null' ? parseInt(parts[4]) : null;
     const label  = parts[5] || '';
-    // Also parse stat bonuses from parts[4] onward if they look like bonus:val
+    // Stat bonuses from parts[4] onward. Split on commas as well as fields —
+    // "ac:2,con:1" arrives as ONE part, and without splitting it matched
+    // nothing and the armour silently lost every bonus.
     const bonuses = {};
     parts.slice(4).forEach(p => {
-      const m = p.trim().match(/^(ac|str|dex|con|int|wis|cha):(-?\d+)$/i);
-      if (m) bonuses[m[1].toLowerCase()] = parseInt(m[2]);
+      p.split(',').forEach(tok => {
+        const m = tok.trim().match(/^(ac|str|dex|con|int|wis|cha):(-?\d+)$/i);
+        if (m) bonuses[m[1].toLowerCase()] = parseInt(m[2]);
+      });
     });
     return { name, data: { type:'armor', ac, dexBonus, maxDex, bonuses, label } };
   }
