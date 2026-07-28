@@ -867,6 +867,30 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
   // Build the [ITEM:] tag for a chosen option and apply it, then remove the
   // consumed materials. Reuses applyEffects so the item goes through the exact
   // same parser as DM-granted loot.
+  // Bags hold their contents in customItems[bag].contents rather than the
+  // inventory array, so anything packed away is invisible to crafting unless we
+  // look inside. Returns { name: {inv, stash, bags: [{bag, store, count}]} }.
+  const materialSources = (c) => {
+    const src = {};
+    const bump = (nm, key, n) => {
+      src[nm] = src[nm] || { inv: 0, stash: 0, bags: [] };
+      if (key === 'bags') src[nm].bags.push(n); else src[nm][key] += n;
+    };
+    (c.inventory || []).forEach(nm => bump(nm, 'inv', 1));
+    (c.stash || []).forEach(nm => bump(nm, 'stash', 1));
+    for (const store of ['customItems', 'stashedCustomItems']) {
+      Object.entries(c[store] || {}).forEach(([bagName, d]) => {
+        if (d?.type === 'bag' && d.contents) {
+          Object.entries(d.contents).forEach(([item, count]) => {
+            if (count > 0) bump(item, 'bags', { bag: bagName, store, count });
+          });
+        }
+      });
+    }
+    return src;
+  };
+  const totalHeld = (s) => (s ? s.inv + s.stash + s.bags.reduce((a, b) => a + b.count, 0) : 0);
+
   // Resolve a material name returned by the model back to an item the player
   // actually holds. Models sometimes echo the descriptive form ("Iron Ingot
   // (dwarven)") or a quantity suffix; match exactly first, then progressively
@@ -886,19 +910,63 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     return prefix || w;
   };
 
+  // Consume materials across all three stores. Returns { removeTags, apply } —
+  // inventory removals go through [REMOVE:] tags so the normal item pipeline
+  // handles them; stash and bag contents are edited directly afterwards.
+  const consumeMaterials = (c, consumes) => {
+    const src = materialSources(c);
+    const stashTakes = [];
+    const bagTakes = [];
+    const removeTags = consumes.map(m => {
+      let need = m.count || 1;
+      const s = src[m.name] || { inv: 0, stash: 0, bags: [] };
+      const fromInv = Math.min(need, s.inv); need -= fromInv;
+      const fromStash = Math.min(need, s.stash); need -= fromStash;
+      if (fromStash > 0) stashTakes.push({ name: m.name, count: fromStash });
+      for (const b of s.bags) {
+        if (need <= 0) break;
+        const take = Math.min(need, b.count); need -= take;
+        bagTakes.push({ ...b, name: m.name, take });
+      }
+      return fromInv > 0 ? `[REMOVE: ${m.name}${fromInv > 1 ? ` | qty:${fromInv}` : ''}]` : '';
+    }).join('');
+
+    const apply = (next) => {
+      if (stashTakes.length) {
+        const stash = [...(next.stash || [])];
+        for (const t of stashTakes) {
+          for (let i = 0; i < t.count; i++) {
+            const idx = stash.findIndex(n => n.toLowerCase() === t.name.toLowerCase());
+            if (idx !== -1) stash.splice(idx, 1);
+          }
+        }
+        next = { ...next, stash };
+      }
+      for (const t of bagTakes) {
+        const store = { ...(next[t.store] || {}) };
+        const bag = store[t.bag];
+        if (!bag?.contents) continue;
+        const contents = { ...bag.contents };
+        contents[t.name] = (contents[t.name] || 0) - t.take;
+        if (contents[t.name] <= 0) delete contents[t.name];
+        store[t.bag] = { ...bag, contents };
+        next = { ...next, [t.store]: store };
+      }
+      return next;
+    };
+    return { removeTags, apply, bagTakes };
+  };
+
   const executeCrafting = (option) => {
     const c = charRef.current;
     // Materials can come from inventory OR stash. Count both, verify the player
     // still holds enough (guards a stale panel), then consume inventory first
     // and take the remainder from the stash.
-    const invCount = {}, stashCount = {};
-    (c.inventory || []).forEach(n => { invCount[n] = (invCount[n] || 0) + 1; });
-    (c.stash || []).forEach(n => { stashCount[n] = (stashCount[n] || 0) + 1; });
+    const src = materialSources(c);
     // Normalise every requested material to a name the player actually holds
-    const heldNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount)])];
-    const consumes = (option.consumes || []).map(m => ({ ...m, name: resolveHeldName(m.name, heldNames) }));
+    const consumes = (option.consumes || []).map(m => ({ ...m, name: resolveHeldName(m.name, Object.keys(src)) }));
     for (const m of consumes) {
-      const held = (invCount[m.name] || 0) + (stashCount[m.name] || 0);
+      const held = totalHeld(src[m.name]);
       if (held < (m.count || 1)) throw new Error(`Not enough ${m.name} (have ${held}, need ${m.count || 1})`);
     }
     // Build the [ITEM:] tag for one piece (also used for single items).
@@ -923,28 +991,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     const isSet = Array.isArray(option.pieces) && option.pieces.length > 0;
     const tag = isSet ? option.pieces.map(tagFor).join('') : tagFor(option);
 
-    // [REMOVE:] only touches inventory, so split the consumption: take what we
-    // can from inventory via tags, and splice the rest out of the stash here.
-    const stashTakes = [];
-    const removeTags = consumes.map(m => {
-      const want = m.count || 1;
-      const fromInv = Math.min(want, invCount[m.name] || 0);
-      const fromStash = want - fromInv;
-      if (fromStash > 0) stashTakes.push({ name: m.name, count: fromStash });
-      return fromInv > 0 ? `[REMOVE: ${m.name}${fromInv > 1 ? ` | qty:${fromInv}` : ''}]` : '';
-    }).join('');
-
-    let next = applyEffects(tag + removeTags, c);
-    if (stashTakes.length) {
-      const stash = [...(next.stash || [])];
-      for (const t of stashTakes) {
-        for (let i = 0; i < t.count; i++) {
-          const idx = stash.findIndex(n => n.toLowerCase() === t.name.toLowerCase());
-          if (idx !== -1) stash.splice(idx, 1);
-        }
-      }
-      next = { ...next, stash };
-    }
+    const { removeTags, apply, bagTakes } = consumeMaterials(c, consumes);
+    let next = apply(applyEffects(tag + removeTags, c));
+    if (bagTakes.length) log(`[CRAFT] Drew from bags: ${bagTakes.map(b => `${b.name} x${b.take} from ${b.bag}`).join(', ')}`);
     updateChar(next);
     const madeDesc = isSet ? `${option.name} (${option.pieces.length} pieces)` : option.name;
     log(`[CRAFT] Made ${madeDesc}; consumed ${consumes.map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
@@ -1015,36 +1064,17 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
   // was recovered. Mirrors executeCrafting's split-source handling.
   const executeDismantle = (result, submitted) => {
     const c = charRef.current;
-    const invCount = {}, stashCount = {};
-    (c.inventory || []).forEach(n => { invCount[n] = (invCount[n] || 0) + 1; });
-    (c.stash || []).forEach(n => { stashCount[n] = (stashCount[n] || 0) + 1; });
+    const src = materialSources(c);
     for (const it of submitted) {
-      const held = (invCount[it.name] || 0) + (stashCount[it.name] || 0);
+      const held = totalHeld(src[it.name]);
       if (held < it.count) throw new Error(`Not enough ${it.name} (have ${held}, need ${it.count})`);
     }
 
     const addTags = (result.recovers || [])
       .map(r => `[ITEM: ${r.name}${(r.count || 1) > 1 ? ` | qty:${r.count}` : ''}]`)
       .join('');
-    const stashTakes = [];
-    const removeTags = submitted.map(it => {
-      const fromInv = Math.min(it.count, invCount[it.name] || 0);
-      const fromStash = it.count - fromInv;
-      if (fromStash > 0) stashTakes.push({ name: it.name, count: fromStash });
-      return fromInv > 0 ? `[REMOVE: ${it.name}${fromInv > 1 ? ` | qty:${fromInv}` : ''}]` : '';
-    }).join('');
-
-    let next = applyEffects(addTags + removeTags, c);
-    if (stashTakes.length) {
-      const stash = [...(next.stash || [])];
-      for (const t of stashTakes) {
-        for (let i = 0; i < t.count; i++) {
-          const idx = stash.findIndex(n => n.toLowerCase() === t.name.toLowerCase());
-          if (idx !== -1) stash.splice(idx, 1);
-        }
-      }
-      next = { ...next, stash };
-    }
+    const { removeTags, apply } = consumeMaterials(c, submitted);
+    let next = apply(applyEffects(addTags + removeTags, c));
     updateChar(next);
     log(`[SALVAGE] Broke down ${submitted.map(i => `${i.name} x${i.count}`).join(', ')}`);
     return (result.recovers || []).map(r => `${r.name} x${r.count || 1}`).join(', ') || 'nothing';

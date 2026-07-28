@@ -212,12 +212,24 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   // Materials mostly live in the STASH, not carried inventory, so draw from
   // both. Track which source each stack came from — consumption has to remove
   // from the right list.
-  const invCount = {}, stashCount = {};
+  const invCount = {}, stashCount = {}, bagCount = {}, bagWhere = {};
   (character.inventory || []).forEach(nm => { invCount[nm] = (invCount[nm] || 0) + 1; });
   (character.stash || []).forEach(nm => { stashCount[nm] = (stashCount[nm] || 0) + 1; });
-  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount)])];
+  // Bags keep their contents in customItems[bag].contents, not the inventory
+  // array — without this, anything packed away is invisible to the forge.
+  ['customItems', 'stashedCustomItems'].forEach(store => {
+    Object.entries(character[store] || {}).forEach(([bagName, d]) => {
+      if (d?.type === 'bag' && d.contents) {
+        Object.entries(d.contents).forEach(([item, ct]) => {
+          if (ct > 0) { bagCount[item] = (bagCount[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
+        });
+      }
+    });
+  });
+  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount), ...Object.keys(bagCount)])];
   const stockData = (nm) => db[nm] || (character.stashedCustomItems || {})[nm];
   const isStock = (nm) => {
+    if (stockData(nm)?.type === 'bag') return false;   // a bag is a container, not material
     const cat = categorizeItem(nm, stockData(nm));
     return cat === 'materials' || cat === 'misc' || cat === 'valuables';
   };  // constructs excluded — breaking one down should be a deliberate choice
@@ -227,9 +239,11 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
     .filter(nm => showAll || isStock(nm))
     .filter(nm => !q || nm.toLowerCase().includes(q))
     .sort((a, b) => a.localeCompare(b))
-    .map(nm => [nm, (invCount[nm] || 0) + (stashCount[nm] || 0), {
+    .map(nm => [nm, (invCount[nm] || 0) + (stashCount[nm] || 0) + (bagCount[nm] || 0), {
       inv: invCount[nm] || 0,
       stash: stashCount[nm] || 0,
+      bag: bagCount[nm] || 0,
+      bags: bagWhere[nm] || [],
     }]);
 
   const toggle = (nm, max) => setSelected(prev => {
@@ -293,7 +307,8 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
               <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
               <span style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                 {nm}
-                {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}}>{src.inv > 0 ? '📦+🎒' : '📦'}</span>}
+                {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title="in stash">📦</span>}
+                {src.bag > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title={`in ${src.bags.join(', ')}`}>👜</span>}
               </span>
               {max > 1 && (
                 on
