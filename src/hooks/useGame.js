@@ -19,6 +19,30 @@ export const cleanDisplayText = (text) => text.replace(/\[[^\]]+\]/g, '').trim()
 
 // 5e skill -> governing ability. Rolls named by skill use the right stat
 // instead of silently defaulting to 10 (+0).
+// The canonical 18 5e skills, in display order, with their governing ability.
+// SKILL_ABILITY below also carries aliases (sleight/sleightofhand) for parsing
+// roll requests; this list is what the character sheet shows.
+export const SKILL_LIST = [
+  { key: 'athletics',      label: 'Athletics',       ability: 'str' },
+  { key: 'acrobatics',     label: 'Acrobatics',      ability: 'dex' },
+  { key: 'sleightofhand',  label: 'Sleight of Hand', ability: 'dex' },
+  { key: 'stealth',        label: 'Stealth',         ability: 'dex' },
+  { key: 'arcana',         label: 'Arcana',          ability: 'int' },
+  { key: 'history',        label: 'History',         ability: 'int' },
+  { key: 'investigation',  label: 'Investigation',   ability: 'int' },
+  { key: 'nature',         label: 'Nature',          ability: 'int' },
+  { key: 'religion',       label: 'Religion',        ability: 'int' },
+  { key: 'animalhandling', label: 'Animal Handling', ability: 'wis' },
+  { key: 'insight',        label: 'Insight',         ability: 'wis' },
+  { key: 'medicine',       label: 'Medicine',        ability: 'wis' },
+  { key: 'perception',     label: 'Perception',      ability: 'wis' },
+  { key: 'survival',       label: 'Survival',        ability: 'wis' },
+  { key: 'deception',      label: 'Deception',       ability: 'cha' },
+  { key: 'intimidation',   label: 'Intimidation',    ability: 'cha' },
+  { key: 'performance',    label: 'Performance',     ability: 'cha' },
+  { key: 'persuasion',     label: 'Persuasion',      ability: 'cha' },
+];
+
 export const SKILL_ABILITY = {
   athletics:'str',
   acrobatics:'dex', stealth:'dex', sleight:'dex', sleightofhand:'dex',

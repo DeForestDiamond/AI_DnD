@@ -4,7 +4,7 @@ import { colors, fonts, btn } from '../styles/theme.js';
 import { SLOTS } from '../constants/items.js';
 import { STAT_NAMES } from '../constants/classes.js';
 import { statMod, modStr, profBonus, calcAC, getMainWeapon, effectiveStats, equippableInSlot, allItems, skillBonuses } from '../hooks/useCharacter.js';
-import { stackInventory, SKILL_ABILITY } from '../hooks/useGame.js';
+import { stackInventory, SKILL_ABILITY, SKILL_LIST } from '../hooks/useGame.js';
 import { coinsToString } from '../constants/currency.js';
 import { XP_THRESHOLDS } from '../constants/progression.js';
 
@@ -1092,29 +1092,34 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         ))}
       </div>
 
-      {/* Skills — only those your gear actually boosts, showing the full roll */}
-      {Object.keys(gearSkills).length > 0 && (
-        <div>
-          {sectionLabel('SKILLS')}
-          {Object.entries(gearSkills).sort((a,b)=>a[0].localeCompare(b[0])).map(([skill, gear]) => {
-            const abil  = SKILL_ABILITY[skill.toLowerCase()] || null;
-            const aMod  = abil ? statMod(effStats[abil]) : 0;
+      {/* Skills — all 18, with any gear bonus folded in */}
+      {character.stats.dex && (
+        <CollapsibleSection
+          title="SKILLS"
+          count={Object.keys(gearSkills).length || undefined}
+          defaultOpen={false}
+        >
+          {SKILL_LIST.map(({ key, label, ability }) => {
+            // gear may name a skill by an alias (sleight vs sleightofhand)
+            const gear = Object.entries(gearSkills)
+              .filter(([g]) => g.toLowerCase() === key || SKILL_ABILITY[g.toLowerCase()] === ability && g.toLowerCase().replace(/\s+/g,'') === key)
+              .reduce((sum, [, v]) => sum + v, 0);
+            const aMod  = statMod(effStats[ability]);
             const total = aMod + pb + gear;
-            const pretty = skill.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, c => c.toUpperCase());
             return (
-              <div key={skill} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
-                <span style={{fontSize:12,color:colors.textFaint}}>
-                  {pretty}
-                  {abil && <span style={{color:colors.textGhost,fontSize:10}}> {abil.toUpperCase()}</span>}
+              <div key={key} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+                <span style={{fontSize:12,color:gear?colors.text:colors.textFaint}}>
+                  {label}
+                  <span style={{color:colors.textGhost,fontSize:10}}> {ability.toUpperCase()}</span>
                 </span>
-                <span style={{fontFamily:fonts.mono,fontSize:13,color:colors.gold,fontWeight:'bold'}}>
+                <span style={{fontFamily:fonts.mono,fontSize:13,color:gear?colors.gold:colors.text,fontWeight:gear?'bold':'normal'}}>
                   {total >= 0 ? `+${total}` : total}
-                  <span style={{color:colors.textDead,fontSize:11}}> ({aMod>=0?`+${aMod}`:aMod} +{pb} prof +{gear} gear)</span>
+                  {gear > 0 && <span style={{color:colors.textDead,fontSize:11}}> (+{gear} gear)</span>}
                 </span>
               </div>
             );
           })}
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Gold */}
