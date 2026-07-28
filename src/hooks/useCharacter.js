@@ -270,6 +270,37 @@ export const migrateCharacter = (char) => {
       notes.push('Quantity-in-name items expanded into real stacks');
     }
   }
+  if (v < 15) {
+    // v13 expanded quantity-in-name entries in inventory and stash but missed
+    // BAG CONTENTS, which are {name: count} maps rather than arrays. A bag
+    // holding "Refined Veil x30": 1 reads as a single item named that, so the
+    // real 30 are invisible to crafting, salvage and removal alike.
+    const QTY = /^(.*?)\s*[xX]\s*(\d+)$/;
+    let fixed = 0;
+    ['customItems', 'stashedCustomItems'].forEach(store => {
+      if (!c[store]) return;
+      const next = { ...c[store] };
+      Object.entries(c[store]).forEach(([bagName, data]) => {
+        if (data?.type !== 'bag' || !data.contents) return;
+        const contents = {};
+        Object.entries(data.contents).forEach(([item, count]) => {
+          const m = String(item).match(QTY);
+          const held = Math.max(1, parseInt(count, 10) || 1);
+          if (m && m[1].trim()) {
+            const base = m[1].trim();
+            const per = Math.min(500, Math.max(1, parseInt(m[2], 10) || 1));
+            contents[base] = (contents[base] || 0) + per * held;   // merge if the base already exists
+            fixed++;
+          } else {
+            contents[item] = (contents[item] || 0) + held;
+          }
+        });
+        next[bagName] = { ...data, contents };
+      });
+      c[store] = next;
+    });
+    if (fixed) notes.push(`Bag contents: ${fixed} quantity-in-name entries expanded`);
+  }
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
