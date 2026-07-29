@@ -33,6 +33,26 @@ export const applyRaceBonus = (baseStats, race) => {
 // -- Item / slot helpers --------------------------------------------------------
 export const allItems = (customItems) => ({ ...ITEM_DB, ...customItems });
 
+// True if any copy of an item still exists anywhere: carried, worn, stashed, or
+// packed in a bag. A custom definition must only be discarded when this is false
+// — otherwise deleting the last carried copy strips the stats off the one still
+// on your back, in your stash, or in a satchel.
+export const itemExistsAnywhere = (c, name, overrides = {}) => {
+  const inv = overrides.inventory ?? c.inventory ?? [];
+  const stash = overrides.stash ?? c.stash ?? [];
+  const slots = overrides.slots ?? c.slots ?? {};
+  if (inv.includes(name)) return true;
+  if (stash.includes(name)) return true;
+  if (Object.values(slots).includes(name)) return true;
+  for (const store of ['customItems', 'stashedCustomItems']) {
+    const items = overrides[store] ?? c[store] ?? {};
+    for (const d of Object.values(items)) {
+      if (d?.type === 'bag' && d.contents && (d.contents[name] || 0) > 0) return true;
+    }
+  }
+  return false;
+};
+
 export const ABILITY_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
 export const effectiveStats = (baseStats, slots, customItems) => {
@@ -774,9 +794,11 @@ export function useCharacter() {
         const idx = inventory.indexOf(itemName);
         if (idx !== -1) inventory.splice(idx, 1);
       }
-      // If no copies remain and it's a custom item, drop the definition too
+      // Only discard the definition when NO copy survives anywhere — carried,
+      // worn, stashed or bagged. Checking inventory alone stripped the stats off
+      // an equipped item, or orphaned copies sitting in the stash or a bag.
       let customItems = c.customItems;
-      if (!inventory.includes(itemName) && customItems[itemName]) {
+      if (customItems[itemName] && !itemExistsAnywhere(c, itemName, { inventory })) {
         customItems = { ...customItems };
         delete customItems[itemName];
       }
