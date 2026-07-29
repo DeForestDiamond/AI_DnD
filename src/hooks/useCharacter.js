@@ -449,7 +449,14 @@ export function useCharacter() {
     // denominations pp/gp/sp/cp all work ([GOLD: -5sp], [COIN: +2pp], [GOLD: +3gp 5sp]).
     // Stored as one copper integer, so change-making is automatic.
     [...text.matchAll(/\[(?:GOLD|COINS?):\s*([^\]]+)\]/gi)].forEach(m => {
-      c.coins = Math.max(0, (c.coins || 0) + parseCoinAmount(m[1]));
+      const delta = parseCoinAmount(m[1]);
+      // A gain exactly equal to what the player already holds is almost always
+      // the DM tagging a RESTATEMENT of their wealth rather than a real gain,
+      // which silently doubles it. Apply it, but make it visible.
+      if (delta > 0 && delta === (c.coins || 0) && delta > 100) {
+        log?.(`[COINS] WARNING: [GOLD: ${m[1].trim()}] exactly matches current holdings — this looks like the DM restating wealth rather than granting it, and has DOUBLED it. Check and correct if unintended.`);
+      }
+      c.coins = Math.max(0, (c.coins || 0) + delta);
     });
 
     // HP -- [DAMAGE:] = player takes damage, [HEAL:] = player heals

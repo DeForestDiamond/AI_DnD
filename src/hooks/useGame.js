@@ -295,6 +295,13 @@ const buildCtxSections = (char) => {
 const TAGS_BLOCK = `── GAME TAGS — THE APP READS THESE EXACTLY ──
 Place ALL tags at the END of your response, never mid-narrative. The app parses them automatically: if it is not tagged, IT DID NOT HAPPEN in the game.
 
+TAGS ARE CHANGES, NEVER STATEMENTS OF WHAT THE PLAYER ALREADY HAS. A tag MAKES SOMETHING HAPPEN the moment you write it. Mentioning, counting, describing or referring to something the player already owns gets NO TAG AT ALL.
+  WRONG: "You count your fortune — 2,606,176 gold." [GOLD: +2606176]   ← this DOUBLES their money
+  WRONG: "You draw the Shadow Cloak from your pack." [ITEM: Shadow Cloak]   ← this creates a SECOND cloak
+  RIGHT: "You count your fortune — 2,606,176 gold."   ← narration only, no tag; the app already knows
+  RIGHT: "The merchant counts out your fee." [GOLD: +250]   ← a real change, so it is tagged
+Only tag what CHANGES this turn: coin gained or spent, items received or destroyed, XP earned, HP altered. The player's current gold, inventory and gear are given to you in CURRENT STATE — quote those numbers freely in narration, but never tag them.
+
 CORE TAGS:
 Objective completed: [OBJECTIVE DONE: 3] — ALWAYS pair it with the next step in the same message: [OBJECTIVE: track the buyer who paid for the third vault key]
 Set the next objective: [OBJECTIVE: ...] — one sentence, concrete and checkable, a step toward the arc GOAL
