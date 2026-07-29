@@ -301,6 +301,7 @@ Take off or swap gear — item returns SAFELY to inventory, never destroyed: [UN
 Skill check (USE OFTEN): [ROLL: perception difficulty 14] — then STOP and END your message. The moment you write a [ROLL:] tag, your turn is OVER. Write nothing after it: no outcome, no result, no "what happens next" — you do not know it yet. The system rolls the dice and sends you the result, and you narrate what happens on your NEXT turn. Calling a roll and then continuing to narrate in the same message is a failure — you are guessing at a result the dice have not given you.
   WHEN to roll: ONLY after the player has stated an action whose outcome is uncertain. The roll tests THE PLAYER'S CHOICE — never your guess at what they'd do. Never call a roll in the same message a threat or situation first appears; that message ends with the player's choice unmade. A roll resolves an action the player already typed (attack, sneak, persuade, leap), or a passive sense the WORLD forces on them (a perception check to notice an ambush before it strikes). Never roll for an active choice the player hasn't made yet.
   Roll whenever an outcome is uncertain and interesting: perception to spot an ambush/clue/lie, stealth to sneak, persuasion/intimidation/deception in social conflict, investigation to search, athletics/acrobatics for physical feats, insight to read someone. Do not silently decide these — call the [ROLL:] and let the dice answer.
+  AC IS PASSIVE — NEVER ASK THE PLAYER TO ROLL IT. There is no defence roll, dodge roll or armour-class roll in this game: when something attacks the player you decide whether it beats their AC, which is given in CURRENT STATE. If you want the player to have a chance to avoid something, call for a SAVING THROW instead ([ROLL: dexterity saving throw difficulty 15]).
   SAVING THROWS use the same tag — say so and the system rolls it as a save: [ROLL: dexterity saving throw difficulty 15], [ROLL: constitution save DC 13], [ROLL: wisdom save difficulty 16]. Call for a save when something is done TO the player that they resist rather than attempt: a trap springs, a spell lands, poison takes hold, a fear effect hits, they must keep their footing. 'difficulty' and 'DC' are interchangeable, and multi-word skills work: [ROLL: sleight of hand difficulty 15].
 Location change: [LOCATION: Millhaven]
 Player heal: [HP: +N]  |  Player damage: [HP: -N]  |  Environmental damage: [DAMAGE: 5]
@@ -942,8 +943,16 @@ export function useGame({ charRef, apiKey }) {
       log?.(`[ROLL] ${statLabel} requested but no weapon equipped — falling through to raw ability`);
     }
 
+    // There is no "defence roll" in 5e — AC is passive and attackers roll
+    // against it. If the DM asks for one anyway, treat it as the dodge it
+    // means: a Dexterity save, rather than rolling against a stat of 10.
+    const DEFENCE_AS_DEX = /^(defence|defense|dodge|parry|evade|evasion|block|ac|armorclass|armourclass)$/;
     const statMap  = { strength:'str', dexterity:'dex', constitution:'con', intelligence:'int', wisdom:'wis', charisma:'cha' };
-    const statKey  = statMap[statName] || SKILL_ABILITY[statName] || statName;
+    const statKey  = statMap[statName] || SKILL_ABILITY[statName]
+                   || (DEFENCE_AS_DEX.test(statName) ? 'dex' : statName);
+    if (DEFENCE_AS_DEX.test(statName)) {
+      log?.(`[ROLL] "${statLabel}" is not a 5e roll — AC is passive. Resolved as a Dexterity save.`);
+    }
     // Anything that maps to nothing silently rolls against a phantom 10. Say so
     // in the log rather than letting it pass unnoticed.
     if (!statMap[statName] && !SKILL_ABILITY[statName] && !['str','dex','con','int','wis','cha'].includes(statKey)) {
