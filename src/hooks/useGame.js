@@ -922,8 +922,33 @@ export function useGame({ charRef, apiKey }) {
     const statName  = statLabel.replace(/\s+/g, '');                // normalised, for lookup
     const isSave   = /sav/i.test(rollMatch[2] || '');
     const diff     = parseInt(rollMatch[3]);
+    // An "attack" isn't an ability or a skill — it's the equipped weapon's own
+    // to-hit bonus. Without this it fell through to a stat that doesn't exist
+    // and rolled at +0 regardless of Strength or weapon.
+    if (/^(attack|attackroll|attacks|tohit|hit|melee|ranged|weapon|weaponattack)$/.test(statName)) {
+      const weapon = getMainWeapon(char.slots, char.stats, char.customItems || {});
+      if (weapon) {
+        const pb2 = profBonus(char.level);
+        const atkBonus = weapon.statBonus + pb2 + (weapon.bonus || 0);
+        const d20 = rollDie(20);
+        const total = d20 + atkBonus;
+        const hit = total >= diff;
+        log?.(`[ROLL] ${statLabel} with ${weapon.name}: d20=${d20}+${atkBonus}=${total} vs DC${diff} — ${hit?'HIT':'MISS'}`);
+        return {
+          resultText: `[ROLL RESULT: attack roll with ${weapon.name} — d20 rolled ${d20} + ${weapon.statBonus} ability + ${pb2} proficiency${weapon.bonus ? ` + ${weapon.bonus} enchantment` : ''} = ${total} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}]`,
+          rollResult: { d20, mod: weapon.statBonus, prof: pb2, gearBonus: weapon.bonus || 0, total, difficulty: diff, hit },
+        };
+      }
+      log?.(`[ROLL] ${statLabel} requested but no weapon equipped — falling through to raw ability`);
+    }
+
     const statMap  = { strength:'str', dexterity:'dex', constitution:'con', intelligence:'int', wisdom:'wis', charisma:'cha' };
     const statKey  = statMap[statName] || SKILL_ABILITY[statName] || statName;
+    // Anything that maps to nothing silently rolls against a phantom 10. Say so
+    // in the log rather than letting it pass unnoticed.
+    if (!statMap[statName] && !SKILL_ABILITY[statName] && !['str','dex','con','int','wis','cha'].includes(statKey)) {
+      log?.(`[ROLL] WARNING: "${statLabel}" is not a known ability or skill — rolling against a default of 10 (+0). Tell the DM to name an ability or a 5e skill.`);
+    }
     const effStats = effectiveStats(char.stats, char.slots, char.customItems || {});
     const statVal  = effStats[statKey] || 10;
     // Equipped gear with a bonus for this exact skill (e.g. stealth:+3) adds flat
