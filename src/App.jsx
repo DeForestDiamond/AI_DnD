@@ -1754,6 +1754,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
               voiceName: voice.voiceName, setVoiceName: voice.setVoiceName,
               rate: voice.rate, setRate: voice.setRate,
               pitch: voice.pitch, setPitch: voice.setPitch,
+              pronounce: voice.pronounce, setPronounce: voice.setPronounce,
               availableVoices: voice.availableVoices, preview: voice.previewVoice,
             } : null}
             character={character}

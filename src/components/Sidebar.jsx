@@ -122,7 +122,7 @@ function CollapsibleSection({ title, count, defaultOpen = false, children }) {
 }
 
 // ── Voice settings: pick an installed TTS voice + speaking speed ──────────────
-function VoiceSettings({ voiceName, setVoiceName, rate, setRate, pitch, setPitch, availableVoices, preview }) {
+function VoiceSettings({ voiceName, setVoiceName, rate, setRate, pitch, setPitch, pronounce, setPronounce, availableVoices, preview }) {
   // Android variants often share one display name — number the duplicates so
   // "English (United States)" 1..N are individually selectable (keyed by voiceURI).
   const nameCounts = {};
@@ -155,6 +155,10 @@ function VoiceSettings({ voiceName, setVoiceName, rate, setRate, pitch, setPitch
           <input type="range" min="0.5" max="1.5" step="0.05" value={pitch}
             onChange={e=>setPitch(parseFloat(e.target.value))}
             style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>PRONUNCIATION</div>
+          <textarea value={pronounce || ''} onChange={e=>setPronounce(e.target.value)} rows={3}
+            placeholder={"One per line — word: how to say it\nSseth'karix: Seth ka rix\nVyn: Vinn"}
+            style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:11,padding:'5px 8px',borderRadius:4,outline:'none',resize:'vertical',marginBottom:8,lineHeight:1.4}}/>
           <button onClick={preview} style={{...btn(false),width:'100%',fontSize:11,padding:'4px 0'}}>▶ Preview</button>
           {availableVoices.length === 0 && (
             <div style={{fontSize:10,color:colors.textGhost,marginTop:6,lineHeight:1.4}}>No voices detected yet — they load a moment after the page. To add better ones, install a TTS engine in your device's accessibility settings.</div>
