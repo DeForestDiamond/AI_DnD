@@ -36,6 +36,8 @@ const cleanForSpeech = (text, custom) => applyPronunciations(text, custom)
   .replace(/\[[^\]]+\]/g, '')           // remove all game tags
   .replace(/[*_]/g, '')                 // strip markdown emphasis so TTS doesn't say "asterisk"
   .replace(/\d+\.\s/g, '')             // remove numbered list markers
+  .replace(/\bCR\s*(\d+)/gi, 'challenge rating $1')  // CR 30 → challenge rating 30 (else "county route")
+  .replace(/\bCR\b/g, 'challenge rating')
   .replace(/\bDC\b/g, 'difficulty')    // DC → difficulty
   .replace(/\bAC\b/g, 'armor class')   // AC → armor class
   .replace(/\bHP\b/g, 'hit points')    // HP → hit points
