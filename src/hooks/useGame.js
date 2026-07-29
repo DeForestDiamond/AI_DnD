@@ -200,6 +200,31 @@ const buildCtxSections = (char) => {
     companionSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
+  // Disposition — who this character actually is. The DM's default assumption
+  // is heroism; this is what corrects it, and 'indifferent' is the field that
+  // does the real work.
+  const dp = char.disposition || {};
+  const dpBits = [
+    dp.alignment   && `ALIGNMENT: ${dp.alignment}`,
+    dp.cares       && `CARES ABOUT: ${dp.cares}`,
+    dp.indifferent && `INDIFFERENT TO: ${dp.indifferent}`,
+    dp.methods     && `HOW THEY SOLVE PROBLEMS: ${dp.methods}`,
+    dp.lines       && `LINES THEY WILL NOT CROSS: ${dp.lines}`,
+  ].filter(Boolean);
+  const dispositionSection = dpBits.length
+    ? `\nDISPOSITION — WHO THIS CHARACTER IS:\n${dpBits.join('\n')}\n` +
+      `Every hook, offer and appeal must target what they CARE ABOUT. Do NOT assume heroism. Anything listed as INDIFFERENT genuinely does not move them — an NPC who appeals to it is ignored, dismissed, or exploited, and you should write the scene that way rather than expecting the player to care. NPCs who know them well pitch accordingly; strangers who misjudge them get the real reaction.\n`
+    : '';
+
+  // Arc objectives — the app holds the truth about what is done and what is
+  // not, so the DM cannot lose count of a multi-part hunt.
+  const objs = Array.isArray(char.arc?.objectives) ? char.arc.objectives : [];
+  const objectivesSection = objs.length
+    ? `\nARC OBJECTIVES (${objs.filter(o => o.done).length} of ${objs.length} complete) — THIS IS THE AUTHORITATIVE RECORD:\n` +
+      objs.map((o, i) => `${i + 1}. [${o.done ? 'DONE' : 'NOT DONE'}] ${o.text}`).join('\n') +
+      `\nThis list is the truth. Never contradict it: do not say the player has something they have not completed, do not treat a DONE objective as still outstanding, and do not invent a count of your own. Pursue these ORGANICALLY — never announce the list, never present it as a checklist, and let the player find them in whatever order the story takes. When one is genuinely completed, output [OBJECTIVE DONE: n] with its number.\n`
+    : '';
+
   // Constructs & bound entities — owned and commanded, not worn. Listed so the
   // DM knows what the player can call on (and what is merely dormant).
   // Carried inventory only — the stash is invisible to the DM by design, and
@@ -252,7 +277,7 @@ const buildCtxSections = (char) => {
     townsSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
-  return { bio, companionSection, constructSection, npcSection, townsSection };
+  return { bio, dispositionSection, objectivesSection, companionSection, constructSection, npcSection, townsSection };
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
@@ -260,6 +285,7 @@ const TAGS_BLOCK = `── GAME TAGS — THE APP READS THESE EXACTLY ──
 Place ALL tags at the END of your response, never mid-narrative. The app parses them automatically: if it is not tagged, IT DID NOT HAPPEN in the game.
 
 CORE TAGS:
+Objective completed (only when one in the ARC OBJECTIVES list is genuinely done): [OBJECTIVE DONE: 3]
 XP (mandatory after every combat and milestone): [XP: +50]
   Amounts scale to the FOE'S MAGNITUDE, not the fight's length — a legendary creature dispatched in seconds still pays legendary:
   trivial 10-25 | minor 30-60 | standard 50-100 | hard 100-200 | deadly (CR well above the player: young dragons, powerful named foes) 250-400 | legendary (adult dragons, archmages, faction leaders) 500-800 | mythic (ancient dragons, krakens, demon lords) 1000-2000
@@ -481,6 +507,8 @@ export const buildSystemPrompt = (char) => {
   const bioSection       = ctx.bio;
   const companionSection = ctx.companionSection;
   const constructSection = ctx.constructSection;
+  const dispositionSection = ctx.dispositionSection;
+  const objectivesSection = ctx.objectivesSection;
   const npcSection       = ctx.npcSection;
   const townsSection     = ctx.townsSection;
 
@@ -526,7 +554,7 @@ NOT EVERYTHING IS A MYSTERY: Do not turn every threat into a puzzle to investiga
 ACTION OVER DESCRIPTION: When in doubt, make something happen. A merchant approaches. A guard challenges them. A noise echoes. Something moves. A figure appears. Push the story forward. The player is here to make decisions, not to read descriptions.
 
 ACTIONS HAVE CONSEQUENCES: When the player does something significant, the world must react. Always. Disrupting a ritual, cremating preserved bodies, challenging a presence, breaking a seal, stealing from a faction, killing a named NPC — these are not neutral events. Something changes. Something responds. An enemy notices. A power stirs. A faction retaliates. A door opens. Even if the consequence is subtle — a temperature drop, a sound, a shift in the air — something must acknowledge what the player just did. Silence and indifference are not valid responses to meaningful action. If the player spends significant time and effort on something, the world owes them a reaction.
-${bioSection}${companionSection}${constructSection}${npcSection}${townsSection}${abilitiesLine}
+${bioSection}${dispositionSection}${objectivesSection}${companionSection}${constructSection}${npcSection}${townsSection}${abilitiesLine}
 
 ${TAGS_BLOCK}
 
@@ -643,7 +671,7 @@ export const buildSystemPromptSonnet = (char) => {
 
 ${directivesBlock(char)}── CHARACTER (STATIC) ──
 ${cb.staticPart}
-${ctx.bio}${ctx.companionSection}${ctx.constructSection}${ctx.npcSection}${ctx.townsSection}
+${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSection}${ctx.constructSection}${ctx.npcSection}${ctx.townsSection}
 ── HARD RULES ──
 - Maximum 3 paragraphs, 200 words. Hard limit — if you're writing a fourth paragraph, stop and cut. Front-load the narrative, the choices go last.
 - Show don't tell. "He shifts his weight and won't meet your eyes" not "he seems uncomfortable and suspicious." One vivid detail beats three explanatory sentences. If you've said it, don't say it again with different words.

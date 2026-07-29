@@ -887,6 +887,58 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
   // Build the [ITEM:] tag for a chosen option and apply it, then remove the
   // consumed materials. Reuses applyEffects so the item goes through the exact
   // same parser as DM-granted loot.
+  // ── Arc objectives ─────────────────────────────────────────────────────────
+  // A rough homebrew campaign skeleton for the current antagonist, shaped by the
+  // character's disposition so the goals fit who they actually are.
+  const generateObjectives = async (antagonist) => {
+    const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+    const c = charRef.current;
+    if (!antagonist) throw new Error('No antagonist to build a campaign around');
+    const dp = c.disposition || {};
+    const dpLines = [
+      dp.alignment && `Alignment: ${dp.alignment}`,
+      dp.cares && `Cares about: ${dp.cares}`,
+      dp.indifferent && `Indifferent to: ${dp.indifferent}`,
+      dp.methods && `Solves problems by: ${dp.methods}`,
+      dp.lines && `Will not: ${dp.lines}`,
+    ].filter(Boolean).join('\n');
+
+    log(`[ARC] Generating objectives for: ${antagonist}`);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1500,
+        system: `You design the skeleton of a Dungeons & Dragons story arc: a rough sequence of 6-10 objectives leading from the player's current situation to a confrontation with a hidden antagonist. This is a homebrew outline, not a script — it will be played loosely and may be edited.
+
+RULES:
+- Objectives are CONCRETE and CHECKABLE: "recover the ledger from the Chained Market", "find out who pays the harbourmaster", "kill or turn Vesk". Never vague ("learn more about the cult").
+- If the arc involves collecting or hunting a SET of things, make each one its own objective so the count is unambiguous. Do not write "find the twelve keys" as a single objective.
+- Order them roughly, early to late, but they should be achievable out of order.
+- The antagonist is HIDDEN from the player, so early objectives must not name them. Later ones may.
+- SHAPE THEM TO THIS CHARACTER. The objectives must be things THIS person would actually pursue, for their own reasons. Do not assume heroism, do not build a rescue-the-innocent plot for someone indifferent to innocents. If they care about profit and power, the objectives are about profit and power — the antagonist becomes their problem because of what it costs them, not because it is wrong.
+- Each objective is one sentence.
+Respond with ONLY valid JSON, no prose, no markdown fences: { "objectives": ["...", "..."] }`,
+        messages: [{ role: 'user', content: `HIDDEN ANTAGONIST: ${antagonist}\n\nPLAYER: ${c.name}, level ${c.level}${c.cls?.name ? `, ${c.cls.name}` : ''}. Currently in ${c.currentLocation || 'the Sword Coast'}.\n${dpLines ? `\nWHO THEY ARE:\n${dpLines}\n` : ''}${c.bio ? `\nBACKGROUND: ${c.bio.slice(0, 600)}\n` : ''}\nBuild the arc skeleton. Respond with ONLY the JSON now.` }],
+      }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch {
+      const cut = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
+      throw new Error(cut ? 'The reply was cut off — try again' : 'Objective generation returned unreadable JSON — try again');
+    }
+    const list = (parsed.objectives || []).filter(o => typeof o === 'string' && o.trim());
+    if (!list.length) throw new Error('No objectives generated — try again');
+    const objectives = list.map(text => ({ text: text.trim(), done: false }));
+    updateChar({ ...charRef.current, arc: { ...(charRef.current.arc || {}), antagonist, objectives } });
+    log(`[ARC] ${objectives.length} objectives generated`);
+    return objectives;
+  };
+
   // Bags hold their contents in customItems[bag].contents rather than the
   // inventory array, so anything packed away is invisible to crafting unless we
   // look inside. Returns { name: {inv, stash, bags: [{bag, store, count}]} }.
@@ -1272,6 +1324,15 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       let newChar = applyEffects(finalText, charRef.current);
       if (newChar.arc?.antagonist !== charRef.current.arc?.antagonist) {
         log(`[ARC] Arc complete — new antagonist rolled: ${newChar.arc?.antagonist}`);
+        // Build a fresh campaign skeleton for the new arc, in the background so
+        // it never blocks the player's turn. Failure is non-fatal — the arc
+        // simply runs without objectives and can be generated manually.
+        const freshAntagonist = newChar.arc?.antagonist;
+        if (freshAntagonist) {
+          setTimeout(() => {
+            generateObjectives(freshAntagonist).catch(e => log(`[ARC] Objective generation failed: ${e.message}`));
+          }, 400);
+        }
       }
       updateChar(newChar);
       addMessage({ role:'dm', text:finalText, id:Date.now(), roll:finalRoll });
@@ -1729,6 +1790,11 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             }}
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
+            arcObjectives={character.arc?.objectives || []}
+            onGenerateObjectives={() => generateObjectives(charRef.current.arc?.antagonist)}
+            onSetObjectives={(objectives) => updateChar({ ...charRef.current, arc: { ...(charRef.current.arc || {}), objectives } })}
+            disposition={character.disposition || {}}
+            onSaveDisposition={(d) => updateChar({ ...charRef.current, disposition: d })}
             defeatedAntagonists={character.defeatedAntagonists || []}
             onReviveAntagonist={reviveAntagonist}
             onCycleConstructStatus={cycleConstructStatus}

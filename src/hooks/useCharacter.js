@@ -296,6 +296,15 @@ export const migrateCharacter = (char) => {
       notes.push('Quantity-in-name items expanded into real stacks');
     }
   }
+  if (v < 16) {
+    // Structured disposition — who this character actually is, so the DM stops
+    // assuming heroism. 'indifferent' is the important one: what genuinely
+    // fails to move them.
+    if (!c.disposition || typeof c.disposition !== 'object') {
+      c.disposition = { alignment:'', cares:'', indifferent:'', methods:'', lines:'' };
+    }
+    if (c.arc && !Array.isArray(c.arc.objectives)) c.arc = { ...c.arc, objectives: [] };
+  }
   if (v < 15) {
     // v13 expanded quantity-in-name entries in inventory and stash but missed
     // BAG CONTENTS, which are {name: count} maps rather than arrays. A bag
@@ -341,6 +350,7 @@ export const EMPTY_CHAR = {
   subclasses: {},
   slots:{ ...EMPTY_SLOTS },
   inventory:[], stash:[], coins:1000, environment:'wilderness', defeatedAntagonists:[],
+  disposition: { alignment:'', cares:'', indifferent:'', methods:'', lines:'' },
   customItems:{},
   stashedCustomItems:{},
   contextExclusions: { companions:{}, npcs:{}, towns:{} },
@@ -490,6 +500,15 @@ export function useCharacter() {
 
     // Arc resolved — roll a fresh antagonist (never the one just defeated);
     // the DM sees it next turn and starts seeding
+    // Objective completion: [OBJECTIVE DONE: 3] marks the third objective done.
+    [...text.matchAll(/\[OBJECTIVE\s+DONE:\s*(\d+)\]/gi)].forEach(m => {
+      const idx = parseInt(m[1], 10) - 1;
+      const objs = c.arc?.objectives;
+      if (Array.isArray(objs) && objs[idx] && !objs[idx].done) {
+        c.arc = { ...c.arc, objectives: objs.map((o, i) => i === idx ? { ...o, done: true } : o) };
+      }
+    });
+
     if (/\[ARC COMPLETE\]/i.test(text)) {
       // Record the finished foe so it's never rolled again, then pick the next.
       const finished = c.arc?.antagonist;
