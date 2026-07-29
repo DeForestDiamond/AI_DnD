@@ -196,12 +196,13 @@ function DispositionEditor({ disposition, onSaveDisposition }) {
 }
 
 // ── Arc objectives: the authoritative record of a multi-part hunt ─────────────
-function ObjectivesPanel({ arcObjectives, onGenerateObjectives, onSetObjectives }) {
+function ObjectivesPanel({ arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [adding, setAdding] = useState('');
   const objs = arcObjectives || [];
   const done = objs.filter(o => o.done).length;
+  const liveIdx = objs.findIndex(o => !o.done);
 
   const regen = async () => {
     setBusy(true); setStatus('Building the campaign…');
@@ -217,11 +218,16 @@ function ObjectivesPanel({ arcObjectives, onGenerateObjectives, onSetObjectives 
   return (
     <CollapsibleSection title="🗺️ ARC OBJECTIVES" count={objs.length ? `${done}/${objs.length}` : undefined} defaultOpen={false}>
       <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
-        The campaign skeleton for the current arc. The DM is given this as the authoritative record, so it cannot lose count — but it never announces the list. Look here when a story feels off the rails.
+        One objective runs at a time; the DM writes the next when the last is finished. The GOAL holds the arc's endpoint and its count, so a long hunt can't lose track. The DM never announces any of this — look here when a story feels off the rails.
       </div>
+      <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:2}}>GOAL</div>
+      <textarea value={arcGoal || ''} onChange={e=>onSetArcGoal(e.target.value)} rows={2}
+        placeholder="What finishing this arc means — include any count, e.g. 'recover all twelve vault objects'"
+        style={{...npcInput, resize:'vertical', marginBottom:6, lineHeight:1.4}}/>
       {objs.length === 0 && <div style={{fontSize:12,color:colors.textDead,fontStyle:'italic',marginBottom:6}}>No objectives — generate a campaign for the current antagonist.</div>}
       {objs.map((o, i) => (
-        <div key={i} style={{display:'flex',alignItems:'flex-start',gap:6,padding:'3px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+        <div key={i} style={{display:'flex',alignItems:'flex-start',gap:6,padding:'3px 0',borderBottom:`1px solid ${colors.borderFaint}`,
+          background: i === liveIdx ? 'rgba(201,168,76,0.06)' : 'transparent'}}>
           <input type="checkbox" checked={!!o.done} onChange={()=>toggle(i)} style={{accentColor:colors.gold,marginTop:3,flexShrink:0,cursor:'pointer'}}/>
           <textarea value={o.text} onChange={e=>edit(i, e.target.value)} rows={2}
             style={{...npcInput, flex:1, minWidth:0, resize:'vertical', fontSize:12, lineHeight:1.4,
@@ -235,7 +241,7 @@ function ObjectivesPanel({ arcObjectives, onGenerateObjectives, onSetObjectives 
         <button onClick={add} style={{...btn, flexShrink:0}}>+</button>
       </div>
       <button onClick={regen} disabled={busy} style={{...btn, width:'100%', marginTop:6, opacity:busy?0.5:1}}>
-        {busy ? '…' : (objs.length ? '🎲 REGENERATE CAMPAIGN' : '🎲 GENERATE CAMPAIGN')}
+        {busy ? '…' : (objs.length || arcGoal ? '🎲 REGENERATE ARC GOAL' : '🎲 GENERATE ARC GOAL')}
       </button>
       {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:4,lineHeight:1.4}}>{status}</div>}
     </CollapsibleSection>
@@ -905,7 +911,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, arcObjectives, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');

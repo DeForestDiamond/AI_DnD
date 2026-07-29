@@ -304,6 +304,7 @@ export const migrateCharacter = (char) => {
       c.disposition = { alignment:'', cares:'', indifferent:'', methods:'', lines:'' };
     }
     if (c.arc && !Array.isArray(c.arc.objectives)) c.arc = { ...c.arc, objectives: [] };
+    if (c.arc && typeof c.arc.goal !== 'string') c.arc = { ...c.arc, goal: '' };
   }
   if (v < 15) {
     // v13 expanded quantity-in-name entries in inventory and stash but missed
@@ -500,13 +501,23 @@ export function useCharacter() {
 
     // Arc resolved — roll a fresh antagonist (never the one just defeated);
     // the DM sees it next turn and starts seeding
-    // Objective completion: [OBJECTIVE DONE: 3] marks the third objective done.
+    // Objectives are rolling: one live at a time, the rest a completed record.
+    // [OBJECTIVE DONE: 3] closes one; [OBJECTIVE: text] opens the next. Two tags
+    // rather than one so a garbled new objective can't also lose the completion.
     [...text.matchAll(/\[OBJECTIVE\s+DONE:\s*(\d+)\]/gi)].forEach(m => {
       const idx = parseInt(m[1], 10) - 1;
       const objs = c.arc?.objectives;
       if (Array.isArray(objs) && objs[idx] && !objs[idx].done) {
         c.arc = { ...c.arc, objectives: objs.map((o, i) => i === idx ? { ...o, done: true } : o) };
       }
+    });
+    [...text.matchAll(/\[OBJECTIVE:\s*([^\]]+)\]/gi)].forEach(m => {
+      const t = m[1].trim();
+      if (!t || /^done\b/i.test(t)) return;
+      const objs = Array.isArray(c.arc?.objectives) ? c.arc.objectives : [];
+      // Ignore a duplicate of anything already tracked.
+      if (objs.some(o => o.text.toLowerCase() === t.toLowerCase())) return;
+      c.arc = { ...(c.arc || {}), objectives: [...objs, { text: t, done: false }] };
     });
 
     if (/\[ARC COMPLETE\]/i.test(text)) {

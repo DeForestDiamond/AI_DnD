@@ -216,13 +216,24 @@ const buildCtxSections = (char) => {
       `Every hook, offer and appeal must target what they CARE ABOUT. Do NOT assume heroism. Anything listed as INDIFFERENT genuinely does not move them — an NPC who appeals to it is ignored, dismissed, or exploited, and you should write the scene that way rather than expecting the player to care. NPCs who know them well pitch accordingly; strangers who misjudge them get the real reaction.\n`
     : '';
 
-  // Arc objectives — the app holds the truth about what is done and what is
-  // not, so the DM cannot lose count of a multi-part hunt.
-  const objs = Array.isArray(char.arc?.objectives) ? char.arc.objectives : [];
-  const objectivesSection = objs.length
-    ? `\nARC OBJECTIVES (${objs.filter(o => o.done).length} of ${objs.length} complete) — THIS IS THE AUTHORITATIVE RECORD:\n` +
-      objs.map((o, i) => `${i + 1}. [${o.done ? 'DONE' : 'NOT DONE'}] ${o.text}`).join('\n') +
-      `\nThis list is the truth. Never contradict it: do not say the player has something they have not completed, do not treat a DONE objective as still outstanding, and do not invent a count of your own. Pursue these ORGANICALLY — never announce the list, never present it as a checklist, and let the player find them in whatever order the story takes. When one is genuinely completed, output [OBJECTIVE DONE: n] with its number.\n`
+  // Arc objectives — rolling: a fixed GOAL, a record of what is finished, and
+  // ONE live objective at a time. The app holds the truth so a long hunt can't
+  // lose its count, while the next step is written in response to what actually
+  // happened rather than planned in advance.
+  const arcObjs = Array.isArray(char.arc?.objectives) ? char.arc.objectives : [];
+  const arcGoal = (char.arc?.goal || '').trim();
+  const doneObjs = arcObjs.filter(o => o.done);
+  const liveObj = arcObjs.find(o => !o.done);
+  const objectivesSection = (arcGoal || arcObjs.length)
+    ? `\nARC PROGRESS — THIS IS THE AUTHORITATIVE RECORD, NEVER CONTRADICT IT:\n` +
+      (arcGoal ? `GOAL: ${arcGoal}\n` : '') +
+      (doneObjs.length
+        ? `COMPLETED (${doneObjs.length}):\n${arcObjs.map((o, i) => o.done ? `${i + 1}. [DONE] ${o.text}` : null).filter(Boolean).join('\n')}\n`
+        : `COMPLETED: none yet\n`) +
+      (liveObj
+        ? `CURRENT OBJECTIVE (#${arcObjs.indexOf(liveObj) + 1}): ${liveObj.text}\n`
+        : `CURRENT OBJECTIVE: NONE — set one this message with [OBJECTIVE: ...]\n`) +
+      `Never claim the player has done more or less than the COMPLETED list shows, and never invent a count of your own. Pursue the current objective ORGANICALLY — never announce it, never read the list aloud, never present it as a checklist.\nWHEN THE CURRENT OBJECTIVE IS GENUINELY FINISHED, do BOTH in that same message: [OBJECTIVE DONE: n] to close it, and [OBJECTIVE: ...] to set the next step toward the GOAL — written in response to what just happened, not planned in advance. If the GOAL itself is now reached, emit [ARC COMPLETE] instead of a new objective.\n`
     : '';
 
   // Constructs & bound entities — owned and commanded, not worn. Listed so the
@@ -285,7 +296,8 @@ const TAGS_BLOCK = `── GAME TAGS — THE APP READS THESE EXACTLY ──
 Place ALL tags at the END of your response, never mid-narrative. The app parses them automatically: if it is not tagged, IT DID NOT HAPPEN in the game.
 
 CORE TAGS:
-Objective completed (only when one in the ARC OBJECTIVES list is genuinely done): [OBJECTIVE DONE: 3]
+Objective completed: [OBJECTIVE DONE: 3] — ALWAYS pair it with the next step in the same message: [OBJECTIVE: track the buyer who paid for the third vault key]
+Set the next objective: [OBJECTIVE: ...] — one sentence, concrete and checkable, a step toward the arc GOAL
 XP (mandatory after every combat and milestone): [XP: +50]
   Amounts scale to the FOE'S MAGNITUDE, not the fight's length — a legendary creature dispatched in seconds still pays legendary:
   trivial 10-25 | minor 30-60 | standard 50-100 | hard 100-200 | deadly (CR well above the player: young dragons, powerful named foes) 250-400 | legendary (adult dragons, archmages, faction leaders) 500-800 | mythic (ancient dragons, krakens, demon lords) 1000-2000
@@ -652,7 +664,8 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 3. You did NOT speak or act for the player — no dialogue, no "you explain/tell/answer", no actions they didn't type.
 4. You did NOT move them or advance time — same place, same moment, unless the player moved.
 5. If you wrote a [ROLL:] tag, it is the LAST thing — stop there.
-6. An NPC asked the player something? Your message ENDS on that question.`;
+6. An NPC asked the player something? Your message ENDS on that question.
+7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.`;
 
   return { static: staticPart, dynamic: dynamicPart };
 };
@@ -783,7 +796,8 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 3. You did NOT speak or act for the player — no dialogue, no "you explain/tell/answer", no actions they didn't type.
 4. You did NOT move them or advance time — same place, same moment, unless the player moved.
 5. If you wrote a [ROLL:] tag, it is the LAST thing — stop there.
-6. An NPC asked the player something? Your message ENDS on that question.`;
+6. An NPC asked the player something? Your message ENDS on that question.
+7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.`;
 
   return { static: staticPart, dynamic: dynamicPart };
 };
