@@ -292,6 +292,13 @@ export default function App() {
       if (openingOverride && openingOverride.trim()) {
         // Player wrote the opening — use their antagonist if given, else roll a hidden one.
         arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level, null, char.defeatedAntagonists);
+        // New campaigns need a goal and first objective too — previously only
+        // the arc-completion path generated them.
+        if (arcAntagonist) {
+          setTimeout(() => {
+            generateObjectives(arcAntagonist).catch(e => log(`[ARC] Objective generation failed: ${e.message}`));
+          }, 600);
+        }
         seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}`;
       } else {
         const seed = rollAdventureSeed(char.level);
@@ -887,6 +894,58 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
   // Build the [ITEM:] tag for a chosen option and apply it, then remove the
   // consumed materials. Reuses applyEffects so the item goes through the exact
   // same parser as DM-granted loot.
+  // ── Arc objectives ─────────────────────────────────────────────────────────
+  // A rough homebrew campaign skeleton for the current antagonist, shaped by the
+  // character's disposition so the goals fit who they actually are.
+  const generateObjectives = async (antagonist) => {
+    const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+    const c = charRef.current;
+    if (!antagonist) throw new Error('No antagonist to build a campaign around');
+    const dp = c.disposition || {};
+    const dpLines = [
+      dp.alignment && `Alignment: ${dp.alignment}`,
+      dp.cares && `Cares about: ${dp.cares}`,
+      dp.indifferent && `Indifferent to: ${dp.indifferent}`,
+      dp.methods && `Solves problems by: ${dp.methods}`,
+      dp.lines && `Will not: ${dp.lines}`,
+    ].filter(Boolean).join('\n');
+
+    log(`[ARC] Generating goal + first objective for: ${antagonist}`);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 700,
+        system: `You set up a Dungeons & Dragons story arc. You produce exactly two things: the arc's GOAL, and the FIRST objective toward it. Later objectives are written during play in response to what actually happens — do not plan them.
+
+GOAL: one sentence naming what finishing this arc means, and INCLUDING ANY COUNT the arc implies ("recover all twelve vault objects", "dismantle the smuggling ring's four cells"). The count matters: it is how the game keeps score. The goal may reference the antagonist obliquely but must NOT name them — they are hidden from the player.
+
+FIRST OBJECTIVE: one sentence, concrete and checkable, something the player can act on immediately from where they are now. Not vague ("learn about the cult"), not the whole arc in one line.
+
+SHAPE BOTH TO THIS CHARACTER. They must be things THIS person would pursue for their own reasons. Do not assume heroism; do not build a rescue-the-innocent plot for someone indifferent to innocents. If they care about profit and power, the goal is about profit and power — the antagonist becomes their problem because of what it costs them.
+
+Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "objective": "..." }`,
+        messages: [{ role: 'user', content: `HIDDEN ANTAGONIST: ${antagonist}\n\nPLAYER: ${c.name}, level ${c.level}${c.cls?.name ? `, ${c.cls.name}` : ''}. Currently in ${c.currentLocation || 'the Sword Coast'}.\n${dpLines ? `\nWHO THEY ARE:\n${dpLines}\n` : ''}${c.bio ? `\nBACKGROUND: ${c.bio.slice(0, 600)}\n` : ''}\nRespond with ONLY the JSON now.` }],
+      }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch {
+      const cut = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
+      throw new Error(cut ? 'The reply was cut off — try again' : 'Arc generation returned unreadable JSON — try again');
+    }
+    const goal = String(parsed.goal || '').trim();
+    const first = String(parsed.objective || '').trim();
+    if (!goal && !first) throw new Error('Nothing generated — try again');
+    const objectives = first ? [{ text: first, done: false }] : [];
+    updateChar({ ...charRef.current, arc: { ...(charRef.current.arc || {}), antagonist, goal, objectives } });
+    log(`[ARC] Goal: ${goal}`);
+    return { goal, objectives };
+  };
+
   // Bags hold their contents in customItems[bag].contents rather than the
   // inventory array, so anything packed away is invisible to crafting unless we
   // look inside. Returns { name: {inv, stash, bags: [{bag, store, count}]} }.
@@ -1272,6 +1331,15 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       let newChar = applyEffects(finalText, charRef.current);
       if (newChar.arc?.antagonist !== charRef.current.arc?.antagonist) {
         log(`[ARC] Arc complete — new antagonist rolled: ${newChar.arc?.antagonist}`);
+        // Build a fresh campaign skeleton for the new arc, in the background so
+        // it never blocks the player's turn. Failure is non-fatal — the arc
+        // simply runs without objectives and can be generated manually.
+        const freshAntagonist = newChar.arc?.antagonist;
+        if (freshAntagonist) {
+          setTimeout(() => {
+            generateObjectives(freshAntagonist).catch(e => log(`[ARC] Objective generation failed: ${e.message}`));
+          }, 400);
+        }
       }
       updateChar(newChar);
       addMessage({ role:'dm', text:finalText, id:Date.now(), roll:finalRoll });
@@ -1729,6 +1797,13 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             }}
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
+            arcObjectives={character.arc?.objectives || []}
+            arcGoal={character.arc?.goal || ''}
+            onSetArcGoal={(goal) => updateChar({ ...charRef.current, arc: { ...(charRef.current.arc || {}), goal } })}
+            onGenerateObjectives={() => generateObjectives(charRef.current.arc?.antagonist)}
+            onSetObjectives={(objectives) => updateChar({ ...charRef.current, arc: { ...(charRef.current.arc || {}), objectives } })}
+            disposition={character.disposition || {}}
+            onSaveDisposition={(d) => updateChar({ ...charRef.current, disposition: d })}
             defeatedAntagonists={character.defeatedAntagonists || []}
             onReviveAntagonist={reviveAntagonist}
             onCycleConstructStatus={cycleConstructStatus}

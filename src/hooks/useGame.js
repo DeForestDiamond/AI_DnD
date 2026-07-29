@@ -200,6 +200,42 @@ const buildCtxSections = (char) => {
     companionSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
+  // Disposition — who this character actually is. The DM's default assumption
+  // is heroism; this is what corrects it, and 'indifferent' is the field that
+  // does the real work.
+  const dp = char.disposition || {};
+  const dpBits = [
+    dp.alignment   && `ALIGNMENT: ${dp.alignment}`,
+    dp.cares       && `CARES ABOUT: ${dp.cares}`,
+    dp.indifferent && `INDIFFERENT TO: ${dp.indifferent}`,
+    dp.methods     && `HOW THEY SOLVE PROBLEMS: ${dp.methods}`,
+    dp.lines       && `LINES THEY WILL NOT CROSS: ${dp.lines}`,
+  ].filter(Boolean);
+  const dispositionSection = dpBits.length
+    ? `\nDISPOSITION — WHO THIS CHARACTER IS:\n${dpBits.join('\n')}\n` +
+      `Every hook, offer and appeal must target what they CARE ABOUT. Do NOT assume heroism. Anything listed as INDIFFERENT genuinely does not move them — an NPC who appeals to it is ignored, dismissed, or exploited, and you should write the scene that way rather than expecting the player to care. NPCs who know them well pitch accordingly; strangers who misjudge them get the real reaction.\n`
+    : '';
+
+  // Arc objectives — rolling: a fixed GOAL, a record of what is finished, and
+  // ONE live objective at a time. The app holds the truth so a long hunt can't
+  // lose its count, while the next step is written in response to what actually
+  // happened rather than planned in advance.
+  const arcObjs = Array.isArray(char.arc?.objectives) ? char.arc.objectives : [];
+  const arcGoal = (char.arc?.goal || '').trim();
+  const doneObjs = arcObjs.filter(o => o.done);
+  const liveObj = arcObjs.find(o => !o.done);
+  const objectivesSection = (arcGoal || arcObjs.length)
+    ? `\nARC PROGRESS — THIS IS THE AUTHORITATIVE RECORD, NEVER CONTRADICT IT:\n` +
+      (arcGoal ? `GOAL: ${arcGoal}\n` : '') +
+      (doneObjs.length
+        ? `COMPLETED (${doneObjs.length}):\n${arcObjs.map((o, i) => o.done ? `${i + 1}. [DONE] ${o.text}` : null).filter(Boolean).join('\n')}\n`
+        : `COMPLETED: none yet\n`) +
+      (liveObj
+        ? `CURRENT OBJECTIVE (#${arcObjs.indexOf(liveObj) + 1}): ${liveObj.text}\n`
+        : `CURRENT OBJECTIVE: NONE — set one this message with [OBJECTIVE: ...]\n`) +
+      `Never claim the player has done more or less than the COMPLETED list shows, and never invent a count of your own. Pursue the current objective ORGANICALLY — never announce it, never read the list aloud, never present it as a checklist.\nWHEN THE CURRENT OBJECTIVE IS GENUINELY FINISHED, do BOTH in that same message: [OBJECTIVE DONE: n] to close it, and [OBJECTIVE: ...] to set the next step toward the GOAL — written in response to what just happened, not planned in advance. If the GOAL itself is now reached, emit [ARC COMPLETE] instead of a new objective.\n`
+    : '';
+
   // Constructs & bound entities — owned and commanded, not worn. Listed so the
   // DM knows what the player can call on (and what is merely dormant).
   // Carried inventory only — the stash is invisible to the DM by design, and
@@ -252,14 +288,23 @@ const buildCtxSections = (char) => {
     townsSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
-  return { bio, companionSection, constructSection, npcSection, townsSection };
+  return { bio, dispositionSection, objectivesSection, companionSection, constructSection, npcSection, townsSection };
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
 const TAGS_BLOCK = `── GAME TAGS — THE APP READS THESE EXACTLY ──
 Place ALL tags at the END of your response, never mid-narrative. The app parses them automatically: if it is not tagged, IT DID NOT HAPPEN in the game.
 
+TAGS ARE CHANGES, NEVER STATEMENTS OF WHAT THE PLAYER ALREADY HAS. A tag MAKES SOMETHING HAPPEN the moment you write it. Mentioning, counting, describing or referring to something the player already owns gets NO TAG AT ALL.
+  WRONG: "You count your fortune — 2,606,176 gold." [GOLD: +2606176]   ← this DOUBLES their money
+  WRONG: "You draw the Shadow Cloak from your pack." [ITEM: Shadow Cloak]   ← this creates a SECOND cloak
+  RIGHT: "You count your fortune — 2,606,176 gold."   ← narration only, no tag; the app already knows
+  RIGHT: "The merchant counts out your fee." [GOLD: +250]   ← a real change, so it is tagged
+Only tag what CHANGES this turn: coin gained or spent, items received or destroyed, XP earned, HP altered. The player's current gold, inventory and gear are given to you in CURRENT STATE — quote those numbers freely in narration, but never tag them.
+
 CORE TAGS:
+Objective completed: [OBJECTIVE DONE: 3] — ALWAYS pair it with the next step in the same message: [OBJECTIVE: track the buyer who paid for the third vault key]
+Set the next objective: [OBJECTIVE: ...] — one sentence, concrete and checkable, a step toward the arc GOAL
 XP (mandatory after every combat and milestone): [XP: +50]
   Amounts scale to the FOE'S MAGNITUDE, not the fight's length — a legendary creature dispatched in seconds still pays legendary:
   trivial 10-25 | minor 30-60 | standard 50-100 | hard 100-200 | deadly (CR well above the player: young dragons, powerful named foes) 250-400 | legendary (adult dragons, archmages, faction leaders) 500-800 | mythic (ancient dragons, krakens, demon lords) 1000-2000
@@ -275,6 +320,7 @@ Take off or swap gear — item returns SAFELY to inventory, never destroyed: [UN
 Skill check (USE OFTEN): [ROLL: perception difficulty 14] — then STOP and END your message. The moment you write a [ROLL:] tag, your turn is OVER. Write nothing after it: no outcome, no result, no "what happens next" — you do not know it yet. The system rolls the dice and sends you the result, and you narrate what happens on your NEXT turn. Calling a roll and then continuing to narrate in the same message is a failure — you are guessing at a result the dice have not given you.
   WHEN to roll: ONLY after the player has stated an action whose outcome is uncertain. The roll tests THE PLAYER'S CHOICE — never your guess at what they'd do. Never call a roll in the same message a threat or situation first appears; that message ends with the player's choice unmade. A roll resolves an action the player already typed (attack, sneak, persuade, leap), or a passive sense the WORLD forces on them (a perception check to notice an ambush before it strikes). Never roll for an active choice the player hasn't made yet.
   Roll whenever an outcome is uncertain and interesting: perception to spot an ambush/clue/lie, stealth to sneak, persuasion/intimidation/deception in social conflict, investigation to search, athletics/acrobatics for physical feats, insight to read someone. Do not silently decide these — call the [ROLL:] and let the dice answer.
+  AC IS PASSIVE — NEVER ASK THE PLAYER TO ROLL IT. There is no defence roll, dodge roll or armour-class roll in this game: when something attacks the player you decide whether it beats their AC, which is given in CURRENT STATE. If you want the player to have a chance to avoid something, call for a SAVING THROW instead ([ROLL: dexterity saving throw difficulty 15]).
   SAVING THROWS use the same tag — say so and the system rolls it as a save: [ROLL: dexterity saving throw difficulty 15], [ROLL: constitution save DC 13], [ROLL: wisdom save difficulty 16]. Call for a save when something is done TO the player that they resist rather than attempt: a trap springs, a spell lands, poison takes hold, a fear effect hits, they must keep their footing. 'difficulty' and 'DC' are interchangeable, and multi-word skills work: [ROLL: sleight of hand difficulty 15].
 Location change: [LOCATION: Millhaven]
 Player heal: [HP: +N]  |  Player damage: [HP: -N]  |  Environmental damage: [DAMAGE: 5]
@@ -481,6 +527,8 @@ export const buildSystemPrompt = (char) => {
   const bioSection       = ctx.bio;
   const companionSection = ctx.companionSection;
   const constructSection = ctx.constructSection;
+  const dispositionSection = ctx.dispositionSection;
+  const objectivesSection = ctx.objectivesSection;
   const npcSection       = ctx.npcSection;
   const townsSection     = ctx.townsSection;
 
@@ -526,7 +574,7 @@ NOT EVERYTHING IS A MYSTERY: Do not turn every threat into a puzzle to investiga
 ACTION OVER DESCRIPTION: When in doubt, make something happen. A merchant approaches. A guard challenges them. A noise echoes. Something moves. A figure appears. Push the story forward. The player is here to make decisions, not to read descriptions.
 
 ACTIONS HAVE CONSEQUENCES: When the player does something significant, the world must react. Always. Disrupting a ritual, cremating preserved bodies, challenging a presence, breaking a seal, stealing from a faction, killing a named NPC — these are not neutral events. Something changes. Something responds. An enemy notices. A power stirs. A faction retaliates. A door opens. Even if the consequence is subtle — a temperature drop, a sound, a shift in the air — something must acknowledge what the player just did. Silence and indifference are not valid responses to meaningful action. If the player spends significant time and effort on something, the world owes them a reaction.
-${bioSection}${companionSection}${constructSection}${npcSection}${townsSection}${abilitiesLine}
+${bioSection}${dispositionSection}${objectivesSection}${companionSection}${constructSection}${npcSection}${townsSection}${abilitiesLine}
 
 ${TAGS_BLOCK}
 
@@ -548,6 +596,7 @@ The player's message is the COMPLETE set of everything their character said and 
 If an NPC asks the player a question, STOP THERE. Do not answer it for them. Do not continue the conversation past the question. Ending mid-conversation is correct; completing the player's half is the failure.
 A stated GOAL is not permission to execute it. "I need to sell this loot" means take them TO a merchant and present the offer — then stop. The player chooses what to sell, at what price, and when to walk out. Never choose which items the player sells, drops, uses, or gives away — items leave the inventory ONLY when the player names them, and [REMOVE:]/[GOLD:] tags for a trade only appear AFTER the player agreed to that exact trade.
 Wrong: the player says "I should move on soon" and you write them a speech explaining why. Right: the NPC reacts to exactly the words the player typed, then waits.
+STOPPING ABRUPTLY IS CORRECT, NOT BROKEN. A message that ends on an unanswered question, a raised weapon or an offer left hanging is a COMPLETE message — that is exactly what handing the turn over looks like. Do not smooth it over, do not round it off, do not add the player's reply to make the scene feel finished. The scene is finished; it is their move.
 SUMMARIZED SPEECH IS THE SAME VIOLATION. "You explain the arrangement", "you tell her the terms" — narrating that the player said/explained/answered something WITHOUT quotes is still speaking for them. Dropping the quotation marks is not a loophole. Multiple NPCs ask things? Present all of them, then STOP — answer NONE of them.
 NEVER narrate the player's ACTIONS either — no dodging, drawing, striking, casting, or diving they did not type. When a threat appears, open at first contact (the creature lunges, the ambush springs) and STOP. Do NOT drop the player mid-fight already swinging, do NOT pick their opening move, do NOT call a [ROLL:] in the message the threat appears — they haven't chosen yet, so there is nothing to roll. The roll comes AFTER they say what they do. Resolve one action and the enemy's response, then stop again — never a whole fight in one message.
 
@@ -595,6 +644,10 @@ STORY SCOPE: scale the SIZE of the story to the player's level, not just monster
 Most encounters are self-contained: bandits are just bandits, a wolf is just hungry, a rude merchant is just rude. Not every fight hides a bigger one. Not every NPC has an agenda. Let small things stay small.
 POWER DOES NOT SNOWBALL: One victory does not make the player a lord, a chosen one, a ruler, or the owner of land or armies. Titles, territory, and rulership are earned slowly across many sessions, and only when the player deliberately pursues them. Never hand out escalating status unprompted.
 
+── NARRATE THE ACTUAL POWER GAP ──
+When a creature is far below the player's demonstrated capability — judged by their stats, their gear, and what they have already killed — narrate that gap HONESTLY. Do not manufacture struggle, tension or uncertainty the maths does not support. A one-sided fight is narrated as one-sided: the blow lands and the thing comes apart, the ambush ends before it begins, the veteran realises mid-swing what he has attacked. Bandits do not "barely hold their own" against someone who kills archdevils.
+This cuts both ways. Against something that genuinely outmatches the player, do not soften it either. The narration should tell the player where they truly stand, every time.
+
 ── WHEN A FIGHT ENDS ──
 When the player wins, the threat is OVER. The scene goes quiet: loot, catch breath, travel, talk. Do NOT reveal that the thing they just beat was a guardian, a fragment, a servant, or a herald of something worse below. The next danger arrives only when the player goes looking for it.`;
 
@@ -620,10 +673,11 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 ── BEFORE YOU WRITE — the last check ──
 1. LENGTH: 2-3 short paragraphs of narrative, ~150 words. Tight beats long. (Choices and tags are extra — never cut those.)
 2. End with EXACTLY 4 numbered choices. Tags at the very end.
-3. You did NOT speak or act for the player — no dialogue, no "you explain/tell/answer", no actions they didn't type.
+3. You did NOT speak or act for the player — no dialogue, no "you explain/tell/answer", no actions they didn't type. Your message ENDS at the moment they must choose; ending there is correct even if it feels abrupt.
 4. You did NOT move them or advance time — same place, same moment, unless the player moved.
 5. If you wrote a [ROLL:] tag, it is the LAST thing — stop there.
-6. An NPC asked the player something? Your message ENDS on that question.`;
+6. An NPC asked the player something? Your message ENDS on that question.
+7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.`;
 
   return { static: staticPart, dynamic: dynamicPart };
 };
@@ -643,7 +697,7 @@ export const buildSystemPromptSonnet = (char) => {
 
 ${directivesBlock(char)}── CHARACTER (STATIC) ──
 ${cb.staticPart}
-${ctx.bio}${ctx.companionSection}${ctx.constructSection}${ctx.npcSection}${ctx.townsSection}
+${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSection}${ctx.constructSection}${ctx.npcSection}${ctx.townsSection}
 ── HARD RULES ──
 - Maximum 3 paragraphs, 200 words. Hard limit — if you're writing a fourth paragraph, stop and cut. Front-load the narrative, the choices go last.
 - Show don't tell. "He shifts his weight and won't meet your eyes" not "he seems uncomfortable and suspicious." One vivid detail beats three explanatory sentences. If you've said it, don't say it again with different words.
@@ -713,6 +767,8 @@ Scope scales with level, not just monster CR: a low-level character gets small, 
 
 Power does not snowball. One victory does not make the player a lord, a chosen one, a ruler, or the owner of land or armies — titles, territory, and rulership are earned slowly across many sessions, and only when the player deliberately pursues them. Never hand out escalating status unprompted.
 
+Narrate the actual power gap. When a creature is far below the player's demonstrated capability — judged by their stats, their gear and what they have already killed — say so honestly. Do not manufacture struggle, tension or uncertainty the maths does not support: a one-sided fight is narrated as one-sided, the blow lands and the thing comes apart, the ambusher realises mid-swing what he has attacked. Bandits do not barely hold their own against someone who kills archdevils. This cuts both ways — against something that genuinely outmatches the player, do not soften that either. The narration should tell the player where they truly stand.
+
 When a fight ends, it is over. The scene goes quiet — loot, a breath, travel, talk. Don't reveal that the thing the player just beat was a guardian, a fragment, or a herald of something worse below. The next danger arrives when the player goes looking for it.
 
 ── PLAYER AUTONOMY ──
@@ -730,7 +786,7 @@ Consequences arise from in-world cause and effect — witnesses, evidence, facti
 
 Setting the stage is your job. When the player burns the documents, robs the shrine, or walks away from the plot you prepared, generate fresh material and keep momentum. Never stall, never go minimal, never make the player carry the scene as the price of surprising you.
 
-The player's voice is not yours. Never write dialogue for the player's character — not a line, not a word, not a paraphrase of what they "would" say. Their message is the complete set of everything their character said and did this turn; when they write dialogue, that is all their character says until they type again. If an NPC asks the player a question, stop there and let them answer — ending mid-conversation is correct, completing the player's half is the failure. This ban covers SUMMARIZED and NARRATED speech, not just quoted lines: "you explain the arrangement", "you tell her the terms", "you point out the difference" are the same violation without the quotation marks — dropping the quotes is not a loophole. When several NPCs speak or ask things, present all of them, then STOP; never answer any of them on the player's behalf to keep the scene moving. Likewise, a stated goal is not permission to execute it: "I need to sell this loot" means bring them to a merchant and present the offer, then stop. The player chooses what to sell, at what price, and when to leave — items leave the inventory only when the player names them, and [REMOVE:]/[GOLD:] tags for a trade appear only after the player agreed to that exact trade.
+The player's voice is not yours. Never write dialogue for the player's character — not a line, not a word, not a paraphrase of what they "would" say. Their message is the complete set of everything their character said and did this turn; when they write dialogue, that is all their character says until they type again. If an NPC asks the player a question, stop there and let them answer — ending mid-conversation is correct, completing the player's half is the failure. This ban covers SUMMARIZED and NARRATED speech, not just quoted lines: "you explain the arrangement", "you tell her the terms", "you point out the difference" are the same violation without the quotation marks — dropping the quotes is not a loophole. When several NPCs speak or ask things, present all of them, then STOP; never answer any of them on the player's behalf to keep the scene moving. STOPPING ABRUPTLY IS CORRECT, NOT BROKEN: a message ending on an unanswered question, a raised weapon or an offer left hanging is a COMPLETE message — that is what handing the turn over looks like. Do not smooth it over, do not round it off, do not supply the player's reply to make the scene feel finished. The scene is finished; it is their move. Likewise, a stated goal is not permission to execute it: "I need to sell this loot" means bring them to a merchant and present the offer, then stop. The player chooses what to sell, at what price, and when to leave — items leave the inventory only when the player names them, and [REMOVE:]/[GOLD:] tags for a trade appear only after the player agreed to that exact trade.
 
 The player's ACTIONS are not yours either. Never narrate the player dodging, drawing a weapon, casting, striking, diving, or taking any physical action they did not type. This matters most at the START of combat: when a threat appears, open the scene at first contact — the creature lunges, the ambush springs — and STOP. Describe the threat and the situation, then hand control back. Do NOT drop the player into the middle of a fight already swinging, do NOT decide their opening move, do NOT play three exchanges and then ask what they do. A combat encounter begins with the threat revealed and the player's FIRST choice still unmade. When the player does choose an action, resolve THAT action and the enemy's response, then stop again — one exchange at a time, never a whole fight in one message.
 
@@ -751,10 +807,11 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 ── BEFORE YOU WRITE — the last check ──
 1. LENGTH: 2-3 short paragraphs of narrative, ~150 words. Tight beats long. (Choices and tags are extra — never cut those.)
 2. End with EXACTLY 4 numbered choices. Tags at the very end.
-3. You did NOT speak or act for the player — no dialogue, no "you explain/tell/answer", no actions they didn't type.
+3. You did NOT speak or act for the player — no dialogue, no "you explain/tell/answer", no actions they didn't type. Your message ENDS at the moment they must choose; ending there is correct even if it feels abrupt.
 4. You did NOT move them or advance time — same place, same moment, unless the player moved.
 5. If you wrote a [ROLL:] tag, it is the LAST thing — stop there.
-6. An NPC asked the player something? Your message ENDS on that question.`;
+6. An NPC asked the player something? Your message ENDS on that question.
+7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.`;
 
   return { static: staticPart, dynamic: dynamicPart };
 };
@@ -894,8 +951,41 @@ export function useGame({ charRef, apiKey }) {
     const statName  = statLabel.replace(/\s+/g, '');                // normalised, for lookup
     const isSave   = /sav/i.test(rollMatch[2] || '');
     const diff     = parseInt(rollMatch[3]);
+    // An "attack" isn't an ability or a skill — it's the equipped weapon's own
+    // to-hit bonus. Without this it fell through to a stat that doesn't exist
+    // and rolled at +0 regardless of Strength or weapon.
+    if (/^(attack|attackroll|attacks|tohit|hit|melee|ranged|weapon|weaponattack)$/.test(statName)) {
+      const weapon = getMainWeapon(char.slots, char.stats, char.customItems || {});
+      if (weapon) {
+        const pb2 = profBonus(char.level);
+        const atkBonus = weapon.statBonus + pb2 + (weapon.bonus || 0);
+        const d20 = rollDie(20);
+        const total = d20 + atkBonus;
+        const hit = total >= diff;
+        log?.(`[ROLL] ${statLabel} with ${weapon.name}: d20=${d20}+${atkBonus}=${total} vs DC${diff} — ${hit?'HIT':'MISS'}`);
+        return {
+          resultText: `[ROLL RESULT: attack roll with ${weapon.name} — d20 rolled ${d20} + ${weapon.statBonus} ability + ${pb2} proficiency${weapon.bonus ? ` + ${weapon.bonus} enchantment` : ''} = ${total} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}]`,
+          rollResult: { d20, mod: weapon.statBonus, prof: pb2, gearBonus: weapon.bonus || 0, total, difficulty: diff, hit },
+        };
+      }
+      log?.(`[ROLL] ${statLabel} requested but no weapon equipped — falling through to raw ability`);
+    }
+
+    // There is no "defence roll" in 5e — AC is passive and attackers roll
+    // against it. If the DM asks for one anyway, treat it as the dodge it
+    // means: a Dexterity save, rather than rolling against a stat of 10.
+    const DEFENCE_AS_DEX = /^(defence|defense|dodge|parry|evade|evasion|block|ac|armorclass|armourclass)$/;
     const statMap  = { strength:'str', dexterity:'dex', constitution:'con', intelligence:'int', wisdom:'wis', charisma:'cha' };
-    const statKey  = statMap[statName] || SKILL_ABILITY[statName] || statName;
+    const statKey  = statMap[statName] || SKILL_ABILITY[statName]
+                   || (DEFENCE_AS_DEX.test(statName) ? 'dex' : statName);
+    if (DEFENCE_AS_DEX.test(statName)) {
+      log?.(`[ROLL] "${statLabel}" is not a 5e roll — AC is passive. Resolved as a Dexterity save.`);
+    }
+    // Anything that maps to nothing silently rolls against a phantom 10. Say so
+    // in the log rather than letting it pass unnoticed.
+    if (!statMap[statName] && !SKILL_ABILITY[statName] && !['str','dex','con','int','wis','cha'].includes(statKey)) {
+      log?.(`[ROLL] WARNING: "${statLabel}" is not a known ability or skill — rolling against a default of 10 (+0). Tell the DM to name an ability or a 5e skill.`);
+    }
     const effStats = effectiveStats(char.stats, char.slots, char.customItems || {});
     const statVal  = effStats[statKey] || 10;
     // Equipped gear with a bonus for this exact skill (e.g. stealth:+3) adds flat

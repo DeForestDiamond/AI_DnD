@@ -165,6 +165,89 @@ function VoiceSettings({ voiceName, setVoiceName, rate, setRate, pitch, setPitch
   );
 }
 
+// ── Disposition: who the character actually is, so the DM stops assuming heroism ──
+function DispositionEditor({ disposition, onSaveDisposition }) {
+  const [d, setD] = useState(disposition || {});
+  const [dirty, setDirty] = useState(false);
+  const set = (k, v) => { setD(prev => ({ ...prev, [k]: v })); setDirty(true); };
+  const FIELDS = [
+    ['alignment',   'Alignment',                'e.g. Neutral Evil'],
+    ['cares',       'Cares about',              'profit, power, his own survival, the few people he has claimed'],
+    ['indifferent', 'Indifferent to',           'slavery, law, strangers suffering, his reputation among the righteous'],
+    ['methods',     'How they solve problems',  'violence when cheaper than talking; deception; buying people'],
+    ['lines',       'Lines they will not cross','will not harm those under his protection'],
+  ];
+  return (
+    <CollapsibleSection title="🎭 DISPOSITION" defaultOpen={false}>
+      <div style={{fontSize:10,color:colors.textFaint,marginBottom:6,lineHeight:1.4}}>
+        Sent every turn. The DM assumes heroism unless told otherwise — <b>Indifferent to</b> is what stops NPCs appealing to things your character does not care about.
+      </div>
+      {FIELDS.map(([k, label, ph]) => (
+        <div key={k} style={{marginBottom:5}}>
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:2}}>{label.toUpperCase()}</div>
+          <textarea value={d[k] || ''} onChange={e=>set(k, e.target.value)} placeholder={ph} rows={k==='alignment'?1:2}
+            style={{...npcInput, resize:'vertical', lineHeight:1.4}}/>
+        </div>
+      ))}
+      <button onClick={()=>{ onSaveDisposition(d); setDirty(false); }} disabled={!dirty}
+        style={{...btn, width:'100%', opacity:dirty?1:0.4}}>{dirty ? '✓ SAVE DISPOSITION' : 'SAVED'}</button>
+    </CollapsibleSection>
+  );
+}
+
+// ── Arc objectives: the authoritative record of a multi-part hunt ─────────────
+function ObjectivesPanel({ arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives }) {
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState('');
+  const [adding, setAdding] = useState('');
+  const objs = arcObjectives || [];
+  const done = objs.filter(o => o.done).length;
+  const liveIdx = objs.findIndex(o => !o.done);
+
+  const regen = async () => {
+    setBusy(true); setStatus('Building the campaign…');
+    try { const list = await onGenerateObjectives(); setStatus(`✓ ${list.length} objectives`); }
+    catch (e) { setStatus('✗ ' + e.message); }
+    setBusy(false);
+  };
+  const toggle = (i) => onSetObjectives(objs.map((o, j) => j === i ? { ...o, done: !o.done } : o));
+  const remove = (i) => onSetObjectives(objs.filter((_, j) => j !== i));
+  const edit = (i, text) => onSetObjectives(objs.map((o, j) => j === i ? { ...o, text } : o));
+  const add = () => { const t = adding.trim(); if (!t) return; onSetObjectives([...objs, { text: t, done: false }]); setAdding(''); };
+
+  return (
+    <CollapsibleSection title="🗺️ ARC OBJECTIVES" count={objs.length ? `${done}/${objs.length}` : undefined} defaultOpen={false}>
+      <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
+        One objective runs at a time; the DM writes the next when the last is finished. The GOAL holds the arc's endpoint and its count, so a long hunt can't lose track. The DM never announces any of this — look here when a story feels off the rails.
+      </div>
+      <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:2}}>GOAL</div>
+      <textarea value={arcGoal || ''} onChange={e=>onSetArcGoal(e.target.value)} rows={2}
+        placeholder="What finishing this arc means — include any count, e.g. 'recover all twelve vault objects'"
+        style={{...npcInput, resize:'vertical', marginBottom:6, lineHeight:1.4}}/>
+      {objs.length === 0 && <div style={{fontSize:12,color:colors.textDead,fontStyle:'italic',marginBottom:6}}>No objectives — generate a campaign for the current antagonist.</div>}
+      {objs.map((o, i) => (
+        <div key={i} style={{display:'flex',alignItems:'flex-start',gap:6,padding:'3px 0',borderBottom:`1px solid ${colors.borderFaint}`,
+          background: i === liveIdx ? 'rgba(201,168,76,0.06)' : 'transparent'}}>
+          <input type="checkbox" checked={!!o.done} onChange={()=>toggle(i)} style={{accentColor:colors.gold,marginTop:3,flexShrink:0,cursor:'pointer'}}/>
+          <textarea value={o.text} onChange={e=>edit(i, e.target.value)} rows={2}
+            style={{...npcInput, flex:1, minWidth:0, resize:'vertical', fontSize:12, lineHeight:1.4,
+              color:o.done?colors.textDead:colors.text, textDecoration:o.done?'line-through':'none'}}/>
+          <button onClick={()=>remove(i)} title="Remove" style={{...btn, flexShrink:0, fontSize:10, padding:'2px 6px', color:'#c96a4c'}}>✕</button>
+        </div>
+      ))}
+      <div style={{display:'flex',gap:4,marginTop:6}}>
+        <input value={adding} onChange={e=>setAdding(e.target.value)} placeholder="Add an objective…"
+          onKeyDown={e=>{ if (e.key==='Enter') add(); }} style={{...npcInput, flex:1}}/>
+        <button onClick={add} style={{...btn, flexShrink:0}}>+</button>
+      </div>
+      <button onClick={regen} disabled={busy} style={{...btn, width:'100%', marginTop:6, opacity:busy?0.5:1}}>
+        {busy ? '…' : (objs.length || arcGoal ? '🎲 REGENERATE ARC GOAL' : '🎲 GENERATE ARC GOAL')}
+      </button>
+      {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:4,lineHeight:1.4}}>{status}</div>}
+    </CollapsibleSection>
+  );
+}
+
 // ── Standing instructions: always-sent DM directives (moved from the header) ──
 function DirectivesEditor({ directives, onChangeDirectives }) {
   return (
@@ -828,7 +911,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
@@ -1220,6 +1303,16 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       </>}
 
       {activeTab==='settings' && <>
+      {/* Arc objectives — the campaign skeleton */}
+      {onGenerateObjectives && (
+        <ObjectivesPanel arcObjectives={arcObjectives} onGenerateObjectives={onGenerateObjectives} onSetObjectives={onSetObjectives} />
+      )}
+
+      {/* Disposition — who the character actually is */}
+      {onSaveDisposition && (
+        <DispositionEditor key={JSON.stringify(disposition)} disposition={disposition} onSaveDisposition={onSaveDisposition} />
+      )}
+
       {/* Bio — the DM's behavior anchor */}
       {onSaveBio && <BioEditor key={character.bio || 'empty'} character={character} onSaveBio={onSaveBio} />}
 

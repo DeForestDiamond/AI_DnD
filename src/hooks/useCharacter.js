@@ -33,6 +33,26 @@ export const applyRaceBonus = (baseStats, race) => {
 // -- Item / slot helpers --------------------------------------------------------
 export const allItems = (customItems) => ({ ...ITEM_DB, ...customItems });
 
+// True if any copy of an item still exists anywhere: carried, worn, stashed, or
+// packed in a bag. A custom definition must only be discarded when this is false
+// — otherwise deleting the last carried copy strips the stats off the one still
+// on your back, in your stash, or in a satchel.
+export const itemExistsAnywhere = (c, name, overrides = {}) => {
+  const inv = overrides.inventory ?? c.inventory ?? [];
+  const stash = overrides.stash ?? c.stash ?? [];
+  const slots = overrides.slots ?? c.slots ?? {};
+  if (inv.includes(name)) return true;
+  if (stash.includes(name)) return true;
+  if (Object.values(slots).includes(name)) return true;
+  for (const store of ['customItems', 'stashedCustomItems']) {
+    const items = overrides[store] ?? c[store] ?? {};
+    for (const d of Object.values(items)) {
+      if (d?.type === 'bag' && d.contents && (d.contents[name] || 0) > 0) return true;
+    }
+  }
+  return false;
+};
+
 export const ABILITY_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
 export const effectiveStats = (baseStats, slots, customItems) => {
@@ -296,6 +316,16 @@ export const migrateCharacter = (char) => {
       notes.push('Quantity-in-name items expanded into real stacks');
     }
   }
+  if (v < 16) {
+    // Structured disposition — who this character actually is, so the DM stops
+    // assuming heroism. 'indifferent' is the important one: what genuinely
+    // fails to move them.
+    if (!c.disposition || typeof c.disposition !== 'object') {
+      c.disposition = { alignment:'', cares:'', indifferent:'', methods:'', lines:'' };
+    }
+    if (c.arc && !Array.isArray(c.arc.objectives)) c.arc = { ...c.arc, objectives: [] };
+    if (c.arc && typeof c.arc.goal !== 'string') c.arc = { ...c.arc, goal: '' };
+  }
   if (v < 15) {
     // v13 expanded quantity-in-name entries in inventory and stash but missed
     // BAG CONTENTS, which are {name: count} maps rather than arrays. A bag
@@ -341,6 +371,7 @@ export const EMPTY_CHAR = {
   subclasses: {},
   slots:{ ...EMPTY_SLOTS },
   inventory:[], stash:[], coins:1000, environment:'wilderness', defeatedAntagonists:[],
+  disposition: { alignment:'', cares:'', indifferent:'', methods:'', lines:'' },
   customItems:{},
   stashedCustomItems:{},
   contextExclusions: { companions:{}, npcs:{}, towns:{} },
@@ -418,7 +449,14 @@ export function useCharacter() {
     // denominations pp/gp/sp/cp all work ([GOLD: -5sp], [COIN: +2pp], [GOLD: +3gp 5sp]).
     // Stored as one copper integer, so change-making is automatic.
     [...text.matchAll(/\[(?:GOLD|COINS?):\s*([^\]]+)\]/gi)].forEach(m => {
-      c.coins = Math.max(0, (c.coins || 0) + parseCoinAmount(m[1]));
+      const delta = parseCoinAmount(m[1]);
+      // A gain exactly equal to what the player already holds is almost always
+      // the DM tagging a RESTATEMENT of their wealth rather than a real gain,
+      // which silently doubles it. Apply it, but make it visible.
+      if (delta > 0 && delta === (c.coins || 0) && delta > 100) {
+        log?.(`[COINS] WARNING: [GOLD: ${m[1].trim()}] exactly matches current holdings — this looks like the DM restating wealth rather than granting it, and has DOUBLED it. Check and correct if unintended.`);
+      }
+      c.coins = Math.max(0, (c.coins || 0) + delta);
     });
 
     // HP -- [DAMAGE:] = player takes damage, [HEAL:] = player heals
@@ -490,6 +528,25 @@ export function useCharacter() {
 
     // Arc resolved — roll a fresh antagonist (never the one just defeated);
     // the DM sees it next turn and starts seeding
+    // Objectives are rolling: one live at a time, the rest a completed record.
+    // [OBJECTIVE DONE: 3] closes one; [OBJECTIVE: text] opens the next. Two tags
+    // rather than one so a garbled new objective can't also lose the completion.
+    [...text.matchAll(/\[OBJECTIVE\s+DONE:\s*(\d+)\]/gi)].forEach(m => {
+      const idx = parseInt(m[1], 10) - 1;
+      const objs = c.arc?.objectives;
+      if (Array.isArray(objs) && objs[idx] && !objs[idx].done) {
+        c.arc = { ...c.arc, objectives: objs.map((o, i) => i === idx ? { ...o, done: true } : o) };
+      }
+    });
+    [...text.matchAll(/\[OBJECTIVE:\s*([^\]]+)\]/gi)].forEach(m => {
+      const t = m[1].trim();
+      if (!t || /^done\b/i.test(t)) return;
+      const objs = Array.isArray(c.arc?.objectives) ? c.arc.objectives : [];
+      // Ignore a duplicate of anything already tracked.
+      if (objs.some(o => o.text.toLowerCase() === t.toLowerCase())) return;
+      c.arc = { ...(c.arc || {}), objectives: [...objs, { text: t, done: false }] };
+    });
+
     if (/\[ARC COMPLETE\]/i.test(text)) {
       // Record the finished foe so it's never rolled again, then pick the next.
       const finished = c.arc?.antagonist;
@@ -744,9 +801,11 @@ export function useCharacter() {
         const idx = inventory.indexOf(itemName);
         if (idx !== -1) inventory.splice(idx, 1);
       }
-      // If no copies remain and it's a custom item, drop the definition too
+      // Only discard the definition when NO copy survives anywhere — carried,
+      // worn, stashed or bagged. Checking inventory alone stripped the stats off
+      // an equipped item, or orphaned copies sitting in the stash or a bag.
       let customItems = c.customItems;
-      if (!inventory.includes(itemName) && customItems[itemName]) {
+      if (customItems[itemName] && !itemExistsAnywhere(c, itemName, { inventory })) {
         customItems = { ...customItems };
         delete customItems[itemName];
       }
