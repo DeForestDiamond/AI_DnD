@@ -952,19 +952,31 @@ export function useGame({ charRef, apiKey }) {
     // and rolled at +0 regardless of Strength or weapon.
     if (/^(attack|attackroll|attacks|tohit|hit|melee|ranged|weapon|weaponattack)$/.test(statName)) {
       const weapon = getMainWeapon(char.slots, char.stats, char.customItems || {});
+      const pb2 = profBonus(char.level);
+      const effAtk = effectiveStats(char.stats, char.slots, char.customItems || {});
+      // Whatever happens, an attack must never resolve at +0. If the equipped
+      // item has no definition (lost or renamed entry) fall back to the better
+      // of STR/DEX rather than a phantom stat, and name the culprit.
+      let abilityMod, enchant = 0, label;
       if (weapon) {
-        const pb2 = profBonus(char.level);
-        const atkBonus = weapon.statBonus + pb2 + (weapon.bonus || 0);
-        const d20 = rollDie(20);
-        const total = d20 + atkBonus;
-        const hit = total >= diff;
-        log?.(`[ROLL] ${statLabel} with ${weapon.name}: d20=${d20}+${atkBonus}=${total} vs DC${diff} — ${hit?'HIT':'MISS'}`);
-        return {
-          resultText: `[ROLL RESULT: attack roll with ${weapon.name} — d20 rolled ${d20} + ${weapon.statBonus} ability + ${pb2} proficiency${weapon.bonus ? ` + ${weapon.bonus} enchantment` : ''} = ${total} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}]`,
-          rollResult: { d20, mod: weapon.statBonus, prof: pb2, gearBonus: weapon.bonus || 0, total, difficulty: diff, hit },
-        };
+        abilityMod = weapon.statBonus;
+        enchant = weapon.bonus || 0;
+        label = weapon.name;
+      } else {
+        abilityMod = Math.max(statMod(effAtk.str), statMod(effAtk.dex));
+        const held = char.slots?.mainhand;
+        label = held ? `${held} (no stats on file)` : 'unarmed';
+        if (held) log?.(`[ROLL] WARNING: "${held}" is equipped but has no entry in customItems — attack resolved from raw STR/DEX. Re-issue or re-craft the item to restore its stats.`);
       }
-      log?.(`[ROLL] ${statLabel} requested but no weapon equipped — falling through to raw ability`);
+      const atkBonus = abilityMod + pb2 + enchant;
+      const d20 = rollDie(20);
+      const total = d20 + atkBonus;
+      const hit = total >= diff;
+      log?.(`[ROLL] ${statLabel} with ${label}: d20=${d20}+${abilityMod}+${pb2}${enchant?`+${enchant}`:''}=${total} vs DC${diff} — ${hit?'HIT':'MISS'}`);
+      return {
+        resultText: `[ROLL RESULT: attack roll with ${label} — d20 rolled ${d20} + ${abilityMod} ability + ${pb2} proficiency${enchant ? ` + ${enchant} enchantment` : ''} = ${total} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}]`,
+        rollResult: { d20, mod: abilityMod, prof: pb2, gearBonus: enchant, total, difficulty: diff, hit },
+      };
     }
 
     // There is no "defence roll" in 5e — AC is passive and attackers roll
