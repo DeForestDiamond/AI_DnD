@@ -58,6 +58,7 @@ export default function App() {
   const [slotTarget, setSlotTarget] = useState(null);
   const [companionSlotTarget, setCompanionSlotTarget] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
+  const objectiveNoteRef = useRef('');   // queued note for the next API message
   const [adventureStartChar, setAdventureStartChar] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(true);
@@ -1159,6 +1160,21 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     return (result.recovers || []).map(r => `${r.name} x${r.count || 1}`).join(', ') || 'nothing';
   };
 
+  // The player marks the current objective complete. The DM proved unreliable at
+  // noticing, so this moves the trigger to the person who actually knows. Marks
+  // it immediately and queues a note so the next turn opens with the DM being
+  // told to acknowledge it and set the next step.
+  const completeCurrentObjective = () => {
+    const c = charRef.current;
+    const objs = Array.isArray(c.arc?.objectives) ? c.arc.objectives : [];
+    const idx = objs.findIndex(o => !o.done);
+    if (idx === -1) return;
+    const text = objs[idx].text;
+    updateChar({ ...c, arc: { ...c.arc, objectives: objs.map((o, i) => i === idx ? { ...o, done: true } : o) } });
+    objectiveNoteRef.current = `\n\n[SYSTEM: The player has marked objective ${idx + 1} ("${text}") COMPLETE. Acknowledge it naturally in the narration — do not announce it as a checklist item — and set the next step toward the arc GOAL this message with [OBJECTIVE: ...]. Do not emit [OBJECTIVE DONE:] for it; it is already recorded.]`;
+    log(`[ARC] Player marked objective ${idx + 1} complete: ${text}`);
+  };
+
   // Remove a foe from the defeated ledger — they become rollable again. In the
   // Realms very little stays dead, so this is a normal thing to want.
   const reviveAntagonist = (name) => {
@@ -1259,7 +1275,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       ? '[Your previous response was cut off mid-sentence. Continue EXACTLY where you left off — do not restart or summarize the scene, just resume the prose from where it ended.]\n\n'
       : '';
 
-    const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx;
+    const objectiveCtx = objectiveNoteRef.current;
+    objectiveNoteRef.current = '';
+    const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx + objectiveCtx;
 
     const history = buildApiHistory(historyOverride);
 
@@ -1847,6 +1865,26 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             )}
           </div>
         </div>
+
+        {/* Current objective — a compact strip so it's glanceable, with a tick
+            to mark it done. The DM proved unreliable at noticing completions, so
+            the player drives it. Editing and history live in Settings. */}
+        {(() => {
+          const objs = character.arc?.objectives || [];
+          const live = objs.find(o => !o.done);
+          const doneCount = objs.filter(o => o.done).length;
+          if (!live) return null;
+          return (
+            <div style={{background:'rgba(201,168,76,0.06)',borderBottom:`1px solid ${colors.borderDim}`,padding:'6px 14px',flexShrink:0,display:'flex',alignItems:'center',gap:10}}>
+              <span style={{fontFamily:fonts.display,fontSize:9,color:colors.textGhost,letterSpacing:1,flexShrink:0}}>
+                OBJECTIVE{doneCount ? ` ${doneCount + 1}` : ''}
+              </span>
+              <span style={{flex:1,minWidth:0,fontSize:12,color:colors.textDim,lineHeight:1.35}}>{live.text}</span>
+              <button onClick={completeCurrentObjective} title="Mark this objective complete"
+                style={{flexShrink:0,background:'transparent',border:`1px solid ${colors.gold}`,color:colors.gold,padding:'3px 9px',fontSize:12,borderRadius:3,cursor:'pointer'}}>✓</button>
+            </div>
+          );
+        })()}
 
         {storySummary && summaryOpen && (
           <div style={{background:'rgba(30,20,5,0.85)',borderBottom:`1px solid ${colors.borderDim}`,padding:'7px 16px',display:'flex',alignItems:'flex-start',gap:8,flexShrink:0,maxHeight:160,overflowY:'auto'}}>
