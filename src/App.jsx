@@ -1113,7 +1113,10 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
         system: `You are a salvager in a D&D 5e game (Forgotten Realms). Given finished items, determine what raw materials are recovered by breaking them down.
 
 RULES:
-- Recovery is ALWAYS LOSSY. Breaking something apart ruins some of it — recover meaningfully less than went into making it. Never return more material than the item plausibly contains.
+- TWO DIFFERENT JOBS, decide which this is:
+  (a) BREAKING DOWN SOMETHING MADE — a forged weapon, worked armour, a construct, an enchanted item. Recovery is LOSSY: the making is undone and some of it is ruined. Recover meaningfully less than went in, and never more than the item plausibly contains.
+  (b) HARVESTING A BODY — a corpse, carcass, cadaver, severed part, or any unworked remains. This is NOT lossy: nothing was invested to be destroyed, the material is simply there to be taken. Return the FULL sensible yield of what such a creature actually contains — hide, scales, bone, claws, fangs, organs, blood, venom glands, essence — in quantities that match its size and power. A dragon carcass yields a great deal; a wolf yields a little.
+  A body that has been WORKED into something (a bone golem, a skull carved into a focus) is case (a) again — the construction is what gets ruined.
 - Recover the item's actual substance: a steel blade yields steel, a drake-hide cloak yields hide and maybe scales, a wand yields its focus crystal and rare wood. Magical items may yield a residue or spent component alongside the physical parts.
 - Some things are NOT worth salvaging or cannot be: state that in the note and return an empty recovers array rather than inventing materials.
 - Material names should be simple and reusable ("Steel Scrap", "Drake Hide", "Spent Arcane Crystal") so they can be crafted with again — not one-off names.

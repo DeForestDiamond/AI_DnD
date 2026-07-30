@@ -531,7 +531,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
   return (
     <CollapsibleSection title="🔧 SALVAGE" count={selCount || undefined} defaultOpen={false}>
       <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
-        Break items down into materials. Recovery is lossy — you never get everything back. Equipped gear is not listed.
+        Break made things down into materials — lossy, you never get everything back. Harvesting a corpse or unworked remains is NOT lossy: the full yield is there for the taking. Equipped gear is not listed.
       </div>
 
       <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder={`Search ${candidates.length} items…`}
