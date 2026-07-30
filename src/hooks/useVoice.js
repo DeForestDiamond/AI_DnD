@@ -6,17 +6,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 // separate letter ("S. Seth'karix"). Rewriting them phonetically is the only fix
 // — the engine has no pronunciation API. Users can add their own in settings.
 const DEFAULT_PRONUNCIATIONS = {
-  amn: 'Ahmn', vyn: 'Vinn', cormyr: 'Core-meer', mulhorand: 'Mul-horand',
-  thay: 'Thay', calimshan: 'Calim-shan', calimport: 'Calim-port',
-  waterdeep: 'Water-deep', neverwinter: 'Never-winter', baldur: 'Ball-dur',
-  luskan: 'Luss-kan', anauroch: 'An-aur-ock', chult: 'Chult',
-  sembia: 'Sem-bee-ah', impiltur: 'Im-pil-tur', aglarond: 'Ag-lar-ond',
-  rashemen: 'Rash-eh-men', damara: 'Dam-ar-ah', vaasa: 'Vah-sah',
-  phlegethos: 'Fleg-eth-oss', avernus: 'Ah-ver-nus', dis: 'Diss',
-  minauros: 'Min-aur-os', stygia: 'Stij-ee-ah', malbolge: 'Mal-bolj',
-  maladomini: 'Mal-ah-dom-ini', cania: 'Kay-nee-ah', nessus: 'Ness-us',
-  faerun: 'Fay-roon', 'faerûn': 'Fay-roon', drow: 'Drow', tiefling: 'Teef-ling',
-  dhampir: 'Damp-ear', illrigger: 'Ill-rigger', shadar: 'Shad-ar',
+  // Only words the engine genuinely mangles. Respelling anything it already
+  // handles makes it WORSE — hyphenated syllables get read with odd pauses and
+  // stress. Add your own in voice settings if you hit a new one.
+  amn: 'Ahmn',
+  vyn: 'Vinn',
 };
 
 const applyPronunciations = (text, custom = {}) => {
