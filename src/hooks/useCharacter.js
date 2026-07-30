@@ -462,7 +462,8 @@ export function useCharacter() {
       const conMod     = statMod(newStats.con);
       const hpGain     = Math.max(1, hpPerLevel + conMod);
       const newMaxHp   = c.maxHp + hpGain;
-      const nc = { ...c, stats:newStats, maxHp:newMaxHp, hp:Math.min(c.hp + hpGain, newMaxHp), classLevels };
+      const withMax = { ...c, stats:newStats, maxHp:newMaxHp, classLevels };
+      const nc = { ...withMax, hp: Math.min(c.hp + hpGain, effectiveMaxHp(withMax)) };
       charRef.current = nc;
       return nc;
     });
@@ -493,12 +494,12 @@ export function useCharacter() {
       c.hp = Math.max(0, c.hp - parseInt(m[1]));
     });
     [...text.matchAll(/\[HEAL:\s*(\d+)\]/gi)].forEach(m => {
-      c.hp = Math.min(c.maxHp, c.hp + parseInt(m[1]));
+      c.hp = Math.min(effectiveMaxHp(c), c.hp + parseInt(m[1]));
     });
     // [HP: +10] or [HP: -5] — sign determines heal vs damage
     [...text.matchAll(/\[HP:\s*([+-]?\d+)\]/gi)].forEach(m => {
       const val = parseInt(m[1]);
-      if (val > 0) c.hp = Math.min(c.maxHp, c.hp + val);
+      if (val > 0) c.hp = Math.min(effectiveMaxHp(c), c.hp + val);
       else if (val < 0) c.hp = Math.max(0, c.hp + val); // val is already negative
     });
 
