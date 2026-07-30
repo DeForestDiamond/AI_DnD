@@ -173,7 +173,10 @@ export const equippableInSlot = (char, slotId) => {
     // Magic items with a declared slot only fit that slot ('ring' fits either ring slot).
     // Items with a missing or unrecognized slot stay flexible so nothing gets stranded.
     if (data.type === 'magic' && data.slot) {
-      if (data.slot === 'ring') return slotId === 'ring1' || slotId === 'ring2';
+      // A ring fits EITHER ring slot however it was tagged. ring1/ring2 are
+      // positions, not different kinds of ring — items already saved with a
+      // specific one shouldn't be stuck in it.
+      if (/^ring[12]?$/.test(data.slot)) return slotId === 'ring1' || slotId === 'ring2';
       if (validSlotIds.includes(data.slot)) return data.slot === slotId;
     }
     return true;
