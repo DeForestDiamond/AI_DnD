@@ -3,7 +3,7 @@ import { PACING, ENVIRONMENTS } from '../constants/encounters.js';
 import { colors, fonts, btn } from '../styles/theme.js';
 import { SLOTS } from '../constants/items.js';
 import { STAT_NAMES } from '../constants/classes.js';
-import { statMod, modStr, profBonus, calcAC, getMainWeapon, effectiveStats, equippableInSlot, allItems, skillBonuses } from '../hooks/useCharacter.js';
+import { statMod, modStr, profBonus, calcAC, getMainWeapon, effectiveStats, equippableInSlot, allItems, skillBonuses, effectiveMaxHp, gearHpBonus } from '../hooks/useCharacter.js';
 import { stackInventory, SKILL_ABILITY, SKILL_LIST } from '../hooks/useGame.js';
 import { coinsToString } from '../constants/currency.js';
 import { XP_THRESHOLDS } from '../constants/progression.js';
@@ -1142,7 +1142,12 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </div>
       </div>
 
-      <HPBar current={character.hp} max={character.maxHp}/>
+      <HPBar current={character.hp} max={effectiveMaxHp(character)}/>
+      {gearHpBonus(character) !== 0 && (
+        <div style={{fontSize:9,color:colors.textGhost,textAlign:'right',marginTop:-2}}>
+          includes {gearHpBonus(character) > 0 ? '+' : ''}{gearHpBonus(character)} from gear CON
+        </div>
+      )}
       <XPBar xp={character.xp||0} level={character.level}/>
 
       {/* Combat stats */}

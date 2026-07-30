@@ -1,4 +1,4 @@
-import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod, allItems } from './useCharacter.js';
+import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod, allItems, effectiveMaxHp } from './useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
 import { ITEM_DB } from '../constants/items.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
@@ -164,7 +164,7 @@ ARC COMPLETION — CHECK EVERY MESSAGE, THE PLAYER CANNOT SEE THE ARC. The antag
     : '';
   const dynamicPart = `CURRENT STATE:
 Level ${char.level} | ${char.xp||0} XP | Coins: ${coinsToString(char.coins)}
-HP: ${char.hp}/${char.maxHp} | AC: ${ac} | Proficiency: +${pb}
+HP: ${char.hp}/${effectiveMaxHp(char)} | AC: ${ac} | Proficiency: +${pb}
 Stats: Strength ${effStats.str}(${modStr(effStats.str)}) Dexterity ${effStats.dex}(${modStr(effStats.dex)}) Constitution ${effStats.con}(${modStr(effStats.con)}) Intelligence ${effStats.int}(${modStr(effStats.int)}) Wisdom ${effStats.wis}(${modStr(effStats.wis)}) Charisma ${effStats.cha}(${modStr(effStats.cha)})
 Weapon: ${weaponLine}${sneakLine}${focusLine}
 Equipped: ${equippedList}
@@ -654,7 +654,7 @@ When the player wins, the threat is OVER. The scene goes quiet: loot, catch brea
   const dynamicPart = `── CURRENT STATE (changes every message) ──
 CHARACTER: ${char.name} | ${char.race?.name} ${classDesc} | Total Level ${char.level} | ${char.xp||0} XP
 STATS: STR ${effStats.str}(${modStr(effStats.str)}) DEX ${effStats.dex}(${modStr(effStats.dex)}) CON ${effStats.con}(${modStr(effStats.con)}) INT ${effStats.int}(${modStr(effStats.int)}) WIS ${effStats.wis}(${modStr(effStats.wis)}) CHA ${effStats.cha}(${modStr(effStats.cha)})
-COMBAT: Hit Points ${char.hp}/${char.maxHp} | Armor Class ${ac} | Proficiency Bonus +${pb} | Weapon: ${weaponLine}${sneakLine}${focusLine}
+COMBAT: Hit Points ${char.hp}/${effectiveMaxHp(char)} | Armor Class ${ac} | Proficiency Bonus +${pb} | Weapon: ${weaponLine}${sneakLine}${focusLine}
 EQUIPPED: ${equippedList}
 INVENTORY: ${invDisplay} | Coins: ${coinsToString(char.coins)}${itemDetailLine}${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}${char.arc?.antagonist ? `
 

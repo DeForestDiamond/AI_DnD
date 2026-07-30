@@ -23,6 +23,31 @@ export const calcMaxHp = (clsName, con, level = 1) => {
   return base + conMod + (level - 1) * (perLv + conMod);
 };
 
+// CON granted by equipped gear raises max HP the way 5e does: +1 hit point per
+// level per point of CON modifier. maxHp stays a stored value (level-up, damage
+// and healing all keep working on it); this is the gear contribution on top.
+export const gearHpBonus = (char) => {
+  if (!char?.stats) return 0;
+  const eff = effectiveStats(char.stats, char.slots || {}, char.customItems || {});
+  const modGain = statMod(eff.con) - statMod(char.stats.con);
+  if (modGain === 0) return 0;
+  const level = Math.max(1, char.level || 1);
+  return modGain * level;
+};
+
+export const effectiveMaxHp = (char) => Math.max(1, (char?.maxHp || 0) + gearHpBonus(char));
+
+// After anything that changes equipment, keep the player's HP RATIO intact
+// rather than clamping or gifting. Swapping gear shouldn't cost hit points, and
+// putting armour on shouldn't leave you looking half dead.
+export const reconcileHp = (prev, next) => {
+  const before = effectiveMaxHp(prev);
+  const after  = effectiveMaxHp(next);
+  if (before === after || before <= 0) return next;
+  const ratio = Math.min(1, (prev.hp || 0) / before);
+  return { ...next, hp: Math.max(1, Math.min(after, Math.round(ratio * after))) };
+};
+
 export const applyRaceBonus = (baseStats, race) => {
   const b = race?.bonus || {};
   const r = { ...baseStats };
@@ -652,7 +677,8 @@ export function useCharacter() {
     });
 
     c = skipLevelUp ? c : checkLevelUp(c);
-    return c;
+    // Equipment tags may have changed CON-granting gear; keep the HP ratio.
+    return reconcileHp(currentChar, c);
   };
 
   const selectRace = (race) => {
@@ -872,7 +898,7 @@ export function useCharacter() {
         ? [...c.inventory.slice(0, idx), ...c.inventory.slice(idx + 1)]
         : c.inventory;
       if (prev) inventory = [...inventory, prev];
-      const nc = { ...c, slots:{ ...c.slots, [slotId]:itemName }, inventory };
+      const nc = reconcileHp(c, { ...c, slots:{ ...c.slots, [slotId]:itemName }, inventory });
       charRef.current = nc;
       return nc;
     });
@@ -882,7 +908,7 @@ export function useCharacter() {
     setCharacter(c => {
       const item = c.slots[slotId];
       if (!item) return c;
-      const nc = { ...c, slots:{ ...c.slots, [slotId]:null }, inventory:[...c.inventory, item] };
+      const nc = reconcileHp(c, { ...c, slots:{ ...c.slots, [slotId]:null }, inventory:[...c.inventory, item] });
       charRef.current = nc;
       return nc;
     });
