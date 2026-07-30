@@ -1109,7 +1109,9 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 2500,
+        // A multi-corpse harvest returns many distinct materials; too small a
+        // ceiling truncates the list and silently costs the player materials.
+        max_tokens: 4000,
         system: `You are a salvager in a D&D 5e game (Forgotten Realms). Given finished items, determine what raw materials are recovered by breaking them down.
 
 RULES:
@@ -1120,7 +1122,8 @@ RULES:
 - Recover the item's actual substance: a steel blade yields steel, a drake-hide cloak yields hide and maybe scales, a wand yields its focus crystal and rare wood. Magical items may yield a residue or spent component alongside the physical parts.
 - Some things are NOT worth salvaging or cannot be: state that in the note and return an empty recovers array rather than inventing materials.
 - Material names should be simple and reusable ("Steel Scrap", "Drake Hide", "Spent Arcane Crystal") so they can be crafted with again — not one-off names.
-- Return exactly ONE result object covering all the submitted items together.
+- Return exactly ONE result object, but it must cover EVERY submitted item in full. Harvest each creature or item for ITS OWN parts and list them SEPARATELY — a drake and a troll and an owlbear yield drake scale, troll hide and owlbear claws as distinct entries, never a merged pool of "monster parts". Submitting five corpses must produce roughly five times the materials of submitting one; do not compress a large haul into a short list. There is no cap on how many entries the recovers array may hold — length it to match what was actually submitted.
+- Multiply quantities by how many of each item were submitted: three drake carcasses yield three drakes' worth.
 Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
         messages: [{ role: 'user', content: `ITEMS TO BREAK DOWN:\n${itemList}\n\nRespond with ONLY the JSON now.` }],
       }),
