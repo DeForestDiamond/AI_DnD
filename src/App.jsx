@@ -869,7 +869,13 @@ RULES:
 - ELEMENTAL AND DIVINE WEAPONS express their extra damage in the damage field as "plus <dice> <type>" — e.g. "1d8+1 plus 1d4 radiant", "2d6 plus 3d10 necrotic", and these stack: "1d6+2 plus 1d4 lightning plus 1d4 thunder". The app rolls these separately and doubles them on a critical hit. Damage described ONLY in the label is never rolled, so a flaming sword whose fire lives in the label is mechanically a plain sword.
 - ONLY these bonus keys are calculated: ac, str, dex, con, int, wis, cha, and skill names (perception, stealth, athletics, persuasion ...). Invented keys like "necrotic_resistance:full" or "fire_immunity:true" do nothing — express resistances, immunities and per-day powers in the LABEL instead.
 - ARMOUR PROTECTION COMES FROM ITS "ac" FIELD, NOT A BONUS. For a type "armor" chest piece, better protection means a HIGHER ac VALUE — masterwork plate is ac 19 or 20, not ac 18 with a separate ac:2. Reserve the bonuses field on armour for STAT bonuses (con:2, str:1). Other worn pieces — helm, cloak, ring, boots — are type "magic" and DO use ac:N in their bonuses, since they have no ac field of their own.
-- The label states the effect in plain words. Charges and per-day effects are narrative text; there is no charge counter.
+- LABELS ARE SHORT AND TYPE-APPROPRIATE. Only a weapon's damage field and its "plus" dice are ever rolled by the game — everything in a label is narration. A label stuffed with spell lists and damage numbers costs the player context on EVERY turn for the rest of the campaign and buys nothing mechanical.
+  Keep every label to 2-3 sentences. Then, by type:
+  WEAPON — the damage field carries the numbers. The label gets at most ONE special ability, in a clause. No second and third powers, no per-day spell lists.
+  ARMOUR — defensive, protective and utility effects ONLY: resistances, immunities, endurance, movement, senses. Armour never has offensive abilities and never deals damage.
+  ACCESSORIES (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear, shirts) — utility and passive effects only. NO damage dice at all, and no attack powers.
+  CONSTRUCTS — what it is, and what commanding it costs. The CR at the front tells the DM how hard it hits; do NOT list spells, per-day powers or damage numbers.
+- Charges and per-day effects are narrative text; there is no charge counter.
 - ${levelNote}${setRules}
 Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asSet ? setShape : shape}`,
         messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],

@@ -394,6 +394,7 @@ NEVER NAME AN ITEM "ENCHANTED X" OR "X - ENCHANTED". That tells the player nothi
       Head (head):             [ITEM: Helm of Clarity | magic | head | int:1 | circlets, crowns, hats, helmets]
       Necklace (neck):         [ITEM: Amulet of Health | magic | neck | con:2 | amulets, torcs, pendants]
       Ring (ring1 or ring2):   [ITEM: Ring of Protection | magic | ring1 | ac:1 | +1 AC]
+    KEEP LABELS SHORT AND TYPE-APPROPRIATE — 2-3 sentences. Only a weapon's damage field and its "plus" dice are rolled by the game; everything in a label is narration you improvise, and a long one costs context on every turn thereafter. Weapons: the damage field carries the numbers, the label gets at most ONE special ability. Armour: defensive, protective and utility effects only — armour never deals damage. Accessories (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear): utility and passive only, NO damage dice. Constructs: what it is and what commanding it costs, with the CR doing the work — no spell lists or damage numbers.
     Full worn-slot list to choose from: face, head, neck, shoulders, cloak, torso, arms, hands, waist, ring1, ring2, feet. Pick the anatomically correct slot for each item so it can be equipped.
     MAGIC ITEM FORMAT IS STRICT — [ITEM: Name | magic | SLOT | BONUSES | DESCRIPTION]:
       • SLOT (field 3) is ONE bare slot id from the list above — never a phrase. WRONG: "main hand when used", "equipped on ring1". RIGHT: mainhand, ring1.
