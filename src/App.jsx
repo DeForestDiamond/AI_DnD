@@ -59,6 +59,23 @@ export default function App() {
   const [companionSlotTarget, setCompanionSlotTarget] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
   const objectiveNoteRef = useRef('');   // queued note for the next API message
+  const sideCostRef = useRef({ calls: 0, cost: 0 });   // running total for non-DM calls
+
+  // Every helper call (crafting, salvage, extraction, summaries, objectives) is
+  // a separate billed request that never appeared in the token bar. Log each
+  // one's usage and keep a session running total so costs can be traced.
+  const logUsage = (label, data) => {
+    const u = data?.usage;
+    if (!u) return;
+    const cacheRead = u.cache_read_input_tokens ?? 0;
+    const cacheWrite = u.cache_creation_input_tokens ?? 0;
+    const input = u.input_tokens ?? 0;
+    const output = u.output_tokens ?? 0;
+    // Sonnet list pricing, per million tokens.
+    const cost = (input * 3 + cacheWrite * 3.75 + cacheRead * 0.30 + output * 15) / 1e6;
+    sideCostRef.current = { calls: sideCostRef.current.calls + 1, cost: sideCostRef.current.cost + cost };
+    log(`[COST] ${label}: ${(input + cacheRead + cacheWrite).toLocaleString()} in / ${output.toLocaleString()} out = $${cost.toFixed(4)}  ·  session helper total $${sideCostRef.current.cost.toFixed(3)} over ${sideCostRef.current.calls} calls`);
+  };
   const [adventureStartChar, setAdventureStartChar] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(true);
@@ -461,6 +478,7 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       });
       if (res.ok) {
         const data = await res.json();
+        logUsage('archive summary', data);
         const text = data.content?.[0]?.text || '';
         if (text) {
           log(`[SUMMARY] Archived chunk created: ${text.length} chars`);
@@ -536,6 +554,7 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
 
       if (!res.ok) { lastSummarizedAt.current = prevSummarizedAt; return; }
       const data = await res.json();
+      logUsage('story log entry', data);
       const newEntry = data.content?.[0]?.text || '';
       if (!newEntry) { lastSummarizedAt.current = prevSummarizedAt; return; }
 
@@ -652,6 +671,7 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
     });
     if (!res.ok) throw new Error(`API error ${res.status}`);
     const data = await res.json();
+    logUsage('NPC extraction', data);
     const rawText = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
     try {
@@ -738,6 +758,7 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
     });
     if (!res.ok) throw new Error(`API error ${res.status}`);
     const data = await res.json();
+    logUsage('town extraction', data);
     const rawText = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
     try {
@@ -854,6 +875,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     });
     if (!res.ok) throw new Error(`API error ${res.status}`);
     const data = await res.json();
+    logUsage('crafting', data);
     const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
     try {
@@ -932,6 +954,7 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     });
     if (!res.ok) throw new Error(`API error ${res.status}`);
     const data = await res.json();
+    logUsage('arc objectives', data);
     const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
     try { parsed = JSON.parse(raw); } catch {
@@ -1130,6 +1153,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     });
     if (!res.ok) throw new Error(`API error ${res.status}`);
     const data = await res.json();
+    logUsage('salvage', data);
     const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
     try {
