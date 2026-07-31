@@ -939,7 +939,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
@@ -1527,6 +1527,17 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                           color:(data.status||'dormant')==='active'?colors.gold:colors.textDead,
                           fontFamily:fonts.display,fontSize:9,letterSpacing:1,padding:'1px 5px',borderRadius:3,cursor:'pointer'}}>
                         {(data.status || 'dormant').toUpperCase()}
+                      </button>
+                    )}
+                    {/* Promote an actual entity to a companion — components
+                        (spare cores, phylacteries) are better left as items. */}
+                    {data?.type === 'construct' && onPromoteConstruct && !bagMode && (
+                      <button
+                        title="Make this a companion — gives it a full description, abilities and equipment slots"
+                        onClick={(e) => { e.stopPropagation(); onPromoteConstruct(name); }}
+                        style={{flexShrink:0,background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textFaint,
+                          fontFamily:fonts.display,fontSize:9,letterSpacing:1,padding:'1px 5px',borderRadius:3,cursor:'pointer'}}>
+                        →👥
                       </button>
                     )}
                     {/* qty — pinned to the line, never pushed off */}

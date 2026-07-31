@@ -1260,6 +1260,35 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     log(`[ARC] ${name} removed from the defeated ledger — rollable again`);
   };
 
+  // Promote a construct ITEM into a companion record. Only worth doing for
+  // actual entities — a spare arcane core is a component and belongs in the
+  // inventory. Carries the label across as the description and removes the item.
+  const promoteConstructToCompanion = (name) => {
+    const c = charRef.current;
+    const store = c.customItems?.[name] ? 'customItems' : (c.stashedCustomItems?.[name] ? 'stashedCustomItems' : null);
+    if (!store) return;
+    const d = c[store][name];
+    if (d?.type !== 'construct') return;
+    if (c.companions?.[name]) { log(`[CONSTRUCT] "${name}" is already a companion`); return; }
+
+    const entry = {
+      race: 'construct',
+      role: 'a construct the player forged and commands',
+      desc: d.label || '',
+      abilities: '',
+      status: `${d.status || 'dormant'} — awaiting its command word`,
+      relationship: 'forged and bound by the player',
+      location: '',
+    };
+    const nextStore = { ...c[store] };
+    delete nextStore[name];
+    const inventory = (c.inventory || []).filter(x => x !== name);
+    const stash = (c.stash || []).filter(x => x !== name);
+    updateChar({ ...c, [store]: nextStore, inventory, stash,
+      companions: { ...(c.companions || {}), [name]: entry } });
+    log(`[CONSTRUCT] Promoted "${name}" to a companion`);
+  };
+
   // Cycle a construct's status: dormant -> active -> bound -> dormant.
   // Works whether the construct is carried or stashed.
   const cycleConstructStatus = (name) => {
@@ -1913,6 +1942,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             defeatedAntagonists={character.defeatedAntagonists || []}
             onReviveAntagonist={reviveAntagonist}
             onCycleConstructStatus={cycleConstructStatus}
+            onPromoteConstruct={promoteConstructToCompanion}
             onProposeCrafting={proposeCrafting}
             onProposeDismantle={proposeDismantle}
             onExecuteDismantle={executeDismantle}
