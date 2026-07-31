@@ -269,7 +269,7 @@ function DirectivesEditor({ directives, onChangeDirectives }) {
 }
 
 // ── Debug log viewer (moved from the header) ──────────────────────────────────
-function DebugViewer({ debugLog, debugStatus }) {
+function DebugViewer({ debugLog, debugStatus, onExportDebug, onCopyDebug }) {
   return (
     <CollapsibleSection title="🐛 DEBUG LOG" count={debugLog?.length || 0} defaultOpen={false}>
       <div style={{fontFamily:'monospace',fontSize:9,color:'#7fc97f',maxHeight:220,overflowY:'auto'}}>
@@ -277,6 +277,12 @@ function DebugViewer({ debugLog, debugStatus }) {
         {(debugLog||[]).map((entry, i) => <div key={i} style={{borderBottom:'1px solid #1a1208',paddingBottom:2,marginBottom:2,wordBreak:'break-all'}}>{entry}</div>)}
         {(!debugLog || debugLog.length === 0) && <div style={{color:'#4a3a20'}}>no logs yet</div>}
       </div>
+      {debugLog?.length > 0 && (onExportDebug || onCopyDebug) && (
+        <div style={{display:'flex',gap:4,marginTop:6}}>
+          {onCopyDebug && <button onClick={onCopyDebug} style={{...btn, flex:1, fontSize:10}}>⧉ Copy</button>}
+          {onExportDebug && <button onClick={onExportDebug} style={{...btn, flex:1, fontSize:10}}>⬇ Download .txt</button>}
+        </div>
+      )}
     </CollapsibleSection>
   );
 }
@@ -915,7 +921,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
@@ -1346,7 +1352,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {onChangeDirectives && <DirectivesEditor directives={directives} onChangeDirectives={onChangeDirectives} />}
 
       {/* Debug log (moved from the header) */}
-      {debugLog !== undefined && <DebugViewer debugLog={debugLog} debugStatus={debugStatus} />}
+      {debugLog !== undefined && <DebugViewer debugLog={debugLog} debugStatus={debugStatus} onExportDebug={onExportDebug} onCopyDebug={onCopyDebug} />}
       </>}
 
       {activeTab==='character' && <>

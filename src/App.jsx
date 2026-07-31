@@ -58,6 +58,7 @@ export default function App() {
   const [slotTarget, setSlotTarget] = useState(null);
   const [companionSlotTarget, setCompanionSlotTarget] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
+  const debugLogRef = useRef([]);
   const objectiveNoteRef = useRef('');   // queued note for the next API message
   const sideCostRef = useRef({ calls: 0, cost: 0 });   // running total for non-DM calls
 
@@ -95,7 +96,7 @@ export default function App() {
   const log = (msg, data) => {
     const entry = `[${new Date().toLocaleTimeString()}] ${msg}${data ? ' ' + JSON.stringify(data) : ''}`;
     console.log(entry);
-    setDebugLog(prev => [...prev.slice(-49), entry]);
+    setDebugLog(prev => { const next = [...prev.slice(-999), entry]; debugLogRef.current = next; return next; });   // keep 1000
   };
 
   const {
@@ -177,6 +178,7 @@ export default function App() {
     charRef,
     messages: fullLog,
     storySummaryRef,
+    debugLogRef,
     onLoadFull: applyLoadedFull,
     onLoadCharacter: applyLoadedCharacter,
   });
@@ -1795,6 +1797,16 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             showRawTags={showRawTags}
             onToggleRawTags={()=>setShowRawTags(v=>!v)}
             debugLog={debugLog}
+        onExportDebug={() => {
+          const blob = new Blob([debugLog.join('\n')], { type:'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `dnd-debug-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.txt`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }}
+        onCopyDebug={() => navigator.clipboard?.writeText(debugLog.join('\n'))}
             debugStatus={`char: lv${character.level} xp:${character.xp} pending:${String(pendingStatPoint)}`}
             directives={character.directives || ''}
             onChangeDirectives={(text)=>updateChar({ ...charRef.current, directives: text })}

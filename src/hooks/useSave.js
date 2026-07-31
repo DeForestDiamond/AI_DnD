@@ -42,7 +42,7 @@ export function parseSaveJSON(raw) {
   }
 }
 
-export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoadCharacter }) {
+export function useSave({ charRef, messages, storySummaryRef, debugLogRef, onLoadFull, onLoadCharacter }) {
 
   // ── Inventory/stash storage compression ──────────────────────────────────────
   // In memory, inventory & stash are arrays of individual item-name strings
@@ -70,7 +70,9 @@ export function useSave({ charRef, messages, storySummaryRef, onLoadFull, onLoad
     character: type === 'character'
       ? (({ arc, ...rest }) => compressCharForSave({ ...rest, _v: SAVE_VERSION }))(charRef.current)
       : compressCharForSave({ ...charRef.current, _v: SAVE_VERSION }),
-    ...(type === 'fullsave' ? { messages, storySummary: storySummaryRef.current || '' } : {}),
+    // Full saves carry the debug log so cost tracing and diagnostics survive a
+    // reload. Autosave writes its own payload and is unaffected.
+    ...(type === 'fullsave' ? { messages, storySummary: storySummaryRef.current || '', debugLog: debugLogRef?.current || [] } : {}),
   });
 
   // ── File download ────────────────────────────────────────────────────────────
