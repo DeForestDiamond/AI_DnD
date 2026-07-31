@@ -523,6 +523,14 @@ export function useCharacter() {
       const totalQty = bakedQty && bakedQty[1].trim()
         ? qty * Math.min(500, Math.max(1, parseInt(bakedQty[2], 10) || 1))
         : qty;
+      // Bundle-shaped names mean the DM compressed several things into one
+      // opaque parcel the player then has to unpack. Not blocked — some are
+      // legitimate — but surfaced so it's visible when it happens.
+      if (/\b(crate|chest|barrel|sack|bundle|assortment|collection|cache|trove|haul|pile|box)\s+of\b/i.test(name)
+          || /\b(assorted|various|miscellaneous|sundry)\b/i.test(name)
+          || /^(alchemical|crafting|trade|general)\s+supplies$/i.test(name.trim())) {
+        log?.(`[ITEM] NOTE: "${name}" looks like a bundle rather than itemised loot — ask the DM to list its contents as separate items.`);
+      }
       const isCustom = !ITEM_DB[name] && (data.type !== 'misc' || (data.label && data.label.trim()));
       if (isCustom) c.customItems[name] = data;
       for (let i = 0; i < totalQty; i++) {
