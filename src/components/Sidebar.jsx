@@ -291,7 +291,7 @@ function DebugViewer({ debugLog, debugStatus, onExportDebug, onCopyDebug }) {
 function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) {
   const [selected, setSelected] = useState({});   // { name: count }
   const [intent, setIntent]     = useState('');
-  const [asSet, setAsSet]       = useState(false);
+  const [mode, setMode]         = useState('item');   // item | set | construct
   const [busy, setBusy]         = useState(false);
   const [options, setOptions]   = useState(null);
   const [status, setStatus]     = useState('');
@@ -362,7 +362,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
       // Send the full definition, not just the label — when upgrading, the model
       // needs to SEE the existing stats to preserve and exceed them.
       const mats = Object.entries(selected).map(([nm, count]) => ({ name: nm, count, data: stockData(nm) || null }));
-      const opts = await onProposeCrafting({ materials: mats, intent, asSet });
+      const opts = await onProposeCrafting({ materials: mats, intent, asSet: mode === 'set', asConstruct: mode === 'construct' });
       setOptions(opts); setStatus('');
     } catch (e) { setStatus('✗ ' + e.message); }
     setBusy(false);
@@ -423,14 +423,23 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
       <input value={intent} onChange={e=>setIntent(e.target.value)} placeholder="What do you want made? (optional)"
         style={{...npcInput, marginBottom:4}}/>
 
-      <label style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:colors.textDim,marginBottom:6,cursor:'pointer'}}>
-        <input type="checkbox" checked={asSet} onChange={()=>setAsSet(v=>!v)} style={{accentColor:colors.gold,flexShrink:0}}/>
-        Forge a matched set (several pieces, different slots — costs more material)
-      </label>
+      <div style={{display:'flex',gap:4,marginBottom:6}}>
+        {[['item','⚒️ Item'],['set','🛡️ Set'],['construct','🗿 Construct']].map(([id,label]) => (
+          <button key={id} onClick={()=>setMode(id)}
+            style={{flex:1,background:mode===id?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${mode===id?colors.gold:colors.borderDim}`,color:mode===id?colors.gold:colors.textFaint,padding:'5px 2px',fontSize:10,fontFamily:fonts.display,letterSpacing:0.5,borderRadius:3,cursor:'pointer',whiteSpace:'nowrap'}}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div style={{fontSize:10,color:colors.textGhost,marginBottom:6,lineHeight:1.4}}>
+        {mode==='set' ? 'Several pieces in different slots — costs more material.'
+          : mode==='construct' ? 'A golem, war machine or bound spirit. Becomes a COMPANION rather than an item, so it can be described properly and equipped.'
+          : 'A single piece of equipment.'}
+      </div>
 
       <button onClick={propose} disabled={busy || selCount === 0}
         style={{...btn(false), width:'100%', opacity:(busy||selCount===0)?0.4:1}}>
-        {busy ? '…' : `🔨 WHAT CAN I ${asSet ? 'FORGE AS A SET' : 'MAKE'}?${selCount ? ` (${selCount})` : ''}`}
+        {busy ? '…' : `🔨 ${mode==='construct' ? 'WHAT CAN I RAISE' : mode==='set' ? 'WHAT CAN I FORGE AS A SET' : 'WHAT CAN I MAKE'}?${selCount ? ` (${selCount})` : ''}`}
       </button>
       {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:6,lineHeight:1.4}}>{status}</div>}
 
@@ -439,7 +448,16 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
           <div style={{fontFamily:fonts.display,fontSize:13,color:colors.gold,marginBottom:2}}>
             {o.name}{o.pieces?.length ? <span style={{color:colors.textGhost,fontSize:10}}> · {o.pieces.length} pieces</span> : null}
           </div>
-          {o.pieces?.length ? (
+          {o.isConstruct ? (
+            <>
+              <div style={{fontSize:10,color:colors.goldFaint,marginBottom:3}}>
+                CR {o.cr || '?'}{o.race ? ` · ${o.race}` : ''}{o.role ? ` · ${o.role}` : ''}
+              </div>
+              {o.appearance && <div style={{fontSize:11,color:colors.textDim,marginBottom:4,lineHeight:1.4}}>{o.appearance}</div>}
+              {o.abilities && <div style={{fontSize:11,color:colors.text,marginBottom:4,lineHeight:1.4}}><b style={{color:colors.textGhost}}>Powers:</b> {o.abilities}</div>}
+              {o.desc && <div style={{fontSize:11,color:colors.textDim,marginBottom:4,lineHeight:1.4}}>{o.desc}</div>}
+            </>
+          ) : o.pieces?.length ? (
             o.pieces.map((pc, j) => (
               <div key={j} style={{borderLeft:`1px solid ${colors.borderDim}`,paddingLeft:6,marginBottom:4}}>
                 <div style={{fontSize:12,color:colors.text}}>{pc.name}</div>
@@ -461,7 +479,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
             Consumes: {(o.consumes||[]).map(m=>`${m.name}${m.count>1?` x${m.count}`:''}`).join(', ') || 'nothing'}
             {o.reason ? ` — ${o.reason}` : ''}
           </div>
-          <button onClick={()=>make(o)} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>{o.pieces?.length ? '✓ FORGE THE SET' : '✓ FORGE THIS'}</button>
+          <button onClick={()=>make(o)} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>{o.isConstruct ? '✓ RAISE IT' : o.pieces?.length ? '✓ FORGE THE SET' : '✓ FORGE THIS'}</button>
         </div>
       ))}
     </CollapsibleSection>

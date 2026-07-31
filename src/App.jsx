@@ -799,7 +799,7 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
   // what the selected materials could become and returns options WITHOUT
   // touching the save. executeCrafting() consumes the materials and creates the
   // item only after the player confirms a choice.
-  const proposeCrafting = async ({ materials, intent, asSet }) => {
+  const proposeCrafting = async ({ materials, intent, asSet, asConstruct }) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     const char = charRef.current;
     if (!materials.length) throw new Error('Select at least one material');
@@ -828,6 +828,17 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
     const setShape = `{ "options": [ { "name": "Set Name", "pieces": [ { "name": "Piece Name", "type": "weapon|armor|magic", "slot": "the slot this piece occupies", "damage": "weapons only", "heavy": "armor only", "maxDex": "armor only", "bonuses": "stat:N pairs or empty", "label": "what this piece does" } ], "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on the set and why these materials make it" } ] }`;
     const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable|construct — use armor ONLY for a main chest piece; every other wearable is magic; use construct for golems, animated things and bound entities", "status": "construct only — dormant, active, or bound", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring1 ring2 feet — omit for weapon/consumable", "damage": "weapons only — base dice, optional +N enchantment, and optional extra damage dice of another type: 1d8, 1d8+2, or 1d8+1 plus 1d4 radiant, or 2d6 plus 2d6 fire", "heavy": "armor only — true if it is heavy armour that ignores the wearer's Dexterity, false otherwise", "maxDex": "armor only — a number if the armour caps the Dexterity bonus (medium armour is usually 2), otherwise null", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
 
+    // A construct is an ENTITY, not gear — it becomes a companion record with the
+    // room to be described properly, rather than a label crammed into an item.
+    const constructShape = `{ "options": [ { "name": "Construct Name", "cr": "challenge rating as a number", "race": "what it is, e.g. bone colossus, infernal war-construct", "role": "what it is for, e.g. siege engine, bodyguard, hunter", "appearance": "2-3 sentences on how it looks and moves", "abilities": "the kinds of power it wields — schools of magic, damage types, broad capabilities. NO specific spell names, NO damage dice, NO per-day counts", "desc": "3-5 sentences: what it is, how it was made, how it behaves, and what commanding it costs", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
+    const constructRules = asConstruct ? `
+
+FORGING A CONSTRUCT: propose 2 alternative constructs — golems, war machines, animated dead, bound spirits. These are ENTITIES the player owns and commands, not equipment, so describe them properly:
+- CR scales to the materials: ordinary parts CR 3-8, monstrous parts CR 10-16, legendary remains (ancient dragon, tarrasque, demon lord, archfiend) CR 20+.
+- ABILITIES field: name the KINDS of power — "necrotic and shadow magic", "siege-scale physical force", "fear effects and command over lesser undead". Do NOT name specific spells, do NOT give damage dice, do NOT list per-day counts. The CR tells the DM how hard it hits; the rest is played, not tabulated.
+- DESC field: this is the one place to be generous. What it is, how it was made, how it behaves, what it costs to command, and what it does when its bindings weaken.
+- Give it a real name, not a description-as-name.` : '';
+
     const setRules = asSet ? `
 
 CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. Give every piece a proper label of 3-4 sentences — what it looks like, what it does, and what it was made from — the same care you would give a single crafted item. A set is a showpiece; describe it like one. Each set is a group of pieces that clearly belong together — shared material, shared motif, a shared name. Rules specific to sets:
@@ -844,7 +855,7 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
     • everything the label promised still works, plus whatever the new materials add
   Do NOT move a bonus from one piece to another and call it an upgrade, and do NOT reduce or delete anything to pay for an increase elsewhere. If the player asks to focus on one stat, ADD to that stat — do not strip the others to fund it. If the new materials are modest, add modestly, but every piece must end up strictly better than the one consumed. You may add NEW pieces to the set as well if the materials allow and a slot is free.` : '';
 
-    log(`[CRAFT] Proposing ${asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
+    log(`[CRAFT] Proposing ${asConstruct ? 'CONSTRUCTS' : asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -853,7 +864,7 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
         // A set is several pieces per option, each with name/slot/stats/label —
         // far more output than single items. Too small a ceiling truncates the
         // JSON mid-object and it fails to parse.
-        max_tokens: asSet ? 4000 : 3000,
+        max_tokens: asSet || asConstruct ? 4000 : 3000,
         system: `You are a master crafter in a D&D 5e game (Forgotten Realms). Given raw materials, propose 2-3 DISTINCT items that could plausibly be made from them — different in function, not just renamed versions of each other.
 
 RULES:
@@ -876,8 +887,8 @@ RULES:
   ACCESSORIES (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear, shirts) — utility and passive effects only. NO damage dice at all, and no attack powers.
   CONSTRUCTS — what it is, and what commanding it costs. The CR at the front tells the DM how hard it hits; do NOT list spells, per-day powers or damage numbers.
 - Charges and per-day effects are narrative text; there is no charge counter.
-- ${levelNote}${setRules}
-Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asSet ? setShape : shape}`,
+- ${levelNote}${constructRules}${setRules}
+Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`,
         messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
       }),
     });
@@ -912,6 +923,12 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       return String(b);
     };
     const normOpt = (o) => ({ ...o, bonuses: normBonuses(o.bonuses) });
+    if (asConstruct) {
+      const list = (parsed.options || []).filter(o => o?.name).map(o => ({ ...o, isConstruct: true }));
+      if (!list.length) throw new Error('Nothing could be forged from those materials');
+      log(`[CRAFT] ${list.length} constructs proposed: ${list.map(o => o.name).join(', ')}`);
+      return list;
+    }
     const options = (parsed.options || []).filter(o => o?.name).map(o => (
       asSet && Array.isArray(o.pieces)
         ? { ...o, pieces: o.pieces.filter(pc => pc?.name).map(normOpt) }
@@ -1098,6 +1115,28 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
       }
       return `[ITEM: ${o.name} | magic | ${o.slot || 'neck'} | ${o.bonuses || ''} | ${o.label || ''}]`;
     };
+    // A construct becomes a COMPANION record, not an item — it is an entity the
+    // player commands, and companions already carry description, abilities,
+    // status, equipment slots and location tiering.
+    if (option.isConstruct) {
+      const { removeTags: rmTags, apply: applyTakes } = consumeMaterials(c, consumes);
+      let next = applyTakes(applyEffects(rmTags, c));
+      const entry = {
+        race: option.race || 'construct',
+        role: option.role || 'war construct',
+        appearance: option.appearance || '',
+        abilities: option.abilities || '',
+        desc: option.desc || '',
+        status: `dormant — CR ${option.cr || '?'}, awaiting its command word`,
+        relationship: 'a construct the player forged and commands',
+        location: '',
+      };
+      next = { ...next, companions: { ...(next.companions || {}), [option.name]: entry } };
+      updateChar(next);
+      log(`[CRAFT] Forged construct "${option.name}" (CR ${option.cr || '?'}) as a companion; consumed ${consumes.map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
+      return `${option.name} — added to your companions`;
+    }
+
     // A set creates every piece from one craft; the materials are consumed once.
     const isSet = Array.isArray(option.pieces) && option.pieces.length > 0;
     const tag = isSet ? option.pieces.map(tagFor).join('') : tagFor(option);
