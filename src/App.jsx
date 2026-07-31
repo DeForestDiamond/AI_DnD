@@ -848,11 +848,13 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
 - A set consumes proportionally more material than one item. Do not propose a six-piece set from three bones.
 - NAMING: every piece name must clearly belong to the set. Derive each from the set's name or motif — for a set called "Apocalypse Plate": "Apocalypse Helm", "Apocalypse Gauntlets", "Greaves of the Apocalypse". Do NOT name pieces after the material they came from ("Tarrasque Breastplate", "Demogorgon Helm") — that reads as a pile of loot, not a matched set. The materials belong in the label, not the name.
 - UPGRADING AN EXISTING SET: if the selection includes FINISHED EQUIPMENT (weapons, armour, worn magic items) rather than raw parts, those are pieces the player already owns and wants improved. Consume them and return their upgraded versions — keep each piece's identity and name lineage (an "Apocalypse Helm" becomes "Apocalypse Helm Reforged" or similar).
+  Rewrite each upgraded piece's label from scratch to the current standard — 2-3 sentences, type-appropriate. Do not carry an old sprawling label across and add to it.
   AN UPGRADE MUST BE A REAL INCREASE, NOT A REARRANGEMENT. Each existing piece is listed above with its CURRENT BONUSES and, for armour, its ARMOUR RATING. Those numbers are a FLOOR:
     • every stat key present on the old piece must appear on the upgraded piece at an EQUAL OR HIGHER value — never drop a key, never lower a number
     • armour keeps or raises its ac value
     • weapons keep or raise their damage dice, enchantment and extra damage dice
     • everything the label promised still works, plus whatever the new materials add
+  BUT REWRITE THE LABEL FROM SCRATCH to the current standard — 2-3 sentences, type-appropriate. Do NOT carry the old label across and append to it. Old items often have sprawling labels full of spell lists and damage numbers; an upgrade is the moment to condense that into what the item now IS and DOES. The mechanical floor above is about the STATS, not the prose: keep the numbers, discard the wordcount.
   Do NOT move a bonus from one piece to another and call it an upgrade, and do NOT reduce or delete anything to pay for an increase elsewhere. If the player asks to focus on one stat, ADD to that stat — do not strip the others to fund it. If the new materials are modest, add modestly, but every piece must end up strictly better than the one consumed. You may add NEW pieces to the set as well if the materials allow and a slot is free.` : '';
 
     log(`[CRAFT] Proposing ${asConstruct ? 'CONSTRUCTS' : asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);

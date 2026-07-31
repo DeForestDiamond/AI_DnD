@@ -347,6 +347,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   // Keep the raw text while typing so deleting a digit doesn't instantly snap
   // back to 1; clamp only when the field loses focus.
   const [draft, setDraft] = useState({});
+  const [infoOpen, setInfoOpen] = useState({});
   const commitCount = (nm, max) => {
     const raw = draft[nm];
     if (raw === undefined) return;
@@ -398,10 +399,12 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
         {candidates.map(([nm, max, src]) => {
           const on = selected[nm] !== undefined;
           return (
-            <div key={nm} style={{display:'flex',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+            <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
               <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
-              <span style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+              <span onClick={()=>setInfoOpen(p => ({ ...p, [nm]: !p[nm] }))}
+                style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',cursor:stockData(nm)?'pointer':'default'}}>
                 {nm}
+                {stockData(nm) && <span style={{color:colors.textDead,fontSize:10}}> ⓘ</span>}
                 {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title="in stash">📦</span>}
                 {src.bag > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title={`in ${src.bags.join(', ')}`}>👜</span>}
               </span>
@@ -415,6 +418,22 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
                       style={{width:38,flexShrink:0,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:11,padding:'1px 4px',borderRadius:3,textAlign:'center',outline:'none'}}/>
                   : <span style={{fontSize:11,color:colors.goldFaint,fontFamily:fonts.mono,flexShrink:0}}>x{max}</span>
               )}
+              {infoOpen[nm] && (() => {
+                const d = stockData(nm); if (!d) return null;
+                const bits = [];
+                if (d.type) bits.push(d.type);
+                if (d.slot) bits.push(d.slot);
+                if (d.ac !== undefined) bits.push(`AC ${d.ac}`);
+                if (d.damage) bits.push(`${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
+                if (Array.isArray(d.extras)) d.extras.forEach(e => bits.push(`+${e.dice} ${e.type}`));
+                if (d.bonuses && Object.keys(d.bonuses).length) bits.push(Object.entries(d.bonuses).map(([k,v])=>`${k}:${v}`).join(','));
+                return (
+                  <div style={{flexBasis:'100%',paddingLeft:22,paddingBottom:3}}>
+                    {bits.length > 0 && <div style={{fontSize:10,color:colors.goldFaint,lineHeight:1.4}}>{bits.join(' · ')}</div>}
+                    {d.label && <div style={{fontSize:10,color:colors.textDim,lineHeight:1.4}}>{d.label}</div>}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
@@ -495,11 +514,22 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
   const [filter, setFilter]     = useState('');
   const [showAll, setShowAll]   = useState(false);
 
-  const invCount = {}, stashCount = {};
+  const invCount = {}, stashCount = {}, bagCount = {}, bagWhere = {};
   (character.inventory || []).forEach(nm => { invCount[nm] = (invCount[nm] || 0) + 1; });
   (character.stash || []).forEach(nm => { stashCount[nm] = (stashCount[nm] || 0) + 1; });
+  // Bag contents are salvageable too — consumption already handled them, but
+  // they never appeared in the list, so they couldn't be selected.
+  ['customItems', 'stashedCustomItems'].forEach(store => {
+    Object.entries(character[store] || {}).forEach(([bagName, d]) => {
+      if (d?.type === 'bag' && d.contents) {
+        Object.entries(d.contents).forEach(([item, ct]) => {
+          if (ct > 0) { bagCount[item] = (bagCount[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
+        });
+      }
+    });
+  });
   const equipped = new Set(Object.values(character.slots || {}).filter(Boolean));
-  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount)])];
+  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount), ...Object.keys(bagCount)])];
   const stockData = (nm) => db[nm] || (character.stashedCustomItems || {})[nm];
   // Inverse of crafting: finished goods, not raw materials.
   const isSalvageable = (nm) => {
@@ -513,7 +543,8 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     .filter(nm => showAll || isSalvageable(nm))
     .filter(nm => !q || nm.toLowerCase().includes(q))
     .sort((a, b) => a.localeCompare(b))
-    .map(nm => [nm, (invCount[nm] || 0) + (stashCount[nm] || 0), { stash: stashCount[nm] || 0, inv: invCount[nm] || 0 }]);
+    .map(nm => [nm, (invCount[nm] || 0) + (stashCount[nm] || 0) + (bagCount[nm] || 0),
+      { stash: stashCount[nm] || 0, inv: invCount[nm] || 0, bag: bagCount[nm] || 0, bags: bagWhere[nm] || [] }]);
 
   const toggle = (nm, max) => setSelected(prev => {
     const next = { ...prev };
@@ -522,6 +553,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
   });
   // Raw text while typing, clamped on blur (see crafting panel).
   const [draft, setDraft] = useState({});
+  const [infoOpen, setInfoOpen] = useState({});
   const commitCount = (nm, max) => {
     const raw = draft[nm];
     if (raw === undefined) return;
@@ -573,11 +605,14 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
         {candidates.map(([nm, max, src]) => {
           const on = selected[nm] !== undefined;
           return (
-            <div key={nm} style={{display:'flex',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+            <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
               <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
-              <span style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+              <span onClick={()=>setInfoOpen(p => ({ ...p, [nm]: !p[nm] }))}
+                style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',cursor:stockData(nm)?'pointer':'default'}}>
                 {nm}
-                {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}}>{src.inv > 0 ? '📦+🎒' : '📦'}</span>}
+                {stockData(nm) && <span style={{color:colors.textDead,fontSize:10}}> ⓘ</span>}
+                {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title="in stash">📦</span>}
+                {src.bag > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title={`in ${src.bags.join(', ')}`}>👜</span>}
               </span>
               {max > 1 && (
                 on
@@ -589,6 +624,22 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
                       style={{width:38,flexShrink:0,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:11,padding:'1px 4px',borderRadius:3,textAlign:'center',outline:'none'}}/>
                   : <span style={{fontSize:11,color:colors.goldFaint,fontFamily:fonts.mono,flexShrink:0}}>x{max}</span>
               )}
+              {infoOpen[nm] && (() => {
+                const d = stockData(nm); if (!d) return null;
+                const bits = [];
+                if (d.type) bits.push(d.type);
+                if (d.slot) bits.push(d.slot);
+                if (d.ac !== undefined) bits.push(`AC ${d.ac}`);
+                if (d.damage) bits.push(`${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
+                if (Array.isArray(d.extras)) d.extras.forEach(e => bits.push(`+${e.dice} ${e.type}`));
+                if (d.bonuses && Object.keys(d.bonuses).length) bits.push(Object.entries(d.bonuses).map(([k,v])=>`${k}:${v}`).join(','));
+                return (
+                  <div style={{flexBasis:'100%',paddingLeft:22,paddingBottom:3}}>
+                    {bits.length > 0 && <div style={{fontSize:10,color:colors.goldFaint,lineHeight:1.4}}>{bits.join(' · ')}</div>}
+                    {d.label && <div style={{fontSize:10,color:colors.textDim,lineHeight:1.4}}>{d.label}</div>}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
