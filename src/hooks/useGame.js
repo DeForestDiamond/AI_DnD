@@ -120,7 +120,10 @@ const buildCharBlock = (char) => {
   // DM knows what they do — their flavor/label lives in customItems, not the name.
   const ownedNames   = new Set([...Object.keys(stackedInv), ...Object.values(char.slots||{}).filter(Boolean)]);
   const itemDetails  = [...ownedNames].map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; }).filter(Boolean).join('; ');
-  const itemDetailLine = itemDetails ? `\nItem details: ${itemDetails}` : '';
+  // Item descriptions are large and change only when gear does, so they get
+  // their own cache block rather than being resent fresh every turn.
+  const itemDetailLine = '';
+  const itemsBlock = itemDetails ? `ITEM DETAILS (what the player's gear and carried items do):\n${itemDetails}` : '';
   const hasCleric   = char.cls?.name==='Cleric'  || Object.keys(classLevels).includes('Cleric');
   const hasWarlock  = char.cls?.name==='Warlock' || Object.keys(classLevels).includes('Warlock');
   const hasPaladin  = char.cls?.name==='Paladin' || Object.keys(classLevels).includes('Paladin');
@@ -170,7 +173,7 @@ Weapon: ${weaponLine}${sneakLine}${focusLine}
 Equipped: ${equippedList}
 Inventory: ${invDisplay}${itemDetailLine}${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${arcLine}`;
 
-  return { staticPart, dynamicPart };
+  return { staticPart, dynamicPart, itemsBlock };
 };
 
 // ── Shared context sections (bio, companions, NPCs, towns) ─────────────────────
@@ -511,7 +514,10 @@ export const buildSystemPrompt = (char) => {
   // DM knows what they do — their flavor/label lives in customItems, not the name.
   const ownedNames   = new Set([...Object.keys(stackedInv), ...Object.values(char.slots||{}).filter(Boolean)]);
   const itemDetails  = [...ownedNames].map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; }).filter(Boolean).join('; ');
-  const itemDetailLine = itemDetails ? `\nItem details: ${itemDetails}` : '';
+  // Item descriptions are large and change only when gear does, so they get
+  // their own cache block rather than being resent fresh every turn.
+  const itemDetailLine = '';
+  const itemsBlock = itemDetails ? `ITEM DETAILS (what the player's gear and carried items do):\n${itemDetails}` : '';
 
   // Check for active holy focus in offhand
   const db = { ...ITEM_DB, ...(char.customItems||{}) };
@@ -683,7 +689,7 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 6. An NPC asked the player something? Your message ENDS on that question.
 7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.`;
 
-  return { static: staticPart, dynamic: dynamicPart };
+  return { static: staticPart, items: itemsBlock, dynamic: dynamicPart };
 };
 
 // ── System Prompt — Sonnet ─────────────────────────────────────────────────────
@@ -803,6 +809,7 @@ When any faction or power makes demands of the player, there must ALWAYS be at l
 
 Powerful factions weigh costs. They do not commit total war over a slight, especially against a dangerous target — they send letters, proxies, and offers before armies, and they cut losses when the price of pressing exceeds the prize. Factions that act like accountants feel real; factions that act like karma feel like the DM's hand.`;
 
+  const itemsBlock = cb.itemsBlock;
   const dynamicPart = `── CURRENT STATE (changes every message) ──
 ${cb.dynamicPart}
 
@@ -817,7 +824,7 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 6. An NPC asked the player something? Your message ENDS on that question.
 7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.`;
 
-  return { static: staticPart, dynamic: dynamicPart };
+  return { static: staticPart, items: itemsBlock, dynamic: dynamicPart };
 };
 
 // Stack duplicate inventory items for display
@@ -845,8 +852,19 @@ export function useGame({ charRef, apiKey }) {
     // as well. It now rides on the final user message instead, so both
     // breakpoints stay stable and only the tail is ever rewritten.
     const hasSplit = typeof systemPrompt === 'object' && systemPrompt.static;
+    // Three tiers, each its own cache breakpoint, ordered most stable first:
+    //   1. rules and world — changes almost never
+    //   2. item descriptions — large, but only change when gear does
+    //   3. volatile state — small, changes every turn, rides on the last message
+    // Item text was previously resent fresh every turn at full price; it is the
+    // single largest recurring cost in the prompt.
     const systemBlocks = hasSplit
-      ? [{ type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } }]
+      ? [
+          { type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } },
+          ...(systemPrompt.items
+            ? [{ type: 'text', text: systemPrompt.items, cache_control: { type: 'ephemeral' } }]
+            : []),
+        ]
       : [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
     const dynamicTail = hasSplit ? systemPrompt.dynamic : '';
     // Diagnostic: which region is actually costing tokens. Rough estimate at
@@ -856,7 +874,7 @@ export function useGame({ charRef, apiKey }) {
       const cachedMsgs = messages.length > 2 ? messages.slice(0, -2) : [];
       const freshMsgs = messages.length > 2 ? messages.slice(-2) : messages;
       const sz = arr => arr.reduce((a, m) => a + est(typeof m.content === 'string' ? m.content : JSON.stringify(m.content)), 0);
-      log(`[PROMPT] static ${est(hasSplit ? systemPrompt.static : systemPrompt).toLocaleString()} · history ${sz(cachedMsgs).toLocaleString()} (${cachedMsgs.length} msgs, cached) · fresh ${(sz(freshMsgs) + est(dynamicTail)).toLocaleString()} (${freshMsgs.length} msgs + ${est(dynamicTail)} state)`);
+      log(`[PROMPT] static ${est(hasSplit ? systemPrompt.static : systemPrompt).toLocaleString()} · items ${est(hasSplit ? systemPrompt.items : '').toLocaleString()} (cached) · history ${sz(cachedMsgs).toLocaleString()} (${cachedMsgs.length} msgs, cached) · fresh ${(sz(freshMsgs) + est(dynamicTail)).toLocaleString()} (${freshMsgs.length} msgs + ${est(dynamicTail)} state)`);
     }
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
