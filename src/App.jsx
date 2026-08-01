@@ -61,6 +61,26 @@ export default function App() {
   const debugLogRef = useRef([]);
   const objectiveNoteRef = useRef('');   // queued note for the next API message
   const sideCostRef = useRef({ calls: 0, cost: 0 });   // running total for non-DM calls
+  const cacheTimerRef = useRef(null);   // one-shot cache keep-warm
+
+  // The prompt cache expires 5 minutes after its last use, and rebuilding it
+  // costs ~12x what a read does. Four minutes after a turn, refresh it ONCE —
+  // that buys another five minutes for a twelfth of the price. Fired once only:
+  // continuous pinging costs more than a single rebuild past ~50 minutes idle.
+  const armCacheTimer = () => {
+    if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current);
+    cacheTimerRef.current = setTimeout(async () => {
+      cacheTimerRef.current = null;
+      const c = charRef.current;
+      if (!c?.stats?.dex) return;                       // no character in play
+      const prompt = selectedModel === 'sonnet'
+        ? buildSystemPromptSonnet(c)
+        : buildSystemPrompt(c);
+      const data = await pingCache(prompt);
+      if (data) logUsage('cache keep-warm', data);
+    }, 4 * 60 * 1000);
+  };
+  useEffect(() => () => { if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current); }, []);
 
   // Every helper call (crafting, salvage, extraction, summaries, objectives) is
   // a separate billed request that never appeared in the token bar. Log each
@@ -112,7 +132,7 @@ export default function App() {
   } = useCharacter();
 
   const voice = useVoice();
-  const { callDM, buildActionContext, interceptRollRequest } = useGame({ charRef, apiKey });
+  const { callDM, buildActionContext, interceptRollRequest, pingCache } = useGame({ charRef, apiKey });
 
   // ── Save/Load ──────────────────────────────────────────────────────────────
   // Which patron class is the deity/patron being chosen for? Prefers Warlock so a
@@ -354,6 +374,7 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
         modelConfig
       );
       if (usage) setTokenUsage(usage);
+      armCacheTimer();
       const newChar = applyEffects(text, charWithArc);
       log('applyEffects after startAdventure', { xpBefore: char.xp, xpAfter: newChar.xp, levelBefore: char.level, levelAfter: newChar.level });
       updateChar(newChar);
@@ -1411,6 +1432,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         signal
       );
       if (dmUsage) setTokenUsage(dmUsage);
+      armCacheTimer();
 
       // Check if DM requested a skill roll — intercept and roll it
       const { resultText, rollResult: skillRoll } = interceptRollRequest(dmText, charRef.current, log);
@@ -1439,6 +1461,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
           signal
         );
         if (followUpUsage) setTokenUsage(followUpUsage);
+        armCacheTimer();
         finalText = followUp;
       }
 

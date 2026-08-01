@@ -1026,5 +1026,31 @@ export function useGame({ charRef, apiKey }) {
     return { resultText, rollResult };
   };
 
-  return { callDM, buildActionContext, interceptRollRequest };
+  // Keep the prompt cache warm across a short break. A cache READ refreshes the
+  // 5-minute TTL, so one minimal call costs ~$0.006 against ~$0.071 to rebuild
+  // the block from scratch — about 12x cheaper. Deliberately fired ONCE: pinging
+  // continuously overtakes the cost of a single rebuild after roughly 50
+  // minutes idle, so a lone extension is the whole of the win.
+  const pingCache = async (systemPrompt) => {
+    const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+    if (!key || !systemPrompt?.static) return null;
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: MODEL_CONFIGS.sonnet.model,
+          max_tokens: 1,
+          // The cached prefix must match the real call EXACTLY or this reads
+          // nothing and writes a second entry instead.
+          system: [{ type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } }],
+          messages: [{ role: 'user', content: '.' }],
+        }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch { return null; }
+  };
+
+  return { callDM, buildActionContext, interceptRollRequest, pingCache };
 }
