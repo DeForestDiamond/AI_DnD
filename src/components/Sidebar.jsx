@@ -1692,8 +1692,26 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             {allStashEntries.length > 0 && stashEntries.length === 0 && (
               <div style={{fontSize:12,color:colors.textDead,fontStyle:'italic',padding:'2px 0'}}>No stash items match “{stashFilter}”.</div>
             )}
-            {stashEntries.map(([name, count]) => {
-              const data = db[name] || (character.stashedCustomItems || {})[name];
+            {(() => {
+              // Group by the same categories the inventory uses. A stash can run
+              // to hundreds of entries, so a flat list is unscannable.
+              const stashData = nm => db[nm] || (character.stashedCustomItems || {})[nm];
+              const groups = {};
+              stashEntries.forEach(entry => {
+                const cat = categorizeItem(entry[0], stashData(entry[0]));
+                (groups[cat] = groups[cat] || []).push(entry);
+              });
+              return Object.entries(CATEGORY_META).map(([cat, meta]) => {
+                const rows = groups[cat];
+                if (!rows?.length) return null;
+                return (
+                  <div key={cat}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'4px 0 2px',marginTop:2}}>
+                      <span style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:1}}>{meta.label}</span>
+                      <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length}</span>
+                    </div>
+                    {rows.map(([name, count]) => {
+              const data = stashData(name);
               const fullLabel = data?.label || '';
               const labelOpen = expandedLabels['stash:'+name];
               return (
@@ -1717,7 +1735,11 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                   )}
                 </div>
               );
-            })}
+                    })}
+                  </div>
+                );
+              });
+            })()}
           </CollapsibleSection>
         );
       })()}
