@@ -687,7 +687,8 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 4. You did NOT move them or advance time — same place, same moment, unless the player moved.
 5. If you wrote a [ROLL:] tag, it is the LAST thing — stop there.
 6. An NPC asked the player something? Your message ENDS on that question.
-7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.`;
+7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.
+8. Did the player GAIN anything this message — loot, a reward, payment, a gift, something taken off a body or a shelf? Every single thing you described them receiving needs its own [ITEM:] tag, itemised, right now. Coin needs [GOLD:]. Describing a thing without tagging it means the player never actually gets it, and they have to ask you for it afterwards.`;
 
   return { static: staticPart, items: itemsBlock, dynamic: dynamicPart };
 };
@@ -822,7 +823,8 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 4. You did NOT move them or advance time — same place, same moment, unless the player moved.
 5. If you wrote a [ROLL:] tag, it is the LAST thing — stop there.
 6. An NPC asked the player something? Your message ENDS on that question.
-7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.`;
+7. Did anything this message FINISH the current arc objective? If so, tag it NOW: [OBJECTIVE DONE: n] plus [OBJECTIVE: the next step]. This is the easiest thing to forget — check before you send.
+8. Did the player GAIN anything this message — loot, a reward, payment, a gift, something taken off a body or a shelf? Every single thing you described them receiving needs its own [ITEM:] tag, itemised, right now. Coin needs [GOLD:]. Describing a thing without tagging it means the player never actually gets it, and they have to ask you for it afterwards.`;
 
   return { static: staticPart, items: itemsBlock, dynamic: dynamicPart };
 };
