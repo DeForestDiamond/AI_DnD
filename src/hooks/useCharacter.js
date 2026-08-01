@@ -426,7 +426,10 @@ export const emptyCompanionSlots = (type = 'humanoid') =>
   Object.fromEntries((COMPANION_SLOT_DEFS[type] || COMPANION_SLOT_DEFS.humanoid).map(s => [s, null]));
 
 // -- The hook -------------------------------------------------------------------
-export function useCharacter() {
+export function useCharacter(log) {
+  // `log` is optional; every call site uses log?.() so the hook still works
+  // without one. It must be a PARAMETER though — optional chaining guards a null
+  // value, not an undefined identifier, so a bare log?.() would throw.
   const [character, setCharacter]         = useState(EMPTY_CHAR);
   const [pendingStatPoint, setPendingStatPoint] = useState(false);
   const [levelUpMsg, setLevelUpMsg]       = useState(null);

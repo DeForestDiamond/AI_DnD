@@ -129,7 +129,7 @@ export default function App() {
     toggleContextExclusion,
     pendingStatPoint, setPendingStatPoint,
     levelUpMsg,
-  } = useCharacter();
+  } = useCharacter(log);
 
   const voice = useVoice();
   const { callDM, buildActionContext, interceptRollRequest, pingCache } = useGame({ charRef, apiKey });
