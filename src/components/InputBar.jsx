@@ -103,8 +103,14 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
         return (
           <div style={{display:'flex',gap:16,marginTop:5,paddingTop:5,borderTop:`1px solid rgba(74,56,32,0.3)`,flexWrap:'wrap'}}>
             <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
-              ↑ {inputTotal.toLocaleString()} tokens sent{cached > 0 ? ` (${cached.toLocaleString()} cached)` : ''}
+              ↑ {inputTotal.toLocaleString()} tokens sent{cacheRead > 0 ? ` (${cacheRead.toLocaleString()} cached)` : ''}
             </span>
+            {cacheCreate > 0 && (
+              <span title="The cached prompt expired (5 minute idle timeout) and had to be rebuilt — billed at 1.25x instead of 0.1x. The next turn will be cheap again."
+                style={{fontSize:10,color:'rgba(201,120,76,0.8)',fontFamily:fonts.display,letterSpacing:1}}>
+                ⟳ cache rebuilt ({cacheCreate.toLocaleString()})
+              </span>
+            )}
             <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
               ↓ {output.toLocaleString()} tokens received
             </span>
