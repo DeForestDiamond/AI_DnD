@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
+import { SPELL_INFO, ROLES, ROLE_ORDER } from '../../constants/spellInfo.js';
 import { getAvailableAbilities, getAbilityCounts } from '../../constants/abilities.js';
 import { RACE_TRAITS } from '../../constants/raceTraits.js';
 import { SUBCLASSES } from '../../constants/subclasses.js';
@@ -142,8 +143,24 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                   {selected[key].length}/{totals[key]}
                 </span>
               </div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
-                {list.map(name => {
+              {(() => {
+                // Group by ROLE — what you are reaching for when you pick —
+                // rather than alphabetically. Anything without an entry in
+                // SPELL_INFO falls into 'other' so nothing is ever hidden.
+                const groups = {};
+                list.forEach(nm => {
+                  const r = SPELL_INFO[nm]?.role || 'other';
+                  (groups[r] = groups[r] || []).push(nm);
+                });
+                const order = [...ROLE_ORDER.filter(r => groups[r]), ...(groups.other ? ['other'] : [])];
+                return order.map(role => (
+                  <div key={role} style={{marginBottom:8}}>
+                    <div style={{fontSize:9,color:colors.textGhost,letterSpacing:1,marginBottom:3,fontFamily:fonts.display}}>
+                      {ROLES[role] ? `${ROLES[role].emoji} ${ROLES[role].label.toUpperCase()}` : '• OTHER'}
+                      <span style={{color:colors.textDead}}> {groups[role].length}</span>
+                    </div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                {groups[role].map(name => {
                   const isSelected = selected[key].includes(name);
                   const atMax = selected[key].length >= totals[key];
                   const isDomain = domainSet[key]?.has(name);
@@ -161,10 +178,18 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                         transition:'all 0.15s',
                       }}>
                       {isDomain ? '✦ ' : ''}{name}
+                      {SPELL_INFO[name]?.desc && (
+                        <div style={{fontSize:9,color:isSelected?'rgba(201,168,76,0.75)':colors.textDead,lineHeight:1.4,marginTop:2,maxWidth:210,whiteSpace:'normal'}}>
+                          {SPELL_INFO[name].desc}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
-              </div>
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           ))}
         </div>
