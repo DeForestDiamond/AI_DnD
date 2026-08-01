@@ -992,7 +992,11 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         max_tokens: 700,
         system: `You set up a Dungeons & Dragons story arc. You produce exactly two things: the arc's GOAL, and the FIRST objective toward it. Later objectives are written during play in response to what actually happens — do not plan them.
 
-GOAL: one sentence naming what finishing this arc means, and INCLUDING ANY COUNT the arc implies ("recover all twelve vault objects", "dismantle the smuggling ring's four cells"). The count matters: it is how the game keeps score. The goal may reference the antagonist obliquely but must NOT name them — they are hidden from the player.
+GOAL: one sentence naming what finishing this arc means. It must arise from THIS antagonist specifically — what it is doing, what it wants, and what actually stops it. A goal that could be pasted onto any other antagonist is wrong.
+  MOST GOALS HAVE NO COUNT. Only include a number when the antagonist's own nature supplies one — twelve sealed vaults, a coven of three hags, four bridges into the city. Do NOT invent a count to make the goal look measurable: "seize four trade routes" or "reclaim seven revenue nodes" bolted onto a dragon or a mind flayer cell is exactly the failure to avoid. If the arc ends in one confrontation, one discovery, or one thing destroyed, say that plainly.
+  Good, no count: "Find out what is emptying the minds of the dock district and put a stop to it." "Kill the thing in the deep mine before it finishes waking." "Break whatever hold has been taken over the city watch."
+  Good, count justified by the antagonist: "Destroy all three of the coven's hags — killing fewer only makes the survivors stronger."
+  The goal may reference the antagonist obliquely but must NOT name them — they are hidden from the player.
 
 FIRST OBJECTIVE: one sentence, concrete and checkable, something the player can act on immediately from where they are now. Not vague ("learn about the cult"), not the whole arc in one line.
 
