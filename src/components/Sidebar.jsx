@@ -348,6 +348,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   // back to 1; clamp only when the field loses focus.
   const [draft, setDraft] = useState({});
   const [infoOpen, setInfoOpen] = useState({});
+  const [catClosed, setCatClosed] = useState({});   // collapsed material categories
   const commitCount = (nm, max) => {
     const raw = draft[nm];
     if (raw === undefined) return;
@@ -396,7 +397,30 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
 
       <div style={{maxHeight:340,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
         {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>No materials in inventory.</div>}
-        {candidates.map(([nm, max, src]) => {
+        {(() => {
+          // Same categories as the inventory and stash, each collapsible so a
+          // long material list narrows to what matters. A search expands
+          // everything — you are looking for one specific thing.
+          const groups = {};
+          candidates.forEach(entry => {
+            const cat = categorizeItem(entry[0], stockData(entry[0]));
+            (groups[cat] = groups[cat] || []).push(entry);
+          });
+          return Object.entries(CATEGORY_META).map(([cat, meta]) => {
+            const rows = groups[cat];
+            if (!rows?.length) return null;
+            const closed = !q && catClosed[cat];
+            const picked = rows.filter(r => selected[r[0]] !== undefined).length;
+            return (
+              <div key={cat}>
+                <div onClick={() => setCatClosed(prev => ({ ...prev, [cat]: !prev[cat] }))}
+                  style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer',padding:'3px 0',marginTop:2,userSelect:'none'}}>
+                  <span style={{fontFamily:fonts.display,fontSize:10,color:picked?colors.gold:colors.textGhost,letterSpacing:1}}>
+                    {meta.label}{picked ? ` · ${picked} selected` : ''}
+                  </span>
+                  <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length} {closed ? '▼' : '▲'}</span>
+                </div>
+                {!closed && rows.map(([nm, max, src]) => {
           const on = selected[nm] !== undefined;
           return (
             <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
@@ -436,7 +460,11 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
               })()}
             </div>
           );
-        })}
+                })}
+              </div>
+            );
+          });
+        })()}
       </div>
 
       <input value={intent} onChange={e=>setIntent(e.target.value)} placeholder="What do you want made? (optional)"
@@ -554,6 +582,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
   // Raw text while typing, clamped on blur (see crafting panel).
   const [draft, setDraft] = useState({});
   const [infoOpen, setInfoOpen] = useState({});
+  const [catClosed, setCatClosed] = useState({});   // collapsed material categories
   const commitCount = (nm, max) => {
     const raw = draft[nm];
     if (raw === undefined) return;
@@ -602,7 +631,30 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
 
       <div style={{maxHeight:340,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
         {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>Nothing to break down.</div>}
-        {candidates.map(([nm, max, src]) => {
+        {(() => {
+          // Same categories as the inventory and stash, each collapsible so a
+          // long material list narrows to what matters. A search expands
+          // everything — you are looking for one specific thing.
+          const groups = {};
+          candidates.forEach(entry => {
+            const cat = categorizeItem(entry[0], stockData(entry[0]));
+            (groups[cat] = groups[cat] || []).push(entry);
+          });
+          return Object.entries(CATEGORY_META).map(([cat, meta]) => {
+            const rows = groups[cat];
+            if (!rows?.length) return null;
+            const closed = !q && catClosed[cat];
+            const picked = rows.filter(r => selected[r[0]] !== undefined).length;
+            return (
+              <div key={cat}>
+                <div onClick={() => setCatClosed(prev => ({ ...prev, [cat]: !prev[cat] }))}
+                  style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer',padding:'3px 0',marginTop:2,userSelect:'none'}}>
+                  <span style={{fontFamily:fonts.display,fontSize:10,color:picked?colors.gold:colors.textGhost,letterSpacing:1}}>
+                    {meta.label}{picked ? ` · ${picked} selected` : ''}
+                  </span>
+                  <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length} {closed ? '▼' : '▲'}</span>
+                </div>
+                {!closed && rows.map(([nm, max, src]) => {
           const on = selected[nm] !== undefined;
           return (
             <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
@@ -642,7 +694,11 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
               })()}
             </div>
           );
-        })}
+                })}
+              </div>
+            );
+          });
+        })()}
       </div>
 
       <button onClick={propose} disabled={busy || selCount === 0}
