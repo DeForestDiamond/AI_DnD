@@ -838,12 +838,17 @@ export function useGame({ charRef, apiKey }) {
     // systemPrompt can be a string (legacy) or { static, dynamic }
     // Static block gets cached — bio, rules, companions, NPCs, towns (rarely change)
     // Dynamic block is fresh every message — HP, stats, inventory, gold, location
-    const systemBlocks = typeof systemPrompt === 'object' && systemPrompt.static
-      ? [
-          { type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } },
-          { type: 'text', text: systemPrompt.dynamic },
-        ]
+    // Caching is PREFIX based, so anything volatile must come LAST or it breaks
+    // every cache breakpoint behind it. The dynamic state (HP, inventory, coins,
+    // equipment) used to sit in the system array between the two breakpoints,
+    // which meant any inventory or HP change re-cached the whole message history
+    // as well. It now rides on the final user message instead, so both
+    // breakpoints stay stable and only the tail is ever rewritten.
+    const hasSplit = typeof systemPrompt === 'object' && systemPrompt.static;
+    const systemBlocks = hasSplit
+      ? [{ type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } }]
       : [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
+    const dynamicTail = hasSplit ? systemPrompt.dynamic : '';
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       signal,
@@ -859,7 +864,16 @@ export function useGame({ charRef, apiKey }) {
         system: systemBlocks,
         // Cache the stable history (everything except the last 2 messages)
         // The last message before the tail gets the cache checkpoint
-        messages: messages.length > 2
+        messages: (msgs => {
+          // Append the volatile state to the FINAL message so it sits after both
+          // cache breakpoints rather than in front of them.
+          if (!dynamicTail || !msgs.length) return msgs;
+          const out = [...msgs];
+          const last = out[out.length - 1];
+          const text = typeof last.content === 'string' ? last.content : JSON.stringify(last.content);
+          out[out.length - 1] = { ...last, content: `${text}\n\n${dynamicTail}` };
+          return out;
+        })(messages.length > 2
           ? [
               ...messages.slice(0, -2).map((m, i) =>
                 i === messages.slice(0, -2).length - 1
@@ -871,7 +885,7 @@ export function useGame({ charRef, apiKey }) {
               ),
               ...messages.slice(-2)
             ]
-          : messages,
+          : messages),
       }),
     });
     if (!res.ok) {
