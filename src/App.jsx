@@ -1210,7 +1210,9 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
         model: 'claude-sonnet-4-5',
         // A multi-corpse harvest returns many distinct materials; too small a
         // ceiling truncates the list and silently costs the player materials.
-        max_tokens: 4000,
+        // Generous by design: a batch harvest returns the full yield of every
+        // creature submitted, and output is billed only when actually generated.
+        max_tokens: 12000,
         system: `You are a salvager in a D&D 5e game (Forgotten Realms). Given finished items, determine what raw materials are recovered by breaking them down.
 
 RULES:
