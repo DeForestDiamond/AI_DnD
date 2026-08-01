@@ -20,6 +20,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
     infusions: [...(existing.infusions || [])],
   });
   const [showRaceTraits, setShowRaceTraits] = useState(false);
+  const [openDesc, setOpenDesc] = useState(null);   // which ability's description is expanded
   const [showSubclass, setShowSubclass] = useState(false);
 
   // Calculate totals across all classes
@@ -94,8 +95,8 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                 <div style={{display:'flex',flexDirection:'column',gap:6}}>
                   {raceTraits.map(trait => (
                     <div key={trait.name} style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:'6px 10px'}}>
-                      <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,marginBottom:2}}>{trait.name}</div>
-                      <div style={{fontSize:10,color:colors.textFaint,lineHeight:1.5}}>{trait.desc}</div>
+                      <div style={{fontSize:12,color:colors.gold,fontFamily:fonts.display,marginBottom:2}}>{trait.name}</div>
+                      <div style={{fontSize:12,color:colors.textFaint,lineHeight:1.5}}>{trait.desc}</div>
                     </div>
                   ))}
                 </div>
@@ -121,7 +122,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                       {data.features.map(f => (
                         <div key={f.name} style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:'6px 10px'}}>
                           <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,marginBottom:2}}>{f.name}</div>
-                          <div style={{fontSize:10,color:colors.textFaint,lineHeight:1.5}}>{f.desc}</div>
+                          <div style={{fontSize:12,color:colors.textFaint,lineHeight:1.5}}>{f.desc}</div>
                         </div>
                       ))}
                     </div>
@@ -155,7 +156,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                 const order = [...ROLE_ORDER.filter(r => groups[r]), ...(groups.other ? ['other'] : [])];
                 return order.map(role => (
                   <div key={role} style={{marginBottom:8}}>
-                    <div style={{fontSize:9,color:colors.textGhost,letterSpacing:1,marginBottom:3,fontFamily:fonts.display}}>
+                    <div style={{fontSize:11,color:colors.textGhost,letterSpacing:1,marginBottom:4,fontFamily:fonts.display}}>
                       {ROLES[role] ? `${ROLES[role].emoji} ${ROLES[role].label.toUpperCase()}` : '• OTHER'}
                       <span style={{color:colors.textDead}}> {groups[role].length}</span>
                     </div>
@@ -168,25 +169,42 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                     <div key={name}
                       onClick={() => toggle(key, name)}
                       style={{
-                        padding:'4px 8px',
+                        padding:'5px 9px',
                         borderRadius:3,
-                        fontSize:10,
+                        fontSize:13,
+                        display:'flex',
+                        alignItems:'center',
+                        gap:5,
                         cursor: isSelected || !atMax ? 'pointer' : 'default',
                         border:`1px solid ${isSelected ? colors.gold : isDomain ? 'rgba(201,168,76,0.4)' : colors.borderDim}`,
                         background: isSelected ? 'rgba(201,168,76,0.15)' : isDomain ? 'rgba(201,168,76,0.05)' : 'transparent',
                         color: isSelected ? colors.gold : isDomain ? 'rgba(201,168,76,0.8)' : atMax ? colors.textDead : colors.textFaint,
                         transition:'all 0.15s',
                       }}>
-                      {isDomain ? '✦ ' : ''}{name}
+                      <span>{isDomain ? '✦ ' : ''}{name}</span>
                       {SPELL_INFO[name]?.desc && (
-                        <div style={{fontSize:9,color:isSelected?'rgba(201,168,76,0.75)':colors.textDead,lineHeight:1.4,marginTop:2,maxWidth:210,whiteSpace:'normal'}}>
-                          {SPELL_INFO[name].desc}
-                        </div>
+                        <span
+                          onClick={(e) => { e.stopPropagation(); setOpenDesc(openDesc === name ? null : name); }}
+                          title="What does this do?"
+                          style={{fontSize:12,color:openDesc===name?colors.gold:colors.textDead,cursor:'pointer',padding:'0 2px'}}>
+                          ⓘ
+                        </span>
                       )}
                     </div>
                   );
                 })}
                     </div>
+                    {/* One description at a time, full width and readable,
+                        rather than a wall of tiny text under every chip. */}
+                    {openDesc && groups[role].includes(openDesc) && (
+                      <div style={{
+                        marginTop:6, padding:'8px 10px', borderRadius:4,
+                        background:'rgba(201,168,76,0.06)', border:`1px solid ${colors.borderDim}`,
+                      }}>
+                        <div style={{fontFamily:fonts.display,fontSize:12,color:colors.gold,marginBottom:3}}>{openDesc}</div>
+                        <div style={{fontSize:13,color:colors.textFaint,lineHeight:1.55}}>{SPELL_INFO[openDesc].desc}</div>
+                      </div>
+                    )}
                   </div>
                 ));
               })()}
