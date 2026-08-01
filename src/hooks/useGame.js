@@ -832,7 +832,7 @@ export const stackInventory = (inventory) => {
 // ── The Hook ───────────────────────────────────────────────────────────────────
 export function useGame({ charRef, apiKey }) {
 
-  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null) => {
+  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
 
     // systemPrompt can be a string (legacy) or { static, dynamic }
@@ -849,6 +849,16 @@ export function useGame({ charRef, apiKey }) {
       ? [{ type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } }]
       : [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
     const dynamicTail = hasSplit ? systemPrompt.dynamic : '';
+    // Diagnostic: which region is actually costing tokens. Rough estimate at
+    // 4 chars per token — enough to see where the bulk sits.
+    if (log) {
+      const est = t => Math.round((t || '').length / 4);
+      const cachedMsgs = messages.length > 2 ? messages.slice(0, -2) : [];
+      const freshMsgs = messages.length > 2 ? messages.slice(-2) : messages;
+      const sz = arr => arr.reduce((a, m) => a + est(typeof m.content === 'string' ? m.content : JSON.stringify(m.content)), 0);
+      log(`[PROMPT] static ${est(hasSplit ? systemPrompt.static : systemPrompt).toLocaleString()} · history ${sz(cachedMsgs).toLocaleString()} (${cachedMsgs.length} msgs, cached) · fresh ${(sz(freshMsgs) + est(dynamicTail)).toLocaleString()} (${freshMsgs.length} msgs + ${est(dynamicTail)} state)`);
+    }
+
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       signal,

@@ -371,7 +371,9 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
         system,
-        modelConfig
+        modelConfig,
+        null,
+        log
       );
       if (usage) setTokenUsage(usage);
       armCacheTimer();
@@ -1429,7 +1431,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         [...history, { role:'user', content: outgoing }],
         system,
         modelConfig,
-        signal
+        signal,
+        log
       );
       if (dmUsage) setTokenUsage(dmUsage);
       armCacheTimer();
@@ -1458,7 +1461,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
           ],
           system,
           modelConfig,
-          signal
+          signal,
+          log
         );
         if (followUpUsage) setTokenUsage(followUpUsage);
         armCacheTimer();
