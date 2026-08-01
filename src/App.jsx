@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { animations, colors, fonts, btn, panel, cardStyle } from './styles/theme.js';
 import { CLASSES, RACES, STAT_NAMES, STAT_DESC } from './constants/classes.js';
 import { DEITIES } from './constants/deities.js';
