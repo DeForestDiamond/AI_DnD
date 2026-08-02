@@ -381,7 +381,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
       // Send the full definition, not just the label — when upgrading, the model
       // needs to SEE the existing stats to preserve and exceed them.
       const mats = Object.entries(selected).map(([nm, count]) => ({ name: nm, count, data: stockData(nm) || null }));
-      const opts = await onProposeCrafting({ materials: mats, intent, asSet: mode === 'set', asConstruct: mode === 'construct' });
+      const opts = await onProposeCrafting({ materials: mats, intent, asSet: mode === 'set', asConstruct: mode === 'construct', qty });
       setOptions(opts); setStatus('');
     } catch (e) { setStatus('✗ ' + e.message); }
     setBusy(false);
@@ -389,7 +389,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
 
   const make = (opt) => {
     try {
-      const made = onExecuteCrafting(opt, parseInt(qty, 10) || 1);
+      const made = onExecuteCrafting(opt);
       setStatus(`✓ Crafted ${made}`);
       setOptions(null); setSelected({}); setDraft({}); setIntent(''); setFilter('');
     } catch (e) { setStatus('✗ ' + e.message); }
@@ -484,8 +484,17 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
         })()}
       </div>
 
-      <input value={intent} onChange={e=>setIntent(e.target.value)} placeholder="What do you want made? (optional)"
-        style={{...npcInput, marginBottom:4}}/>
+      <div style={{display:'flex',gap:4,marginBottom:4}}>
+        <input value={intent} onChange={e=>setIntent(e.target.value)} placeholder="What do you want made? (optional)"
+          style={{...npcInput, flex:1}}/>
+        <div style={{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
+          <span style={{fontSize:11,color:colors.textGhost}}>×</span>
+          <input value={qty} onChange={e=>setQty(e.target.value.replace(/[^0-9]/g,''))}
+            onBlur={()=>setQty(String(Math.max(1, Math.min(100, parseInt(qty,10)||1))))}
+            inputMode="numeric" title="How many to make — the forge spreads the materials across them"
+            style={{width:38,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:13,padding:'6px 4px',borderRadius:4,textAlign:'center',outline:'none'}}/>
+        </div>
+      </div>
 
       <div style={{display:'flex',gap:4,marginBottom:6}}>
         {[['item','⚒️ Item'],['set','🛡️ Set'],['construct','🗿 Construct']].map(([id,label]) => (
@@ -550,18 +559,10 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
             Consumes: {(o.consumes||[]).map(m=>`${m.name}${m.count>1?` x${m.count}`:''}`).join(', ') || 'nothing'}
             {o.reason ? ` — ${o.reason}` : ''}
           </div>
-          <div style={{display:'flex',gap:4,alignItems:'stretch'}}>
-            <div style={{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
-              <span style={{fontSize:10,color:colors.textGhost}}>×</span>
-              <input value={qty} onChange={e=>setQty(e.target.value.replace(/[^0-9]/g,''))}
-                onBlur={()=>setQty(String(Math.max(1, Math.min(100, parseInt(qty,10)||1))))}
-                inputMode="numeric" title="How many identical copies to make"
-                style={{width:34,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:12,padding:'2px 4px',borderRadius:3,textAlign:'center',outline:'none'}}/>
-            </div>
-            <button onClick={()=>make(o)} style={{...btn(true), flex:1, fontSize:11, padding:'4px 0'}}>
-              {o.isConstruct ? '✓ RAISE IT' : o.pieces?.length ? '✓ FORGE THE SET' : '✓ FORGE THIS'}
-            </button>
-          </div>
+          <button onClick={()=>make(o)} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>
+            {o.isConstruct ? '✓ RAISE IT' : o.pieces?.length ? '✓ FORGE THE SET' : '✓ FORGE THIS'}
+            {o.count > 1 ? ` ×${o.count}` : ''}
+          </button>
         </div>
       ))}
     </CollapsibleSection>

@@ -849,7 +849,7 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
   // what the selected materials could become and returns options WITHOUT
   // touching the save. executeCrafting() consumes the materials and creates the
   // item only after the player confirms a choice.
-  const proposeCrafting = async ({ materials, intent, asSet, asConstruct }) => {
+  const proposeCrafting = async ({ materials, intent, asSet, asConstruct, qty }) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     const char = charRef.current;
     if (!materials.length) throw new Error('Select at least one material');
@@ -875,12 +875,12 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
       ? `The player specifically wants: "${intent.trim()}". Honour this if the materials plausibly allow it; if they do not, say why in the reason field and propose the closest achievable thing.`
       : 'The player has no specific request — propose what these materials most naturally become.';
 
-    const setShape = `{ "options": [ { "name": "Set Name", "pieces": [ { "name": "Piece Name", "type": "weapon|armor|magic", "slot": "the slot this piece occupies", "damage": "weapons only", "heavy": "armor only", "maxDex": "armor only", "bonuses": "stat:N pairs or empty", "label": "what this piece does" } ], "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on the set and why these materials make it" } ] }`;
-    const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable|construct — use armor ONLY for a main chest piece; every other wearable is magic; use construct for golems, animated things and bound entities", "status": "construct only — dormant, active, or bound", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring1 ring2 feet — omit for weapon/consumable", "damage": "weapons only — base dice, optional +N enchantment, and optional extra damage dice of another type: 1d8, 1d8+2, or 1d8+1 plus 1d4 radiant, or 2d6 plus 2d6 fire", "heavy": "armor only — true if it is heavy armour that ignores the wearer's Dexterity, false otherwise", "maxDex": "armor only — a number if the armour caps the Dexterity bonus (medium armour is usually 2), otherwise null", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
+    const setShape = `{ "options": [ { "name": "Set Name", "pieces": [ { "name": "Piece Name", "type": "weapon|armor|magic", "slot": "the slot this piece occupies", "damage": "weapons only", "heavy": "armor only", "maxDex": "armor only", "bonuses": "stat:N pairs or empty", "label": "what this piece does" } ], "count": "how many identical copies this makes — 1 unless the player asked for more", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on the set and why these materials make it" } ] }`;
+    const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable|construct — use armor ONLY for a main chest piece; every other wearable is magic; use construct for golems, animated things and bound entities", "status": "construct only — dormant, active, or bound", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring1 ring2 feet — omit for weapon/consumable", "damage": "weapons only — base dice, optional +N enchantment, and optional extra damage dice of another type: 1d8, 1d8+2, or 1d8+1 plus 1d4 radiant, or 2d6 plus 2d6 fire", "heavy": "armor only — true if it is heavy armour that ignores the wearer's Dexterity, false otherwise", "maxDex": "armor only — a number if the armour caps the Dexterity bonus (medium armour is usually 2), otherwise null", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "count": "how many identical copies this makes — 1 unless the player asked for more", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
 
     // A construct is an ENTITY, not gear — it becomes a companion record with the
     // room to be described properly, rather than a label crammed into an item.
-    const constructShape = `{ "options": [ { "name": "Construct Name", "cr": "challenge rating as a number", "race": "what it is, e.g. bone colossus, infernal war-construct", "role": "what it is for, e.g. siege engine, bodyguard, hunter", "appearance": "2-3 sentences on how it looks and moves", "abilities": "the kinds of power it wields — schools of magic, damage types, broad capabilities. NO specific spell names, NO damage dice, NO per-day counts", "desc": "3-5 sentences: what it is, how it was made, how it behaves, and what commanding it costs", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
+    const constructShape = `{ "options": [ { "name": "Construct Name", "cr": "challenge rating as a number", "race": "what it is, e.g. bone colossus, infernal war-construct", "role": "what it is for, e.g. siege engine, bodyguard, hunter", "appearance": "2-3 sentences on how it looks and moves", "abilities": "the kinds of power it wields — schools of magic, damage types, broad capabilities. NO specific spell names, NO damage dice, NO per-day counts", "desc": "3-5 sentences: what it is, how it was made, how it behaves, and what commanding it costs", "count": "how many identical copies this makes — 1 unless the player asked for more", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
     const constructRules = asConstruct ? `
 
 FORGING A CONSTRUCT: propose 2 alternative constructs — golems, war machines, animated dead, bound spirits. These are ENTITIES the player owns and commands, not equipment, so describe them properly:
@@ -888,6 +888,17 @@ FORGING A CONSTRUCT: propose 2 alternative constructs — golems, war machines, 
 - ABILITIES field: name the KINDS of power — "necrotic and shadow magic", "siege-scale physical force", "fear effects and command over lesser undead". Do NOT name specific spells, do NOT give damage dice, do NOT list per-day counts. The CR tells the DM how hard it hits; the rest is played, not tabulated.
 - DESC field: this is the one place to be generous. What it is, how it was made, how it behaves, what it costs to command, and what it does when its bindings weaken.
 - Give it a real name, not a description-as-name.` : '';
+
+    // A batch is DESIGNED by the model rather than multiplied by us: the player
+    // may not hold N times each material, but a pile of mixed scrap can still
+    // yield N things if the crafter allocates across it sensibly.
+    const batchN = Math.max(1, Math.min(100, parseInt(qty, 10) || 1));
+    const batchRules = batchN > 1 ? `
+
+MAKING SEVERAL — the player wants ${batchN}. Design ONE thing, set "count" to ${batchN}, and make "consumes" cover ALL ${batchN} together.
+- They will NOT necessarily have ${batchN} times each material. Draw across the whole pile: different scrap for different copies is fine, and ${batchN} blades might come from assorted metal rather than ${batchN} identical ingots.
+- If the materials cannot stretch to ${batchN}, propose the largest number they DO support, set "count" to that, and say so in the reason.
+- Every copy is identical: one name, one description, one set of stats.` : '';
 
     const setRules = asSet ? `
 
@@ -907,7 +918,7 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
   BUT REWRITE THE LABEL FROM SCRATCH to the current standard — 2-3 sentences, type-appropriate. Do NOT carry the old label across and append to it. Old items often have sprawling labels full of spell lists and damage numbers; an upgrade is the moment to condense that into what the item now IS and DOES. The mechanical floor above is about the STATS, not the prose: keep the numbers, discard the wordcount.
   Do NOT move a bonus from one piece to another and call it an upgrade, and do NOT reduce or delete anything to pay for an increase elsewhere. If the player asks to focus on one stat, ADD to that stat — do not strip the others to fund it. If the new materials are modest, add modestly, but every piece must end up strictly better than the one consumed. You may add NEW pieces to the set as well if the materials allow and a slot is free.` : '';
 
-    log(`[CRAFT] Proposing ${asConstruct ? 'CONSTRUCTS' : asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
+    log(`[CRAFT] Proposing ${batchN > 1 ? `${batchN}x ` : ''}${asConstruct ? 'CONSTRUCTS' : asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -939,7 +950,7 @@ RULES:
   ACCESSORIES (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear, shirts) — utility and passive effects only. NO damage dice at all, and no attack powers.
   CONSTRUCTS — what it is, and what commanding it costs. The CR at the front tells the DM how hard it hits; do NOT list spells, per-day powers or damage numbers.
 - Charges and per-day effects are narrative text; there is no charge counter.
-- ${levelNote}${constructRules}${setRules}
+- ${levelNote}${batchRules}${constructRules}${setRules}
 Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`,
         messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
       }),
@@ -1141,25 +1152,20 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     return { removeTags, apply, bagTakes };
   };
 
-  const executeCrafting = (option, qty = 1) => {
+  const executeCrafting = (option) => {
     const c = charRef.current;
-    // Making several of the same thing is the app's job, not the model's — one
-    // design, multiplied here. Asking the model for N identical objects wastes
-    // tokens and it drifts on names and wording anyway.
-    const batch = Math.max(1, Math.min(100, parseInt(qty, 10) || 1));
+    // The proposal already allocated materials across the whole batch, so the
+    // consumes list is the total — take it as given and just make `count` copies.
+    const batch = Math.max(1, Math.min(100, parseInt(option.count, 10) || 1));
     // Materials can come from inventory OR stash. Count both, verify the player
     // still holds enough (guards a stale panel), then consume inventory first
     // and take the remainder from the stash.
     const src = materialSources(c);
     // Normalise every requested material to a name the player actually holds
-    const consumes = (option.consumes || []).map(m => ({
-      ...m,
-      name: resolveHeldName(m.name, Object.keys(src)),
-      count: (m.count || 1) * batch,
-    }));
+    const consumes = (option.consumes || []).map(m => ({ ...m, name: resolveHeldName(m.name, Object.keys(src)), count: m.count || 1 }));
     for (const m of consumes) {
       const held = totalHeld(src[m.name]);
-      if (held < m.count) throw new Error(`Not enough ${m.name} for ${batch} — need ${m.count}, have ${held}`);
+      if (held < m.count) throw new Error(`Not enough ${m.name} — need ${m.count}, have ${held}`);
     }
     // Build the [ITEM:] tag for one piece (also used for single items).
     const tagFor = (o) => {
