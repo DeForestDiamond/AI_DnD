@@ -1141,17 +1141,25 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     return { removeTags, apply, bagTakes };
   };
 
-  const executeCrafting = (option) => {
+  const executeCrafting = (option, qty = 1) => {
     const c = charRef.current;
+    // Making several of the same thing is the app's job, not the model's — one
+    // design, multiplied here. Asking the model for N identical objects wastes
+    // tokens and it drifts on names and wording anyway.
+    const batch = Math.max(1, Math.min(100, parseInt(qty, 10) || 1));
     // Materials can come from inventory OR stash. Count both, verify the player
     // still holds enough (guards a stale panel), then consume inventory first
     // and take the remainder from the stash.
     const src = materialSources(c);
     // Normalise every requested material to a name the player actually holds
-    const consumes = (option.consumes || []).map(m => ({ ...m, name: resolveHeldName(m.name, Object.keys(src)) }));
+    const consumes = (option.consumes || []).map(m => ({
+      ...m,
+      name: resolveHeldName(m.name, Object.keys(src)),
+      count: (m.count || 1) * batch,
+    }));
     for (const m of consumes) {
       const held = totalHeld(src[m.name]);
-      if (held < (m.count || 1)) throw new Error(`Not enough ${m.name} (have ${held}, need ${m.count || 1})`);
+      if (held < m.count) throw new Error(`Not enough ${m.name} for ${batch} — need ${m.count}, have ${held}`);
     }
     // Build the [ITEM:] tag for one piece (also used for single items).
     const tagFor = (o) => {
@@ -1177,6 +1185,7 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     if (option.isConstruct) {
       const { removeTags: rmTags, apply: applyTakes } = consumeMaterials(c, consumes);
       let next = applyTakes(applyEffects(rmTags, c));
+      const roman = ['', ' II', ' III', ' IV', ' V', ' VI', ' VII', ' VIII', ' IX', ' X'];
       const entry = {
         race: option.race || 'construct',
         role: option.role || 'war construct',
@@ -1187,21 +1196,31 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
         relationship: 'a construct the player forged and commands',
         location: '',
       };
-      next = { ...next, companions: { ...(next.companions || {}), [option.name]: entry } };
+      // Companions are keyed by name, so a batch needs distinct keys.
+      const companions = { ...(next.companions || {}) };
+      const made = [];
+      for (let i = 0; i < batch; i++) {
+        let nm = `${option.name}${roman[i] !== undefined ? roman[i] : ` ${i + 1}`}`;
+        while (companions[nm]) nm = `${nm}'`;
+        companions[nm] = { ...entry };
+        made.push(nm);
+      }
+      next = { ...next, companions };
       updateChar(next);
-      log(`[CRAFT] Forged construct "${option.name}" (CR ${option.cr || '?'}) as a companion; consumed ${consumes.map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
-      return `${option.name} — added to your companions`;
+      log(`[CRAFT] Forged ${batch > 1 ? `${batch}x ` : ''}construct "${option.name}" (CR ${option.cr || '?'}); consumed ${consumes.map(m => `${m.name} x${m.count}`).join(', ') || 'nothing'}`);
+      return `${made.join(', ')} — added to your companions`;
     }
 
     // A set creates every piece from one craft; the materials are consumed once.
     const isSet = Array.isArray(option.pieces) && option.pieces.length > 0;
-    const tag = isSet ? option.pieces.map(tagFor).join('') : tagFor(option);
+    const one = isSet ? option.pieces.map(tagFor).join('') : tagFor(option);
+    const tag = one.repeat(batch);   // identical copies; [ITEM:] stacks them
 
     const { removeTags, apply, bagTakes } = consumeMaterials(c, consumes);
     let next = apply(applyEffects(tag + removeTags, c));
     if (bagTakes.length) log(`[CRAFT] Drew from bags: ${bagTakes.map(b => `${b.name} x${b.take} from ${b.bag}`).join(', ')}`);
     updateChar(next);
-    const madeDesc = isSet ? `${option.name} (${option.pieces.length} pieces)` : option.name;
+    const madeDesc = `${batch > 1 ? `${batch}x ` : ''}${isSet ? `${option.name} (${option.pieces.length} pieces)` : option.name}`;
     log(`[CRAFT] Made ${madeDesc}; consumed ${consumes.map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
     return isSet ? `${option.name} — ${option.pieces.map(pc => pc.name).join(', ')}` : option.name;
   };

@@ -291,7 +291,7 @@ function DebugViewer({ debugLog, debugStatus, onExportDebug, onCopyDebug }) {
 // Panel state lives outside React so a proposal survives switching tabs or
 // collapsing the section — both of which unmount the component. Cleared only by
 // the reset button or a completed craft.
-const craftStore = { selected:{}, intent:'', mode:'item', options:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
+const craftStore = { selected:{}, intent:'', mode:'item', options:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1' };
 const salvageStore = { selected:{}, result:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
 
 // Bind a store key to component state, writing through on every change.
@@ -313,6 +313,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   const [status, setStatus]     = useStored(craftStore, 'status');
   const [filter, setFilter]     = useStored(craftStore, 'filter');
   const [showAll, setShowAll]   = useStored(craftStore, 'showAll');
+  const [qty, setQty]           = useStored(craftStore, 'qty');   // how many identical copies
 
   // Default to things that read as crafting stock, but categorisation is
   // keyword-based and imperfect — 'Carapace Plates' lands in armor, scale mail
@@ -388,7 +389,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
 
   const make = (opt) => {
     try {
-      const made = onExecuteCrafting(opt);
+      const made = onExecuteCrafting(opt, parseInt(qty, 10) || 1);
       setStatus(`✓ Crafted ${made}`);
       setOptions(null); setSelected({}); setDraft({}); setIntent(''); setFilter('');
     } catch (e) { setStatus('✗ ' + e.message); }
@@ -549,7 +550,18 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
             Consumes: {(o.consumes||[]).map(m=>`${m.name}${m.count>1?` x${m.count}`:''}`).join(', ') || 'nothing'}
             {o.reason ? ` — ${o.reason}` : ''}
           </div>
-          <button onClick={()=>make(o)} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>{o.isConstruct ? '✓ RAISE IT' : o.pieces?.length ? '✓ FORGE THE SET' : '✓ FORGE THIS'}</button>
+          <div style={{display:'flex',gap:4,alignItems:'stretch'}}>
+            <div style={{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
+              <span style={{fontSize:10,color:colors.textGhost}}>×</span>
+              <input value={qty} onChange={e=>setQty(e.target.value.replace(/[^0-9]/g,''))}
+                onBlur={()=>setQty(String(Math.max(1, Math.min(100, parseInt(qty,10)||1))))}
+                inputMode="numeric" title="How many identical copies to make"
+                style={{width:34,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:12,padding:'2px 4px',borderRadius:3,textAlign:'center',outline:'none'}}/>
+            </div>
+            <button onClick={()=>make(o)} style={{...btn(true), flex:1, fontSize:11, padding:'4px 0'}}>
+              {o.isConstruct ? '✓ RAISE IT' : o.pieces?.length ? '✓ FORGE THE SET' : '✓ FORGE THIS'}
+            </button>
+          </div>
         </div>
       ))}
     </CollapsibleSection>
