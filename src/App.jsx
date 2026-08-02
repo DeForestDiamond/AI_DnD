@@ -204,6 +204,32 @@ export default function App() {
     onLoadCharacter: applyLoadedCharacter,
   });
 
+  // Autosave was only triggered by message events, so anything changed BETWEEN
+  // turns was lost on reload — a crafting session, salvage, equipment changes,
+  // stash moves, NPC edits, disposition. Watch the character itself instead and
+  // write shortly after it settles, which covers every mutation path.
+  useEffect(() => {
+    if (phase !== 'playing' || !character?.stats?.dex) return;
+    const t = setTimeout(() => {
+      try {
+        save.autoSave(charRef.current, fullLogRef.current);
+      } catch (e) {
+        log(`[SAVE] Autosave failed: ${e.message}`);
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [character, phase]);
+
+  // Browsers only allow a generic confirmation, but it is enough to stop a
+  // stray back gesture discarding work that has not been written yet.
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    const warn = (e) => { e.preventDefault(); e.returnValue = ''; return ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [phase]);
+
+
   // Auto-save after every DM response
   const addMessage = (msg) => {
     setFullLog(prev => {
