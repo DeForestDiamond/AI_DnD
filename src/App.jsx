@@ -52,6 +52,7 @@ export default function App() {
   };
   const [nameInput, setNameInput] = useState('');
   const [bioInput, setBioInput] = useState('');
+  const [dispInput, setDispInput] = useState({ alignment:'', cares:'', indifferent:'', methods:'', lines:'' });
   const [apiKey, setApiKey]     = useState('');
   const [apiError, setApiError] = useState('');
   const [showSave, setShowSave] = useState(false);
@@ -1570,7 +1571,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
 
   // ── Character creation helpers ─────────────────────────────────────────────
   const handleFinalize = async () => {
-    const char = finalizeCharacter(nameInput, bioInput);
+    const char = finalizeCharacter(nameInput, bioInput, dispInput);
     setPhase('playing');
     beginAdventure(char);
   };
@@ -1766,8 +1767,29 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
           style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:16,padding:'10px 14px',borderRadius:4,marginBottom:10,outline:'none'}}/>
         <textarea value={bioInput} onChange={e=>setBioInput(e.target.value)} rows={5}
           placeholder="Backstory / bio (optional) — who this character is, how they act, what drives them. The DM reads this every message and anchors its behavior to it."
-          style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.5,padding:'10px 14px',borderRadius:4,marginBottom:16,outline:'none',resize:'vertical'}}/>
-        <div style={{display:'flex',gap:8}}>
+          style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.5,padding:'10px 14px',borderRadius:4,marginBottom:10,outline:'none',resize:'vertical'}}/>
+
+        {/* Disposition — the DM assumes heroism unless told otherwise. Optional
+            at creation and editable later in Settings, but far better set now. */}
+        <div style={{fontSize:11,color:colors.textFaint,marginBottom:6,lineHeight:1.4,textAlign:'left'}}>
+          <b style={{color:colors.gold}}>Disposition</b> (optional) — how this character actually behaves. <b>Indifferent to</b> is what stops NPCs appealing to things they do not care about.
+        </div>
+        {[
+          ['alignment',   'Alignment',                 'e.g. True Neutral'],
+          ['cares',       'Cares about',               'what actually motivates them'],
+          ['indifferent', 'Indifferent to',            'what genuinely does not move them'],
+          ['methods',     'How they solve problems',   'violence, cunning, coin, building something'],
+          ['lines',       'Lines they will not cross', 'or leave blank'],
+        ].map(([k, label, ph]) => (
+          <div key={k} style={{marginBottom:6,textAlign:'left'}}>
+            <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:2}}>{label.toUpperCase()}</div>
+            <textarea value={dispInput[k]} onChange={e=>setDispInput(prev=>({ ...prev, [k]: e.target.value }))}
+              rows={k === 'alignment' ? 1 : 2} placeholder={ph}
+              style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.4,padding:'7px 12px',borderRadius:4,outline:'none',resize:'vertical'}}/>
+          </div>
+        ))}
+
+        <div style={{display:'flex',gap:8,marginTop:12}}>
           <button style={{...btn(false),flex:1}} onClick={()=>setPhase(['Cleric','Warlock','Paladin'].includes(character.cls?.name)?'create-deity':'create-class')}>← BACK</button>
           <button style={{...btn(true),flex:2}} onClick={handleFinalize}>BEGIN THE ADVENTURE →</button>
         </div>
