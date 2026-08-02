@@ -1225,6 +1225,18 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     const { removeTags, apply, bagTakes } = consumeMaterials(c, consumes);
     let next = apply(applyEffects(tag + removeTags, c));
     if (bagTakes.length) log(`[CRAFT] Drew from bags: ${bagTakes.map(b => `${b.name} x${b.take} from ${b.bag}`).join(', ')}`);
+
+    // Verify the craft actually produced something. Materials are consumed in
+    // the same call, so a silent failure here costs the player the materials
+    // and gives nothing back — say so loudly rather than appearing to work.
+    const wanted = isSet ? option.pieces.map(pc => pc.name) : [option.name];
+    const before = (c.inventory || []).filter(n => wanted.includes(n)).length;
+    const after = (next.inventory || []).filter(n => wanted.includes(n)).length;
+    if (after <= before) {
+      log(`[CRAFT] FAILED: no item was created. Tag was: ${tag.slice(0, 300)}`);
+      throw new Error(`The forge produced nothing usable — materials NOT consumed. Try again, or reword the item.`);
+    }
+    log(`[CRAFT] Inventory ${before} -> ${after} of "${wanted.join(', ')}"`);
     updateChar(next);
     const madeDesc = `${batch > 1 ? `${batch}x ` : ''}${isSet ? `${option.name} (${option.pieces.length} pieces)` : option.name}`;
     log(`[CRAFT] Made ${madeDesc}; consumed ${consumes.map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
