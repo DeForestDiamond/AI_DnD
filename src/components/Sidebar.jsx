@@ -1094,6 +1094,10 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
+  // Track WHICH antagonist was revealed, not just that one was: if an arc
+  // completes mid-play and rolls a new one, it re-hides itself rather than
+  // spoiling the next arc through a panel left open.
+  const [revealedFor, setRevealedFor] = useState(null);
   const [arcCustomText, setArcCustomText] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const gearSkills = skillBonuses(character.slots, character.customItems || {});
@@ -1263,6 +1267,24 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           <div style={{fontSize:12,color:arcAntagonist?colors.textDim:colors.textFaint,fontStyle:'italic',marginBottom:6,lineHeight:1.35}}>
             {arcAntagonist ? 'A hidden antagonist is in play.' : 'Open — no antagonist. The story drifts where you take it.'}
           </div>
+          {/* Hidden behind a tap: knowing who it is spoils the arc, but there
+              has to be a way to check when a story feels off the rails. */}
+          {arcAntagonist && (
+            <div style={{marginBottom:6}}>
+              {revealedFor === arcAntagonist ? (
+                <div style={{padding:'6px 8px',borderRadius:4,background:'rgba(201,168,76,0.06)',border:`1px solid ${colors.borderDim}`}}>
+                  <div style={{fontSize:12,color:colors.gold,lineHeight:1.4}}>{arcAntagonist}</div>
+                  <div onClick={()=>setRevealedFor(null)}
+                    style={{fontSize:10,color:colors.textDead,cursor:'pointer',marginTop:4}}>🙈 hide</div>
+                </div>
+              ) : (
+                <button onClick={()=>setRevealedFor(arcAntagonist)}
+                  style={{...btn(false),width:'100%',fontSize:10,padding:'3px 0',color:colors.textDead}}>
+                  👁 Reveal antagonist (spoiler)
+                </button>
+              )}
+            </div>
+          )}
           <div style={{display:'flex',gap:6}}>
             <button onClick={onRollArc} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>🎲 {arcAntagonist?'Reroll':'Roll'}</button>
             <button onClick={()=>setArcCustomOpen(v=>!v)} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✎ Custom</button>
