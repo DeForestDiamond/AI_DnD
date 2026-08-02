@@ -895,7 +895,8 @@ FORGING A CONSTRUCT: propose 2 alternative constructs — golems, war machines, 
     const batchN = Math.max(1, Math.min(100, parseInt(qty, 10) || 1));
     const batchRules = batchN > 1 ? `
 
-MAKING SEVERAL — the player wants ${batchN}. Design ONE thing, set "count" to ${batchN}, and make "consumes" cover ALL ${batchN} together.
+MAKING SEVERAL — THIS OVERRIDES NOTHING ABOVE, IT ADDS TO IT. The player wants ${batchN} COPIES of whatever you propose. Still propose the usual 2-3 alternatives; each one is a design, and each design is made ${batchN} times.
+Set "count": ${batchN} on EVERY option, and make its "consumes" cover all ${batchN} copies of that option together. A construct proposal means ${batchN} identical constructs, not one.
 - They will NOT necessarily have ${batchN} times each material. Draw across the whole pile: different scrap for different copies is fine, and ${batchN} blades might come from assorted metal rather than ${batchN} identical ingots.
 - If the materials cannot stretch to ${batchN}, propose the largest number they DO support, set "count" to that, and say so in the reason.
 - Every copy is identical: one name, one description, one set of stats.` : '';
@@ -950,7 +951,7 @@ RULES:
   ACCESSORIES (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear, shirts) — utility and passive effects only. NO damage dice at all, and no attack powers.
   CONSTRUCTS — what it is, and what commanding it costs. The CR at the front tells the DM how hard it hits; do NOT list spells, per-day powers or damage numbers.
 - Charges and per-day effects are narrative text; there is no charge counter.
-- ${levelNote}${batchRules}${constructRules}${setRules}
+- ${levelNote}${constructRules}${setRules}${batchRules}
 Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`,
         messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
       }),
