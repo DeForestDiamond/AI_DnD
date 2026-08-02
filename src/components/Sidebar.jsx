@@ -288,15 +288,31 @@ function DebugViewer({ debugLog, debugStatus, onExportDebug, onCopyDebug }) {
 }
 
 // ── Crafting: pick materials, ask what they could become, confirm, create ─────
+// Panel state lives outside React so a proposal survives switching tabs or
+// collapsing the section — both of which unmount the component. Cleared only by
+// the reset button or a completed craft.
+const craftStore = { selected:{}, intent:'', mode:'item', options:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
+const salvageStore = { selected:{}, result:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
+
+// Bind a store key to component state, writing through on every change.
+const useStored = (store, key) => {
+  const [v, setV] = useState(store[key]);
+  return [v, (next) => {
+    const val = typeof next === 'function' ? next(store[key]) : next;
+    store[key] = val;
+    setV(val);
+  }];
+};
+
 function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) {
-  const [selected, setSelected] = useState({});   // { name: count }
-  const [intent, setIntent]     = useState('');
-  const [mode, setMode]         = useState('item');   // item | set | construct
+  const [selected, setSelected] = useStored(craftStore, 'selected');   // { name: count }
+  const [intent, setIntent]     = useStored(craftStore, 'intent');
+  const [mode, setMode]         = useStored(craftStore, 'mode');       // item | set | construct
   const [busy, setBusy]         = useState(false);
-  const [options, setOptions]   = useState(null);
-  const [status, setStatus]     = useState('');
-  const [filter, setFilter]     = useState('');
-  const [showAll, setShowAll]   = useState(false);
+  const [options, setOptions]   = useStored(craftStore, 'options');
+  const [status, setStatus]     = useStored(craftStore, 'status');
+  const [filter, setFilter]     = useStored(craftStore, 'filter');
+  const [showAll, setShowAll]   = useStored(craftStore, 'showAll');
 
   // Default to things that read as crafting stock, but categorisation is
   // keyword-based and imperfect — 'Carapace Plates' lands in armor, scale mail
@@ -346,9 +362,9 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   });
   // Keep the raw text while typing so deleting a digit doesn't instantly snap
   // back to 1; clamp only when the field loses focus.
-  const [draft, setDraft] = useState({});
-  const [infoOpen, setInfoOpen] = useState({});
-  const [catClosed, setCatClosed] = useState({});   // collapsed material categories
+  const [draft, setDraft] = useStored(craftStore, 'draft');
+  const [infoOpen, setInfoOpen] = useStored(craftStore, 'infoOpen');
+  const [catClosed, setCatClosed] = useStored(craftStore, 'catClosed');   // collapsed material categories
   const commitCount = (nm, max) => {
     const raw = draft[nm];
     if (raw === undefined) return;
@@ -484,10 +500,17 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
           : 'A single piece of equipment.'}
       </div>
 
-      <button onClick={propose} disabled={busy || selCount === 0}
-        style={{...btn(false), width:'100%', opacity:(busy||selCount===0)?0.4:1}}>
-        {busy ? '…' : `🔨 ${mode==='construct' ? 'WHAT CAN I RAISE' : mode==='set' ? 'WHAT CAN I FORGE AS A SET' : 'WHAT CAN I MAKE'}?${selCount ? ` (${selCount})` : ''}`}
-      </button>
+      <div style={{display:'flex',gap:4}}>
+        <button onClick={propose} disabled={busy || selCount === 0}
+          style={{...btn(false), flex:1, opacity:(busy||selCount===0)?0.4:1}}>
+          {busy ? '…' : `🔨 ${mode==='construct' ? 'WHAT CAN I RAISE' : mode==='set' ? 'WHAT CAN I FORGE AS A SET' : 'WHAT CAN I MAKE'}?${selCount ? ` (${selCount})` : ''}`}
+        </button>
+        {(selCount > 0 || options || status) && (
+          <button onClick={()=>{ setSelected({}); setDraft({}); setOptions(null); setStatus(''); setIntent(''); setFilter(''); }}
+            title="Clear the proposal and deselect everything"
+            style={{...btn(false), flexShrink:0, fontSize:11, padding:'0 9px'}}>✕</button>
+        )}
+      </div>
       {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:6,lineHeight:1.4}}>{status}</div>}
 
       {options && options.map((o, i) => (
@@ -535,12 +558,12 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
 
 // ── Salvage: break finished items back down into materials ───────────────────
 function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle }) {
-  const [selected, setSelected] = useState({});
+  const [selected, setSelected] = useStored(salvageStore, 'selected');
   const [busy, setBusy]         = useState(false);
-  const [result, setResult]     = useState(null);
-  const [status, setStatus]     = useState('');
-  const [filter, setFilter]     = useState('');
-  const [showAll, setShowAll]   = useState(false);
+  const [result, setResult]     = useStored(salvageStore, 'result');
+  const [status, setStatus]     = useStored(salvageStore, 'status');
+  const [filter, setFilter]     = useStored(salvageStore, 'filter');
+  const [showAll, setShowAll]   = useStored(salvageStore, 'showAll');
 
   const invCount = {}, stashCount = {}, bagCount = {}, bagWhere = {};
   (character.inventory || []).forEach(nm => { invCount[nm] = (invCount[nm] || 0) + 1; });
@@ -580,9 +603,9 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     return next;
   });
   // Raw text while typing, clamped on blur (see crafting panel).
-  const [draft, setDraft] = useState({});
-  const [infoOpen, setInfoOpen] = useState({});
-  const [catClosed, setCatClosed] = useState({});   // collapsed material categories
+  const [draft, setDraft] = useStored(salvageStore, 'draft');
+  const [infoOpen, setInfoOpen] = useStored(salvageStore, 'infoOpen');
+  const [catClosed, setCatClosed] = useStored(salvageStore, 'catClosed');   // collapsed material categories
   const commitCount = (nm, max) => {
     const raw = draft[nm];
     if (raw === undefined) return;
@@ -701,10 +724,17 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
         })()}
       </div>
 
-      <button onClick={propose} disabled={busy || selCount === 0}
-        style={{...btn(false), width:'100%', opacity:(busy||selCount===0)?0.4:1}}>
-        {busy ? '…' : `🔧 WHAT DO I GET BACK?${selCount ? ` (${selCount})` : ''}`}
-      </button>
+      <div style={{display:'flex',gap:4}}>
+        <button onClick={propose} disabled={busy || selCount === 0}
+          style={{...btn(false), flex:1, opacity:(busy||selCount===0)?0.4:1}}>
+          {busy ? '…' : `🔧 WHAT DO I GET BACK?${selCount ? ` (${selCount})` : ''}`}
+        </button>
+        {(selCount > 0 || result || status) && (
+          <button onClick={()=>{ setSelected({}); setDraft({}); setResult(null); setStatus(''); setFilter(''); }}
+            title="Clear the result and deselect everything"
+            style={{...btn(false), flexShrink:0, fontSize:11, padding:'0 9px'}}>✕</button>
+        )}
+      </div>
       {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:6,lineHeight:1.4}}>{status}</div>}
 
       {result && (
