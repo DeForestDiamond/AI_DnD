@@ -123,7 +123,15 @@ const buildCharBlock = (char) => {
   // Item descriptions are large and change only when gear does, so they get
   // their own cache block rather than being resent fresh every turn.
   const itemDetailLine = '';
-  const itemsBlock = itemDetails ? `ITEM DETAILS (what the player's gear and carried items do):\n${itemDetails}` : '';
+  // EQUIPPED and INVENTORY change only when gear does — the same trigger as the
+  // item descriptions — so they belong in the cached block alongside them rather
+  // than being resent fresh every turn. On a well-stocked character the
+  // inventory line alone was ~760 tokens, every single turn.
+  const itemsBlock = [
+    `EQUIPPED: ${equippedList}`,
+    `INVENTORY: ${invDisplay}`,
+    itemDetails ? `ITEM DETAILS (what the player's gear and carried items do):\n${itemDetails}` : '',
+  ].filter(Boolean).join('\n');
   const hasCleric   = char.cls?.name==='Cleric'  || Object.keys(classLevels).includes('Cleric');
   const hasWarlock  = char.cls?.name==='Warlock' || Object.keys(classLevels).includes('Warlock');
   const hasPaladin  = char.cls?.name==='Paladin' || Object.keys(classLevels).includes('Paladin');
@@ -170,8 +178,7 @@ Level ${char.level} | ${char.xp||0} XP | Coins: ${coinsToString(char.coins)}
 HP: ${char.hp}/${effectiveMaxHp(char)} | AC: ${ac} | Proficiency: +${pb}
 Stats: Strength ${effStats.str}(${modStr(effStats.str)}) Dexterity ${effStats.dex}(${modStr(effStats.dex)}) Constitution ${effStats.con}(${modStr(effStats.con)}) Intelligence ${effStats.int}(${modStr(effStats.int)}) Wisdom ${effStats.wis}(${modStr(effStats.wis)}) Charisma ${effStats.cha}(${modStr(effStats.cha)})
 Weapon: ${weaponLine}${sneakLine}${focusLine}
-Equipped: ${equippedList}
-Inventory: ${invDisplay}${itemDetailLine}${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${arcLine}`;
+(Equipped gear, inventory and item descriptions are listed above.)${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${arcLine}`;
 
   return { staticPart, dynamicPart, itemsBlock };
 };
@@ -530,7 +537,15 @@ export const buildSystemPrompt = (char) => {
   // Item descriptions are large and change only when gear does, so they get
   // their own cache block rather than being resent fresh every turn.
   const itemDetailLine = '';
-  const itemsBlock = itemDetails ? `ITEM DETAILS (what the player's gear and carried items do):\n${itemDetails}` : '';
+  // EQUIPPED and INVENTORY change only when gear does — the same trigger as the
+  // item descriptions — so they belong in the cached block alongside them rather
+  // than being resent fresh every turn. On a well-stocked character the
+  // inventory line alone was ~760 tokens, every single turn.
+  const itemsBlock = [
+    `EQUIPPED: ${equippedList}`,
+    `INVENTORY: ${invDisplay}`,
+    itemDetails ? `ITEM DETAILS (what the player's gear and carried items do):\n${itemDetails}` : '',
+  ].filter(Boolean).join('\n');
 
   // Check for active holy focus in offhand
   const db = { ...ITEM_DB, ...(char.customItems||{}) };
@@ -680,8 +695,7 @@ When the player wins, the threat is OVER. The scene goes quiet: loot, catch brea
 CHARACTER: ${char.name} | ${char.race?.name} ${classDesc} | Total Level ${char.level} | ${char.xp||0} XP
 STATS: STR ${effStats.str}(${modStr(effStats.str)}) DEX ${effStats.dex}(${modStr(effStats.dex)}) CON ${effStats.con}(${modStr(effStats.con)}) INT ${effStats.int}(${modStr(effStats.int)}) WIS ${effStats.wis}(${modStr(effStats.wis)}) CHA ${effStats.cha}(${modStr(effStats.cha)})
 COMBAT: Hit Points ${char.hp}/${effectiveMaxHp(char)} | Armor Class ${ac} | Proficiency Bonus +${pb} | Weapon: ${weaponLine}${sneakLine}${focusLine}
-EQUIPPED: ${equippedList}
-INVENTORY: ${invDisplay} | Coins: ${coinsToString(char.coins)}${itemDetailLine}${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}${char.arc?.antagonist ? `
+COINS: ${coinsToString(char.coins)}  (equipped gear, inventory and item descriptions are listed above)${itemDetailLine}${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}${char.arc?.antagonist ? `
 
 ══ ACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does) ══
 ${char.arc.antagonist}
