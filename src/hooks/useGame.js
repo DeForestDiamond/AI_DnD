@@ -177,6 +177,8 @@ Inventory: ${invDisplay}${itemDetailLine}${char.currentLocation ? `\nLocation: $
 };
 
 // ── Shared context sections (bio, companions, NPCs, towns) ─────────────────────
+// Arc objectives are DISABLED — see DISABLED_arc_objectives.md in the repo root
+// for why, what is still wired up, and how to bring it back.
 export const ARC_OBJECTIVES_IN_PROMPT = false;
 
 const buildCtxSections = (char) => {
