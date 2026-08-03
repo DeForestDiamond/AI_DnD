@@ -359,13 +359,6 @@ export default function App() {
       if (openingOverride && openingOverride.trim()) {
         // Player wrote the opening — use their antagonist if given, else roll a hidden one.
         arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level, null, char.defeatedAntagonists);
-        // New campaigns need a goal and first objective too — previously only
-        // the arc-completion path generated them.
-        if (arcAntagonist) {
-          setTimeout(() => {
-            generateObjectives(arcAntagonist).catch(e => log(`[ARC] Objective generation failed: ${e.message}`));
-          }, 600);
-        }
         seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}\n\nThe character's backstory is background only — do NOT open in their history or build the scene around it unless the player's opening above says to.`;
       } else {
         const seed = rollAdventureSeed(char.level);
@@ -1559,12 +1552,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         // Build a fresh campaign skeleton for the new arc, in the background so
         // it never blocks the player's turn. Failure is non-fatal — the arc
         // simply runs without objectives and can be generated manually.
-        const freshAntagonist = newChar.arc?.antagonist;
-        if (freshAntagonist) {
-          setTimeout(() => {
-            generateObjectives(freshAntagonist).catch(e => log(`[ARC] Objective generation failed: ${e.message}`));
-          }, 400);
-        }
+
       }
       updateChar(newChar);
       addMessage({ role:'dm', text:finalText, id:Date.now(), roll:finalRoll });
