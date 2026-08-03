@@ -118,19 +118,30 @@ const buildCharBlock = (char) => {
   const invDisplay  = Object.entries(stackedInv).map(([n,c])=>c>1?`${n} x${c}`:n).join(', ') || 'empty';
   // Descriptions for custom items the player owns (inventory + equipped), so the
   // DM knows what they do — their flavor/label lives in customItems, not the name.
-  const ownedNames   = new Set([...Object.keys(stackedInv), ...Object.values(char.slots||{}).filter(Boolean)]);
-  const itemDetails  = [...ownedNames].map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; }).filter(Boolean).join('; ');
-  // Item descriptions are large and change only when gear does, so they get
-  // their own cache block rather than being resent fresh every turn.
+  // Two tiers, because they change at very different rates. Worn gear and
+  // constructs are stable — you equip something once and keep it — while carried
+  // inventory churns constantly as loot arrives. Caching is prefix-based, so the
+  // stable half goes FIRST: picking something up then rebuilds only the carried
+  // block and the history behind it, leaving worn gear and constructs cached.
+  const equippedNames = new Set(Object.values(char.slots || {}).filter(Boolean));
+  const isConstruct   = (n) => (char.customItems?.[n] || {}).type === 'construct';
+  const stableNames   = new Set([...equippedNames, ...Object.keys(stackedInv).filter(isConstruct)]);
+  const carriedNames  = Object.keys(stackedInv).filter(n => !stableNames.has(n));
+
+  const detailsFor = (names) => [...names]
+    .map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
+    .filter(Boolean).join('; ');
+
   const itemDetailLine = '';
-  // EQUIPPED and INVENTORY change only when gear does — the same trigger as the
-  // item descriptions — so they belong in the cached block alongside them rather
-  // than being resent fresh every turn. On a well-stocked character the
-  // inventory line alone was ~760 tokens, every single turn.
-  const itemsBlock = [
+  // Tier 1 — worn gear and owned constructs. Rarely changes.
+  const gearBlock = [
     `EQUIPPED: ${equippedList}`,
+    detailsFor(stableNames) ? `WORN GEAR AND CONSTRUCTS — what they do:\n${detailsFor(stableNames)}` : '',
+  ].filter(Boolean).join('\n');
+  // Tier 2 — everything carried. Changes whenever loot arrives.
+  const itemsBlock = [
     `INVENTORY: ${invDisplay}`,
-    itemDetails ? `ITEM DETAILS (what the player's gear and carried items do):\n${itemDetails}` : '',
+    detailsFor(carriedNames) ? `CARRIED ITEMS — what they do:\n${detailsFor(carriedNames)}` : '',
   ].filter(Boolean).join('\n');
   const hasCleric   = char.cls?.name==='Cleric'  || Object.keys(classLevels).includes('Cleric');
   const hasWarlock  = char.cls?.name==='Warlock' || Object.keys(classLevels).includes('Warlock');
@@ -180,7 +191,7 @@ Stats: Strength ${effStats.str}(${modStr(effStats.str)}) Dexterity ${effStats.de
 Weapon: ${weaponLine}${sneakLine}${focusLine}
 (Equipped gear, inventory and item descriptions are listed above.)${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${arcLine}`;
 
-  return { staticPart, dynamicPart, itemsBlock };
+  return { staticPart, dynamicPart, gearBlock, itemsBlock };
 };
 
 // ── Shared context sections (bio, companions, NPCs, towns) ─────────────────────
@@ -535,19 +546,22 @@ export const buildSystemPrompt = (char) => {
     .join(', ') || 'empty';
   // Descriptions for custom items the player owns (inventory + equipped), so the
   // DM knows what they do — their flavor/label lives in customItems, not the name.
-  const ownedNames   = new Set([...Object.keys(stackedInv), ...Object.values(char.slots||{}).filter(Boolean)]);
-  const itemDetails  = [...ownedNames].map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; }).filter(Boolean).join('; ');
-  // Item descriptions are large and change only when gear does, so they get
-  // their own cache block rather than being resent fresh every turn.
+  // Two tiers by change rate — see the Sonnet builder for the reasoning.
+  const equippedNames = new Set(Object.values(char.slots || {}).filter(Boolean));
+  const isConstruct   = (n) => (char.customItems?.[n] || {}).type === 'construct';
+  const stableNames   = new Set([...equippedNames, ...Object.keys(stackedInv).filter(isConstruct)]);
+  const carriedNames  = Object.keys(stackedInv).filter(n => !stableNames.has(n));
+  const detailsFor = (names) => [...names]
+    .map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
+    .filter(Boolean).join('; ');
   const itemDetailLine = '';
-  // EQUIPPED and INVENTORY change only when gear does — the same trigger as the
-  // item descriptions — so they belong in the cached block alongside them rather
-  // than being resent fresh every turn. On a well-stocked character the
-  // inventory line alone was ~760 tokens, every single turn.
-  const itemsBlock = [
+  const gearBlock = [
     `EQUIPPED: ${equippedList}`,
+    detailsFor(stableNames) ? `WORN GEAR AND CONSTRUCTS — what they do:\n${detailsFor(stableNames)}` : '',
+  ].filter(Boolean).join('\n');
+  const itemsBlock = [
     `INVENTORY: ${invDisplay}`,
-    itemDetails ? `ITEM DETAILS (what the player's gear and carried items do):\n${itemDetails}` : '',
+    detailsFor(carriedNames) ? `CARRIED ITEMS — what they do:\n${detailsFor(carriedNames)}` : '',
   ].filter(Boolean).join('\n');
 
   // Check for active holy focus in offhand
@@ -722,7 +736,7 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 6. An NPC asked the player something? Your message ENDS on that question.
 7. Did the player GAIN anything this message — loot, a reward, payment, a gift, something taken off a body or a shelf? Every single thing you described them receiving needs its own [ITEM:] tag, itemised, right now. Coin needs [GOLD:]. Describing a thing without tagging it means the player never actually gets it, and they have to ask you for it afterwards.`;
 
-  return { static: staticPart, items: itemsBlock, dynamic: dynamicPart };
+  return { static: staticPart, gear: gearBlock, items: itemsBlock, dynamic: dynamicPart };
 };
 
 // ── System Prompt — Sonnet ─────────────────────────────────────────────────────
@@ -842,6 +856,7 @@ When any faction or power makes demands of the player, there must ALWAYS be at l
 
 Powerful factions weigh costs. They do not commit total war over a slight, especially against a dangerous target — they send letters, proxies, and offers before armies, and they cut losses when the price of pressing exceeds the prize. Factions that act like accountants feel real; factions that act like karma feel like the DM's hand.`;
 
+  const gearBlock = cb.gearBlock;
   const itemsBlock = cb.itemsBlock;
   const dynamicPart = `── CURRENT STATE (changes every message) ──
 ${cb.dynamicPart}
@@ -857,7 +872,7 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 6. An NPC asked the player something? Your message ENDS on that question.
 7. Did the player GAIN anything this message — loot, a reward, payment, a gift, something taken off a body or a shelf? Every single thing you described them receiving needs its own [ITEM:] tag, itemised, right now. Coin needs [GOLD:]. Describing a thing without tagging it means the player never actually gets it, and they have to ask you for it afterwards.`;
 
-  return { static: staticPart, items: itemsBlock, dynamic: dynamicPart };
+  return { static: staticPart, gear: gearBlock, items: itemsBlock, dynamic: dynamicPart };
 };
 
 // Stack duplicate inventory items for display
@@ -891,9 +906,19 @@ export function useGame({ charRef, apiKey }) {
     //   3. volatile state — small, changes every turn, rides on the last message
     // Item text was previously resent fresh every turn at full price; it is the
     // single largest recurring cost in the prompt.
+    // Ordered least volatile first, because caching is prefix-based: a change
+    // rebuilds its own block and everything after it, never anything before.
+    //   1. static — rules and world, changes almost never
+    //   2. gear   — worn equipment and constructs, changes when you equip
+    //   3. items  — carried inventory, changes whenever loot arrives
+    // Splitting 2 from 3 means picking something up no longer rebuilds the
+    // descriptions of everything you are wearing.
     const systemBlocks = hasSplit
       ? [
           { type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } },
+          ...(systemPrompt.gear
+            ? [{ type: 'text', text: systemPrompt.gear, cache_control: { type: 'ephemeral' } }]
+            : []),
           ...(systemPrompt.items
             ? [{ type: 'text', text: systemPrompt.items, cache_control: { type: 'ephemeral' } }]
             : []),
@@ -907,7 +932,7 @@ export function useGame({ charRef, apiKey }) {
       const cachedMsgs = messages.length > 2 ? messages.slice(0, -2) : [];
       const freshMsgs = messages.length > 2 ? messages.slice(-2) : messages;
       const sz = arr => arr.reduce((a, m) => a + est(typeof m.content === 'string' ? m.content : JSON.stringify(m.content)), 0);
-      log(`[PROMPT] static ${est(hasSplit ? systemPrompt.static : systemPrompt).toLocaleString()} · items ${est(hasSplit ? systemPrompt.items : '').toLocaleString()} (cached) · history ${sz(cachedMsgs).toLocaleString()} (${cachedMsgs.length} msgs, cached) · fresh ${(sz(freshMsgs) + est(dynamicTail)).toLocaleString()} (${freshMsgs.length} msgs + ${est(dynamicTail)} state)`);
+      log(`[PROMPT] static ${est(hasSplit ? systemPrompt.static : systemPrompt).toLocaleString()} · gear ${est(hasSplit ? systemPrompt.gear : '').toLocaleString()} · items ${est(hasSplit ? systemPrompt.items : '').toLocaleString()} (cached) · history ${sz(cachedMsgs).toLocaleString()} (${cachedMsgs.length} msgs, cached) · fresh ${(sz(freshMsgs) + est(dynamicTail)).toLocaleString()} (${freshMsgs.length} msgs + ${est(dynamicTail)} state)`);
     }
 
     // Hand the assembled prompt to the caller so it can be recorded for
