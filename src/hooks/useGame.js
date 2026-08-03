@@ -198,10 +198,15 @@ const buildCtxSections = (char) => {
   let companionSection = '';
   const activeCompanions = Object.entries(companions).filter(([name]) => !excl.companions?.[name]);
   if (activeCompanions.length > 0) {
+    // Companions travel WITH the player, so this list is deliberately NOT
+    // filtered by location. It used to be, which meant the section changed every
+    // time the player moved — and since it lives in the cached block, every
+    // journey rewrote the whole ~12,000 token static prompt at 3.75/M instead of
+    // reading it at 0.30/M. A companion that IS stationed somewhere (a construct
+    // left on guard) still says so in its own line, so the DM knows it is not
+    // in the room without the text having to change when the player walks.
     const present = [], distant = [];
     activeCompanions.forEach(([name, data]) => {
-      const dloc = (data.location||data.status||'').toLowerCase();
-      const here = loc ? dloc.includes(loc.toLowerCase())||loc.toLowerCase().includes(dloc) : false;
       // Every filled field is sent. Description used to REPLACE the structured
       // fields, which silently discarded whatever was typed into them — filling
       // both looked like it worked and quietly threw half of it away.
@@ -209,12 +214,11 @@ const buildCtxSections = (char) => {
       const desc = [fields, data.desc].filter(Boolean).join(' | ');
       const ab = data.abilities ? (Array.isArray(data.abilities)?data.abilities.join(', '):data.abilities) : '';
       const gear = data.slots ? Object.values(data.slots).filter(Boolean).join(', ') : '';
-      if (here||!data.location) present.push(`- ${name} [PRESENT]: ${desc}${ab?` | Abilities: ${ab}`:''}${gear?` | Equipped: ${gear}`:''}${data.notes?` | ${data.notes}`:''}`);
-      else distant.push(`- ${name} (at ${data.location}): ${data.relationship||data.role||'ally'}`);
+      const where = data.location ? ` [STATIONED AT ${data.location} — not with the player unless they travel there]` : '';
+      present.push(`- ${name}${where}: ${desc}${ab?` | Abilities: ${ab}`:''}${gear?` | Equipped: ${gear}`:''}${data.notes?` | ${data.notes}`:''}`);
     });
     const parts = [];
-    if (present.length) parts.push(`COMPANIONS (present):\n${present.join('\n')}`);
-    if (distant.length) parts.push(`COMPANIONS (elsewhere):\n${distant.join('\n')}`);
+    if (present.length) parts.push(`COMPANIONS (they travel with the player unless a line says otherwise):\n${present.join('\n')}`);
     companionSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
