@@ -61,6 +61,51 @@ export default function App() {
   const [debugLog, setDebugLog] = useState([]);
   const debugLogRef = useRef([]);
   const objectiveNoteRef = useRef('');   // queued note for the next API message
+
+  // ── Prompt log ─────────────────────────────────────────────────────────────
+  // The last N prompts exactly as sent, so a cost or behaviour question can be
+  // answered from evidence instead of reconstruction. Blocks are deduplicated by
+  // content hash: the static block is usually identical turn to turn, and storing
+  // 20 copies of ~48KB would dwarf the rest of the save.
+  const PROMPT_LOG_KEEP = 15;
+  const promptLogRef = useRef({ blocks: {}, turns: [] });
+
+  const hashText = (t) => {
+    let h = 5381;
+    for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0;
+    return `${h.toString(36)}-${t.length}`;
+  };
+
+  const recordPrompt = (rec) => {
+    const store = promptLogRef.current;
+    const blocks = { ...store.blocks };
+    const keep = (text) => {
+      if (!text) return null;
+      const h = hashText(text);
+      if (!blocks[h]) blocks[h] = text;
+      return h;
+    };
+    const turn = {
+      at: rec.at,
+      model: rec.model,
+      staticRef: keep(rec.staticBlock),
+      itemsRef: keep(rec.itemsBlock),
+      dynamic: rec.dynamicBlock,          // volatile, stored in full every turn
+      cachedMsgRefs: rec.cachedMessages.map(m => ({ role: m.role, ref: keep(m.content) })),
+      freshMessages: rec.freshMessages,   // small, and the most useful to read
+      usage: rec.usage,
+    };
+    const turns = [...store.turns, turn].slice(-PROMPT_LOG_KEEP);
+    // Drop any block no longer referenced by a retained turn.
+    const live = new Set();
+    turns.forEach(t => {
+      if (t.staticRef) live.add(t.staticRef);
+      if (t.itemsRef) live.add(t.itemsRef);
+      t.cachedMsgRefs?.forEach(m => m.ref && live.add(m.ref));
+    });
+    Object.keys(blocks).forEach(h => { if (!live.has(h)) delete blocks[h]; });
+    promptLogRef.current = { blocks, turns };
+  };
   const sideCostRef = useRef({ calls: 0, cost: 0 });   // running total for non-DM calls
   const cacheTimerRef = useRef(null);   // one-shot cache keep-warm
 
@@ -200,6 +245,7 @@ export default function App() {
     messages: fullLog,
     storySummaryRef,
     debugLogRef,
+    promptLogRef,
     onLoadFull: applyLoadedFull,
     onLoadCharacter: applyLoadedCharacter,
   });
@@ -1497,7 +1543,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         system,
         modelConfig,
         signal,
-        log
+        log,
+        recordPrompt
       );
       if (dmUsage) setTokenUsage(dmUsage);
       armCacheTimer();

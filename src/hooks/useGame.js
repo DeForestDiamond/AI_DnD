@@ -869,7 +869,7 @@ export const stackInventory = (inventory) => {
 // ── The Hook ───────────────────────────────────────────────────────────────────
 export function useGame({ charRef, apiKey }) {
 
-  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null) => {
+  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null, onPrompt = null) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
 
     // systemPrompt can be a string (legacy) or { static, dynamic }
@@ -906,6 +906,19 @@ export function useGame({ charRef, apiKey }) {
       const sz = arr => arr.reduce((a, m) => a + est(typeof m.content === 'string' ? m.content : JSON.stringify(m.content)), 0);
       log(`[PROMPT] static ${est(hasSplit ? systemPrompt.static : systemPrompt).toLocaleString()} · items ${est(hasSplit ? systemPrompt.items : '').toLocaleString()} (cached) · history ${sz(cachedMsgs).toLocaleString()} (${cachedMsgs.length} msgs, cached) · fresh ${(sz(freshMsgs) + est(dynamicTail)).toLocaleString()} (${freshMsgs.length} msgs + ${est(dynamicTail)} state)`);
     }
+
+    // Hand the assembled prompt to the caller so it can be recorded for
+    // diagnosis. Blocks are passed whole; the caller deduplicates them, since
+    // static is usually identical turn to turn.
+    const promptRecord = onPrompt ? {
+      at: new Date().toISOString(),
+      model: modelConfig.model,
+      staticBlock: hasSplit ? systemPrompt.static : systemPrompt,
+      itemsBlock: hasSplit ? (systemPrompt.items || '') : '',
+      dynamicBlock: dynamicTail,
+      cachedMessages: messages.length > 2 ? messages.slice(0, -2).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })) : [],
+      freshMessages: (messages.length > 2 ? messages.slice(-2) : messages).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })),
+    } : null;
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -951,6 +964,7 @@ export function useGame({ charRef, apiKey }) {
       throw new Error(err?.error?.message || `API error ${res.status}`);
     }
     const data = await res.json();
+    if (promptRecord) onPrompt({ ...promptRecord, usage: data.usage || null });
     return { text: data.content?.[0]?.text || '...', usage: data.usage || null };
   };
 
