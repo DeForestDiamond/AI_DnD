@@ -1010,7 +1010,17 @@ function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
               <input type="radio" checked={eGroup==='companions'} onChange={()=>setEGroup('companions')} style={{accentColor:colors.gold}}/> Companion
             </label>
           </div>
-          <input value={eLoc} onChange={e=>setELoc(e.target.value)} placeholder="Location (e.g. Calimport - Gem Quarter)" style={{...npcInput, marginBottom:4}}/>
+          {/* Location is an NPC concept only: companions travel with the player,
+              anything that stays put belongs in NPCs. Showing the field for a
+              companion invites setting something that is ignored. */}
+          {eGroup !== 'companions' && (
+            <input value={eLoc} onChange={e=>setELoc(e.target.value)} placeholder="Location (e.g. Calimport - Gem Quarter)" style={{...npcInput, marginBottom:4}}/>
+          )}
+          {eGroup === 'companions' && (
+            <div style={{fontSize:10,color:colors.textGhost,marginBottom:4,lineHeight:1.4}}>
+              Companions travel with you — no location. If it stays somewhere, make it an NPC instead.
+            </div>
+          )}
           <input value={eRel} onChange={e=>setERel(e.target.value)} placeholder="Relationship to the player" style={{...npcInput, marginBottom:4}}/>
           {eGroup === 'companions' && (
             <>
