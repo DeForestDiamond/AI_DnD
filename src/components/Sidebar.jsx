@@ -1027,7 +1027,7 @@ function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
           )}
           <textarea value={eDesc} onChange={e=>setEDesc(e.target.value)} placeholder="Description — appearance, personality, notable facts" rows={4} style={{...npcInput, resize:'vertical', marginBottom:2}}/>
           {eGroup === 'companions' && (
-            <div style={{fontSize:10,color:colors.textGhost,marginBottom:4,lineHeight:1.4}}>If Description is filled, the AI uses it INSTEAD of the Race/Role/Appearance/Personality/Status fields above. Use one or the other.</div>
+            <div style={{fontSize:10,color:colors.textGhost,marginBottom:4,lineHeight:1.4}}>Every filled field is sent to the AI. Use the structured fields, the Description, or both — Description no longer replaces them.</div>
           )}
           <textarea value={eNotes} onChange={e=>setENotes(e.target.value)} placeholder="Notes (always sent alongside, e.g. behavior rules)" rows={2} style={{...npcInput, resize:'vertical', marginBottom:6}}/>
           <div style={{display:'flex',gap:4}}>

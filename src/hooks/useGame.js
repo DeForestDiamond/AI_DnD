@@ -191,7 +191,11 @@ const buildCtxSections = (char) => {
     activeCompanions.forEach(([name, data]) => {
       const dloc = (data.location||data.status||'').toLowerCase();
       const here = loc ? dloc.includes(loc.toLowerCase())||loc.toLowerCase().includes(dloc) : false;
-      const desc = data.desc || [data.trueName?`True name: ${data.trueName}`:'',data.race?`Race: ${data.race}`:'',data.role?`Role: ${data.role}`:'',data.appearance?`Appearance: ${data.appearance}`:'',data.personality?`Personality: ${data.personality}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join(' | ') || '';
+      // Every filled field is sent. Description used to REPLACE the structured
+      // fields, which silently discarded whatever was typed into them — filling
+      // both looked like it worked and quietly threw half of it away.
+      const fields = [data.trueName?`True name: ${data.trueName}`:'',data.race?`Race: ${data.race}`:'',data.role?`Role: ${data.role}`:'',data.appearance?`Appearance: ${data.appearance}`:'',data.personality?`Personality: ${data.personality}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join(' | ');
+      const desc = [fields, data.desc].filter(Boolean).join(' | ');
       const ab = data.abilities ? (Array.isArray(data.abilities)?data.abilities.join(', '):data.abilities) : '';
       const gear = data.slots ? Object.values(data.slots).filter(Boolean).join(', ') : '';
       if (here||!data.location) present.push(`- ${name} [PRESENT]: ${desc}${ab?` | Abilities: ${ab}`:''}${gear?` | Equipped: ${gear}`:''}${data.notes?` | ${data.notes}`:''}`);
