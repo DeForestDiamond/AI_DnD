@@ -36,6 +36,8 @@ export const MULTICLASS_OPTIONS = {
       1: ['Spellcasting - learn 3 cantrips and 2 first-level spells', 'Arcane Recovery'],
       2: ['Spell Slots increase'],
       3: ['Learn 2nd level spells'],
+      4: ['Learn 3rd level spells', 'Cantrip Formulae - swap a prepared cantrip on a rest'],
+      5: ['Learn 4th level spells', 'Arcane Recovery improves - regain more slots on a short rest'],
     },
   },
   Cleric: {
@@ -46,6 +48,8 @@ export const MULTICLASS_OPTIONS = {
       1: ['Divine Domain - choose your patron deity domain', 'Channel Divinity once per rest', 'Turn Undead'],
       2: ['Channel Divinity improves'],
       3: ['2nd level divine spells'],
+      4: ['3rd level divine spells', 'Destroy Undead - the weakest undead crumble rather than flee'],
+      5: ['4th level divine spells', 'Channel Divinity twice per rest'],
     },
   },
   Artificer: {
@@ -187,6 +191,8 @@ export const MULTICLASS_OPTIONS = {
       1: ['Spellcasting - learn 4 cantrips and 2 first-level spells', 'Sorcerous Origin subclass'],
       2: ['Font of Magic - Sorcery Points'],
       3: ['Metamagic - bend spells with options like Twin and Quicken'],
+      4: ['Learn 3rd level spells', 'More Sorcery Points, and spell slots can be traded for them'],
+      5: ['Learn 4th level spells', 'A second Metamagic option'],
     },
   },
   Druid: {
@@ -197,6 +203,8 @@ export const MULTICLASS_OPTIONS = {
       1: ['Spellcasting - learn 2 cantrips and prepared spells', 'Druidic - the secret language of druids'],
       2: ['Wild Shape - transform into beasts', 'Druid Circle subclass'],
       3: ['Learn 2nd-level spells'],
+      4: ['Learn 3rd-level spells', 'Wild Shape improves - swimming forms'],
+      5: ['Learn 4th-level spells', 'Wild Shape improves again - flying forms'],
     },
   },
 };
