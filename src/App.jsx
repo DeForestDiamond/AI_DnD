@@ -242,6 +242,19 @@ export default function App() {
     setTimeout(() => beginAdventure(char), 100);
   };
 
+  // Start a fresh campaign with the character you already have — the same thing
+  // as exporting the character and loading it back, without the round trip
+  // through a file. Keeps everything the character IS (level, gear, companions,
+  // NPCs, towns) and drops everything the last campaign WAS.
+  const startNewCampaign = () => {
+    const { arc, ...rest } = charRef.current;   // an export carries no arc
+    log('[CAMPAIGN] Starting a new campaign — character kept, story cleared');
+    // Matches a character export exactly: only the arc is stripped. The defeated
+    // ledger stays — the character really did kill those foes, and keeping it
+    // stops them being rolled again in the new campaign.
+    applyLoadedCharacter(rest);
+  };
+
   const save = useSave({
     charRef,
     messages: fullLog,
@@ -2125,6 +2138,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onSetObjectives={(objectives) => updateChar({ ...charRef.current, arc: { ...(charRef.current.arc || {}), objectives } })}
             disposition={character.disposition || {}}
             onSaveDisposition={(d) => updateChar({ ...charRef.current, disposition: d })}
+            onStartNewCampaign={startNewCampaign}
             defeatedAntagonists={character.defeatedAntagonists || []}
             onReviveAntagonist={reviveAntagonist}
             onCycleConstructStatus={cycleConstructStatus}

@@ -1134,7 +1134,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
@@ -1143,6 +1143,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   // completes mid-play and rolls a new one, it re-hides itself rather than
   // spoiling the next arc through a panel left open.
   const [revealedFor, setRevealedFor] = useState(null);
+  const [newCampaignArmed, setNewCampaignArmed] = useState(false);
   const [arcCustomText, setArcCustomText] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const gearSkills = skillBonuses(character.slots, character.customItems || {});
@@ -1553,6 +1554,29 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       </>}
 
       {activeTab==='settings' && <>
+      {/* Start over with the same character */}
+      {onStartNewCampaign && (
+        <CollapsibleSection title="🗺️ NEW CAMPAIGN" defaultOpen={false}>
+          <div style={{fontSize:11,color:colors.textDim,marginBottom:8,lineHeight:1.45}}>
+            Keeps everything the character <b>is</b> — level, XP, gear, inventory, companions, NPCs, towns, bio, disposition — and clears everything the last campaign <b>was</b>: the story log, the summary and the arc. The same as exporting the character and loading it back.
+          </div>
+          {newCampaignArmed ? (
+            <div style={{display:'flex',gap:4}}>
+              <button onClick={()=>{ setNewCampaignArmed(false); onStartNewCampaign(); }}
+                style={{...btn(true),flex:1,fontSize:11,padding:'5px 0'}}>✓ Yes, start fresh</button>
+              <button onClick={()=>setNewCampaignArmed(false)}
+                style={{...btn(false),flex:1,fontSize:11,padding:'5px 0'}}>Cancel</button>
+            </div>
+          ) : (
+            <button onClick={()=>setNewCampaignArmed(true)}
+              style={{...btn(false),width:'100%',fontSize:11,padding:'5px 0'}}>🗺️ Start a new campaign</button>
+          )}
+          <div style={{fontSize:10,color:colors.textDead,marginTop:6,lineHeight:1.4}}>
+            Save first if you want to come back to this story — it cannot be undone.
+          </div>
+        </CollapsibleSection>
+      )}
+
       {/* Arc objectives — the campaign skeleton */}
       {onGenerateObjectives && (
         <ObjectivesPanel arcObjectives={arcObjectives} onGenerateObjectives={onGenerateObjectives} onSetObjectives={onSetObjectives} />
