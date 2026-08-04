@@ -1147,7 +1147,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives }) {
   const db       = allItems(character.customItems || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
@@ -1157,6 +1157,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   // spoiling the next arc through a panel left open.
   const [revealedFor, setRevealedFor] = useState(null);
   const [newCampaignArmed, setNewCampaignArmed] = useState(false);
+  const [renaming, setRenaming] = useState(null);   // { name, draft }
   const [arcCustomText, setArcCustomText] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const gearSkills = skillBonuses(character.slots, character.customItems || {});
@@ -1749,6 +1750,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                     {/* fixed-width delete column on the left — names line up regardless */}
                     {!bagMode && (
                       <span style={{width:44,flexShrink:0,display:'flex',justifyContent:'flex-start',gap:3}}>
+                        {onRenameItem && <button title="Rename — merges with an existing item of that name" onClick={() => setRenaming({ name, draft: name })} style={delBtn}>✎</button>}
                         {onDeleteItem && <button title="Delete one" onClick={() => onDeleteItem(name, false)} style={delBtn}>✕</button>}
                         {onDeleteItem && count > 1 && <button title="Delete all" onClick={() => onDeleteItem(name, true)} style={delBtn}>✕✕</button>}
                       </span>
@@ -1813,6 +1815,21 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                     )}
                   </div>
                   {/* expanded full label */}
+                  {renaming?.name === name && onRenameItem && (
+                    <div style={{display:'flex',gap:4,padding:'4px 0 6px 8px'}}>
+                      <input autoFocus value={renaming.draft}
+                        onChange={e => setRenaming({ name, draft: e.target.value })}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { onRenameItem(name, renaming.draft); setRenaming(null); }
+                          if (e.key === 'Escape') setRenaming(null);
+                        }}
+                        style={{...npcInput, flex:1}}/>
+                      <button onClick={() => { onRenameItem(name, renaming.draft); setRenaming(null); }}
+                        style={{...btn(true), flexShrink:0, fontSize:10, padding:'0 8px'}}>✓</button>
+                      <button onClick={() => setRenaming(null)}
+                        style={{...btn(false), flexShrink:0, fontSize:10, padding:'0 8px'}}>✕</button>
+                    </div>
+                  )}
                   {fullLabel && labelOpen && (
                     <div style={{fontSize:13,color:colors.textDead,padding:'0 0 4px 44px',lineHeight:1.4,fontStyle:'italic'}}>{fullLabel}</div>
                   )}

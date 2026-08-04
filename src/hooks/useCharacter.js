@@ -833,6 +833,59 @@ export function useCharacter(log) {
   };
 
   // Permanently delete an item from inventory (one or all copies). Bags are deleted whole.
+  // Rename an item everywhere it can exist, MERGING into the target if that name
+  // is already in use. This is the fix for near-duplicate names — 'Steel Scrap'
+  // and 'Scrap Steel' as separate piles — which otherwise never stack.
+  const renameItem = (from, to) => {
+    const target = (to || '').trim();
+    if (!target || target === from) return;
+    setCharacter(c => {
+      const swap = (arr) => (arr || []).map(n => n === from ? target : n);
+      const nc = { ...c, inventory: swap(c.inventory), stash: swap(c.stash) };
+
+      // equipment slots
+      const slots = { ...(c.slots || {}) };
+      Object.keys(slots).forEach(k => { if (slots[k] === from) slots[k] = target; });
+      nc.slots = slots;
+
+      // both definition stores, and bag contents inside them
+      ['customItems', 'stashedCustomItems'].forEach(store => {
+        const src = c[store]; if (!src) return;
+        const next = { ...src };
+        if (next[from]) {
+          // Keep the existing definition if the target already has one.
+          if (!next[target]) next[target] = next[from];
+          delete next[from];
+        }
+        Object.entries(next).forEach(([bagName, d]) => {
+          if (d?.type === 'bag' && d.contents && d.contents[from] !== undefined) {
+            const contents = { ...d.contents };
+            contents[target] = (contents[target] || 0) + contents[from];
+            delete contents[from];
+            next[bagName] = { ...d, contents };
+          }
+        });
+        nc[store] = next;
+      });
+
+      // companion loadouts
+      if (c.companions) {
+        const comps = { ...c.companions };
+        Object.entries(comps).forEach(([n, d]) => {
+          if (!d?.slots) return;
+          const cs = { ...d.slots };
+          let touched = false;
+          Object.keys(cs).forEach(k => { if (cs[k] === from) { cs[k] = target; touched = true; } });
+          if (touched) comps[n] = { ...d, slots: cs };
+        });
+        nc.companions = comps;
+      }
+
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
   const deleteItem = (itemName, all = false) => {
     setCharacter(c => {
       let inventory = [...c.inventory];
@@ -975,7 +1028,7 @@ export function useCharacter(log) {
     applyEffects, spendStatPoint,
     equipToSlot, unequipSlot, equippableInSlot, equipCompanionItem, unequipCompanionItem,
     moveToStash, moveToInventory,
-    createBag, addToBag, removeFromBag, deleteItem, deleteFromBag,
+    createBag, addToBag, removeFromBag, deleteItem, deleteFromBag, renameItem,
     toggleContextExclusion,
     pendingStatPoint, setPendingStatPoint,
     levelUpMsg, setLevelUpMsg,

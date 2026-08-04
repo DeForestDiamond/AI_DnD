@@ -171,7 +171,7 @@ export default function App() {
     applyEffects, spendStatPoint,
     equipToSlot, unequipSlot, equipCompanionItem, unequipCompanionItem,
     moveToStash, moveToInventory,
-    createBag, addToBag, removeFromBag, deleteItem, deleteFromBag,
+    createBag, addToBag, removeFromBag, deleteItem, deleteFromBag, renameItem,
     toggleContextExclusion,
     pendingStatPoint, setPendingStatPoint,
     levelUpMsg,
@@ -2107,6 +2107,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onAddToBag={addToBag}
             onRemoveFromBag={removeFromBag}
             onDeleteItem={deleteItem}
+            onRenameItem={renameItem}
             onDeleteFromBag={deleteFromBag}
             selectedModel={selectedModel}
             onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : 'sonnet')}
