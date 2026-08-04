@@ -290,16 +290,28 @@ function DebugViewer({ debugLog, debugStatus, onExportDebug, onCopyDebug }) {
 // ── Crafting: pick materials, ask what they could become, confirm, create ─────
 // Panel state lives outside React so a proposal survives switching tabs or
 // collapsing the section — both of which unmount the component. Cleared only by
-// the reset button or a completed craft.
-const craftStore = { selected:{}, intent:'', mode:'item', options:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1' };
+// the reset button, a completed craft, or loading a save.
+//
+// The SELECTION is additionally persisted to localStorage, because picking out
+// a hundred materials is real work and losing it to a page reload — a deploy, a
+// stray refresh, a phone dropping the tab — is infuriating. Proposals are not
+// persisted: they are cheap to regenerate and go stale.
+const SEL_KEY = 'dnd-panel-selections';
+const loadSel = () => { try { return JSON.parse(localStorage.getItem(SEL_KEY)) || {}; } catch { return {}; } };
+const saveSel = (craft, salvage) => {
+  try { localStorage.setItem(SEL_KEY, JSON.stringify({ craft, salvage })); } catch { /* quota, ignore */ }
+};
+const persistedSel = loadSel();
+const craftStore = { selected: persistedSel.craft || {}, intent:'', mode:'item', options:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1' };
 
 // Loading a save replaces the character wholesale, so any proposal or selection
 // still sitting in these stores refers to a world that no longer exists.
 export const resetCraftingPanels = () => {
   Object.assign(craftStore, { selected:{}, intent:'', options:null, status:'', filter:'', draft:{}, qty:'1' });
   Object.assign(salvageStore, { selected:{}, result:null, status:'', filter:'', draft:{} });
+  saveSel({}, {});
 };
-const salvageStore = { selected:{}, result:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
+const salvageStore = { selected: persistedSel.salvage || {}, result:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
 
 // Bind a store key to component state, writing through on every change.
 const useStored = (store, key) => {
@@ -307,6 +319,7 @@ const useStored = (store, key) => {
   return [v, (next) => {
     const val = typeof next === 'function' ? next(store[key]) : next;
     store[key] = val;
+    if (key === 'selected') saveSel(craftStore.selected, salvageStore.selected);
     setV(val);
   }];
 };
