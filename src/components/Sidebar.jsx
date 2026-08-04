@@ -292,6 +292,13 @@ function DebugViewer({ debugLog, debugStatus, onExportDebug, onCopyDebug }) {
 // collapsing the section — both of which unmount the component. Cleared only by
 // the reset button or a completed craft.
 const craftStore = { selected:{}, intent:'', mode:'item', options:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1' };
+
+// Loading a save replaces the character wholesale, so any proposal or selection
+// still sitting in these stores refers to a world that no longer exists.
+export const resetCraftingPanels = () => {
+  Object.assign(craftStore, { selected:{}, intent:'', options:null, status:'', filter:'', draft:{}, qty:'1' });
+  Object.assign(salvageStore, { selected:{}, result:null, status:'', filter:'', draft:{} });
+};
 const salvageStore = { selected:{}, result:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
 
 // Bind a store key to component state, writing through on every change.
@@ -394,6 +401,19 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
       setOptions(null); setSelected({}); setDraft({}); setIntent(''); setFilter('');
     } catch (e) { setStatus('✗ ' + e.message); }
   };
+
+  // The panel store outlives the component so a proposal survives a tab switch —
+  // but it also outlives a SAVE RELOAD, so a selection can reference items the
+  // character no longer has. Those were still being sent as available materials,
+  // which is how the forge came to ask for things that no longer existed.
+  // Reconcile against what is actually held, every render.
+  const heldNames = new Set(allNames);
+  const staleSel = Object.keys(selected).filter(nm => !heldNames.has(nm));
+  if (staleSel.length) {
+    const cleaned = { ...selected };
+    staleSel.forEach(nm => delete cleaned[nm]);
+    setSelected(cleaned);
+  }
 
   const selCount = Object.keys(selected).length;
   return (
@@ -653,6 +673,15 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
       setResult(null); setSelected({}); setDraft({}); setFilter('');
     } catch (e) { setStatus('✗ ' + e.message); }
   };
+
+  // Same reconciliation as the crafting panel — see the note there.
+  const heldNames = new Set(allNames);
+  const staleSel = Object.keys(selected).filter(nm => !heldNames.has(nm));
+  if (staleSel.length) {
+    const cleaned = { ...selected };
+    staleSel.forEach(nm => delete cleaned[nm]);
+    setSelected(cleaned);
+  }
 
   const selCount = Object.keys(selected).length;
   return (

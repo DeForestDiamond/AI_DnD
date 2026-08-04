@@ -8,7 +8,7 @@ import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
 import { useGame, buildSystemPrompt, buildSystemPromptSonnet, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
 import { rollAntagonist, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
-import { Sidebar } from './components/Sidebar.jsx';
+import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
 import { SaveModal } from './components/modals/SaveModal.jsx';
@@ -218,6 +218,7 @@ export default function App() {
   };
 
   const applyLoadedFull = (char, msgs, summary = '') => {
+    resetCraftingPanels();   // any pending proposal refers to the character being replaced
     loadCharacter(char);
     setFullLog(msgs);
     fullLogRef.current = msgs;
@@ -229,6 +230,7 @@ export default function App() {
   };
 
   const applyLoadedCharacter = (char) => {
+    resetCraftingPanels();   // any pending proposal refers to the character being replaced
     loadCharacter(char);
     setFullLog([]); fullLogRef.current = [];
     // Character exports are a clean start — clear any previous story's summary
