@@ -1332,7 +1332,14 @@ RULES:
   A body that has been WORKED into something (a bone golem, a skull carved into a focus) is case (a) again — the construction is what gets ruined.
 - Recover the item's actual substance: a steel blade yields steel, a drake-hide cloak yields hide and maybe scales, a wand yields its focus crystal and rare wood. Magical items may yield a residue or spent component alongside the physical parts.
 - Some things are NOT worth salvaging or cannot be: state that in the note and return an empty recovers array rather than inventing materials.
-- Material names should be simple and reusable ("Steel Scrap", "Drake Hide", "Spent Arcane Crystal") so they can be crafted with again — not one-off names.
+- NAME MATERIALS BY WHAT THEY ARE, NEVER BY WHAT THEY CAME FROM. This is the most important rule here. A recovered material must be a GENERIC STOCK NAME that will stack with the same material recovered from anything else — otherwise every salvage adds unique clutter to the inventory and nothing accumulates into a usable quantity.
+  WRONG: "Iron Spear Head", "Wooden Spear Shaft"        RIGHT: "Scrap Iron", "Wooden Haft"
+  WRONG: "Sword Blade", "Sword Hilt", "Sword Pommel"    RIGHT: "Scrap Steel" (one entry, not three)
+  WRONG: "Hexapod Leg Actuator"                          RIGHT: "Arcane Actuator"
+  WRONG: "Runewarden Cuirass Plating"                    RIGHT: "Mithral Plating"
+  The test: could this exact name come out of salvaging a DIFFERENT item? If not, rename it until it could.
+- PREFER FEWER, LARGER STACKS. Do not itemise a thing into every component it technically has. Two or three material types with real quantities beat six with one each. A sword is scrap steel and maybe a leather wrap — not a blade, a hilt, a pommel, a crossguard and a grip.
+- A genuinely distinctive MATERIAL still keeps its name — "Red Dragon Scale", "Demon Lord Essence", "Mithral Wire" are material types, not parts of a particular item, and they stack correctly across salvages.
 - Return exactly ONE result object, but it must cover EVERY submitted item in full. Harvest each creature or item for ITS OWN parts and list them SEPARATELY — a drake and a troll and an owlbear yield drake scale, troll hide and owlbear claws as distinct entries, never a merged pool of "monster parts". Submitting five corpses must produce roughly five times the materials of submitting one; do not compress a large haul into a short list. There is no cap on how many entries the recovers array may hold — length it to match what was actually submitted.
 - Multiply quantities by how many of each item were submitted: three drake carcasses yield three drakes' worth.
 Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
