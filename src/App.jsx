@@ -973,6 +973,7 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
 RULES:
 - Power must fit the materials AND the character's level. Ordinary parts make ordinary gear; rare/monstrous parts make genuinely magical items. Do not hand out legendary power for common scraps.
 - Only consume materials that make sense for that item, and never more than the player has.
+- "consumes" MAY ONLY LIST MATERIALS FROM THE LIST ABOVE. Nothing else exists. Do not add a component because the design would sensibly need one, do not infer a material from another item's description, and do not reuse a name mentioned inside a NOTE — those are descriptions of what an item IS, not things the player holds. If the pile cannot make something, propose something the pile CAN make.
 - In "consumes", the "name" MUST be copied EXACTLY as it appears after NAME: in the material list — no quantity, no description, no parenthetical. Writing "Iron Ingot (dwarven, high carbon)" instead of "Iron Ingot" means the material cannot be found and the craft fails.
 - Every magical item must have a REAL mechanical effect: a +N on weapon damage, or stat:N bonuses, or both. "Enchanted" with no effect is forbidden.
 - Name items for what they do or where they came from — never "Enchanted X".
@@ -1031,9 +1032,23 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       }
       return String(b);
     };
-    const normOpt = (o) => ({ ...o, bonuses: normBonuses(o.bonuses) });
+    // The model occasionally invents a component — often a name it read inside
+    // another item's description. Check every option against what the player
+    // actually holds NOW, and mark the ones that cannot be made, rather than
+    // letting them fail only after being chosen.
+    const heldNow = materialSources(charRef.current);
+    const heldKeys = Object.keys(heldNow);
+    const validate = (o) => {
+      const missing = (o.consumes || []).map(m => {
+        const resolved = resolveHeldName(m.name, heldKeys);
+        const have = totalHeld(heldNow[resolved]);
+        return have < (m.count || 1) ? `${m.name} (need ${m.count || 1}, have ${have})` : null;
+      }).filter(Boolean);
+      return missing.length ? { ...o, unavailable: missing } : o;
+    };
+    const normOpt = (o) => validate({ ...o, bonuses: normBonuses(o.bonuses) });
     if (asConstruct) {
-      const list = (parsed.options || []).filter(o => o?.name).map(o => ({ ...o, isConstruct: true }));
+      const list = (parsed.options || []).filter(o => o?.name).map(o => validate({ ...o, isConstruct: true }));
       if (!list.length) throw new Error('Nothing could be forged from those materials');
       log(`[CRAFT] ${list.length} constructs proposed: ${list.map(o => o.name).join(', ')}`);
       return list;

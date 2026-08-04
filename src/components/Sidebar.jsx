@@ -559,7 +559,13 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
             Consumes: {(o.consumes||[]).map(m=>`${m.name}${m.count>1?` x${m.count}`:''}`).join(', ') || 'nothing'}
             {o.reason ? ` — ${o.reason}` : ''}
           </div>
-          <button onClick={()=>make(o)} style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0'}}>
+          {o.unavailable && (
+            <div style={{fontSize:10,color:'#c96a4c',marginBottom:6,lineHeight:1.4}}>
+              Can't be made — the forge asked for {o.unavailable.join('; ')}. Regenerate for something your materials support.
+            </div>
+          )}
+          <button onClick={()=>make(o)} disabled={!!o.unavailable}
+            style={{...btn(true), width:'100%', fontSize:11, padding:'4px 0', opacity:o.unavailable?0.4:1}}>
             {o.isConstruct ? '✓ RAISE IT' : o.pieces?.length ? '✓ FORGE THE SET' : '✓ FORGE THIS'}
             {` ×${Math.max(1, parseInt(o.count, 10) || 1)}`}
           </button>
