@@ -134,9 +134,14 @@ const buildCharBlock = (char) => {
 
   const itemDetailLine = '';
   // Tier 1 — worn gear and owned constructs. Rarely changes.
+  // Constructs are derived from inventory, so this section CANNOT live in the
+  // static block — putting it there meant picking up any item rebuilt the whole
+  // ~12,000 token prompt. It belongs with the worn gear, which is where the
+  // construct descriptions already are.
   const gearBlock = [
     `EQUIPPED: ${equippedList}`,
     detailsFor(stableNames) ? `WORN GEAR AND CONSTRUCTS — what they do:\n${detailsFor(stableNames)}` : '',
+    buildConstructSection(char),
   ].filter(Boolean).join('\n');
   // Tier 2 — everything carried. Changes whenever loot arrives.
   const itemsBlock = [
@@ -198,6 +203,21 @@ Weapon: ${weaponLine}${sneakLine}${focusLine}
 // Arc objectives are DISABLED — see DISABLED_arc_objectives.md in the repo root
 // for why, what is still wired up, and how to bring it back.
 export const ARC_OBJECTIVES_IN_PROMPT = false;
+
+// Constructs & bound entities — owned and commanded, not worn. Derived from the
+// carried inventory (the stash is invisible to the DM by design, which is the
+// player's switch for putting a construct out of play). Because it depends on
+// inventory it must NOT sit in the cached static block: it goes with the gear.
+const buildConstructSection = (char) => {
+  const cdb = char.customItems || {};
+  const names = [...new Set(char.inventory || [])].filter(nm => cdb[nm]?.type === 'construct');
+  if (!names.length) return '';
+  return `CONSTRUCTS & BOUND ENTITIES (owned by the player, commanded — not carried gear):\n` +
+    names.map(nm => {
+      const d = cdb[nm];
+      return `- ${nm} [${(d.status || 'dormant').toUpperCase()}]${d.label ? `: ${d.label}` : ''}`;
+    }).join('\n');
+};
 
 const buildCtxSections = (char) => {
   const loc = char.currentLocation || '';
@@ -272,19 +292,6 @@ const buildCtxSections = (char) => {
       `Never claim the player has done more or less than the COMPLETED list shows, and never invent a count of your own. Pursue the current objective ORGANICALLY — never announce it, never read the list aloud, never present it as a checklist.\nWHEN THE CURRENT OBJECTIVE IS GENUINELY FINISHED, do BOTH in that same message: [OBJECTIVE DONE: n] to close it, and [OBJECTIVE: ...] to set the next step toward the GOAL — written in response to what just happened, not planned in advance. If the GOAL itself is now reached, emit [ARC COMPLETE] instead of a new objective.\n`
     : '';
 
-  // Constructs & bound entities — owned and commanded, not worn. Listed so the
-  // DM knows what the player can call on (and what is merely dormant).
-  // Carried inventory only — the stash is invisible to the DM by design, and
-  // that's the player's switch for putting a construct out of play.
-  const cdb = char.customItems || {};
-  const constructNames = [...new Set(char.inventory || [])].filter(nm => cdb[nm]?.type === 'construct');
-  const constructSection = constructNames.length
-    ? `\nCONSTRUCTS & BOUND ENTITIES (owned by the player, commanded — not carried gear):\n` +
-      constructNames.map(nm => {
-        const d = cdb[nm];
-        return `- ${nm} [${(d.status || 'dormant').toUpperCase()}]${d.label ? `: ${d.label}` : ''}`;
-      }).join('\n') + '\n'
-    : '';
 
   // NPCs
   const npcs = char.npcs || {};
@@ -324,7 +331,7 @@ const buildCtxSections = (char) => {
     townsSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
-  return { bio, dispositionSection, objectivesSection, companionSection, constructSection, npcSection, townsSection };
+  return { bio, dispositionSection, objectivesSection, companionSection, npcSection, townsSection };
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
@@ -555,9 +562,14 @@ export const buildSystemPrompt = (char) => {
     .map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
     .filter(Boolean).join('; ');
   const itemDetailLine = '';
+  // Constructs are derived from inventory, so this section CANNOT live in the
+  // static block — putting it there meant picking up any item rebuilt the whole
+  // ~12,000 token prompt. It belongs with the worn gear, which is where the
+  // construct descriptions already are.
   const gearBlock = [
     `EQUIPPED: ${equippedList}`,
     detailsFor(stableNames) ? `WORN GEAR AND CONSTRUCTS — what they do:\n${detailsFor(stableNames)}` : '',
+    buildConstructSection(char),
   ].filter(Boolean).join('\n');
   const itemsBlock = [
     `INVENTORY: ${invDisplay}`,
@@ -581,7 +593,6 @@ export const buildSystemPrompt = (char) => {
   // intended difference between the two models is the directives section.
   const bioSection       = ctx.bio;
   const companionSection = ctx.companionSection;
-  const constructSection = ctx.constructSection;
   const dispositionSection = ctx.dispositionSection;
   const objectivesSection = ctx.objectivesSection;
   const npcSection       = ctx.npcSection;
@@ -630,7 +641,7 @@ NOT EVERYTHING IS A MYSTERY: Do not turn every threat into a puzzle to investiga
 ACTION OVER DESCRIPTION: When in doubt, make something happen. A merchant approaches. A guard challenges them. A noise echoes. Something moves. A figure appears. Push the story forward. The player is here to make decisions, not to read descriptions.
 
 ACTIONS HAVE CONSEQUENCES: When the player does something significant, the world must react. Always. Disrupting a ritual, cremating preserved bodies, challenging a presence, breaking a seal, stealing from a faction, killing a named NPC — these are not neutral events. Something changes. Something responds. An enemy notices. A power stirs. A faction retaliates. A door opens. Even if the consequence is subtle — a temperature drop, a sound, a shift in the air — something must acknowledge what the player just did. Silence and indifference are not valid responses to meaningful action. If the player spends significant time and effort on something, the world owes them a reaction.
-${bioSection}${dispositionSection}${objectivesSection}${companionSection}${constructSection}${npcSection}${townsSection}${abilitiesLine}
+${bioSection}${dispositionSection}${objectivesSection}${companionSection}${npcSection}${townsSection}${abilitiesLine}
 
 ${TAGS_BLOCK}
 
@@ -754,7 +765,7 @@ export const buildSystemPromptSonnet = (char) => {
 
 ${directivesBlock(char)}── CHARACTER (STATIC) ──
 ${cb.staticPart}
-${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSection}${ctx.constructSection}${ctx.npcSection}${ctx.townsSection}
+${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSection}${ctx.npcSection}${ctx.townsSection}
 ── HARD RULES ──
 - Maximum 3 paragraphs, 200 words. Hard limit — if you're writing a fourth paragraph, stop and cut. Front-load the narrative, the choices go last.
 - Show don't tell. "He shifts his weight and won't meet your eyes" not "he seems uncomfortable and suspicious." One vivid detail beats three explanatory sentences. If you've said it, don't say it again with different words.
