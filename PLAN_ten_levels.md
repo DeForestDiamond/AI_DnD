@@ -74,6 +74,58 @@ meaningfully distinguish.
 The target is a level 10 caster whose ability list is SHORTER and more useful
 than a level 5 caster's is today.
 
+## Decision: split martial abilities into their own bucket — do this FIRST
+
+Right now the `spells` field carries whatever a class has. Monk's "Diamond Soul"
+and Barbarian's "Relentless Rage" live in a field called spells; Paladin's list
+mixes Lay on Hands and Divine Smite (features you always have) with Bless and
+Cure Wounds (spells you cast). Fighter and Rogue are empty entirely, so those
+players get nothing to pick at all.
+
+Split into three buckets: **martial**, **spells**, **cantrips**.
+
+Why this comes before any of the tier work:
+- It is semantically true. A technique is not a spell.
+- It fixes the counts. "Fighter picks 6 spells" is nonsense; "Fighter picks 6
+  martial techniques" is not. Half-casters correctly pick from both.
+- It makes the ten-level work obvious. Martial tiers 6-10 go in the martial
+  list, caster tiers 6-9 in the spell list — no judgement calls about which
+  field a thing belongs in.
+
+Doing it after Fighter would mean writing Fighter's features into `spells` and
+moving them a session later.
+
+### What it involves
+- A `martial` array per class alongside `cantrips`/`spells`, with `martialKnown`
+  counts
+- An `abilities.martial` selection bucket
+- A third section in the picker — it already handles cantrips/spells/infusions,
+  so it is the same pattern
+- Migration: **only add the empty field**. No data movement. The only affected
+  save is the developer's own, and clearing the stale selections by hand in the
+  JSON is quicker than writing a mapper for a one-off.
+
+## Structural note: Fighter's tiers should be subclass-independent
+
+Fighter's ten tiers should carry the features every Fighter gets — Action Surge,
+Extra Attack, Indomitable, the third and fourth attacks. Subclass features stay
+in SUBCLASSES. Otherwise Battle Master and Eldritch Knight need separate tier
+lists and the data doubles.
+
+## Correction to an earlier note in this document
+
+Only SELECTED abilities reach the prompt — `char.abilities` is what the player
+picked. The 150/188 figures quoted above are the CAPS on how many may be
+selected, not what is sent. Selecting is the mechanism that limits the prompt,
+not something that adds to it.
+
+The caps are still generous (50 selectable at tier 5 against about 14 for a 5e
+wizard at that level), and `spellsKnown` already defines all ten tiers — so the
+counts side of this work is already done. Only the ability LISTS stop at 5.
+
+Curation still matters, but for the picker rather than the prompt: choosing well
+from 120 options is the problem to solve.
+
 ## Knock-on work
 
 - ~150 new SPELL_INFO entries for whatever survives curation (role + one-line
