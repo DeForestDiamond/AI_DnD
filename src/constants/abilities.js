@@ -67,25 +67,25 @@ export const CLASS_ABILITIES = {
   Rogue: {
     // Rogues don't have spells by default but Arcane Trickster subclass does
     cantrips: [],
-    spells: {},
+    martial: {},
     infusions: {},
     cantripsKnown: {},
-    spellsKnown: {},
+    martialKnown: {},
     infusionsKnown: {},
   },
 
   Fighter: {
     cantrips: [],
-    spells: {},
+    martial: {},
     infusions: {},
     cantripsKnown: {},
-    spellsKnown: {},
+    martialKnown: {},
     infusionsKnown: {},
   },
 
   Monk: {
     cantrips: [],
-    spells: {
+    martial: {
       1: ['Flurry of Blows', 'Patient Defense', 'Step of the Wind'],
       2: ['Stunning Strike', 'Ki-Empowered Strikes', 'Deflect Missiles'],
       3: ['Slow Fall', 'Extra Attack', 'Evasion'],
@@ -93,13 +93,13 @@ export const CLASS_ABILITIES = {
       5: ['Diamond Soul - proficiency in all saving throws', 'Tongue of the Sun and Moon - understand and be understood in all spoken languages', 'Timeless Body - age cannot touch you, need no food or water', 'Empty Body - spend ki to become invisible and resist all damage'],
     },
     cantripsKnown: {},
-    spellsKnown: { 1:2, 2:3, 3:3, 4:4, 5:4, 6:5, 7:5, 8:5, 9:6, 10:6 },
+    martialKnown: { 1:2, 2:3, 3:3, 4:4, 5:4, 6:5, 7:5, 8:5, 9:6, 10:6 },
     infusionsKnown: {},
   },
 
   Barbarian: {
     cantrips: [],
-    spells: {
+    martial: {
       1: ['Rage', 'Unarmored Defense', 'Reckless Attack'],
       2: ['Danger Sense', 'Reckless Attack', 'Bear Totem - Resistance to all damage while raging'],
       3: ['Extra Attack', 'Fast Movement', 'Feral Instinct'],
@@ -107,7 +107,7 @@ export const CLASS_ABILITIES = {
       5: ['Relentless Rage - drop to 1 HP instead of 0 while raging', 'Persistent Rage - your rage ends only if you fall unconscious', 'Indomitable Might - Strength checks can never roll below your Strength score'],
     },
     cantripsKnown: {},
-    spellsKnown: { 1:2, 2:3, 3:3, 4:4, 5:4, 6:5, 7:5, 8:5, 9:6, 10:6 },
+    martialKnown: { 1:2, 2:3, 3:3, 4:4, 5:4, 6:5, 7:5, 8:5, 9:6, 10:6 },
     infusionsKnown: {},
   },
 
@@ -131,35 +131,50 @@ export const CLASS_ABILITIES = {
 
   Paladin: {
     cantrips: [],
+    martial: {
+      1: ['Lay on Hands', 'Divine Sense', 'Divine Smite'],
+      2: ['Extra Attack', 'Aura of Protection'],
+      3: ['Aura of Courage', 'Improved Divine Smite'],
+      4: ['Cleansing Touch'],
+    },
     spells: {
-      1: ['Lay on Hands', 'Divine Sense', 'Divine Smite', 'Bless', 'Command', 'Compelled Duel', 'Cure Wounds', 'Heroism', 'Protection from Evil and Good', 'Searing Smite', 'Shield of Faith', 'Thunderous Smite', 'Wrathful Smite'],
-      2: ['Extra Attack', 'Aura of Protection', 'Aid', 'Branding Smite', 'Find Steed', 'Lesser Restoration', 'Magic Weapon', 'Zone of Truth'],
-      3: ['Aura of Courage', 'Improved Divine Smite', 'Blinding Smite', 'Crusader\'s Mantle', 'Dispel Magic', 'Elemental Weapon', 'Remove Curse', 'Revivify'],
-      4: ['Cleansing Touch', 'Aura of Life', 'Aura of Purity', 'Banishment', 'Death Ward', 'Find Greater Steed', 'Guardian of Faith', 'Staggering Smite'],
+      1: ['Bless', 'Command', 'Compelled Duel', 'Cure Wounds', 'Heroism', 'Protection from Evil and Good', 'Searing Smite', 'Shield of Faith', 'Thunderous Smite', 'Wrathful Smite'],
+      2: ['Aid', 'Branding Smite', 'Find Steed', 'Lesser Restoration', 'Magic Weapon', 'Zone of Truth'],
+      3: ['Blinding Smite', "Crusader's Mantle", 'Dispel Magic', 'Elemental Weapon', 'Remove Curse', 'Revivify'],
+      4: ['Aura of Life', 'Aura of Purity', 'Banishment', 'Death Ward', 'Find Greater Steed', 'Guardian of Faith', 'Staggering Smite'],
       5: ['Banishing Smite', 'Circle of Power', 'Destructive Wave', 'Dispel Evil and Good', 'Holy Weapon', 'Raise Dead'],
     },
     cantripsKnown: {},
+    martialKnown: { 1: 2, 2: 2, 3: 2, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1 },
     spellsKnown: { 1:2, 2:3, 3:4, 4:4, 5:5, 6:5, 7:6, 8:6, 9:7, 10:8 },
     infusionsKnown: {},
   },
 
   Ranger: {
     cantrips: [],
+    martial: {
+      1: ['Favored Enemy', 'Natural Explorer'],
+      2: ['Extra Attack', 'Primeval Awareness'],
+      3: ["Land's Stride"],
+      4: ['Vanish'],
+      5: ['Feral Senses', 'Foe Slayer'],
+    },
     spells: {
-      1: ['Favored Enemy', 'Natural Explorer', 'Hunter\'s Mark', 'Absorb Elements', 'Cure Wounds', 'Ensnaring Strike', 'Fog Cloud', 'Goodberry', 'Hail of Thorns', 'Longstrider', 'Zephyr Strike'],
-      2: ['Extra Attack', 'Primeval Awareness', 'Beast Sense', 'Cordon of Arrows', 'Lesser Restoration', 'Pass Without Trace', 'Silence', 'Spike Growth'],
-      3: ['Land\'s Stride', 'Conjure Animals', 'Flame Arrows', 'Lightning Arrow', 'Nondetection', 'Plant Growth', 'Protection from Energy', 'Wind Wall'],
-      4: ['Vanish', 'Conjure Woodland Beings', 'Freedom of Movement', 'Grasping Vine', 'Guardian of Nature', 'Locate Creature', 'Stoneskin'],
-      5: ['Feral Senses', 'Foe Slayer', 'Commune with Nature', 'Conjure Volley', 'Steel Wind Strike', 'Swift Quiver', 'Tree Stride'],
+      1: ["Hunter's Mark", 'Absorb Elements', 'Cure Wounds', 'Ensnaring Strike', 'Fog Cloud', 'Goodberry', 'Hail of Thorns', 'Longstrider', 'Zephyr Strike'],
+      2: ['Beast Sense', 'Cordon of Arrows', 'Lesser Restoration', 'Pass Without Trace', 'Silence', 'Spike Growth'],
+      3: ['Conjure Animals', 'Flame Arrows', 'Lightning Arrow', 'Nondetection', 'Plant Growth', 'Protection from Energy', 'Wind Wall'],
+      4: ['Conjure Woodland Beings', 'Freedom of Movement', 'Grasping Vine', 'Guardian of Nature', 'Locate Creature', 'Stoneskin'],
+      5: ['Commune with Nature', 'Conjure Volley', 'Steel Wind Strike', 'Swift Quiver', 'Tree Stride'],
     },
     cantripsKnown: {},
+    martialKnown: { 1: 2, 2: 2, 3: 2, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1 },
     spellsKnown: { 1:2, 2:3, 3:4, 4:4, 5:5, 6:5, 7:6, 8:6, 9:7, 10:8 },
     infusionsKnown: {},
   },
 
   'Blood Hunter': {
     cantrips: [],
-    spells: {
+    martial: {
       1: ['Crimson Rite - Rite of the Flame (fire damage)', 'Crimson Rite - Rite of the Frozen (cold damage)', 'Crimson Rite - Rite of the Storm (lightning damage)', 'Hunter\'s Bane', 'Blood Maledict - Haemorrhage'],
       2: ['Crimson Rite - Rite of the Dead (necrotic damage)', 'Blood Maledict - Sense Vitality', 'Brand of Castigation', 'Grim Psychometry'],
       3: ['Extra Attack', 'Brand of Tethering', 'Blood Maledict - Curse of the Eyeless', 'Blood Curse of Mutual Suffering'],
@@ -167,7 +182,7 @@ export const CLASS_ABILITIES = {
       5: ['Crimson Rite - Rite of the Roar (thunder damage)', 'Blood Curse of Corrosion - wrack a creature with poison from within', 'Blood Curse of the Exorcist - tear charms and possession out of an ally', 'Sanguine Mastery - your rites sharpen, costing you less and cutting deeper'],
     },
     cantripsKnown: {},
-    spellsKnown: { 1:3, 2:4, 3:5, 4:6, 5:7, 6:8, 7:9, 8:10, 9:11, 10:12 },
+    martialKnown: { 1:3, 2:4, 3:5, 4:6, 5:7, 6:8, 7:9, 8:10, 9:11, 10:12 },
     infusionsKnown: {},
   },
 
@@ -175,7 +190,7 @@ export const CLASS_ABILITIES = {
     cantrips: [],
     // Illrigger uses Invoke Hell (subclass abilities) and Interdict Boons, not traditional spells.
     // Spells list below represents Invoke Hell options and key class features available at level.
-    spells: {
+    martial: {
       1: ['Baleful Interdict', 'Forked Tongue', 'Command'],
       2: ['Combat Mastery', 'Interdiction', 'Abating Seal', 'Bedevil', 'Soul Eater', 'Styx\'s Apathy', 'Swift Retribution'],
       3: ['Invoke Hell', 'Diabolic Contract'],
@@ -185,7 +200,7 @@ export const CLASS_ABILITIES = {
       7: ['Acheron\'s Chain', 'Conflagrant Channel', 'Eyes of the Gate', 'Shadow Shroud', 'Unleash Hell', 'Vengeful Shot'],
     },
     cantripsKnown: {},
-    spellsKnown: { 1:2, 2:5, 3:2, 4:1, 5:1, 6:2, 7:6, 8:0, 9:0, 10:1 },
+    martialKnown: { 1:2, 2:5, 3:2, 4:1, 5:1, 6:2, 7:6, 8:0, 9:0, 10:1 },
     infusionsKnown: {},
   },
   Sorcerer: {
@@ -215,46 +230,25 @@ export const CLASS_ABILITIES = {
 };
 
 // Get how many of each ability type a class gets at a given level (cumulative)
-// ── Martial abilities ─────────────────────────────────────────────────────────
-// A technique is not a spell. The class data uses one `spells` field for
-// everything, which puts Diamond Soul and Relentless Rage in a field called
-// spells and leaves Fighter and Rogue with nothing at all. Rather than
-// restructure the data wholesale, the split is DERIVED from these two lists —
-// cheap to maintain, and a new entry only needs adding to one of them.
-//
-// MARTIAL_CLASSES — every ability this class has is a technique.
-// MARTIAL_FEATURES — specific names that are features on a casting class: a
-// paladin's Lay on Hands is not a spell, Bless is.
-export const MARTIAL_CLASSES = new Set(['Fighter', 'Rogue', 'Monk', 'Barbarian', 'Blood Hunter', 'Illrigger']);
-
-export const MARTIAL_FEATURES = new Set([
-  'Lay on Hands', 'Divine Sense', 'Divine Smite', 'Aura of Protection', 'Aura of Courage',
-  'Improved Divine Smite', 'Cleansing Touch',
-  'Favored Enemy', 'Natural Explorer', 'Primeval Awareness', "Land's Stride", 'Vanish',
-  'Feral Senses', 'Foe Slayer',
-  'Magical Tinkering', 'Infuse Item', 'The Right Tool for the Job', 'Tool Expertise',
-  'Flash of Genius', 'Magic Item Adept', 'Spell-Storing Item', 'Magic Item Savant',
-  'Soul of Artifice', 'Magic Item Master',
-  'Extra Attack',
-]);
-
-export const isMartial = (className, name) =>
-  MARTIAL_CLASSES.has(className) || MARTIAL_FEATURES.has(name);
+// Techniques live in their own `martial` field on each class, parallel to
+// `spells` and `cantrips`. Classes whose whole kit is techniques (Fighter,
+// Rogue, Monk, Barbarian, Blood Hunter, Illrigger) have no spells at all; the
+// half-casters carry both.
 
 export const getAbilityCounts = (className, level) => {
   const cls = CLASS_ABILITIES[className];
   if (!cls) return { cantrips: 0, spells: 0, martial: 0, infusions: 0 };
   // Sum up all counts from level 1 to current level
-  let cantrips = 0, spells = 0, infusions = 0;
+  let cantrips = 0, spells = 0, martial = 0, infusions = 0;
   for (let l = 1; l <= level; l++) {
     cantrips  += cls.cantripsKnown?.[l]  || 0;
     spells    += cls.spellsKnown?.[l]    || 0;
+    martial   += cls.martialKnown?.[l]   || 0;
     infusions += cls.infusionsKnown?.[l] || 0;
   }
   // For a purely martial class the spell allowance IS the technique allowance.
   // A mixed class gets a small separate budget for its own features.
-  if (MARTIAL_CLASSES.has(className)) return { cantrips: 0, spells: 0, martial: spells, infusions };
-  return { cantrips, spells, martial: Math.ceil(level * 1.5), infusions };
+  return { cantrips, spells, martial, infusions };
 };
 
 // ── Deity domain spells ────────────────────────────────────────────────────────
@@ -422,12 +416,12 @@ export const getAvailableAbilities = (className, level, deity = null) => {
     ? Object.values(WARLOCK_PATRON_SPELLS[deity]?.spells || {}).flat()
     : [];
 
-  // A technique is not a spell: split what the class data lumps together.
-  const allNamed = [...new Set(spells)];
+  const martial = [];
+  for (let l = 1; l <= level; l++) if (cls.martial?.[l]) martial.push(...cls.martial[l]);
   return {
     cantrips:  [...new Set([...(cls.cantrips || []), ...domainCantrips])],
-    spells:    allNamed.filter(nm => !isMartial(className, nm)),
-    martial:   allNamed.filter(nm => isMartial(className, nm)),
+    spells:    [...new Set(spells)],
+    martial:   [...new Set(martial)],
     infusions: infusions,
     domainCantrips,
     domainSpells,
