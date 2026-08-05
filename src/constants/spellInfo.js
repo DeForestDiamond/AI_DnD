@@ -523,4 +523,9 @@ export const SPELL_INFO = {
   'Unarmored Movement - run across water and up walls': { role:'utility', desc:'Extra speed unarmoured, and at higher levels you run up walls and across water.' },
   'Perfect Self - regain ki when you roll initiative with none left': { role:'utility', desc:'Roll initiative with no ki remaining and you regain four points.' },
   "Infernal Ascendancy - your patron's power becomes your own, permanent and unbound": { role:'damage', desc:'The borrowed power stops being borrowed. Your interdicts, chains and hellfire no longer answer to anyone.' },
+
+  // ── Barbarian and Blood Hunter: added in the ten-tier respread ─────────────
+  'Brutal Critical (2) - two extra damage dice on critical hits': { role:'damage', desc:'Roll two extra weapon damage dice on every critical hit.' },
+  'Primal Champion - your Strength and Constitution rise beyond mortal limits': { role:'damage', desc:'Strength and Constitution each increase by 4, and their ceiling rises with them.' },
+  'Hardened Soul - advantage on saves against being charmed or frightened': { role:'defense', desc:'Advantage on saving throws against being charmed or frightened.' },
 };
