@@ -169,6 +169,7 @@ const buildCharBlock = (char) => {
     : '';
   const abilities   = char.abilities || { cantrips:[], spells:[], infusions:[] };
   const abilitiesLine = [
+    abilities.martial?.length   ? `Techniques: ${abilities.martial.join(', ')}` : '',
     abilities.cantrips?.length  ? `Cantrips: ${abilities.cantrips.join(', ')}` : '',
     abilities.spells?.length    ? `Spells: ${abilities.spells.join(', ')}` : '',
     abilities.infusions?.length ? `Infusions: ${abilities.infusions.join(', ')}` : '',
@@ -601,6 +602,7 @@ export const buildSystemPrompt = (char) => {
   // Abilities — spells, cantrips, infusions
   const abilities = char.abilities || { cantrips:[], spells:[], infusions:[] };
   const abilitiesSection = [
+    abilities.martial?.length   ? `Techniques: ${abilities.martial.join(', ')}` : '',
     abilities.cantrips?.length  ? `Cantrips: ${abilities.cantrips.join(', ')}` : '',
     abilities.spells?.length    ? `Spells: ${abilities.spells.join(', ')}` : '',
     abilities.infusions?.length ? `Infusions: ${abilities.infusions.join(', ')}` : '',

@@ -17,6 +17,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
   const [selected, setSelected] = useState({
     cantrips:  [...(existing.cantrips  || [])],
     spells:    [...(existing.spells    || [])],
+    martial:   [...(existing.martial   || [])],
     infusions: [...(existing.infusions || [])],
   });
   const [showRaceTraits, setShowRaceTraits] = useState(false);
@@ -24,20 +25,22 @@ export function AbilitiesModal({ character, onSave, onClose }) {
   const [showSubclass, setShowSubclass] = useState(false);
 
   // Calculate totals across all classes
-  const totals = { cantrips:0, spells:0, infusions:0 };
-  const available = { cantrips:new Set(), spells:new Set(), infusions:new Set() };
+  const totals = { cantrips:0, spells:0, martial:0, infusions:0 };
+  const available = { cantrips:new Set(), spells:new Set(), martial:new Set(), infusions:new Set() };
   const domainSet = { cantrips: new Set(), spells: new Set() };
 
   Object.entries(classLevels).forEach(([cls, lvl]) => {
     const counts = getAbilityCounts(cls, lvl);
     totals.cantrips  += counts.cantrips;
     totals.spells    += counts.spells;
+    totals.martial   += counts.martial || 0;
     totals.infusions += counts.infusions;
     // Pass deity name for Cleric and Warlock (patron system)
     const deity = (cls === 'Cleric' || cls === 'Warlock') ? deityName : null;
     const avail = getAvailableAbilities(cls, lvl, deity);
     avail.cantrips.forEach(s  => available.cantrips.add(s));
     avail.spells.forEach(s    => available.spells.add(s));
+    (avail.martial||[]).forEach(s => available.martial.add(s));
     avail.infusions.forEach(s => available.infusions.add(s));
     // Track which are domain-sourced for visual tagging
     (avail.domainCantrips || []).forEach(s => domainSet.cantrips.add(s));
@@ -56,6 +59,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
   };
 
   const sections = [
+    { key:'martial',   label:'⚔️ Techniques', list:[...available.martial].sort()   },
     { key:'cantrips',  label:'✨ Cantrips',   list:[...available.cantrips].sort()  },
     { key:'spells',    label:'📖 Spells',     list:[...available.spells].sort()    },
     { key:'infusions', label:'⚙️ Infusions',  list:[...available.infusions].sort() },

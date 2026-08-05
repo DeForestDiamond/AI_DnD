@@ -215,9 +215,35 @@ export const CLASS_ABILITIES = {
 };
 
 // Get how many of each ability type a class gets at a given level (cumulative)
+// ── Martial abilities ─────────────────────────────────────────────────────────
+// A technique is not a spell. The class data uses one `spells` field for
+// everything, which puts Diamond Soul and Relentless Rage in a field called
+// spells and leaves Fighter and Rogue with nothing at all. Rather than
+// restructure the data wholesale, the split is DERIVED from these two lists —
+// cheap to maintain, and a new entry only needs adding to one of them.
+//
+// MARTIAL_CLASSES — every ability this class has is a technique.
+// MARTIAL_FEATURES — specific names that are features on a casting class: a
+// paladin's Lay on Hands is not a spell, Bless is.
+export const MARTIAL_CLASSES = new Set(['Fighter', 'Rogue', 'Monk', 'Barbarian', 'Blood Hunter', 'Illrigger']);
+
+export const MARTIAL_FEATURES = new Set([
+  'Lay on Hands', 'Divine Sense', 'Divine Smite', 'Aura of Protection', 'Aura of Courage',
+  'Improved Divine Smite', 'Cleansing Touch',
+  'Favored Enemy', 'Natural Explorer', 'Primeval Awareness', "Land's Stride", 'Vanish',
+  'Feral Senses', 'Foe Slayer',
+  'Magical Tinkering', 'Infuse Item', 'The Right Tool for the Job', 'Tool Expertise',
+  'Flash of Genius', 'Magic Item Adept', 'Spell-Storing Item', 'Magic Item Savant',
+  'Soul of Artifice', 'Magic Item Master',
+  'Extra Attack',
+]);
+
+export const isMartial = (className, name) =>
+  MARTIAL_CLASSES.has(className) || MARTIAL_FEATURES.has(name);
+
 export const getAbilityCounts = (className, level) => {
   const cls = CLASS_ABILITIES[className];
-  if (!cls) return { cantrips: 0, spells: 0, infusions: 0 };
+  if (!cls) return { cantrips: 0, spells: 0, martial: 0, infusions: 0 };
   // Sum up all counts from level 1 to current level
   let cantrips = 0, spells = 0, infusions = 0;
   for (let l = 1; l <= level; l++) {
@@ -225,7 +251,10 @@ export const getAbilityCounts = (className, level) => {
     spells    += cls.spellsKnown?.[l]    || 0;
     infusions += cls.infusionsKnown?.[l] || 0;
   }
-  return { cantrips, spells, infusions };
+  // For a purely martial class the spell allowance IS the technique allowance.
+  // A mixed class gets a small separate budget for its own features.
+  if (MARTIAL_CLASSES.has(className)) return { cantrips: 0, spells: 0, martial: spells, infusions };
+  return { cantrips, spells, martial: Math.ceil(level * 1.5), infusions };
 };
 
 // ── Deity domain spells ────────────────────────────────────────────────────────
@@ -353,7 +382,7 @@ export const WARLOCK_PATRON_SPELLS = {
 };
 export const getAvailableAbilities = (className, level, deity = null) => {
   const cls = CLASS_ABILITIES[className];
-  if (!cls) return { cantrips: [], spells: [], infusions: [] };
+  if (!cls) return { cantrips: [], spells: [], martial: [], infusions: [] };
   // Show all spells unlocked at or below current level
   const spells = [];
   for (let l = 1; l <= level; l++) {
@@ -393,9 +422,12 @@ export const getAvailableAbilities = (className, level, deity = null) => {
     ? Object.values(WARLOCK_PATRON_SPELLS[deity]?.spells || {}).flat()
     : [];
 
+  // A technique is not a spell: split what the class data lumps together.
+  const allNamed = [...new Set(spells)];
   return {
     cantrips:  [...new Set([...(cls.cantrips || []), ...domainCantrips])],
-    spells:    [...new Set(spells)],
+    spells:    allNamed.filter(nm => !isMartial(className, nm)),
+    martial:   allNamed.filter(nm => isMartial(className, nm)),
     infusions: infusions,
     domainCantrips,
     domainSpells,

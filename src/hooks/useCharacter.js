@@ -385,6 +385,11 @@ export const migrateCharacter = (char) => {
     });
     if (fixed) notes.push(`Bag contents: ${fixed} quantity-in-name entries expanded`);
   }
+  if (v < 17) {
+    // Techniques split out of the spells bucket. Only the field is added —
+    // existing selections are left where they are and can be cleared by hand.
+    if (c.abilities && !Array.isArray(c.abilities.martial)) c.abilities.martial = [];
+  }
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
