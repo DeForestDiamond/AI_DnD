@@ -516,4 +516,11 @@ export const SPELL_INFO = {
   'Slippery Mind - proficiency in Wisdom saving throws': { role:'defense', desc:'Proficiency in Wisdom saving throws.' },
   'Elusive - no attack against you ever has advantage while you are conscious': { role:'defense', desc:'No attack roll against you has advantage while you are conscious.' },
   'Stroke of Luck - turn a miss into a hit, or a failed check into a 20, once per rest': { role:'utility', desc:'Turn one miss into a hit, or one failed ability check into a 20. Once per rest.' },
+
+  // ── Monk and Illrigger: entries added in the ten-tier respread ─────────────
+  'Martial Arts - unarmed strikes use Dexterity and scale with level': { role:'damage', desc:'Unarmed strikes and monk weapons use Dexterity, deal a scaling die, and grant a bonus-action strike.' },
+  'Unarmored Defense':               { role:'defense', desc:'With no armour or shield, your AC is 10 plus Dexterity plus Wisdom.' },
+  'Unarmored Movement - run across water and up walls': { role:'utility', desc:'Extra speed unarmoured, and at higher levels you run up walls and across water.' },
+  'Perfect Self - regain ki when you roll initiative with none left': { role:'utility', desc:'Roll initiative with no ki remaining and you regain four points.' },
+  "Infernal Ascendancy - your patron's power becomes your own, permanent and unbound": { role:'damage', desc:'The borrowed power stops being borrowed. Your interdicts, chains and hellfire no longer answer to anyone.' },
 };
