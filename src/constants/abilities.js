@@ -85,20 +85,36 @@ export const CLASS_ABILITIES = {
   Rogue: {
     // Rogues don't have spells by default but Arcane Trickster subclass does
     cantrips: [],
-    martial: {},
-    infusions: {},
-    cantripsKnown: {},
-    martialKnown: {},
-    infusionsKnown: {},
+    martial: {
+      1: ['Expertise - double proficiency on two skills', 'Sneak Attack', "Thieves' Cant", 'Cunning Action - Dash, Disengage or Hide as a bonus action'],
+      2: ['Steady Aim - advantage on an attack if you do not move', 'Fast Hands - use objects and tools as a bonus action'],
+      3: ['Uncanny Dodge - halve the damage of one attack you can see', 'Expertise (2) - two more skills'],
+      4: ['Evasion - take no damage on a successful Dexterity save'],
+      5: ['Second-Story Work - climb at full speed and jump further'],
+      6: ['Reliable Talent - never roll below 10 on a skill you are proficient in'],
+      7: ['Blindsense - sense hidden and invisible creatures within 10 feet'],
+      8: ['Slippery Mind - proficiency in Wisdom saving throws'],
+      9: ['Elusive - no attack against you ever has advantage while you are conscious'],
+      10: ['Stroke of Luck - turn a miss into a hit, or a failed check into a 20, once per rest'],
+    },
+    martialKnown: { 1: 3, 2: 2, 3: 2, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1 },
   },
 
   Fighter: {
     cantrips: [],
-    martial: {},
-    infusions: {},
-    cantripsKnown: {},
-    martialKnown: {},
-    infusionsKnown: {},
+    martial: {
+      1: ['Fighting Style - Archery', 'Fighting Style - Defense', 'Fighting Style - Dueling', 'Fighting Style - Great Weapon Fighting', 'Fighting Style - Protection', 'Fighting Style - Two-Weapon Fighting', 'Second Wind', 'Action Surge'],
+      2: ['Martial Adept - learn combat maneuvers', 'Improved Critical'],
+      3: ['Extra Attack', 'Remarkable Athlete'],
+      4: ['Indomitable - reroll a failed saving throw'],
+      5: ['Additional Fighting Style', 'Superior Critical'],
+      6: ['Extra Attack (2) - three attacks per action'],
+      7: ['Indomitable (2) - two rerolls per rest', 'Relentless - regain a maneuver on initiative'],
+      8: ['Action Surge (2) - two extra actions per rest'],
+      9: ['Survivor - regain hit points each turn while wounded'],
+      10: ['Extra Attack (3) - four attacks per action'],
+    },
+    martialKnown: { 1: 3, 2: 2, 3: 2, 4: 1, 5: 2, 6: 1, 7: 2, 8: 1, 9: 1, 10: 1 },
   },
 
   Monk: {
