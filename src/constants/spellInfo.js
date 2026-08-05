@@ -618,7 +618,7 @@ export const SPELL_INFO = {
   'Control Weather':         { role:'utility', desc:'Change the weather for five miles around — storm, fog, clear sky, heat or freezing cold.' },
   'True Resurrection':       { role:'healing', desc:'Return anyone dead up to two centuries, even without a body, restored completely.' },
   'Mass Heal':               { role:'healing', desc:'Seven hundred hit points divided as you choose among creatures you can see, curing disease and blindness with it.' },
-  'Divine Intervention':     { role:'utility', desc:'Call on your deity directly. At the height of your power the answer always comes.' },
+  'Divine Intervention':     { role:'utility', desc:'Ask your deity for aid and it is granted — through circumstance, not in person. The god does not appear; the bridge holds, the plague lifts, the blade shatters. At the height of your power the answer always comes.' },
 
   // ── Druid tiers 6-10 (curated) ────────────────────────────────────────────
   "Heroes' Feast":           { role:'healing', desc:'A feast that heals, doubles hit point maximums for a day, and grants immunity to poison and fear.' },
