@@ -600,4 +600,32 @@ export const SPELL_INFO = {
   'Incendiary Cloud':        { role:'damage',  desc:'A cloud of burning ash that damages everything inside and drifts ten feet each turn.' },
   'Sorcerous Restoration':   { role:'utility', desc:'Regain spent sorcery points on a short rest.' },
   'Arcane Apotheosis':       { role:'utility', desc:'While a metamagic spell is active, apply another metamagic on every turn for free — the magic stops being something you cast and becomes something you are.' },
+
+  // ── Cleric tiers 6-10 (curated) ───────────────────────────────────────────
+  'Heal':                    { role:'healing', desc:'Seventy hit points at once, and it ends blindness, deafness and any disease.' },
+  'Harm':                    { role:'damage',  desc:'Fourteen dice of necrotic damage, and the target\'s hit point maximum drops until it rests.' },
+  'Blade Barrier':           { role:'control',  desc:'A wall of whirling blades — cover, a barrier, and heavy damage to anything crossing it.' },
+  'Word of Recall':          { role:'utility', desc:'You and five others vanish instantly to a sanctuary you consecrated beforehand.' },
+  'Forbiddance':             { role:'defense', desc:'Ward a building against teleport and planar travel for a day, and burn the creature types you name.' },
+  'Planar Ally':             { role:'utility', desc:'Call on your deity to send a servant. It arrives willing to bargain, not to obey — payment is expected.' },
+  'Resurrection':            { role:'healing', desc:'Return someone dead up to a century to life, whole and unweakened.' },
+  'Divine Word':             { role:'damage',  desc:'A word of creation: the weak are deafened, blinded, stunned or simply killed, and extraplanar creatures are banished home.' },
+  'Fire Storm':              { role:'damage',  desc:'Roaring flame across ten shaped cubes — you choose where it falls, so allies can be spared.' },
+  'Conjure Celestial':       { role:'healing', desc:'Summon a celestial to fight and heal beside you for an hour.' },
+  'Regenerate':              { role:'healing', desc:'Heal a great deal at once, keep healing each minute for an hour, and regrow severed limbs.' },
+  'Etherealness':            { role:'utility', desc:'Step into the Ethereal Plane — walk through walls, unseen and untouchable, and step back where you like.' },
+  'Holy Aura':               { role:'defense', desc:'Allies gain advantage on all saves, attackers have disadvantage against them, and fiends and undead are blinded when they strike.' },
+  'Control Weather':         { role:'utility', desc:'Change the weather for five miles around — storm, fog, clear sky, heat or freezing cold.' },
+  'True Resurrection':       { role:'healing', desc:'Return anyone dead up to two centuries, even without a body, restored completely.' },
+  'Mass Heal':               { role:'healing', desc:'Seven hundred hit points divided as you choose among creatures you can see, curing disease and blindness with it.' },
+  'Divine Intervention':     { role:'utility', desc:'Call on your deity directly. At the height of your power the answer always comes.' },
+
+  // ── Druid tiers 6-10 (curated) ────────────────────────────────────────────
+  "Heroes' Feast":           { role:'healing', desc:'A feast that heals, doubles hit point maximums for a day, and grants immunity to poison and fear.' },
+  'Wall of Thorns':          { role:'control',  desc:'A wall of barbed vines: heavy damage to anything entering, and brutal to push through.' },
+  'Transport via Plants':    { role:'utility', desc:'Two large plants become a doorway between them, anywhere on the same plane.' },
+  'Find the Path':           { role:'utility', desc:'Know the shortest, most direct route to a place you have been, for a day.' },
+  'Animal Shapes':           { role:'utility', desc:'Turn your whole party into beasts at once, for a day.' },
+  'Storm of Vengeance':      { role:'damage',  desc:'A storm three hundred feet across that escalates each turn — thunder, acid rain, lightning, hail, then freezing wind.' },
+  'Archdruid':               { role:'utility', desc:'Wild Shape without limit, and you stop ageing entirely. The druid becomes part of the natural order rather than a practitioner of it.' },
 };
