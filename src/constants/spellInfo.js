@@ -592,4 +592,12 @@ export const SPELL_INFO = {
   'Mystic Arcanum - True Polymorph':    { role:'control', desc:'Remake a creature or object permanently. Once per rest, no slot spent.' },
   'Eldritch Master':         { role:'utility', desc:'Plead with your patron for a minute and regain every expended spell slot. Once per long rest.' },
   'Circle of Death':         { role:'damage',  desc:'A sphere of negative energy a hundred and fifty feet across. Constitution save for half.' },
+
+  // ── Sorcerer tiers 6-10 (curated) ─────────────────────────────────────────
+  'Sunbeam':                 { role:'damage',  desc:'A line of burning light you can fire again each turn for a minute, blinding what it hits.' },
+  'Delayed Blast Fireball':  { role:'damage',  desc:'A bead of fire that grows more destructive every turn you hold it before it goes off.' },
+  'Earthquake':              { role:'damage',  desc:'The ground ruptures across a hundred feet — fissures open, structures collapse, everyone falls.' },
+  'Incendiary Cloud':        { role:'damage',  desc:'A cloud of burning ash that damages everything inside and drifts ten feet each turn.' },
+  'Sorcerous Restoration':   { role:'utility', desc:'Regain spent sorcery points on a short rest.' },
+  'Arcane Apotheosis':       { role:'utility', desc:'While a metamagic spell is active, apply another metamagic on every turn for free — the magic stops being something you cast and becomes something you are.' },
 };
