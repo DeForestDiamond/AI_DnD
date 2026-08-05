@@ -528,4 +528,15 @@ export const SPELL_INFO = {
   'Brutal Critical (2) - two extra damage dice on critical hits': { role:'damage', desc:'Roll two extra weapon damage dice on every critical hit.' },
   'Primal Champion - your Strength and Constitution rise beyond mortal limits': { role:'damage', desc:'Strength and Constitution each increase by 4, and their ceiling rises with them.' },
   'Hardened Soul - advantage on saves against being charmed or frightened': { role:'defense', desc:'Advantage on saving throws against being charmed or frightened.' },
+
+  // ── Paladin and Ranger: added in the ten-tier extension ───────────────────
+  'Divine Health - immune to disease':   { role:'defense', desc:'You cannot be diseased.' },
+  'Channel Divinity - call on your oath once per rest': { role:'utility', desc:'Invoke your oath directly — the effect depends which oath you swore. Once per rest.' },
+  'Aura Expansion - your auras reach thirty feet': { role:'defense', desc:'Your protective auras extend to thirty feet instead of ten.' },
+  'Undying Sentinel - drop to 1 HP instead of 0, once per rest': { role:'defense', desc:'When you would drop to 0 hit points, drop to 1 instead. Once per rest.' },
+  'Avatar of the Oath - your oath takes physical form and fights beside you': { role:'damage', desc:'Your oath manifests — a radiant or terrible shape that fights at your side and unnerves whatever opposes it.' },
+  'Favored Enemy (2) - a second kind of quarry': { role:'utility', desc:'A second kind of creature you track, know and hunt with advantage.' },
+  'Favored Enemy (3) - a third kind of quarry': { role:'utility', desc:'A third kind of creature you track, know and hunt with advantage.' },
+  'Natural Explorer (2) - a second favoured terrain': { role:'utility', desc:'A second terrain where you move unhindered, never get lost, and stay alert while travelling.' },
+  'Hide in Plain Sight - camouflage yourself against any natural surface': { role:'utility', desc:'Spend a minute camouflaging against a natural surface for a large bonus to hiding, until you move.' },
 };
