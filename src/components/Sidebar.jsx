@@ -400,7 +400,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
     try {
       // Send the full definition, not just the label — when upgrading, the model
       // needs to SEE the existing stats to preserve and exceed them.
-      const mats = Object.entries(selected).map(([nm, count]) => ({ name: nm, count, data: stockData(nm) || null }));
+      const mats = Object.entries(liveSelected).map(([nm, count]) => ({ name: nm, count, data: stockData(nm) || null }));
       const opts = await onProposeCrafting({ materials: mats, intent, asSet: mode === 'set', asConstruct: mode === 'construct', qty });
       setOptions(opts); setStatus('');
     } catch (e) { setStatus('✗ ' + e.message); }
@@ -415,20 +415,16 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
     } catch (e) { setStatus('✗ ' + e.message); }
   };
 
-  // The panel store outlives the component so a proposal survives a tab switch —
-  // but it also outlives a SAVE RELOAD, so a selection can reference items the
-  // character no longer has. Those were still being sent as available materials,
-  // which is how the forge came to ask for things that no longer existed.
-  // Reconcile against what is actually held, every render.
+  // Selections can outlive the character they were made against — the store
+  // survives a save reload. Filter them for USE rather than writing state during
+  // render: a render-phase setState here re-renders immediately, and if the
+  // condition does not clear it locks the main thread completely.
   const heldNames = new Set(allNames);
-  const staleSel = Object.keys(selected).filter(nm => !heldNames.has(nm));
-  if (staleSel.length) {
-    const cleaned = { ...selected };
-    staleSel.forEach(nm => delete cleaned[nm]);
-    setSelected(cleaned);
-  }
+  const liveSelected = Object.fromEntries(
+    Object.entries(selected).filter(([nm]) => heldNames.has(nm))
+  );
 
-  const selCount = Object.keys(selected).length;
+  const selCount = Object.keys(liveSelected).length;
   return (
     <CollapsibleSection title="🔨 CRAFTING" count={selCount || undefined} defaultOpen={true}>
       <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
@@ -460,7 +456,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
             const rows = groups[cat];
             if (!rows?.length) return null;
             const closed = !q && catClosed[cat];
-            const picked = rows.filter(r => selected[r[0]] !== undefined).length;
+            const picked = rows.filter(r => liveSelected[r[0]] !== undefined).length;
             return (
               <div key={cat}>
                 <div onClick={() => setCatClosed(prev => ({ ...prev, [cat]: !prev[cat] }))}
@@ -667,7 +663,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     setDraft(prev => { const next = { ...prev }; delete next[nm]; return next; });
   };
 
-  const submitted = () => Object.entries(selected).map(([name, count]) => ({ name, count }));
+  const submitted = () => Object.entries(liveSelected).map(([name, count]) => ({ name, count }));
 
   const propose = async () => {
     setBusy(true); setStatus('Taking it apart…'); setResult(null);
@@ -687,16 +683,16 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     } catch (e) { setStatus('✗ ' + e.message); }
   };
 
-  // Same reconciliation as the crafting panel — see the note there.
+  // Selections can outlive the character they were made against — the store
+  // survives a save reload. Filter them for USE rather than writing state during
+  // render: a render-phase setState here re-renders immediately, and if the
+  // condition does not clear it locks the main thread completely.
   const heldNames = new Set(allNames);
-  const staleSel = Object.keys(selected).filter(nm => !heldNames.has(nm));
-  if (staleSel.length) {
-    const cleaned = { ...selected };
-    staleSel.forEach(nm => delete cleaned[nm]);
-    setSelected(cleaned);
-  }
+  const liveSelected = Object.fromEntries(
+    Object.entries(selected).filter(([nm]) => heldNames.has(nm))
+  );
 
-  const selCount = Object.keys(selected).length;
+  const selCount = Object.keys(liveSelected).length;
   return (
     <CollapsibleSection title="🔧 SALVAGE" count={selCount || undefined} defaultOpen={false}>
       <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
@@ -728,7 +724,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
             const rows = groups[cat];
             if (!rows?.length) return null;
             const closed = !q && catClosed[cat];
-            const picked = rows.filter(r => selected[r[0]] !== undefined).length;
+            const picked = rows.filter(r => liveSelected[r[0]] !== undefined).length;
             return (
               <div key={cat}>
                 <div onClick={() => setCatClosed(prev => ({ ...prev, [cat]: !prev[cat] }))}
