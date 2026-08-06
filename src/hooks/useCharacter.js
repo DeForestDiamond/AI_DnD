@@ -552,9 +552,18 @@ export function useCharacter(log) {
       const qtyMatch = raw.match(/\|\s*qty:\s*(\d+)/i);
       const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
       const removeName = raw.replace(/\|\s*qty:\s*\d+/i, '').trim().toLowerCase();
-      for (let i = 0; i < qty; i++) {
-        const idx = c.inventory.findIndex(n => n.toLowerCase() === removeName);
-        if (idx !== -1) c.inventory = [...c.inventory.slice(0,idx), ...c.inventory.slice(idx+1)];
+      // Single pass. The old version ran findIndex AND rebuilt the whole array
+      // once per item removed — O(qty x inventory) array COPIES, which on a
+      // stack of several thousand is tens of seconds of allocation on a phone
+      // and looks exactly like a hang.
+      if (qty > 0) {
+        let left = qty;
+        const kept = [];
+        for (const n of c.inventory) {
+          if (left > 0 && n.toLowerCase() === removeName) { left--; continue; }
+          kept.push(n);
+        }
+        if (kept.length !== c.inventory.length) c.inventory = kept;
       }
       const slotEntry = Object.entries(c.slots).find(([,v]) => v?.toLowerCase() === removeName);
       if (slotEntry) c.slots = { ...c.slots, [slotEntry[0]]: null };
