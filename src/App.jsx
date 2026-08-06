@@ -273,11 +273,16 @@ export default function App() {
     if (phase !== 'playing' || !character?.stats?.dex) return;
     const t = setTimeout(() => {
       try {
+        const t0 = performance.now();
         save.autoSave(charRef.current, fullLogRef.current);
+        const ms = performance.now() - t0;
+        // Serialising a long campaign to localStorage runs on the main thread.
+        // If it is costing real time, say so rather than silently stuttering.
+        if (ms > 150) log(`[SAVE] Autosave took ${Math.round(ms)}ms — ${fullLogRef.current.length} messages`);
       } catch (e) {
         log(`[SAVE] Autosave failed: ${e.message}`);
       }
-    }, 800);
+    }, 2500);
     return () => clearTimeout(t);
   }, [character, phase]);
 
@@ -296,7 +301,9 @@ export default function App() {
     setFullLog(prev => {
       const next = [...prev, msg];
       fullLogRef.current = next;
-      save.autoSave(charRef.current, next);
+      // The debounced character effect already autosaves; writing again here
+      // doubled a 300KB serialise on every turn of a long campaign.
+      // save.autoSave(charRef.current, next);
       return next;
     });
   };
