@@ -541,9 +541,15 @@ export function useCharacter(log) {
       }
       const isCustom = !ITEM_DB[name] && (data.type !== 'misc' || (data.label && data.label.trim()));
       if (isCustom) c.customItems[name] = data;
-      for (let i = 0; i < totalQty; i++) {
-        c.inventory = [...c.inventory, name];
-      }
+      // One concat, not one per item. The old version rebuilt the whole array
+      // on every iteration, so adding N items cost N*(N+1)/2 element copies —
+      // a crafted stack of a few hundred thousand never finished at all.
+      // Capped as well: no legitimate tag grants six figures of anything, and a
+      // runaway qty should be visible rather than fatal.
+      const MAX_GRANT = 10000;
+      const grant = Math.min(totalQty, MAX_GRANT);
+      if (grant < totalQty) log?.(`[ITEM] "${name}" asked for ${totalQty} — capped at ${MAX_GRANT}.`);
+      if (grant > 0) c.inventory = c.inventory.concat(new Array(grant).fill(name));
     });
 
     // Items removed -- case-insensitive, supports qty tag: [REMOVE: Blast Powder | qty:2]
