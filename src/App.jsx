@@ -67,6 +67,11 @@ export default function App() {
   // answered from evidence instead of reconstruction. Blocks are deduplicated by
   // content hash: the static block is usually identical turn to turn, and storing
   // 20 copies of ~48KB would dwarf the rest of the save.
+  // OFF by default. It stores the full static block, gear, items and the whole
+  // cached history every turn, hashes each, then prunes — all on the main
+  // thread while a request is in flight, and it accumulates across a session.
+  // Diagnostics are not worth a stutter mid-play; turn it on when investigating.
+  const PROMPT_LOG_ENABLED = false;
   const PROMPT_LOG_KEEP = 15;
   const promptLogRef = useRef({ blocks: {}, turns: [] });
 
@@ -77,6 +82,7 @@ export default function App() {
   };
 
   const recordPrompt = (rec) => {
+    if (!PROMPT_LOG_ENABLED) return;
     const store = promptLogRef.current;
     const blocks = { ...store.blocks };
     const keep = (text) => {
