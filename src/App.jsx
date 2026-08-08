@@ -1218,14 +1218,22 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
 
     const apply = (next) => {
       if (stashTakes.length) {
-        const stash = [...(next.stash || [])];
-        for (const t of stashTakes) {
-          for (let i = 0; i < t.count; i++) {
-            const idx = stash.findIndex(n => n.toLowerCase() === t.name.toLowerCase());
-            if (idx !== -1) stash.splice(idx, 1);
-          }
+        // Single pass over the stash. This previously ran findIndex AND splice
+        // once per item consumed, which on a craft eating thousands of ingots is
+        // the same quadratic freeze the inventory removal had.
+        const want = new Map();
+        stashTakes.forEach(t => {
+          const k = t.name.toLowerCase();
+          want.set(k, (want.get(k) || 0) + t.count);
+        });
+        const kept = [];
+        for (const nm of (next.stash || [])) {
+          const k = nm.toLowerCase();
+          const left = want.get(k) || 0;
+          if (left > 0) { want.set(k, left - 1); continue; }
+          kept.push(nm);
         }
-        next = { ...next, stash };
+        next = { ...next, stash: kept };
       }
       for (const t of bagTakes) {
         const store = { ...(next[t.store] || {}) };

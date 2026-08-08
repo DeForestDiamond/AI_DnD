@@ -546,9 +546,14 @@ export function useCharacter(log) {
       // a crafted stack of a few hundred thousand never finished at all.
       // Capped as well: no legitimate tag grants six figures of anything, and a
       // runaway qty should be visible rather than fatal.
-      const MAX_GRANT = 10000;
+      // Generous: the cap exists only to catch a runaway number, not to ration
+      // legitimate output. Adding is linear now, and inventory compresses to
+      // {name: count} on disk, so a large stack costs almost nothing.
+      const MAX_GRANT = 500000;
       const grant = Math.min(totalQty, MAX_GRANT);
-      if (grant < totalQty) log?.(`[ITEM] "${name}" asked for ${totalQty} — capped at ${MAX_GRANT}.`);
+      if (grant < totalQty) {
+        log?.(`[ITEM] WARNING: "${name}" asked for ${totalQty.toLocaleString()} — capped at ${MAX_GRANT.toLocaleString()}. ${(totalQty-grant).toLocaleString()} were NOT added.`);
+      }
       if (grant > 0) c.inventory = c.inventory.concat(new Array(grant).fill(name));
     });
 
