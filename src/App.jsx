@@ -916,6 +916,10 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
   // what the selected materials could become and returns options WITHOUT
   // touching the save. executeCrafting() consumes the materials and creates the
   // item only after the player confirms a choice.
+  // Batch cap. Making things is linear now, so this only exists to stop a
+  // typo'd quantity from producing something absurd.
+  const MAX_CRAFT_BATCH = 1000;
+
   const proposeCrafting = async ({ materials, intent, asSet, asConstruct, qty }) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     const char = charRef.current;
@@ -959,7 +963,7 @@ FORGING A CONSTRUCT: propose 2 alternative constructs — golems, war machines, 
     // A batch is DESIGNED by the model rather than multiplied by us: the player
     // may not hold N times each material, but a pile of mixed scrap can still
     // yield N things if the crafter allocates across it sensibly.
-    const batchN = Math.max(1, Math.min(100, parseInt(qty, 10) || 1));
+    const batchN = Math.max(1, Math.min(MAX_CRAFT_BATCH, parseInt(qty, 10) || 1));
     const batchRules = batchN > 1 ? `
 
 MAKING SEVERAL — THIS OVERRIDES NOTHING ABOVE, IT ADDS TO IT. The player wants ${batchN} COPIES of whatever you propose. Still propose the usual 2-3 alternatives; each one is a design, and each design is made ${batchN} times.
@@ -1254,7 +1258,7 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     const c = charRef.current;
     // The proposal already allocated materials across the whole batch, so the
     // consumes list is the total — take it as given and just make `count` copies.
-    const batch = Math.max(1, Math.min(100, parseInt(option.count, 10) || 1));
+    const batch = Math.max(1, Math.min(MAX_CRAFT_BATCH, parseInt(option.count, 10) || 1));
     // Materials can come from inventory OR stash. Count both, verify the player
     // still holds enough (guards a stale panel), then consume inventory first
     // and take the remainder from the stash.
@@ -1292,6 +1296,12 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     if (option.isConstruct) {
       const { removeTags: rmTags, apply: applyTakes } = consumeMaterials(c, consumes);
       let next = applyTakes(applyEffects(rmTags, c));
+      // Every construct becomes a COMPANION, and companions are sent to the DM
+      // in full — name, description, abilities — inside the cached prompt block.
+      // A thousand would be ruinous, so constructs get their own much lower cap.
+      const MAX_CONSTRUCTS = 25;
+      const made_n = Math.min(batch, MAX_CONSTRUCTS);
+      if (made_n < batch) log(`[CRAFT] ${batch} constructs requested — capped at ${MAX_CONSTRUCTS}, since each becomes a companion sent to the DM every turn.`);
       const roman = ['', ' II', ' III', ' IV', ' V', ' VI', ' VII', ' VIII', ' IX', ' X'];
       const entry = {
         race: option.race || 'construct',
@@ -1306,7 +1316,7 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
       // Companions are keyed by name, so a batch needs distinct keys.
       const companions = { ...(next.companions || {}) };
       const made = [];
-      for (let i = 0; i < batch; i++) {
+      for (let i = 0; i < made_n; i++) {
         let nm = `${option.name}${roman[i] !== undefined ? roman[i] : ` ${i + 1}`}`;
         while (companions[nm]) nm = `${nm}'`;
         companions[nm] = { ...entry };
