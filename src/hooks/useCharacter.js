@@ -769,11 +769,14 @@ export function useCharacter(log) {
         stash = [...stash, itemName];
       }
       // Move customItem definition to stashedCustomItems if present
+      // The definition is COPIED, not moved. An item can exist in both places at
+      // once, and each list resolves definitions from its own store — so moving
+      // the only copy of the definition left the other side with a bare name.
       const customItems = { ...c.customItems };
       const stashedCustomItems = { ...(c.stashedCustomItems || {}) };
       if (customItems[itemName]) {
         stashedCustomItems[itemName] = customItems[itemName];
-        delete customItems[itemName];
+        if (!inventory.includes(itemName)) delete customItems[itemName];
       }
       const nc = { ...c, inventory, stash, customItems, stashedCustomItems };
       charRef.current = nc;
@@ -798,9 +801,11 @@ export function useCharacter(log) {
       // Restore customItem definition from stashedCustomItems if present
       const customItems = { ...c.customItems };
       const stashedCustomItems = { ...(c.stashedCustomItems || {}) };
+      // Copied, not moved — see moveToStash. Only release it from the stash
+      // store once no stashed copy remains.
       if (stashedCustomItems[itemName]) {
         customItems[itemName] = stashedCustomItems[itemName];
-        delete stashedCustomItems[itemName];
+        if (!stash.includes(itemName)) delete stashedCustomItems[itemName];
       }
       const nc = { ...c, inventory, stash, customItems, stashedCustomItems };
       charRef.current = nc;

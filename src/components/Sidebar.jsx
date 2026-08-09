@@ -1730,7 +1730,9 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         return (
           <CollapsibleSection key={cat} title={meta.label} count={items.length} defaultOpen={false}>
             {items.map(({ name, count }) => {
-              const data = db[name];
+              // Resolve from both stores: an item held in inventory AND stash may
+              // have its definition in either one.
+              const data = db[name] || (character.stashedCustomItems || {})[name];
               const isBag = data?.type === 'bag';
               const statLabel = data?.type==='weapon'?`(${data.damage}${data.bonus?`+${data.bonus}`:''})`
                 : data?.type==='armor'?`(AC${data.ac})`
