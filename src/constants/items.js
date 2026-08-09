@@ -47,7 +47,9 @@ export const FOCUS_DB = {
 export const ITEM_DB = { ...WEAPON_DB, ...ARMOR_DB, ...MAGIC_ITEM_DB, ...FOCUS_DB };
 
 export const SLOTS = [
-  { id:'mainhand',  label:'Main Hand', emoji:'⚔️',  accepts:['weapon']                  },
+  // Wands, staves, orbs and instruments are held in the main hand too, so it
+  // accepts magic and focus items the same way the offhand already does.
+  { id:'mainhand',  label:'Main Hand', emoji:'⚔️',  accepts:['weapon','focus','magic']  },
   { id:'offhand',   label:'Off Hand',  emoji:'🛡️',  accepts:['weapon','shield','focus','magic']  },
   { id:'armor',     label:'Armor',     emoji:'🥋',  accepts:['armor']                    },
   { id:'face',      label:'Face',      emoji:'👓',  accepts:['magic']                    },
