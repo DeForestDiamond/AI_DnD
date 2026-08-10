@@ -8,6 +8,10 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 // Three tiers, gated by level. An arc villain is built up over many sessions and
 // fought on the player's terms, so tiers run ahead of the random-encounter CR cap.
 const LOW_ANTAGONISTS = [ // levels 1+: local, mundane, street-level
+  // — the planes leaking in: small, local, deniable —
+  'a hag whose bargains are coming due', 'a redcap gang loose in the hedgerows',
+  'a fey door someone left open', 'a shadow that follows the wrong person home',
+  'a bound elemental that has slipped its circle',
   // — humanoid / organized —
   'a thieves guild', 'a corrupt local official', 'a gang of bandits', 'a goblin warband',
   'a pack of gnolls', 'a rogue hedge wizard', 'a smuggling ring', 'a rival adventuring party',
@@ -29,6 +33,17 @@ const LOW_ANTAGONISTS = [ // levels 1+: local, mundane, street-level
   'a giant constrictor in the sewers', 'a hungry pack of worgs with goblin riders',
 ];
 const MID_ANTAGONISTS = [ // levels 5+: regional threats, real monsters
+  // — planar —
+  'an archfey collecting on a debt nobody remembers making',
+  'a fey court that has decided the region belongs to it',
+  'the Wild Hunt, and whoever it was sent for',
+  'a shadar-kai raiding party out of the Shadowfell',
+  'a githyanki raid crew stripping a crashed nautiloid',
+  'a cambion building a mortal power base',
+  'a cult trying to open a permanent gate',
+  'a dao architect who has bought the land beneath the town',
+  'an efreeti collecting on a wish granted badly',
+  'star spawn seeded under a quiet village',
   // — humanoid / organized —
   'a vampire and their thralls', 'a necromancer raising the local dead',
   'a yuan-ti slaver operation', 'a hag coven',
@@ -48,6 +63,17 @@ const MID_ANTAGONISTS = [ // levels 5+: regional threats, real monsters
   'an umber hulk collapsing the mine tunnels', 'a remorhaz under the ice fields',
 ];
 const HIGH_ANTAGONISTS = [ // levels 9+: campaign-scale villains
+  // — planar and beyond —
+  'an archfey whose bargain is unravelling reality around it',
+  "a demon lord's vanguard testing a way through",
+  'an archdevil moving pieces through mortal proxies',
+  "a githyanki lich-queen's fleet in the Astral",
+  'the corpse of a dead god, and what is nesting inside it',
+  'a Far Realm intrusion that should not have a shape',
+  'an elemental prince whose plane is bleeding into this one',
+  'a slaad lord spreading chaos through a bloodline',
+  'a modron march that has gone wrong and will not stop',
+  'a darklord extending their domain past its borders',
   // — humanoid / organized —
   'a vampire lord and their web of thralls',
   'a necromancer on the verge of something terrible',
