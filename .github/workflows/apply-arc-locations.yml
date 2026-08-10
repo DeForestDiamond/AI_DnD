@@ -2,7 +2,7 @@ name: Apply arc locations
 on:
   push:
     branches: [feat/arc-locations]
-    paths: ['scripts/apply_arc_locations.py']
+    paths: ['scripts/apply_arc_locations.py', '.github/workflows/apply-arc-locations.yml']
 permissions:
   contents: write
 jobs:
@@ -16,7 +16,24 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: python3 scripts/apply_arc_locations.py
+      - name: Apply base patch
+        run: python3 scripts/apply_arc_locations.py || true
+      - name: Finish App and prompt patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/App.jsx'); s=p.read_text()
+          s=s.replace("import { rollAntagonist, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';","import { rollArc, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';")
+          s=re.sub(r'\{\s*antagonist:\s*rollAntagonist\((.*?)\)\s*\}', r'rollArc(\1)', s)
+          if 'rollAntagonist(' in s: raise SystemExit('Unhandled rollAntagonist call remains in App.jsx')
+          p.write_text(s)
+          p=Path('src/hooks/useGame.js'); s=p.read_text()
+          needle='ACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}.\n'
+          if needle not in s: raise SystemExit('arc prompt marker missing')
+          addition=needle + 'ARC LOCATION (HIDDEN CAMPAIGN STATE): ${char.arc.arcLocation || \'Faerûn\'}. This is the destination where the assigned antagonist arc ultimately leads. If the player is not there, progressively provide believable clues and ways to reach it — roads, ships, guides, portals, spells, NPC knowledge, or other setting-appropriate travel. Never teleport or railroad the player there. If the location seems bizarre for the antagonist, MAKE THE COMBINATION MAKE SENSE IN-WORLD rather than changing either fact.\n'
+          p.write_text(s.replace(needle, addition, 1))
+          PY
       - run: npm ci
       - run: npm run build
       - name: Commit implementation
