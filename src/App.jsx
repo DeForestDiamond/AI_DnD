@@ -2130,7 +2130,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
           URL.revokeObjectURL(url);
         }}
         onCopyDebug={() => navigator.clipboard?.writeText(debugLog.join('\n'))}
-            debugStatus={`char: lv${character.level} xp:${character.xp} pending:${String(pendingStatPoint)}`}
+            debugStatus={`char: lv${character.level} xp:${character.xp} pending:${String(pendingStatPoint)} | arc: ${character.arc?.antagonist || 'none'} | arcLocation: ${character.arc?.arcLocation || 'none'}`}
             directives={character.directives || ''}
             onChangeDirectives={(text)=>updateChar({ ...charRef.current, directives: text })}
             voiceSettings={voice.voiceSupported ? {
@@ -2166,6 +2166,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
               updateChar({ ...charRef.current, pacing: next });
             }}
             arcAntagonist={character.arc?.antagonist || null}
+            arcLocation={character.arc?.arcLocation || null}
             onClearArc={() => {
               const { arc, ...rest } = charRef.current;
               updateChar(rest);
