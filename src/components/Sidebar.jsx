@@ -486,7 +486,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
                   <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length} {closed ? '▼' : '▲'}</span>
                 </div>
                 {!closed && rows.map(([nm, max, src]) => {
-          const on = selected[nm] !== undefined;
+          const on = liveSelected[nm] !== undefined;
           return (
             <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
               <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
@@ -499,7 +499,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
               </span>
               {max > 1 && (
                 on
-                  ? <input value={draft[nm] ?? selected[nm]}
+                  ? <input value={draft[nm] ?? liveSelected[nm]}
                       onChange={e=>setDraft(prev=>({...prev,[nm]:e.target.value}))}
                       onBlur={()=>commitCount(nm, max)}
                       onKeyDown={e=>{ if (e.key === 'Enter') e.currentTarget.blur(); }}
@@ -775,7 +775,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
                   <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length} {closed ? '▼' : '▲'}</span>
                 </div>
                 {!closed && rows.map(([nm, max, src]) => {
-          const on = selected[nm] !== undefined;
+          const on = liveSelected[nm] !== undefined;
           return (
             <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
               <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
@@ -788,7 +788,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
               </span>
               {max > 1 && (
                 on
-                  ? <input value={draft[nm] ?? selected[nm]}
+                  ? <input value={draft[nm] ?? liveSelected[nm]}
                       onChange={e=>setDraft(prev=>({...prev,[nm]:e.target.value}))}
                       onBlur={()=>commitCount(nm, max)}
                       onKeyDown={e=>{ if (e.key === 'Enter') e.currentTarget.blur(); }}
