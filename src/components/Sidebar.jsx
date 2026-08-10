@@ -302,7 +302,7 @@ const saveSel = (craft, salvage) => {
   try { localStorage.setItem(SEL_KEY, JSON.stringify({ craft, salvage })); } catch { /* quota, ignore */ }
 };
 const persistedSel = loadSel();
-const craftStore = { selected: persistedSel.craft || {}, intent:'', mode:'item', options:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1' };
+const craftStore = { selected: persistedSel.craft || {}, intent:'', mode:'item', options:null, status:'', filter:'', source:'both', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1' };
 
 // Loading a save replaces the character wholesale, so any proposal or selection
 // still sitting in these stores refers to a world that no longer exists.
@@ -311,7 +311,7 @@ export const resetCraftingPanels = () => {
   Object.assign(salvageStore, { selected:{}, result:null, status:'', filter:'', draft:{} });
   saveSel({}, {});
 };
-const salvageStore = { selected: persistedSel.salvage || {}, result:null, status:'', filter:'', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
+const salvageStore = { selected: persistedSel.salvage || {}, result:null, status:'', filter:'', source:'both', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
 
 // Bind a store key to component state, writing through on every change.
 const useStored = (store, key) => {
@@ -333,6 +333,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   const [status, setStatus]     = useStored(craftStore, 'status');
   const [filter, setFilter]     = useStored(craftStore, 'filter');
   const [showAll, setShowAll]   = useStored(craftStore, 'showAll');
+  const [source, setSource]     = useStored(craftStore, 'source');   // inventory | stash | both
   const [qty, setQty]           = useStored(craftStore, 'qty');   // how many identical copies
 
   // Default to things that read as crafting stock, but categorisation is
@@ -342,21 +343,28 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   // Materials mostly live in the STASH, not carried inventory, so draw from
   // both. Track which source each stack came from — consumption has to remove
   // from the right list.
-  const invCount = {}, stashCount = {}, bagCount = {}, bagWhere = {};
+  const invCount = {}, stashCount = {}, bagInvCount = {}, bagStashCount = {}, bagWhere = {};
   (character.inventory || []).forEach(nm => { invCount[nm] = (invCount[nm] || 0) + 1; });
   (character.stash || []).forEach(nm => { stashCount[nm] = (stashCount[nm] || 0) + 1; });
-  // Bags keep their contents in customItems[bag].contents, not the inventory
-  // array — without this, anything packed away is invisible to the forge.
-  ['customItems', 'stashedCustomItems'].forEach(store => {
+  // Bag contents inherit the bag's source. customItems bags are carried;
+  // stashedCustomItems bags are in the stash. Keep the pools separate so the
+  // Inventory/Stash filter reports the real available count.
+  [['customItems', bagInvCount], ['stashedCustomItems', bagStashCount]].forEach(([store, target]) => {
     Object.entries(character[store] || {}).forEach(([bagName, d]) => {
       if (d?.type === 'bag' && d.contents) {
         Object.entries(d.contents).forEach(([item, ct]) => {
-          if (ct > 0) { bagCount[item] = (bagCount[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
+          if (ct > 0) { target[item] = (target[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
         });
       }
     });
   });
-  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount), ...Object.keys(bagCount)])];
+  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount), ...Object.keys(bagInvCount), ...Object.keys(bagStashCount)])];
+  const sourceCount = (nm) => {
+    const inv = (invCount[nm] || 0) + (bagInvCount[nm] || 0);
+    const stash = (stashCount[nm] || 0) + (bagStashCount[nm] || 0);
+    return source === 'inventory' ? inv : source === 'stash' ? stash : inv + stash;
+  };
+  const sourceNames = allNames.filter(nm => sourceCount(nm) > 0);
   const stockData = (nm) => db[nm] || (character.stashedCustomItems || {})[nm];
   const isStock = (nm) => {
     if (stockData(nm)?.type === 'bag') return false;   // a bag is a container, not material
@@ -364,15 +372,15 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
     return cat === 'materials' || cat === 'misc' || cat === 'valuables';
   };  // constructs excluded — breaking one down should be a deliberate choice
   const q = filter.trim().toLowerCase();
-  const hiddenCount = allNames.filter(nm => !isStock(nm)).length;
-  const candidates = allNames
+  const hiddenCount = sourceNames.filter(nm => !isStock(nm)).length;
+  const candidates = sourceNames
     .filter(nm => showAll || isStock(nm))
     .filter(nm => !q || nm.toLowerCase().includes(q))
     .sort((a, b) => a.localeCompare(b))
-    .map(nm => [nm, (invCount[nm] || 0) + (stashCount[nm] || 0) + (bagCount[nm] || 0), {
-      inv: invCount[nm] || 0,
-      stash: stashCount[nm] || 0,
-      bag: bagCount[nm] || 0,
+    .map(nm => [nm, sourceCount(nm), {
+      inv: (invCount[nm] || 0) + (bagInvCount[nm] || 0),
+      stash: (stashCount[nm] || 0) + (bagStashCount[nm] || 0),
+      bag: (bagInvCount[nm] || 0) + (bagStashCount[nm] || 0),
       bags: bagWhere[nm] || [],
     }]);
 
@@ -419,9 +427,11 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   // survives a save reload. Filter them for USE rather than writing state during
   // render: a render-phase setState here re-renders immediately, and if the
   // condition does not clear it locks the main thread completely.
-  const heldNames = new Set(allNames);
+  const heldNames = new Set(sourceNames);
   const liveSelected = Object.fromEntries(
-    Object.entries(selected).filter(([nm]) => heldNames.has(nm))
+    Object.entries(selected)
+      .filter(([nm]) => heldNames.has(nm))
+      .map(([nm, count]) => [nm, Math.min(count, sourceCount(nm))])
   );
 
   const selCount = Object.keys(liveSelected).length;
@@ -434,15 +444,24 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
       <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder={`Search ${candidates.length} ${showAll ? 'items' : 'materials'}…`}
         style={{...npcInput, marginBottom:4}}/>
 
+      <div style={{display:'flex',gap:4,marginBottom:6}}>
+        {[['inventory','🎒 Inventory'],['stash','📦 Stash'],['both','↔ Both']].map(([id,label]) => (
+          <button key={id} onClick={()=>setSource(id)}
+            style={{flex:1,background:source===id?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${source===id?colors.gold:colors.borderDim}`,color:source===id?colors.gold:colors.textFaint,padding:'4px 2px',fontSize:10,fontFamily:fonts.display,borderRadius:3,cursor:'pointer'}}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {hiddenCount > 0 && (
         <label style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:colors.textDim,marginBottom:6,cursor:'pointer'}}>
           <input type="checkbox" checked={showAll} onChange={()=>setShowAll(v=>!v)} style={{accentColor:colors.gold,flexShrink:0}}/>
-          Show all inventory ({hiddenCount} hidden — categories are guesses, tick this if something's missing)
+          Show all items ({hiddenCount} hidden — categories are guesses, tick this if something's missing)
         </label>
       )}
 
       <div style={{maxHeight:340,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
-        {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>No materials in inventory.</div>}
+        {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>No materials in this source.</div>}
         {(() => {
           // Same categories as the inventory and stash, each collapsible so a
           // long material list narrows to what matters. A search expands
@@ -467,7 +486,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
                   <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length} {closed ? '▼' : '▲'}</span>
                 </div>
                 {!closed && rows.map(([nm, max, src]) => {
-          const on = selected[nm] !== undefined;
+          const on = liveSelected[nm] !== undefined;
           return (
             <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
               <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
@@ -480,7 +499,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
               </span>
               {max > 1 && (
                 on
-                  ? <input value={draft[nm] ?? selected[nm]}
+                  ? <input value={draft[nm] ?? liveSelected[nm]}
                       onChange={e=>setDraft(prev=>({...prev,[nm]:e.target.value}))}
                       onBlur={()=>commitCount(nm, max)}
                       onKeyDown={e=>{ if (e.key === 'Enter') e.currentTarget.blur(); }}
@@ -612,23 +631,29 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
   const [status, setStatus]     = useStored(salvageStore, 'status');
   const [filter, setFilter]     = useStored(salvageStore, 'filter');
   const [showAll, setShowAll]   = useStored(salvageStore, 'showAll');
+  const [source, setSource]     = useStored(salvageStore, 'source');   // inventory | stash | both
 
-  const invCount = {}, stashCount = {}, bagCount = {}, bagWhere = {};
+  const invCount = {}, stashCount = {}, bagInvCount = {}, bagStashCount = {}, bagWhere = {};
   (character.inventory || []).forEach(nm => { invCount[nm] = (invCount[nm] || 0) + 1; });
   (character.stash || []).forEach(nm => { stashCount[nm] = (stashCount[nm] || 0) + 1; });
-  // Bag contents are salvageable too — consumption already handled them, but
-  // they never appeared in the list, so they couldn't be selected.
-  ['customItems', 'stashedCustomItems'].forEach(store => {
+  // Bag contents inherit the source of their bag, just like the crafting list.
+  [['customItems', bagInvCount], ['stashedCustomItems', bagStashCount]].forEach(([store, target]) => {
     Object.entries(character[store] || {}).forEach(([bagName, d]) => {
       if (d?.type === 'bag' && d.contents) {
         Object.entries(d.contents).forEach(([item, ct]) => {
-          if (ct > 0) { bagCount[item] = (bagCount[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
+          if (ct > 0) { target[item] = (target[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
         });
       }
     });
   });
   const equipped = new Set(Object.values(character.slots || {}).filter(Boolean));
-  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount), ...Object.keys(bagCount)])];
+  const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount), ...Object.keys(bagInvCount), ...Object.keys(bagStashCount)])];
+  const sourceCount = (nm) => {
+    const inv = (invCount[nm] || 0) + (bagInvCount[nm] || 0);
+    const stash = (stashCount[nm] || 0) + (bagStashCount[nm] || 0);
+    return source === 'inventory' ? inv : source === 'stash' ? stash : inv + stash;
+  };
+  const sourceNames = allNames.filter(nm => sourceCount(nm) > 0);
   const stockData = (nm) => db[nm] || (character.stashedCustomItems || {})[nm];
   // Inverse of crafting: finished goods, not raw materials.
   const isSalvageable = (nm) => {
@@ -636,14 +661,18 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     return ['weapons','worn','magic','tools','gear','ammo'].includes(cat);
   };
   const q = filter.trim().toLowerCase();
-  const hiddenCount = allNames.filter(nm => !isSalvageable(nm) && !equipped.has(nm)).length;
-  const candidates = allNames
+  const hiddenCount = sourceNames.filter(nm => !isSalvageable(nm) && !equipped.has(nm)).length;
+  const candidates = sourceNames
     .filter(nm => !equipped.has(nm))                       // never offer worn gear
     .filter(nm => showAll || isSalvageable(nm))
     .filter(nm => !q || nm.toLowerCase().includes(q))
     .sort((a, b) => a.localeCompare(b))
-    .map(nm => [nm, (invCount[nm] || 0) + (stashCount[nm] || 0) + (bagCount[nm] || 0),
-      { stash: stashCount[nm] || 0, inv: invCount[nm] || 0, bag: bagCount[nm] || 0, bags: bagWhere[nm] || [] }]);
+    .map(nm => [nm, sourceCount(nm), {
+      stash: (stashCount[nm] || 0) + (bagStashCount[nm] || 0),
+      inv: (invCount[nm] || 0) + (bagInvCount[nm] || 0),
+      bag: (bagInvCount[nm] || 0) + (bagStashCount[nm] || 0),
+      bags: bagWhere[nm] || [],
+    }]);
 
   const toggle = (nm, max) => setSelected(prev => {
     const next = { ...prev };
@@ -687,9 +716,11 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
   // survives a save reload. Filter them for USE rather than writing state during
   // render: a render-phase setState here re-renders immediately, and if the
   // condition does not clear it locks the main thread completely.
-  const heldNames = new Set(allNames);
+  const heldNames = new Set(sourceNames);
   const liveSelected = Object.fromEntries(
-    Object.entries(selected).filter(([nm]) => heldNames.has(nm))
+    Object.entries(selected)
+      .filter(([nm]) => heldNames.has(nm))
+      .map(([nm, count]) => [nm, Math.min(count, sourceCount(nm))])
   );
 
   const selCount = Object.keys(liveSelected).length;
@@ -702,10 +733,19 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
       <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder={`Search ${candidates.length} items…`}
         style={{...npcInput, marginBottom:4}}/>
 
+      <div style={{display:'flex',gap:4,marginBottom:6}}>
+        {[['inventory','🎒 Inventory'],['stash','📦 Stash'],['both','↔ Both']].map(([id,label]) => (
+          <button key={id} onClick={()=>setSource(id)}
+            style={{flex:1,background:source===id?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${source===id?colors.gold:colors.borderDim}`,color:source===id?colors.gold:colors.textFaint,padding:'4px 2px',fontSize:10,fontFamily:fonts.display,borderRadius:3,cursor:'pointer'}}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {hiddenCount > 0 && (
         <label style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:colors.textDim,marginBottom:6,cursor:'pointer'}}>
           <input type="checkbox" checked={showAll} onChange={()=>setShowAll(v=>!v)} style={{accentColor:colors.gold,flexShrink:0}}/>
-          Show all inventory ({hiddenCount} hidden)
+          Show all items ({hiddenCount} hidden)
         </label>
       )}
 
@@ -735,7 +775,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
                   <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length} {closed ? '▼' : '▲'}</span>
                 </div>
                 {!closed && rows.map(([nm, max, src]) => {
-          const on = selected[nm] !== undefined;
+          const on = liveSelected[nm] !== undefined;
           return (
             <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
               <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
@@ -748,7 +788,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
               </span>
               {max > 1 && (
                 on
-                  ? <input value={draft[nm] ?? selected[nm]}
+                  ? <input value={draft[nm] ?? liveSelected[nm]}
                       onChange={e=>setDraft(prev=>({...prev,[nm]:e.target.value}))}
                       onBlur={()=>commitCount(nm, max)}
                       onKeyDown={e=>{ if (e.key === 'Enter') e.currentTarget.blur(); }}
