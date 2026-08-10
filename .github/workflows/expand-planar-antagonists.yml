@@ -1,5 +1,5 @@
 name: Expand planar antagonists
-on:
+'on':
   push:
     branches: [feat/arc-locations]
     paths: [.github/workflows/expand-planar-antagonists.yml]
@@ -41,8 +41,7 @@ jobs:
   'an ethereal marauder stalking victims from just beyond sight',
 """
           marker="  'star spawn seeded under a quiet village',\n"
-          if mid.strip() not in s:
-              s=s.replace(marker, marker+mid,1)
+          if mid.strip() not in s: s=s.replace(marker, marker+mid,1)
           high="""  'an archfey court waging a succession war that is rewriting the Feywild around it',
   'a primordial hag trying to steal a season from the mortal world',
   'an eladrin war-host whose shifting allegiance threatens two planes',
@@ -90,9 +89,7 @@ jobs:
   'a spelljammer armada blockading the Astral routes between divine realms',
 """
           marker2="  'a darklord extending their domain past its borders',\n"
-          if high.strip() not in s:
-              s=s.replace(marker2, marker2+high,1)
-          # Add resolver rules before the generic location pool roll.
+          if high.strip() not in s: s=s.replace(marker2, marker2+high,1)
           resolver="""  if (/night hag|gray waste/.test(a)) return 'Hades, the Gray Waste';
   if (/pit fiend|erinyes|infernal duke|devil contract/.test(a)) return 'Nine Hells';
   if (/balor|marilith|demon prince|demon cult/.test(a)) return 'Abyss';
@@ -116,8 +113,7 @@ jobs:
   if (/living demiplane/.test(a)) return 'Demiplane';
 """
           anchor="  if (/archfey|fey court|wild hunt/.test(a)) return 'Feywild';\n"
-          if resolver.strip() not in s:
-              s=s.replace(anchor, anchor+resolver,1)
+          if resolver.strip() not in s: s=s.replace(anchor, anchor+resolver,1)
           p.write_text(s)
       - run: npm ci
       - run: npm run build
