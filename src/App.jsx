@@ -54,6 +54,7 @@ export default function App() {
   const [bioInput, setBioInput] = useState('');
   const [dispInput, setDispInput] = useState({ alignment:'', cares:'', indifferent:'', methods:'', lines:'' });
   const [apiKey, setApiKey]     = useState('');
+  const [openAiApiKey, setOpenAiApiKey] = useState('');
   const [apiError, setApiError] = useState('');
   const [showSave, setShowSave] = useState(false);
   const [slotTarget, setSlotTarget] = useState(null);
@@ -121,6 +122,8 @@ export default function App() {
   // continuous pinging costs more than a single rebuild past ~50 minutes idle.
   const armCacheTimer = () => {
     if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current);
+    // OpenAI caching is automatic; Anthropic's explicit keep-warm ping does not apply.
+    if (selectedModel === 'gpt') return;
     cacheTimerRef.current = setTimeout(async () => {
       cacheTimerRef.current = null;
       const c = charRef.current;
@@ -159,7 +162,7 @@ export default function App() {
   const [deityModalClass, setDeityModalClass] = useState(null);
   const [showSubclassModal, setShowSubclassModal] = useState(false);
   const [subclassQueue, setSubclassQueue] = useState([]);
-  const [selectedModel, setSelectedModel] = useState('sonnet'); // 'sonnet' or 'haiku'
+  const [selectedModel, setSelectedModel] = useState('sonnet'); // 'sonnet', 'haiku', or 'gpt'
   const [storySummary, setStorySummary] = useState('');
   const [tokenUsage, setTokenUsage]     = useState(null);
   const storySummaryRef = useRef('');
@@ -184,7 +187,7 @@ export default function App() {
   } = useCharacter(log);
 
   const voice = useVoice();
-  const { callDM, buildActionContext, interceptRollRequest, pingCache } = useGame({ charRef, apiKey });
+  const { callDM, buildActionContext, interceptRollRequest, pingCache } = useGame({ charRef, apiKey, openAiApiKey });
 
   // ── Save/Load ──────────────────────────────────────────────────────────────
   // Which patron class is the deity/patron being chosen for? Prefers Warlock so a
@@ -459,9 +462,9 @@ NON-COMPLIANCE: If you open with anything other than the parameters above, you h
       // Persist the arc so every later turn's foreshadowing points at the same villain.
       const charWithArc = { ...char, arc: { antagonist: arcAntagonist } };
       log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
-      const system = selectedModel === 'sonnet'
-        ? buildSystemPromptSonnet(charWithArc)
-        : buildSystemPrompt(charWithArc);
+      const system = selectedModel === 'haiku'
+        ? buildSystemPrompt(charWithArc)
+        : buildSystemPromptSonnet(charWithArc);
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
         system,
@@ -1616,9 +1619,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
 
     try {
       const modelConfig = MODEL_CONFIGS[selectedModel];
-      const system = selectedModel === 'sonnet'
-        ? buildSystemPromptSonnet(charRef.current)
-        : buildSystemPrompt(charRef.current);
+      const system = selectedModel === 'haiku'
+        ? buildSystemPrompt(charRef.current)
+        : buildSystemPromptSonnet(charRef.current);
       const { text: dmText, usage: dmUsage } = await callDM(
         [...history, { role:'user', content: outgoing }],
         system,
@@ -1800,6 +1803,14 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onChange={e => setApiKey(e.target.value)}
             placeholder="sk-ant-api03-..."
             style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.mono,fontSize:12,padding:'10px 12px',borderRadius:4,outline:'none',marginBottom:6}}
+          />
+          <div style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:2,marginTop:12,marginBottom:6}}>OPENAI API KEY</div>
+          <input
+            type="password"
+            value={openAiApiKey}
+            onChange={e => setOpenAiApiKey(e.target.value)}
+            placeholder="sk-..."
+            style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.mono,fontSize:12,padding:'9px 10px',borderRadius:4,outline:'none'}}
           />
           <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.5}}>
             Your key stays in your browser only. Get one at console.anthropic.com. Using Haiku model for low cost.
@@ -2145,7 +2156,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onRenameItem={renameItem}
             onDeleteFromBag={deleteFromBag}
             selectedModel={selectedModel}
-            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : 'sonnet')}
+            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : 'sonnet')}
             pacing={character.pacing || 'normal'}
             environment={character.environment || 'wilderness'}
             onChangeEnvironment={(env)=>updateChar({ ...charRef.current, environment: env })}

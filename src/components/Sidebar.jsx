@@ -1295,8 +1295,8 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {activeTab==='settings' && <>
       {/* Model toggle */}
       {onToggleModel && (
-        <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:colors.border}}>
-          {selectedModel==='sonnet' ? '✨ DM: Sonnet' : '⚡ DM: Haiku'}
+        <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:selectedModel==='gpt'?'#7aa7ff':colors.border}}>
+          {selectedModel==='sonnet' ? '✨ DM: Sonnet' : selectedModel==='haiku' ? '⚡ DM: Haiku' : '🧠 DM: GPT'}
         </button>
       )}
 

@@ -6,6 +6,7 @@ import { colors, fonts, btn } from '../styles/theme.js';
 const PRICING = {
   sonnet: { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.30 },
   haiku:  { input: 1.0, output: 5.0,  cacheWrite: 1.25, cacheRead: 0.10 },
+  gpt:    { input: 1.75, output: 14.0, cacheWrite: 1.75, cacheRead: 0.175 },
 };
 
 export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, tokenUsage, selectedModel }) {
