@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 p = Path('src/App.jsx')
 s = p.read_text()
@@ -23,4 +24,16 @@ new = """                  <div style={{fontSize:12,color:colors.gold,lineHeight
 if old not in s: raise SystemExit('spoiler marker missing')
 s = s.replace(old, new, 1)
 p.write_text(s)
-print('arc location UI patched')
+
+# Validate before persisting anything.
+subprocess.run(['npm','ci'], check=True)
+subprocess.run(['npm','run','build'], check=True)
+
+# Commit from this step so the stale follow-up step in the old workflow cannot
+# prevent the validated UI fix from landing on the feature branch.
+subprocess.run(['git','config','user.name','github-actions[bot]'], check=True)
+subprocess.run(['git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com'], check=True)
+subprocess.run(['git','add','src/App.jsx','src/components/Sidebar.jsx'], check=True)
+subprocess.run(['git','commit','-m','Show arc location in debug and spoiler UI'], check=True)
+subprocess.run(['git','push'], check=True)
+print('arc location UI patched, built, and committed')
