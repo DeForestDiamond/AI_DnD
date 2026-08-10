@@ -84,16 +84,26 @@ export const performAttack = (weapon, stats, level) => {
 // ── Model configs ──────────────────────────────────────────────────────────────
 export const MODEL_CONFIGS = {
   sonnet: {
+    provider: 'anthropic',
     model: 'claude-sonnet-4-5',
     max_tokens: 2048,
     label: 'Sonnet',
     emoji: '✨',
   },
   haiku: {
+    provider: 'anthropic',
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1536,
     label: 'Haiku',
     emoji: '⚡',
+  },
+  gpt: {
+    provider: 'openai',
+    model: 'gpt-5.6-sol',
+    max_tokens: 2048,
+    reasoning_effort: 'low',
+    label: 'GPT',
+    emoji: '🧠',
   },
 };
 
@@ -898,10 +908,14 @@ export const stackInventory = (inventory) => {
 };
 
 // ── The Hook ───────────────────────────────────────────────────────────────────
-export function useGame({ charRef, apiKey }) {
+export function useGame({ charRef, apiKey, openAiApiKey }) {
 
   const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null, onPrompt = null) => {
-    const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+    const provider = modelConfig.provider || 'anthropic';
+    const key = provider === 'openai'
+      ? (openAiApiKey || import.meta.env.VITE_OPENAI_KEY)
+      : (apiKey || import.meta.env.VITE_ANTHROPIC_KEY);
+    if (!key) throw new Error(provider === 'openai' ? 'OpenAI API key is missing' : 'Anthropic API key is missing');
 
     // systemPrompt can be a string (legacy) or { static, dynamic }
     // Static block gets cached — bio, rules, companions, NPCs, towns (rarely change)
@@ -960,6 +974,66 @@ export function useGame({ charRef, apiKey }) {
       cachedMessages: messages.length > 2 ? messages.slice(0, -2).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })) : [],
       freshMessages: (messages.length > 2 ? messages.slice(-2) : messages).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })),
     } : null;
+
+    if (provider === 'openai') {
+      // OpenAI prompt caching is automatic and prefix-based. Preserve the same
+      // stable -> gear -> carried-items -> history -> volatile-state ordering as
+      // Anthropic, but do not send Anthropic cache_control objects.
+      const instructions = hasSplit
+        ? [systemPrompt.static, systemPrompt.gear, systemPrompt.items].filter(Boolean).join('\n\n')
+        : systemPrompt;
+      const input = messages.map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+      }));
+      if (dynamicTail && input.length) {
+        const last = input[input.length - 1];
+        input[input.length - 1] = { ...last, content: `${last.content}\n\n${dynamicTail}` };
+      }
+
+      const res = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: modelConfig.model,
+          instructions,
+          input,
+          max_output_tokens: modelConfig.max_tokens,
+          reasoning: { effort: modelConfig.reasoning_effort || 'low' },
+          text: { verbosity: 'low' },
+          prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`,
+          store: false,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `OpenAI API error ${res.status}`);
+      }
+      const data = await res.json();
+      const text = (data.output || [])
+        .filter(item => item?.type === 'message')
+        .flatMap(item => item.content || [])
+        .filter(part => part?.type === 'output_text')
+        .map(part => part.text || '')
+        .join('') || '...';
+      const totalInput = data.usage?.input_tokens || 0;
+      const cached = data.usage?.input_tokens_details?.cached_tokens || 0;
+      const cacheWrite = data.usage?.input_tokens_details?.cache_write_tokens || 0;
+      const usage = {
+        input_tokens: Math.max(0, totalInput - cached - cacheWrite),
+        output_tokens: data.usage?.output_tokens || 0,
+        cache_read_input_tokens: cached,
+        cache_creation_input_tokens: cacheWrite,
+        total_tokens: data.usage?.total_tokens || (totalInput + (data.usage?.output_tokens || 0)),
+        provider: 'openai',
+      };
+      if (promptRecord) onPrompt({ ...promptRecord, usage });
+      return { text, usage };
+    }
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
