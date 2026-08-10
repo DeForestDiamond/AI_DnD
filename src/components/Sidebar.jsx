@@ -1154,6 +1154,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   const [revealedFor, setRevealedFor] = useState(null);
   const [newCampaignArmed, setNewCampaignArmed] = useState(false);
   const [renaming, setRenaming] = useState(null);   // { name, draft }
+  const [actionsFor, setActionsFor] = useState(null);   // which row has its edit/delete revealed
   const [arcCustomText, setArcCustomText] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
   const gearSkills = skillBonuses(character.slots, character.customItems || {});
@@ -1745,12 +1746,21 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                 <div key={name} style={{borderBottom:`1px solid ${colors.borderFaint}`,
                   background: bagMode && selectedCount > 0 ? 'rgba(201,168,76,0.08)' : 'transparent'}}>
                   <div style={{fontSize:14,color:data?colors.textFaint:colors.textGhost,padding:'3px 0',display:'flex',alignItems:'center',gap:4}}>
-                    {/* fixed-width delete column on the left — names line up regardless */}
+                    {/* One fixed-width column so names always line up. Edit and delete
+                        stay hidden behind it — three live buttons beside every row is
+                        both wider than the space allows and easy to hit by accident. */}
                     {!bagMode && (
-                      <span style={{width:44,flexShrink:0,display:'flex',justifyContent:'flex-start',gap:3}}>
-                        {onRenameItem && <button title="Rename — merges with an existing item of that name" onClick={() => setRenaming({ name, draft: name })} style={delBtn}>✎</button>}
-                        {onDeleteItem && <button title="Delete one" onClick={() => onDeleteItem(name, false)} style={delBtn}>✕</button>}
-                        {onDeleteItem && count > 1 && <button title="Delete all" onClick={() => onDeleteItem(name, true)} style={delBtn}>✕✕</button>}
+                      <span style={{width:actionsFor === name ? 74 : 22,flexShrink:0,display:'flex',justifyContent:'flex-start',gap:3,transition:'width 0.12s'}}>
+                        {actionsFor === name ? (
+                          <>
+                            {onRenameItem && <button title="Rename — merges with an existing item of that name" onClick={() => { setRenaming({ name, draft: name }); setActionsFor(null); }} style={delBtn}>✎</button>}
+                            {onDeleteItem && <button title="Delete one" onClick={() => onDeleteItem(name, false)} style={delBtn}>✕</button>}
+                            {onDeleteItem && count > 1 && <button title="Delete all" onClick={() => onDeleteItem(name, true)} style={delBtn}>✕✕</button>}
+                          </>
+                        ) : (
+                          <button title="Edit or delete" onClick={() => setActionsFor(name)}
+                            style={{...delBtn, color:colors.textDead, borderColor:'transparent'}}>⋯</button>
+                        )}
                       </span>
                     )}
                     {bagMode && !isBag && (
@@ -1769,7 +1779,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                     )}
                     {/* name — truncated, tap to expand label if it has one */}
                     <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0,cursor:(bagMode&&!isBag)?'pointer':(fullLabel?'pointer':'default')}}
-                      onClick={bagMode && !isBag ? () => toggleBagItem(name) : (fullLabel ? () => setExpandedLabels(p=>({...p,[name]:!p[name]})) : undefined)}>
+                      onClick={bagMode && !isBag ? () => toggleBagItem(name) : (actionsFor ? () => setActionsFor(null) : (fullLabel ? () => setExpandedLabels(p=>({...p,[name]:!p[name]})) : undefined))}>
                       {name} {statLabel && <span style={{color:colors.textDead}}>{statLabel}</span>}{fullLabel && !labelOpen && <span style={{color:colors.textDead}}> ⓘ</span>}
                     </span>
                     {/* construct status — tap to cycle dormant/active/bound */}
