@@ -7,7 +7,7 @@ import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems } fro
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
 import { useGame, buildSystemPrompt, buildSystemPromptSonnet, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
-import { rollAntagonist, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
+import { rollAntagonist, rollArc, makeArc, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
@@ -460,7 +460,7 @@ REQUIRED: Set the opening in a real Faerûn location — a canon city or region 
 NON-COMPLIANCE: If you open with anything other than the parameters above, you have failed your role as DM.`;
       }
       // Persist the arc so every later turn's foreshadowing points at the same villain.
-      const charWithArc = { ...char, arc: { antagonist: arcAntagonist } };
+      const charWithArc = { ...char, arc: makeArc(arcAntagonist) };
       log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
       const system = selectedModel === 'haiku'
         ? buildSystemPrompt(charWithArc)
@@ -2172,12 +2172,12 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
               log('[ARC] Cleared by player — no antagonist, story is open');
             }}
             onRollArc={() => {
-              const a = rollAntagonist(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists);
-              updateChar({ ...charRef.current, arc: { antagonist: a } });
-              log(`[ARC] Rolled by player — new antagonist: ${a}`);
+              const arc = rollArc(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists);
+              updateChar({ ...charRef.current, arc });
+              log(`[ARC] Rolled by player — new antagonist: ${arc.antagonist} @ ${arc.arcLocation}`);
             }}
             onSetArc={(text) => {
-              updateChar({ ...charRef.current, arc: { antagonist: text } });
+              updateChar({ ...charRef.current, arc: makeArc(text) });
               log(`[ARC] Custom antagonist set by player: ${text}`);
             }}
             onToggleContextExclusion={toggleContextExclusion}
