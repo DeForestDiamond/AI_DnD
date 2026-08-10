@@ -71,7 +71,7 @@ export default function App() {
   // cached history every turn, hashes each, then prunes — all on the main
   // thread while a request is in flight, and it accumulates across a session.
   // Diagnostics are not worth a stutter mid-play; turn it on when investigating.
-  const PROMPT_LOG_ENABLED = false;
+  const PROMPT_LOG_ENABLED = true;
   const PROMPT_LOG_KEEP = 15;
   const promptLogRef = useRef({ blocks: {}, turns: [] });
 
