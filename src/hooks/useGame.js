@@ -99,7 +99,7 @@ export const MODEL_CONFIGS = {
   },
   gpt: {
     provider: 'openai',
-    model: 'gpt-5.2',
+    model: 'gpt-5.6-sol',
     max_tokens: 2048,
     reasoning_effort: 'low',
     label: 'GPT',
@@ -1022,11 +1022,12 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
         .join('') || '...';
       const totalInput = data.usage?.input_tokens || 0;
       const cached = data.usage?.input_tokens_details?.cached_tokens || 0;
+      const cacheWrite = data.usage?.input_tokens_details?.cache_write_tokens || 0;
       const usage = {
-        input_tokens: Math.max(0, totalInput - cached),
+        input_tokens: Math.max(0, totalInput - cached - cacheWrite),
         output_tokens: data.usage?.output_tokens || 0,
         cache_read_input_tokens: cached,
-        cache_creation_input_tokens: 0,
+        cache_creation_input_tokens: cacheWrite,
         total_tokens: data.usage?.total_tokens || (totalInput + (data.usage?.output_tokens || 0)),
         provider: 'openai',
       };
