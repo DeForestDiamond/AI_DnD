@@ -1,0 +1,30 @@
+name: Patch arc location prompt check
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/arc-locations
+      - name: Add non-cached arc location check
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/hooks/useGame.js')
+          s = p.read_text()
+          old = "7. Did the player GAIN anything this message — loot, a reward, payment, a gift, something taken off a body or a shelf? Every single thing you described them receiving needs its own [ITEM:] tag, itemised, right now. Coin needs [GOLD:]. Describing a thing without tagging it means the player never actually gets it, and they have to ask you for it afterwards.`;"
+          new = "7. Did the player GAIN anything this message — loot, a reward, payment, a gift, something taken off a body or a shelf? Every single thing you described them receiving needs its own [ITEM:] tag, itemised, right now. Coin needs [GOLD:]. Describing a thing without tagging it means the player never actually gets it, and they have to ask you for it afterwards.\n8. ARC LOCATION: If there is an active arc, check CURRENT STATE before finishing: are the player and the antagonist confrontation at the assigned ARC LOCATION? The arc's decisive confrontation/resolution belongs there. If not, do NOT prematurely resolve the antagonist or emit [ARC COMPLETE] — keep the thread moving toward that location organically.`;"
+          if old not in s:
+              raise SystemExit('before-write checklist marker missing')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          npm ci
+          npm run build
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/hooks/useGame.js
+          git commit -m "Check arc location before resolving arc"
+          git push origin HEAD:feat/arc-locations
