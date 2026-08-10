@@ -22,14 +22,16 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
           p=Path('src/App.jsx'); s=p.read_text()
-          s=s.replace("import { rollAntagonist, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';","import { rollArc, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';")
-          s=re.sub(r'\{\s*antagonist:\s*rollAntagonist\((.*?)\)\s*\}', r'rollArc(\1)', s)
-          if 'rollAntagonist(' in s:
-              print('\n'.join(f'{i+1}: {line}' for i,line in enumerate(s.splitlines()) if 'rollAntagonist' in line))
-              raise SystemExit('Unhandled rollAntagonist call remains in App.jsx')
+          old="import { rollAntagonist, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';"
+          new="import { rollAntagonist, rollArc, makeArc, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';"
+          if old not in s: raise SystemExit('App encounter import marker missing')
+          s=s.replace(old,new,1)
+          s=s.replace('const charWithArc = { ...char, arc: { antagonist: arcAntagonist } };','const charWithArc = { ...char, arc: makeArc(arcAntagonist) };',1)
+          s=s.replace('const a = rollAntagonist(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists);\n              updateChar({ ...charRef.current, arc: { antagonist: a } });\n              log(`[ARC] Rolled by player — new antagonist: ${a}`);','const arc = rollArc(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists);\n              updateChar({ ...charRef.current, arc });\n              log(`[ARC] Rolled by player — new antagonist: ${arc.antagonist} @ ${arc.arcLocation}`);',1)
+          s=s.replace('updateChar({ ...charRef.current, arc: { antagonist: text } });','updateChar({ ...charRef.current, arc: makeArc(text) });',1)
           p.write_text(s)
+
           p=Path('src/hooks/useGame.js'); s=p.read_text()
           needle='ACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}.\n'
           if needle not in s: raise SystemExit('arc prompt marker missing')
