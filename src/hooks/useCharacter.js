@@ -3,7 +3,7 @@ import { ITEM_DB, SLOTS, EMPTY_SLOTS, parseDMItem } from '../constants/items.js'
 import { STARTING_GEAR } from '../constants/classes.js';
 import { XP_THRESHOLDS, HP_PER_LEVEL, HP_BASE, SAVE_VERSION } from '../constants/progression.js';
 import { parseCoinAmount } from '../constants/currency.js';
-import { rollAntagonist } from '../constants/encounters.js';
+import { rollArc, resolveArcLocation } from '../constants/encounters.js';
 
 // -- Pure stat helpers ----------------------------------------------------------
 export const statMod   = (v) => Math.floor(((v||10) - 10) / 2);
@@ -390,6 +390,13 @@ export const migrateCharacter = (char) => {
     // existing selections are left where they are and can be cleared by hand.
     if (c.abilities && !Array.isArray(c.abilities.martial)) c.abilities.martial = [];
   }
+  if (v < 18) {
+    // v18: persist a destination for the current arc. Old saves roll it once here.
+    if (c.arc?.antagonist && !c.arc.arcLocation) {
+      c.arc = { ...c.arc, arcLocation: resolveArcLocation(c.arc.antagonist) };
+      notes.push(`Arc location assigned: ${c.arc.arcLocation}`);
+    }
+  }
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
@@ -620,7 +627,7 @@ export function useCharacter(log) {
         defeated.push(finished);
       }
       c.defeatedAntagonists = defeated;
-      c.arc = { antagonist: rollAntagonist(c.level, finished, defeated) };
+      c.arc = rollArc(c.level, finished, defeated);
     }
 
     // Item update -- renames an item AND carries its custom stats/data to the new name
