@@ -26,7 +26,9 @@ jobs:
           p=Path('src/App.jsx'); s=p.read_text()
           s=s.replace("import { rollAntagonist, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';","import { rollArc, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';")
           s=re.sub(r'\{\s*antagonist:\s*rollAntagonist\((.*?)\)\s*\}', r'rollArc(\1)', s)
-          if 'rollAntagonist(' in s: raise SystemExit('Unhandled rollAntagonist call remains in App.jsx')
+          if 'rollAntagonist(' in s:
+              print('\n'.join(f'{i+1}: {line}' for i,line in enumerate(s.splitlines()) if 'rollAntagonist' in line))
+              raise SystemExit('Unhandled rollAntagonist call remains in App.jsx')
           p.write_text(s)
           p=Path('src/hooks/useGame.js'); s=p.read_text()
           needle='ACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}.\n'
