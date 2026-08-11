@@ -11,7 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Apply core refactor
-        run: python scripts/refactor_stacked_items.py
+        run: |
+          sed -i "s/re.subn(pattern, repl, text/re.subn(pattern, lambda m: repl, text/" scripts/refactor_stacked_items.py
+          python scripts/refactor_stacked_items.py
       - run: npm ci
       - name: Build
         run: npm run build
