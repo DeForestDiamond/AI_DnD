@@ -15,34 +15,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Tighten adventure start rules
-        shell: python
-        run: |
-          from pathlib import Path
-          p=Path('src/App.jsx')
-          s=p.read_text()
-          old="""REQUIRED: Set the opening in a real Faerûn location — a canon city or region of the Forgotten Realms (e.g. a tavern in Baldur's Gate, the docks of Waterdeep, a roadhouse on the Trade Way near Daggerford). You may invent a specific local spot (a named inn, shrine, or alley) but it must sit inside a real canon place. Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock \"you stand in X\" description. Emit a [LOCATION:] tag with the canon place name. End at a natural decision point and ALWAYS close with exactly 4 numbered choices — vary the framing that leads into them (a question an NPC puts to the player, a confrontation, a deadline), but the 4 numbered choices themselves are mandatory and never omitted. At least one should be chaotic or unconventional, at least one ruthless or self-serving, all written neutrally.
-
-NON-COMPLIANCE: If you open with anything other than the parameters above, you have failed your role as DM."""
-          new="""REQUIRED: Set the opening in a real Faerûn location — a canon city or region of the Forgotten Realms (e.g. a tavern in Baldur's Gate, the docks of Waterdeep, a roadhouse on the Trade Way near Daggerford). You may invent a specific local spot (a named inn, shrine, or alley) but it must sit inside a real canon place. Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock \"you stand in X\" description. Emit a [LOCATION:] tag with the canon place name.
-
-PLAYER AGENCY AT THE OPENING IS ABSOLUTE. NEVER BEGIN IN THE MIDDLE OF AN EVENT THE PLAYER DID NOT PLAY. NEVER INVENT ACTIONS, DECISIONS, CONVERSATIONS, COMBAT, INVESTIGATIONS, AGREEMENTS, RELATIONSHIPS, PURCHASES, TRAVEL, OR KNOWLEDGE FOR THE PLAYER CHARACTER IN ORDER TO CREATE AN EXCITING OPENING. Do not say the player already accepted a job, arrived mid-ambush, killed or fought anyone, questioned someone, agreed to help, took an item, followed a lead, met an NPC, or learned information unless that fact exists in supplied character/history context. The opening begins BEFORE the inciting event reaches the point where the player must act.
-
-ESTABLISH CONTEXT BEFORE MYSTERY. The opening MUST make clear why the player is presently at this location and what they actually know. Any NPC who addresses the player as an acquaintance, employer, client, ally, enemy, or expected guest MUST already exist in supplied context; otherwise introduce them as a stranger and let the relationship form in play. Cryptic statements, unexplained names, secret ledgers, dying messengers, attacks, discoveries, and other hooks happen ON SCREEN where the player can react to them — never as events you claim just happened before the first response.
-
-THE FIRST MEANINGFUL ACTION BELONGS TO THE PLAYER. You may present an event beginning around them — a stranger approaches, shouting erupts inside a building, someone asks for help, an alarm sounds, a suspicious figure appears — but STOP BEFORE deciding how the player responds. Do not resolve the hook for them. Do not place quest items in their possession unless the player chooses to take them.
-
-End at that natural decision point and ALWAYS close with exactly 4 numbered choices — vary the framing that leads into them, but the 4 numbered choices themselves are mandatory and never omitted. At least one should be chaotic or unconventional, at least one ruthless or self-serving, all written neutrally. The choices are suggestions, not actions already taken.
-
-NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begin after the inciting event has already been acted upon, or open with anything other than the parameters above, you have failed your role as DM."""
-          assert old in s, 'target intro block not found'
-          s=s.replace(old,new,1)
-          # Player-specified openings also need the no-invented-actions guard unless the player explicitly supplied them.
-          old2="""Begin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally)."""
-          new2="""Begin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. PLAYER AGENCY IS ABSOLUTE: do not invent any action, decision, conversation, combat, agreement, relationship, knowledge, or item acquisition for the player beyond what the player's opening explicitly states. Begin before the first unresolved action and let the player make it. Establish why the player is present and what they actually know before introducing mysteries that depend on context. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally)."""
-          assert old2 in s, 'player opening block not found'
-          s=s.replace(old2,new2,1)
-          p.write_text(s)
+      - run: python3 .github/scripts/tighten_intro.py
       - run: npm ci
       - run: npm run build
       - name: Commit update
