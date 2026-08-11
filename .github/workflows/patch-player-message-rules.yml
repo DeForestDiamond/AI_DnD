@@ -1,0 +1,40 @@
+name: Patch player message handling
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/patch-player-message-rules.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Patch prompt rules
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('src/hooks/useGame.js')
+          s=p.read_text()
+          needle='The player\'s message is the COMPLETE set of everything their character said and did this turn.'
+          addition='''\nRESPOND TO THE PLAYER'S ENTIRE MESSAGE, NOT ONLY THE FINAL ACTION OR COMMAND. Every distinct statement may contain new campaign facts, corrections, intentions, emotional context, dialogue, or instructions. Before advancing the scene, incorporate ALL materially new information the player provided. NEVER silently discard the beginning of a player message because a later sentence contains an action. If the player corrects or clarifies an existing fact, that correction IMMEDIATELY overrides your prior assumption.\nDO NOT PARAPHRASE THE PLAYER'S WORDS AS THOUGH THE CHARACTER SAID ONLY PART OF THEIR MESSAGE. If the player writes dialogue plus actions or instructions, preserve the meaning of the COMPLETE statement and have NPCs react to every materially relevant part. Do not selectively quote the convenient sentence while ignoring context that changes its meaning.\n'''
+          # Both Haiku and Sonnet have the same player-voice rule. Insert after
+          # each occurrence so model switching cannot reintroduce the bug.
+          parts=s.split(needle)
+          if len(parts) < 3:
+              raise SystemExit(f'Expected at least 2 player-message rule locations, found {len(parts)-1}')
+          s=(needle+addition).join(parts)
+          p.write_text(s)
+      - run: npm ci
+      - run: npm run build
+      - name: Commit prompt fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/hooks/useGame.js
+          git commit -m "fix: make DM process the entire player message"
+          git push
