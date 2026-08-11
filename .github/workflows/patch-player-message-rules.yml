@@ -1,9 +1,8 @@
 name: Patch player message handling
-on:
-  workflow_dispatch:
+'on':
   push:
     branches: [main]
-    paths: ['.github/workflows/patch-player-message-rules.yml']
+    paths: [.github/workflows/patch-player-message-rules.yml]
 permissions:
   contents: write
 jobs:
@@ -11,37 +10,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Patch prompt rules
+      - name: Patch prompt
         shell: python
         run: |
           from pathlib import Path
-          p=Path('src/hooks/useGame.js')
-          s=p.read_text()
-          addition="""
-RESPOND TO THE PLAYER'S ENTIRE MESSAGE, NOT ONLY THE FINAL ACTION OR COMMAND. Every distinct statement may contain new campaign facts, corrections, intentions, emotional context, dialogue, or instructions. Before advancing the scene, incorporate ALL materially new information the player provided. NEVER silently discard the beginning of a player message because a later sentence contains an action. If the player corrects or clarifies an existing fact, that correction IMMEDIATELY overrides your prior assumption.
-DO NOT PARAPHRASE THE PLAYER'S WORDS AS THOUGH THE CHARACTER SAID ONLY PART OF THEIR MESSAGE. If the player writes dialogue plus actions or instructions, preserve the meaning of the COMPLETE statement and have NPCs react to every materially relevant part. Do not selectively quote the convenient sentence while ignoring context that changes its meaning.
-"""
-          needles=[
-            "The player's message is the COMPLETE set of everything their character said and did this turn.",
-            "Their message is the complete set of everything their character said and did this turn;",
-          ]
-          changed=0
-          for needle in needles:
-            if needle in s:
-              s=s.replace(needle, needle+addition, 1)
-              changed+=1
-          if changed != 2:
-            raise SystemExit(f'Expected to patch 2 prompt variants, patched {changed}')
+          p = Path('src/hooks/useGame.js')
+          s = p.read_text()
+          rule = "\nRESPOND TO THE PLAYER'S ENTIRE MESSAGE, NOT ONLY THE FINAL ACTION OR COMMAND. Every distinct statement may contain new campaign facts, corrections, intentions, emotional context, dialogue, or instructions. Before advancing the scene, incorporate ALL materially new information the player provided. NEVER silently discard the beginning of a player message because a later sentence contains an action. If the player corrects or clarifies an existing fact, that correction IMMEDIATELY overrides your prior assumption.\nDO NOT PARAPHRASE THE PLAYER'S WORDS AS THOUGH THE CHARACTER SAID ONLY PART OF THEIR MESSAGE. If the player writes dialogue plus actions or instructions, preserve the meaning of the COMPLETE statement and have NPCs react to every materially relevant part. Do not selectively quote one sentence while ignoring context that changes its meaning.\n"
+          a = "The player's message is the COMPLETE set of everything their character said and did this turn."
+          b = "The player's voice is not yours. Never write dialogue for the player's character"
+          if "RESPOND TO THE PLAYER'S ENTIRE MESSAGE" not in s:
+              if a not in s:
+                  raise SystemExit('Haiku anchor missing')
+              s = s.replace(a, a + rule, 1)
+              i = s.find(b)
+              if i < 0:
+                  raise SystemExit('Sonnet anchor missing')
+              s = s[:i] + rule + s[i:]
           p.write_text(s)
       - run: npm ci
       - run: npm run build
-      - name: Commit prompt fix
+      - name: Commit
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git add src/hooks/useGame.js
           git commit -m "fix: make DM process the entire player message"
           git push
