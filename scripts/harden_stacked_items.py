@@ -102,4 +102,9 @@ if old not in s: raise RuntimeError('craft repeat block missing')
 s=s.replace(old,new,1)
 p.write_text(s)
 
+# Clean obsolete wording so audits can distinguish real legacy runtime usage from comments.
+p=ROOT/'src/hooks/useGame.js'
+s=p.read_text().replace('their flavor/label lives in customItems, not the name.', 'their flavor/label lives in the character item registry, not the name.')
+p.write_text(s)
+
 print('stacked item hardening applied')
