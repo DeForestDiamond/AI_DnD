@@ -1,0 +1,32 @@
+name: Refactor item consumers
+'on':
+  push:
+    branches: [feat/stacked-item-model]
+    paths: [.github/workflows/refactor-item-consumers.yml, scripts/refactor_item_consumers.py]
+permissions:
+  contents: write
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/refactor_item_consumers.py
+      - run: npm ci
+      - run: npm run build
+      - name: Audit legacy runtime assumptions
+        if: always()
+        run: |
+          echo '=== custom item refs ==='
+          grep -RInE "customItems|stashedCustomItems" src || true
+          echo '=== string-array patterns ==='
+          grep -RInE "inventory\.(indexOf|includes|filter|some)|stash\.(indexOf|includes|filter|some)|for \(const nm of \(.*stash|forEach\(nm =>.*invCount" src || true
+          echo '=== UPDATE prompt refs ==='
+          grep -RIn "UPDATE:" src/hooks/useGame.js || true
+      - name: Commit
+        if: success()
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add src
+          git commit -m "refactor: convert UI and crafting to stacked items"
+          git push
