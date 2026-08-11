@@ -7,6 +7,7 @@ import { statMod, modStr, profBonus, calcAC, getMainWeapon, effectiveStats, equi
 import { stackInventory, SKILL_ABILITY, SKILL_LIST } from '../hooks/useGame.js';
 import { coinsToString } from '../constants/currency.js';
 import { XP_THRESHOLDS } from '../constants/progression.js';
+import { stackCounts, stackCount, stackHas } from '../utils/itemStacks.js';
 
 // ── Inventory categorization ───────────────────────────────────────────────────
 // Item categorisation. Tuned against ~1,600 real item names across five
@@ -343,19 +344,14 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
   // Materials mostly live in the STASH, not carried inventory, so draw from
   // both. Track which source each stack came from — consumption has to remove
   // from the right list.
-  const invCount = {}, stashCount = {}, bagInvCount = {}, bagStashCount = {}, bagWhere = {};
-  (character.inventory || []).forEach(nm => { invCount[nm] = (invCount[nm] || 0) + 1; });
-  (character.stash || []).forEach(nm => { stashCount[nm] = (stashCount[nm] || 0) + 1; });
-  // Bag contents inherit the bag's source. customItems bags are carried;
-  // stashedCustomItems bags are in the stash. Keep the pools separate so the
-  // Inventory/Stash filter reports the real available count.
-  [['customItems', bagInvCount], ['stashedCustomItems', bagStashCount]].forEach(([store, target]) => {
-    Object.entries(character[store] || {}).forEach(([bagName, d]) => {
-      if (d?.type === 'bag' && d.contents) {
-        Object.entries(d.contents).forEach(([item, ct]) => {
-          if (ct > 0) { target[item] = (target[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
-        });
-      }
+  const invCount = stackCounts(character.inventory);
+  const stashCount = stackCounts(character.stash);
+  const bagInvCount = {}, bagStashCount = {}, bagWhere = {};
+  Object.entries(character.items || {}).forEach(([bagName, d]) => {
+    if (d?.type !== 'bag' || !d.contents) return;
+    const target = stackHas(character.stash, bagName) && !stackHas(character.inventory, bagName) ? bagStashCount : bagInvCount;
+    Object.entries(d.contents).forEach(([item, ct]) => {
+      if (ct > 0) { target[item] = (target[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
     });
   });
   const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount), ...Object.keys(bagInvCount), ...Object.keys(bagStashCount)])];
@@ -365,7 +361,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
     return source === 'inventory' ? inv : source === 'stash' ? stash : inv + stash;
   };
   const sourceNames = allNames.filter(nm => sourceCount(nm) > 0);
-  const stockData = (nm) => db[nm] || (character.stashedCustomItems || {})[nm];
+  const stockData = (nm) => db[nm];
   const isStock = (nm) => {
     if (stockData(nm)?.type === 'bag') return false;   // a bag is a container, not material
     const cat = categorizeItem(nm, stockData(nm));
@@ -633,20 +629,16 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
   const [showAll, setShowAll]   = useStored(salvageStore, 'showAll');
   const [source, setSource]     = useStored(salvageStore, 'source');   // inventory | stash | both
 
-  const invCount = {}, stashCount = {}, bagInvCount = {}, bagStashCount = {}, bagWhere = {};
-  (character.inventory || []).forEach(nm => { invCount[nm] = (invCount[nm] || 0) + 1; });
-  (character.stash || []).forEach(nm => { stashCount[nm] = (stashCount[nm] || 0) + 1; });
-  // Bag contents inherit the source of their bag, just like the crafting list.
-  [['customItems', bagInvCount], ['stashedCustomItems', bagStashCount]].forEach(([store, target]) => {
-    Object.entries(character[store] || {}).forEach(([bagName, d]) => {
-      if (d?.type === 'bag' && d.contents) {
-        Object.entries(d.contents).forEach(([item, ct]) => {
-          if (ct > 0) { target[item] = (target[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
-        });
-      }
+  const invCount = stackCounts(character.inventory);
+  const stashCount = stackCounts(character.stash);
+  const bagInvCount = {}, bagStashCount = {}, bagWhere = {};
+  Object.entries(character.items || {}).forEach(([bagName, d]) => {
+    if (d?.type !== 'bag' || !d.contents) return;
+    const target = stackHas(character.stash, bagName) && !stackHas(character.inventory, bagName) ? bagStashCount : bagInvCount;
+    Object.entries(d.contents).forEach(([item, ct]) => {
+      if (ct > 0) { target[item] = (target[item] || 0) + ct; (bagWhere[item] = bagWhere[item] || []).push(bagName); }
     });
   });
-  const equipped = new Set(Object.values(character.slots || {}).filter(Boolean));
   const allNames = [...new Set([...Object.keys(invCount), ...Object.keys(stashCount), ...Object.keys(bagInvCount), ...Object.keys(bagStashCount)])];
   const sourceCount = (nm) => {
     const inv = (invCount[nm] || 0) + (bagInvCount[nm] || 0);
@@ -654,7 +646,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     return source === 'inventory' ? inv : source === 'stash' ? stash : inv + stash;
   };
   const sourceNames = allNames.filter(nm => sourceCount(nm) > 0);
-  const stockData = (nm) => db[nm] || (character.stashedCustomItems || {})[nm];
+  const stockData = (nm) => db[nm];
   // Inverse of crafting: finished goods, not raw materials.
   const isSalvageable = (nm) => {
     const cat = categorizeItem(nm, stockData(nm));
@@ -1184,7 +1176,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
 export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives }) {
-  const db       = allItems(character.customItems || {});
+  const db       = allItems(character.items || {});
   const [activeTab, setActiveTab] = useState('character');
   const [stashFilter, setStashFilter] = useState('');
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
@@ -1196,10 +1188,10 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   const [renaming, setRenaming] = useState(null);   // { name, draft }
   const [actionsFor, setActionsFor] = useState(null);   // which row has its edit/delete revealed
   const [arcCustomText, setArcCustomText] = useState('');
-  const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.customItems||{}) : character.stats;
-  const gearSkills = skillBonuses(character.slots, character.customItems || {});
-  const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.customItems||{}) : '—';
-  const weapon   = character.stats.dex ? getMainWeapon(character.slots, character.stats, character.customItems||{}) : null;
+  const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.items||{}) : character.stats;
+  const gearSkills = skillBonuses(character.slots, character.items || {});
+  const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.items||{}) : '—';
+  const weapon   = character.stats.dex ? getMainWeapon(character.slots, character.stats, character.items||{}) : null;
   const pb       = profBonus(character.level);
 
   // Bag creation state
@@ -1223,14 +1215,14 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   const iconBtn = {background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.textDead,fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4};
   const delBtn = {background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.redFaint||'#8a3a3a',fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4};
 
-  const existingBags = Object.entries(character.customItems || {})
+  const existingBags = Object.entries(character.items || {})
     .filter(([, v]) => v.type === 'bag')
     .map(([name]) => name);
 
   const toggleBagItem = (itemName) => {
     setBagSelected(prev => {
       const current = prev[itemName] || 0;
-      const max = character.inventory.filter(i => i === itemName).length;
+      const max = stackCount(character.inventory, itemName);
       if (current >= max) {
         const next = { ...prev };
         delete next[itemName];
@@ -1776,7 +1768,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             {items.map(({ name, count }) => {
               // Resolve from both stores: an item held in inventory AND stash may
               // have its definition in either one.
-              const data = db[name] || (character.stashedCustomItems || {})[name];
+              const data = db[name];
               const isBag = data?.type === 'bag';
               const statLabel = data?.type==='weapon'?`(${data.damage}${data.bonus?`+${data.bonus}`:''})`
                 : data?.type==='armor'?`(AC${data.ac})`
@@ -1930,7 +1922,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         const q = stashFilter.trim().toLowerCase();
         const stashEntries = q
           ? allStashEntries.filter(([name]) => {
-              const data = db[name] || (character.stashedCustomItems || {})[name];
+              const data = db[name];
               return name.toLowerCase().includes(q) || (data?.label || '').toLowerCase().includes(q);
             })
           : allStashEntries;
@@ -1966,7 +1958,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             {(() => {
               // Group by the same categories the inventory uses. A stash can run
               // to hundreds of entries, so a flat list is unscannable.
-              const stashData = nm => db[nm] || (character.stashedCustomItems || {})[nm];
+              const stashData = nm => db[nm];
               const groups = {};
               stashEntries.forEach(entry => {
                 const cat = categorizeItem(entry[0], stashData(entry[0]));
