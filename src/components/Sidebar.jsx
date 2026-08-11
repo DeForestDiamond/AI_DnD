@@ -1216,7 +1216,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   const delBtn = {background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.redFaint||'#8a3a3a',fontSize:9,padding:'1px 4px',borderRadius:2,cursor:'pointer',flexShrink:0,lineHeight:1.4};
 
   const existingBags = Object.entries(character.items || {})
-    .filter(([, v]) => v.type === 'bag')
+    .filter(([name, v]) => v.type === 'bag' && stackHas(character.inventory, name))
     .map(([name]) => name);
 
   const toggleBagItem = (itemName) => {
@@ -1233,7 +1233,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   };
 
   const confirmBag = () => {
-    const items = Object.entries(bagSelected).flatMap(([name, count]) => Array(count).fill(name));
+    const items = Object.entries(bagSelected).filter(([, qty]) => qty > 0).map(([name, qty]) => ({ name, qty }));
     if (addingToBag) {
       onAddToBag?.(addingToBag, items);
     } else {

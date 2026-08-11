@@ -187,21 +187,16 @@ export const migrateCharacter = (char) => {
   const notes = [];
   const v = char._v || 1;
   let c = { ...char };
-  // Inventory/stash may arrive in compressed { name: count } form (how they're
-  // now stored on disk to avoid 4000 identical lines). Expand back to the array
-  // of individual strings that every in-memory consumer expects. Runs for ALL
-  // saves regardless of version — a plain array passes through untouched.
+  // Legacy saves may contain either individual-name arrays or the old save-only
+  // compressed {name:count} shape. NEVER expand the compressed form: a stockpile
+  // of 300,000 ingots must stay one object during migration, not briefly become
+  // 300,000 strings just to be collapsed again at v19.
   const expandList = (val) => {
-    if (Array.isArray(val)) return val;                 // old array-form save — as-is
-    if (val && typeof val === 'object') {               // compressed { name: count }
-      const out = [];
-      for (const [name, count] of Object.entries(val)) {
-        const n = Math.max(0, parseInt(count, 10) || 0);
-        for (let i = 0; i < n; i++) out.push(name);
-      }
-      return out;
-    }
-    return [];                                          // absent/garbage → empty
+    if (Array.isArray(val)) return val;                 // old array form; v19 compacts it
+    if (val && typeof val === 'object') return Object.entries(val)
+      .map(([name, count]) => ({ name, qty: Math.max(0, parseInt(count, 10) || 0) }))
+      .filter(x => x.qty > 0);
+    return [];
   };
   if (c.inventory !== undefined) c.inventory = expandList(c.inventory);
   if (c.stash !== undefined) c.stash = expandList(c.stash);
@@ -399,8 +394,17 @@ export const migrateCharacter = (char) => {
 
   if (v < 19) {
     const legacyDefs = { ...(c.stashedCustomItems || {}), ...(c.customItems || {}), ...(c.items || {}) };
-    const inventory = normalizeStacks(c.inventory);
-    const stash = normalizeStacks(c.stash);
+    const fixBakedQty = (list) => {
+      let out = [];
+      for (const stack of normalizeStacks(list)) {
+        const m = stack.name.match(/^(.*?)\s*[xX]\s*(\d+)$/);
+        if (m && m[1].trim()) out = addStack(out, m[1].trim(), stack.qty * Math.min(500000, Math.max(1, parseInt(m[2], 10) || 1)));
+        else out = addStack(out, stack.name, stack.qty);
+      }
+      return out;
+    };
+    const inventory = fixBakedQty(c.inventory);
+    const stash = fixBakedQty(c.stash);
     const items = {};
     const cloneDef = (d) => d && typeof d === 'object' ? { ...d, ...(d.bonuses ? { bonuses:{...d.bonuses} } : {}) } : { type:'misc' };
     const ensure = (name) => {
@@ -811,8 +815,8 @@ export function useCharacter(log) {
   // selectedItems: array of item names (may include duplicates for multiple copies)
   const createBag = (bagName, selectedItems) => {
     setCharacter(c => {
-      const counts = {};
-      selectedItems.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+      const selectedStacks = normalizeStacks(selectedItems);
+      const counts = Object.fromEntries(selectedStacks.map(({name, qty}) => [name, qty]));
       let inventory = normalizeStacks(c.inventory);
       Object.entries(counts).forEach(([name, qty]) => { inventory = takeStack(inventory, name, qty).stacks; });
       const label = Object.entries(counts).map(([name, count]) => count > 1 ? `${name} x${count}` : name).join(', ');
@@ -917,11 +921,10 @@ export function useCharacter(log) {
       const existing = c.items?.[bagName];
       if (!existing) return c;
       const counts = { ...(existing.contents || {}) };
-      selectedItems.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
+      const selectedStacks = normalizeStacks(selectedItems);
+      selectedStacks.forEach(({name, qty}) => { counts[name] = (counts[name] || 0) + qty; });
       let inventory = normalizeStacks(c.inventory);
-      const selectedCounts = {};
-      selectedItems.forEach(name => { selectedCounts[name] = (selectedCounts[name] || 0) + 1; });
-      Object.entries(selectedCounts).forEach(([name, qty]) => { inventory = takeStack(inventory, name, qty).stacks; });
+      selectedStacks.forEach(({name, qty}) => { inventory = takeStack(inventory, name, qty).stacks; });
       const label = Object.entries(counts).map(([name, count]) => count > 1 ? `${name} x${count}` : name).join(', ');
       const items = { ...c.items, [bagName]: { ...existing, label, contents:counts } };
       const nc = { ...c, inventory, items };

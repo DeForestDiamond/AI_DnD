@@ -1325,8 +1325,10 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
 
     // A set creates every piece from one craft; the materials are consumed once.
     const isSet = Array.isArray(option.pieces) && option.pieces.length > 0;
-    const one = isSet ? option.pieces.map(tagFor).join('') : tagFor(option);
-    const tag = one.repeat(batch);   // identical copies; [ITEM:] stacks them
+    const withQty = (tag, qty) => qty > 1 ? tag.replace(/]$/, ` | qty:${qty}]`) : tag;
+    const tag = isSet
+      ? option.pieces.map(piece => withQty(tagFor(piece), batch)).join('')
+      : withQty(tagFor(option), batch);
 
     const { removeTags, apply, bagTakes } = consumeMaterials(c, consumes);
     let next = apply(applyEffects(tag + removeTags, c));

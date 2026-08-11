@@ -127,7 +127,7 @@ const buildCharBlock = (char) => {
   const stackedInv  = stackInventory(char.inventory);
   const invDisplay  = Object.entries(stackedInv).map(([n,c])=>c>1?`${n} x${c}`:n).join(', ') || 'empty';
   // Descriptions for custom items the player owns (inventory + equipped), so the
-  // DM knows what they do — their flavor/label lives in customItems, not the name.
+  // DM knows what they do — their flavor/label lives in the character item registry, not the name.
   // Two tiers, because they change at very different rates. Worn gear and
   // constructs are stable — you equip something once and keep it — while carried
   // inventory churns constantly as loot arrives. Caching is prefix-based, so the
@@ -567,7 +567,7 @@ export const buildSystemPrompt = (char) => {
     .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
     .join(', ') || 'empty';
   // Descriptions for custom items the player owns (inventory + equipped), so the
-  // DM knows what they do — their flavor/label lives in customItems, not the name.
+  // DM knows what they do — their flavor/label lives in the character item registry, not the name.
   // Two tiers by change rate — see the Sonnet builder for the reasoning.
   const equippedNames = new Set(Object.values(char.slots || {}).filter(Boolean));
   const isConstruct   = (n) => (char.items?.[n] || {}).type === 'construct';
