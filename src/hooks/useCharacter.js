@@ -4,6 +4,7 @@ import { STARTING_GEAR } from '../constants/classes.js';
 import { XP_THRESHOLDS, HP_PER_LEVEL, HP_BASE, SAVE_VERSION } from '../constants/progression.js';
 import { parseCoinAmount } from '../constants/currency.js';
 import { rollArc, resolveArcLocation } from '../constants/encounters.js';
+import { normalizeStacks, stackCount, stackHas, stackNames, addStack, takeStack, takeAllStack, renameStack } from '../utils/itemStacks.js';
 
 // -- Pure stat helpers ----------------------------------------------------------
 export const statMod   = (v) => Math.floor(((v||10) - 10) / 2);
@@ -28,7 +29,7 @@ export const calcMaxHp = (clsName, con, level = 1) => {
 // and healing all keep working on it); this is the gear contribution on top.
 export const gearHpBonus = (char) => {
   if (!char?.stats) return 0;
-  const eff = effectiveStats(char.stats, char.slots || {}, char.customItems || {});
+  const eff = effectiveStats(char.stats, char.slots || {}, char.items || {});
   const modGain = statMod(eff.con) - statMod(char.stats.con);
   if (modGain === 0) return 0;
   const level = Math.max(1, char.level || 1);
@@ -56,23 +57,26 @@ export const applyRaceBonus = (baseStats, race) => {
 };
 
 // -- Item / slot helpers --------------------------------------------------------
-export const allItems = (customItems) => ({ ...ITEM_DB, ...customItems });
+export const allItems = (items) => ({ ...(items || {}) });
 
-// True if any copy of an item still exists anywhere: carried, worn, stashed, or
-// packed in a bag. A custom definition must only be discarded when this is false
-// — otherwise deleting the last carried copy strips the stats off the one still
-// on your back, in your stash, or in a satchel.
+// True if any copy of a named item still exists anywhere the character owns it.
+// Definitions live once in character.items, so this is the only condition under
+// which a definition may be discarded.
 export const itemExistsAnywhere = (c, name, overrides = {}) => {
   const inv = overrides.inventory ?? c.inventory ?? [];
   const stash = overrides.stash ?? c.stash ?? [];
   const slots = overrides.slots ?? c.slots ?? {};
-  if (inv.includes(name)) return true;
-  if (stash.includes(name)) return true;
-  if (Object.values(slots).includes(name)) return true;
-  for (const store of ['customItems', 'stashedCustomItems']) {
-    const items = overrides[store] ?? c[store] ?? {};
-    for (const d of Object.values(items)) {
-      if (d?.type === 'bag' && d.contents && (d.contents[name] || 0) > 0) return true;
+  if (stackHas(inv, name) || stackHas(stash, name)) return true;
+  if (Object.values(slots).some(v => v?.toLowerCase() === String(name).toLowerCase())) return true;
+  for (const comp of Object.values(c.companions || {})) {
+    if (Object.values(comp?.slots || {}).some(v => v?.toLowerCase() === String(name).toLowerCase())) return true;
+  }
+  const items = overrides.items ?? c.items ?? {};
+  for (const d of Object.values(items)) {
+    if (d?.type === 'bag' && d.contents && (d.contents[name] || 0) > 0) return true;
+    if (d?.type === 'bag' && d.contents) {
+      const k = Object.keys(d.contents).find(k => k.toLowerCase() === String(name).toLowerCase());
+      if (k && (d.contents[k] || 0) > 0) return true;
     }
   }
   return false;
@@ -163,19 +167,14 @@ export const getMainWeapon = (slots, stats, customItems) => {
 export const equippableInSlot = (char, slotId) => {
   const slot = SLOTS.find(s => s.id === slotId);
   if (!slot) return [];
-  const db = allItems(char.customItems);
+  const db = allItems(char.items);
   const validSlotIds = SLOTS.map(s => s.id);
-  return char.inventory.filter(name => {
+  return stackNames(char.inventory).filter(name => {
     const data = db[name];
     if (!data) return slot.accepts.includes('magic');
     if (slotId === 'offhand' && data.type === 'shield') return true;
     if (!slot.accepts.includes(data.type)) return false;
-    // Magic items with a declared slot only fit that slot ('ring' fits either ring slot).
-    // Items with a missing or unrecognized slot stay flexible so nothing gets stranded.
     if (data.type === 'magic' && data.slot) {
-      // A ring fits EITHER ring slot however it was tagged. ring1/ring2 are
-      // positions, not different kinds of ring — items already saved with a
-      // specific one shouldn't be stuck in it.
       if (/^ring[12]?$/.test(data.slot)) return slotId === 'ring1' || slotId === 'ring2';
       if (validSlotIds.includes(data.slot)) return data.slot === slotId;
     }
@@ -397,6 +396,37 @@ export const migrateCharacter = (char) => {
       notes.push(`Arc location assigned: ${c.arc.arcLocation}`);
     }
   }
+
+  if (v < 19) {
+    const legacyDefs = { ...(c.stashedCustomItems || {}), ...(c.customItems || {}), ...(c.items || {}) };
+    const inventory = normalizeStacks(c.inventory);
+    const stash = normalizeStacks(c.stash);
+    const items = {};
+    const cloneDef = (d) => d && typeof d === 'object' ? { ...d, ...(d.bonuses ? { bonuses:{...d.bonuses} } : {}) } : { type:'misc' };
+    const ensure = (name) => {
+      if (!name || items[name]) return;
+      items[name] = cloneDef(legacyDefs[name] || ITEM_DB[name] || { type:'misc' });
+    };
+    Object.entries(legacyDefs).forEach(([name, data]) => { items[name] = cloneDef(data); });
+    inventory.forEach(({name}) => ensure(name));
+    stash.forEach(({name}) => ensure(name));
+    Object.values(c.slots || {}).filter(Boolean).forEach(ensure);
+    Object.values(c.companions || {}).forEach(comp => Object.values(comp?.slots || {}).filter(Boolean).forEach(ensure));
+    Object.values(items).forEach(data => {
+      if (data?.type === 'bag' && data.contents) Object.keys(data.contents).forEach(ensure);
+    });
+    c.inventory = inventory;
+    c.stash = stash;
+    c.items = items;
+    delete c.customItems;
+    delete c.stashedCustomItems;
+    notes.push('Inventory upgraded to compact quantity stacks and unified item registry');
+  }
+  // Be tolerant of hand-edited/new saves: normalize the two location lists even
+  // when the file already claims the current version.
+  c.inventory = normalizeStacks(c.inventory);
+  c.stash = normalizeStacks(c.stash);
+  if (!c.items || typeof c.items !== 'object') c.items = {};
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
@@ -412,8 +442,7 @@ export const EMPTY_CHAR = {
   slots:{ ...EMPTY_SLOTS },
   inventory:[], stash:[], coins:1000, environment:'wilderness', defeatedAntagonists:[],
   disposition: { alignment:'', cares:'', indifferent:'', methods:'', lines:'' },
-  customItems:{},
-  stashedCustomItems:{},
+  items:{},
   contextExclusions: { companions:{}, npcs:{}, towns:{} },
   bio: '',
   directives: '',
@@ -487,7 +516,7 @@ export function useCharacter(log) {
 
   // Apply all DM game effect tags to character
   const applyEffects = (text, currentChar, skipLevelUp = false) => {
-    let c = { ...currentChar, customItems:{ ...(currentChar.customItems||{}) }, slots:{ ...(currentChar.slots||EMPTY_SLOTS) } };
+    let c = { ...currentChar, items:{ ...(currentChar.items||{}) }, inventory:normalizeStacks(currentChar.inventory), stash:normalizeStacks(currentChar.stash), slots:{ ...(currentChar.slots||EMPTY_SLOTS) } };
 
     // Coins — [GOLD:] and [COIN:]/[COINS:] both accepted; bare numbers are gp,
     // denominations pp/gp/sp/cp all work ([GOLD: -5sp], [COIN: +2pp], [GOLD: +3gp 5sp]).
@@ -521,76 +550,56 @@ export function useCharacter(log) {
     // XP -- accept [XP: +50] or [XP: 50]
     [...text.matchAll(/\[XP:\s*\+?(\d+)\]/gi)].forEach(m => { c.xp = (c.xp||0) + parseInt(m[1]); });
 
-    // Items gained
+    // Items gained / definitions updated.
+    // qty:0 is definition-only: it changes the authoritative item data without
+    // adding another copy. Missing qty remains backwards-compatible and adds 1.
     [...text.matchAll(/\[ITEM:\s*([^\]]+)\]/gi)].forEach(m => {
       const raw = m[1];
-      // Support qty tag: [ITEM: Blast Powder | qty:3] adds 3 individual entries
       const qtyMatch = raw.match(/\|\s*qty:\s*(\d+)/i);
       const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
       const cleanRaw = raw.replace(/\|\s*qty:\s*\d+/i, '').trim();
+      const structured = cleanRaw.includes('|');
       const { name: rawName, data } = parseDMItem(cleanRaw);
-      // The DM sometimes bakes the count into the name ("Pit Fiend Scale x200")
-      // instead of using qty:. Split it out here so the item is stored as real
-      // individual entries — otherwise removal, crafting and stacking all see
-      // one item that claims to be many.
       const bakedQty = rawName.match(/^(.*?)\s*[xX]\s*(\d+)$/);
-      const name = bakedQty && bakedQty[1].trim() ? bakedQty[1].trim() : rawName;
+      const parsedName = bakedQty && bakedQty[1].trim() ? bakedQty[1].trim() : rawName;
       const totalQty = bakedQty && bakedQty[1].trim()
-        ? qty * Math.min(500, Math.max(1, parseInt(bakedQty[2], 10) || 1))
+        ? qty * Math.min(500000, Math.max(1, parseInt(bakedQty[2], 10) || 1))
         : qty;
-      // Bundle-shaped names mean the DM compressed several things into one
-      // opaque parcel the player then has to unpack. Not blocked — some are
-      // legitimate — but surfaced so it's visible when it happens.
+      const existingKey = Object.keys(c.items || {}).find(k => k.toLowerCase() === parsedName.toLowerCase());
+      const name = existingKey || parsedName;
+
       if (/\b(crate|chest|barrel|sack|bundle|assortment|collection|cache|trove|haul|pile|box)\s+of\b/i.test(name)
           || /\b(assorted|various|miscellaneous|sundry)\b/i.test(name)
           || /^(alchemical|crafting|trade|general)\s+supplies$/i.test(name.trim())) {
         log?.(`[ITEM] NOTE: "${name}" looks like a bundle rather than itemised loot — ask the DM to list its contents as separate items.`);
       }
-      const isCustom = !ITEM_DB[name] && (data.type !== 'misc' || (data.label && data.label.trim()));
-      if (isCustom) c.customItems[name] = data;
-      // One concat, not one per item. The old version rebuilt the whole array
-      // on every iteration, so adding N items cost N*(N+1)/2 element copies —
-      // a crafted stack of a few hundred thousand never finished at all.
-      // Capped as well: no legitimate tag grants six figures of anything, and a
-      // runaway qty should be visible rather than fatal.
-      // Generous: the cap exists only to catch a runaway number, not to ration
-      // legitimate output. Adding is linear now, and inventory compresses to
-      // {name: count} on disk, so a large stack costs almost nothing.
+
+      // A bare [ITEM: Existing Name] means another copy, not "erase its stats and
+      // turn it into misc". Structured ITEM tags are authoritative and overwrite
+      // the single definition shared by every copy of that name.
+      if (structured || !existingKey) c.items[name] = data;
+
       const MAX_GRANT = 500000;
       const grant = Math.min(totalQty, MAX_GRANT);
       if (grant < totalQty) {
         log?.(`[ITEM] WARNING: "${name}" asked for ${totalQty.toLocaleString()} — capped at ${MAX_GRANT.toLocaleString()}. ${(totalQty-grant).toLocaleString()} were NOT added.`);
       }
-      if (grant > 0) c.inventory = c.inventory.concat(new Array(grant).fill(name));
+      if (grant > 0) c.inventory = addStack(c.inventory, name, grant);
     });
 
-    // Items removed -- case-insensitive, supports qty tag: [REMOVE: Blast Powder | qty:2]
+    // Items removed -- case-insensitive, supports qty tag.
     [...text.matchAll(/\[REMOVE:\s*([^\]]+)\]/gi)].forEach(m => {
       const raw = m[1];
       const qtyMatch = raw.match(/\|\s*qty:\s*(\d+)/i);
       const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
-      const removeName = raw.replace(/\|\s*qty:\s*\d+/i, '').trim().toLowerCase();
-      // Single pass. The old version ran findIndex AND rebuilt the whole array
-      // once per item removed — O(qty x inventory) array COPIES, which on a
-      // stack of several thousand is tens of seconds of allocation on a phone
-      // and looks exactly like a hang.
-      if (qty > 0) {
-        let left = qty;
-        const kept = [];
-        for (const n of c.inventory) {
-          if (left > 0 && n.toLowerCase() === removeName) { left--; continue; }
-          kept.push(n);
-        }
-        if (kept.length !== c.inventory.length) c.inventory = kept;
-      }
-      const slotEntry = Object.entries(c.slots).find(([,v]) => v?.toLowerCase() === removeName);
+      const removeName = raw.replace(/\|\s*qty:\s*\d+/i, '').trim();
+      if (qty > 0) c.inventory = takeStack(c.inventory, removeName, qty).stacks;
+      const key = removeName.toLowerCase();
+      const slotEntry = Object.entries(c.slots).find(([,v]) => v?.toLowerCase() === key);
       if (slotEntry) c.slots = { ...c.slots, [slotEntry[0]]: null };
-      // Drop the custom definition once no copies remain (avoids orphaned customItems)
-      const stillHeld = c.inventory.some(n => n.toLowerCase() === removeName)
-        || Object.values(c.slots).some(v => v?.toLowerCase() === removeName);
-      if (!stillHeld) {
-        const ck = Object.keys(c.customItems).find(k => k.toLowerCase() === removeName);
-        if (ck) { const ci = { ...c.customItems }; delete ci[ck]; c.customItems = ci; }
+      const itemKey = Object.keys(c.items || {}).find(k => k.toLowerCase() === key);
+      if (itemKey && !itemExistsAnywhere(c, itemKey)) {
+        const items = { ...c.items }; delete items[itemKey]; c.items = items;
       }
     });
 
@@ -630,24 +639,40 @@ export function useCharacter(log) {
       c.arc = rollArc(c.level, finished, defeated);
     }
 
-    // Item update -- renames an item AND carries its custom stats/data to the new name
+    // Legacy [UPDATE: old | new] support. New prompts no longer teach this;
+    // [ITEM: name | ... | qty:0] is the definition-update path.
     [...text.matchAll(/\[UPDATE:\s*([^|\]]+)\|([^\]]+)\]/gi)].forEach(m => {
       const oldName = m[1].trim();
       const newName = m[2].trim();
-      // Move custom item data to the new key so stats/bonuses survive the rename
-      const oldKey = Object.keys(c.customItems).find(k => k.toLowerCase() === oldName.toLowerCase());
+      const oldKey = Object.keys(c.items || {}).find(k => k.toLowerCase() === oldName.toLowerCase());
       if (oldKey) {
-        c.customItems = { ...c.customItems, [newName]: c.customItems[oldKey] };
-        if (oldKey !== newName) { const ci = { ...c.customItems }; delete ci[oldKey]; c.customItems = ci; }
+        const items = { ...c.items, [newName]: c.items[oldKey] };
+        if (oldKey !== newName) delete items[oldKey];
+        // Bag contents are references by name too.
+        Object.entries(items).forEach(([bag, d]) => {
+          if (d?.type === 'bag' && d.contents) {
+            const ck = Object.keys(d.contents).find(k => k.toLowerCase() === oldName.toLowerCase());
+            if (ck) {
+              const contents = { ...d.contents, [newName]:(d.contents[newName] || 0) + d.contents[ck] };
+              if (ck !== newName) delete contents[ck];
+              items[bag] = { ...d, contents };
+            }
+          }
+        });
+        c.items = items;
       }
-      const idx = c.inventory.findIndex(n => n.toLowerCase() === oldName.toLowerCase());
-      if (idx !== -1) {
-        const inv = [...c.inventory];
-        inv[idx] = newName;
-        c.inventory = inv;
+      c.inventory = renameStack(c.inventory, oldName, newName);
+      c.stash = renameStack(c.stash, oldName, newName);
+      Object.keys(c.slots).forEach(slot => { if (c.slots[slot]?.toLowerCase() === oldName.toLowerCase()) c.slots = { ...c.slots, [slot]:newName }; });
+      if (c.companions) {
+        const companions = { ...c.companions };
+        Object.entries(companions).forEach(([cn, comp]) => {
+          const slots = { ...(comp?.slots || {}) }; let touched = false;
+          Object.keys(slots).forEach(slot => { if (slots[slot]?.toLowerCase() === oldName.toLowerCase()) { slots[slot] = newName; touched = true; } });
+          if (touched) companions[cn] = { ...comp, slots };
+        });
+        c.companions = companions;
       }
-      const slotEntry = Object.entries(c.slots).find(([,v]) => v?.toLowerCase() === oldName.toLowerCase());
-      if (slotEntry) c.slots = { ...c.slots, [slotEntry[0]]: newName };
     });
 
     // DM unequip -- moves an equipped item back to inventory WITHOUT deleting it
@@ -657,9 +682,7 @@ export function useCharacter(log) {
       if (slotEntry) {
         const [slotId, itemName] = slotEntry;
         c.slots = { ...c.slots, [slotId]: null };
-        if (!c.inventory.some(n => n.toLowerCase() === name)) {
-          c.inventory = [...c.inventory, itemName];
-        }
+        c.inventory = addStack(c.inventory, itemName, 1);
       }
     });
 
@@ -667,7 +690,7 @@ export function useCharacter(log) {
     [...text.matchAll(/\[EQUIP:\s*([^|\]]+)\|?\s*([^\]]*)\]/gi)].forEach(m => {
       const name     = m[1].trim();
       const target   = m[2].trim();
-      const db       = allItems(c.customItems);
+      const db       = allItems(c.items);
       const data     = db[name];
 
       const slotFromType = () => {
@@ -707,9 +730,8 @@ export function useCharacter(log) {
         const compSlots = comp.slots || {};
         const slotId    = slotFromType();
         const prev = compSlots[slotId];
-        const idx  = c.inventory.indexOf(name);
-        if (idx !== -1) c.inventory = [...c.inventory.slice(0,idx), ...c.inventory.slice(idx+1)];
-        if (prev) c.inventory = [...c.inventory, prev];
+        c.inventory = takeStack(c.inventory, name, 1).stacks;
+        if (prev) c.inventory = addStack(c.inventory, prev, 1);
         c.companions = { ...c.companions, [compKey]: { ...comp, slots: { ...compSlots, [slotId]: name } } };
         return;
       }
@@ -717,9 +739,8 @@ export function useCharacter(log) {
       let slotId = targetIsSlot ? target.toLowerCase() : slotFromType();
       if (!SLOTS.find(s => s.id === slotId)) slotId = slotFromType();
       const prev = c.slots[slotId];
-      const idx  = c.inventory.indexOf(name);
-      if (idx !== -1) c.inventory = [...c.inventory.slice(0,idx), ...c.inventory.slice(idx+1)];
-      if (prev) c.inventory = [...c.inventory, prev];
+      c.inventory = takeStack(c.inventory, name, 1).stacks;
+      if (prev) c.inventory = addStack(c.inventory, prev, 1);
       c.slots = { ...c.slots, [slotId]: name };
     });
 
@@ -742,7 +763,10 @@ export function useCharacter(log) {
       const stats = applyRaceBonus({ ...cls.stats }, c.race);
       const maxHp = calcMaxHp(cls.name, stats.con, 1);
       const gear  = STARTING_GEAR[cls.name] || { slots:{ ...EMPTY_SLOTS }, inventory:[] };
-      return { ...c, cls, stats, maxHp, hp:maxHp, slots:{ ...gear.slots }, inventory:[...gear.inventory], customItems:{}, classLevels:{ [cls.name]: 1 } };
+      const inventory = normalizeStacks(gear.inventory);
+      const ownedNames = [...new Set([...Object.values(gear.slots).filter(Boolean), ...stackNames(inventory)])];
+      const items = Object.fromEntries(ownedNames.map(name => [name, { ...(ITEM_DB[name] || { type:'misc' }) }]));
+      return { ...c, cls, stats, maxHp, hp:maxHp, slots:{ ...gear.slots }, inventory, items, classLevels:{ [cls.name]: 1 } };
     });
   };
 
@@ -763,29 +787,10 @@ export function useCharacter(log) {
 
   const moveToStash = (itemName, all = false) => {
     setCharacter(c => {
-      let inventory = [...c.inventory];
-      let stash = [...(c.stash || [])];
-      if (all) {
-        const moved = inventory.filter(i => i === itemName);
-        inventory = inventory.filter(i => i !== itemName);
-        stash = [...stash, ...moved];
-      } else {
-        const idx = inventory.indexOf(itemName);
-        if (idx === -1) return c;
-        inventory = [...inventory.slice(0, idx), ...inventory.slice(idx + 1)];
-        stash = [...stash, itemName];
-      }
-      // Move customItem definition to stashedCustomItems if present
-      // The definition is COPIED, not moved. An item can exist in both places at
-      // once, and each list resolves definitions from its own store — so moving
-      // the only copy of the definition left the other side with a bare name.
-      const customItems = { ...c.customItems };
-      const stashedCustomItems = { ...(c.stashedCustomItems || {}) };
-      if (customItems[itemName]) {
-        stashedCustomItems[itemName] = customItems[itemName];
-        if (!inventory.includes(itemName)) delete customItems[itemName];
-      }
-      const nc = { ...c, inventory, stash, customItems, stashedCustomItems };
+      const qty = all ? stackCount(c.inventory, itemName) : 1;
+      const taken = takeStack(c.inventory, itemName, qty);
+      if (!taken.removed) return c;
+      const nc = { ...c, inventory:taken.stacks, stash:addStack(c.stash, itemName, taken.removed) };
       charRef.current = nc;
       return nc;
     });
@@ -793,28 +798,10 @@ export function useCharacter(log) {
 
   const moveToInventory = (itemName, all = false) => {
     setCharacter(c => {
-      let stash = [...(c.stash || [])];
-      let inventory = [...c.inventory];
-      if (all) {
-        const moved = stash.filter(i => i === itemName);
-        stash = stash.filter(i => i !== itemName);
-        inventory = [...inventory, ...moved];
-      } else {
-        const idx = stash.indexOf(itemName);
-        if (idx === -1) return c;
-        stash = [...stash.slice(0, idx), ...stash.slice(idx + 1)];
-        inventory = [...inventory, itemName];
-      }
-      // Restore customItem definition from stashedCustomItems if present
-      const customItems = { ...c.customItems };
-      const stashedCustomItems = { ...(c.stashedCustomItems || {}) };
-      // Copied, not moved — see moveToStash. Only release it from the stash
-      // store once no stashed copy remains.
-      if (stashedCustomItems[itemName]) {
-        customItems[itemName] = stashedCustomItems[itemName];
-        if (!stash.includes(itemName)) delete stashedCustomItems[itemName];
-      }
-      const nc = { ...c, inventory, stash, customItems, stashedCustomItems };
+      const qty = all ? stackCount(c.stash, itemName) : 1;
+      const taken = takeStack(c.stash, itemName, qty);
+      if (!taken.removed) return c;
+      const nc = { ...c, stash:taken.stacks, inventory:addStack(c.inventory, itemName, taken.removed) };
       charRef.current = nc;
       return nc;
     });
@@ -824,46 +811,30 @@ export function useCharacter(log) {
   // selectedItems: array of item names (may include duplicates for multiple copies)
   const createBag = (bagName, selectedItems) => {
     setCharacter(c => {
-      // Count selected items
       const counts = {};
       selectedItems.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
-      // Build label from counts
-      const label = Object.entries(counts)
-        .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
-        .join(', ');
-      // Remove selected items from inventory (one copy at a time)
-      let inventory = [...c.inventory];
-      selectedItems.forEach(name => {
-        const idx = inventory.indexOf(name);
-        if (idx !== -1) inventory.splice(idx, 1);
-      });
-      // Add bag to inventory and customItems
-      inventory = [...inventory, bagName];
-      const customItems = {
-        ...c.customItems,
-        [bagName]: { type: 'bag', slot: null, bonuses: {}, label, contents: counts },
-      };
-      const nc = { ...c, inventory, customItems };
+      let inventory = normalizeStacks(c.inventory);
+      Object.entries(counts).forEach(([name, qty]) => { inventory = takeStack(inventory, name, qty).stacks; });
+      const label = Object.entries(counts).map(([name, count]) => count > 1 ? `${name} x${count}` : name).join(', ');
+      inventory = addStack(inventory, bagName, 1);
+      const items = { ...(c.items || {}), [bagName]: { type:'bag', slot:null, bonuses:{}, label, contents:counts } };
+      const nc = { ...c, inventory, items };
       charRef.current = nc;
       return nc;
     });
   };
 
-  // Move an item out of a bag back into inventory (one or all copies)
   const removeFromBag = (bagName, itemName, all = false) => {
     setCharacter(c => {
-      const existing = c.customItems[bagName];
+      const existing = c.items?.[bagName];
       if (!existing?.contents?.[itemName]) return c;
       const counts = { ...existing.contents };
       const moveCount = all ? counts[itemName] : 1;
       counts[itemName] -= moveCount;
       if (counts[itemName] <= 0) delete counts[itemName];
-      const label = Object.entries(counts)
-        .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
-        .join(', ');
-      const inventory = [...c.inventory, ...Array(moveCount).fill(itemName)];
-      const customItems = { ...c.customItems, [bagName]: { ...existing, label, contents: counts } };
-      const nc = { ...c, inventory, customItems };
+      const label = Object.entries(counts).map(([name, count]) => count > 1 ? `${name} x${count}` : name).join(', ');
+      const items = { ...c.items, [bagName]: { ...existing, label, contents:counts } };
+      const nc = { ...c, inventory:addStack(c.inventory, itemName, moveCount), items };
       charRef.current = nc;
       return nc;
     });
@@ -877,47 +848,34 @@ export function useCharacter(log) {
     const target = (to || '').trim();
     if (!target || target === from) return;
     setCharacter(c => {
-      const swap = (arr) => (arr || []).map(n => n === from ? target : n);
-      const nc = { ...c, inventory: swap(c.inventory), stash: swap(c.stash) };
-
-      // equipment slots
+      const nc = { ...c, inventory:renameStack(c.inventory, from, target), stash:renameStack(c.stash, from, target) };
       const slots = { ...(c.slots || {}) };
       Object.keys(slots).forEach(k => { if (slots[k] === from) slots[k] = target; });
       nc.slots = slots;
-
-      // both definition stores, and bag contents inside them
-      ['customItems', 'stashedCustomItems'].forEach(store => {
-        const src = c[store]; if (!src) return;
-        const next = { ...src };
-        if (next[from]) {
-          // Keep the existing definition if the target already has one.
-          if (!next[target]) next[target] = next[from];
-          delete next[from];
+      const items = { ...(c.items || {}) };
+      if (items[from]) {
+        if (!items[target]) items[target] = items[from];
+        delete items[from];
+      }
+      Object.entries(items).forEach(([bagName, d]) => {
+        if (d?.type === 'bag' && d.contents && d.contents[from] !== undefined) {
+          const contents = { ...d.contents };
+          contents[target] = (contents[target] || 0) + contents[from];
+          delete contents[from];
+          items[bagName] = { ...d, contents };
         }
-        Object.entries(next).forEach(([bagName, d]) => {
-          if (d?.type === 'bag' && d.contents && d.contents[from] !== undefined) {
-            const contents = { ...d.contents };
-            contents[target] = (contents[target] || 0) + contents[from];
-            delete contents[from];
-            next[bagName] = { ...d, contents };
-          }
-        });
-        nc[store] = next;
       });
-
-      // companion loadouts
+      nc.items = items;
       if (c.companions) {
         const comps = { ...c.companions };
         Object.entries(comps).forEach(([n, d]) => {
           if (!d?.slots) return;
-          const cs = { ...d.slots };
-          let touched = false;
+          const cs = { ...d.slots }; let touched = false;
           Object.keys(cs).forEach(k => { if (cs[k] === from) { cs[k] = target; touched = true; } });
-          if (touched) comps[n] = { ...d, slots: cs };
+          if (touched) comps[n] = { ...d, slots:cs };
         });
         nc.companions = comps;
       }
-
       charRef.current = nc;
       return nc;
     });
@@ -925,22 +883,13 @@ export function useCharacter(log) {
 
   const deleteItem = (itemName, all = false) => {
     setCharacter(c => {
-      let inventory = [...c.inventory];
-      if (all) {
-        inventory = inventory.filter(n => n !== itemName);
-      } else {
-        const idx = inventory.indexOf(itemName);
-        if (idx !== -1) inventory.splice(idx, 1);
+      const qty = all ? stackCount(c.inventory, itemName) : 1;
+      const inventory = takeStack(c.inventory, itemName, qty).stacks;
+      let items = c.items;
+      if (items?.[itemName] && !itemExistsAnywhere(c, itemName, { inventory })) {
+        items = { ...items }; delete items[itemName];
       }
-      // Only discard the definition when NO copy survives anywhere — carried,
-      // worn, stashed or bagged. Checking inventory alone stripped the stats off
-      // an equipped item, or orphaned copies sitting in the stash or a bag.
-      let customItems = c.customItems;
-      if (customItems[itemName] && !itemExistsAnywhere(c, itemName, { inventory })) {
-        customItems = { ...customItems };
-        delete customItems[itemName];
-      }
-      const nc = { ...c, inventory, customItems };
+      const nc = { ...c, inventory, items };
       charRef.current = nc;
       return nc;
     });
@@ -949,41 +898,33 @@ export function useCharacter(log) {
   // Permanently delete an item from inside a bag (one or all copies)
   const deleteFromBag = (bagName, itemName, all = false) => {
     setCharacter(c => {
-      const existing = c.customItems[bagName];
+      const existing = c.items?.[bagName];
       if (!existing?.contents?.[itemName]) return c;
       const counts = { ...existing.contents };
       if (all) delete counts[itemName];
       else { counts[itemName] -= 1; if (counts[itemName] <= 0) delete counts[itemName]; }
-      const label = Object.entries(counts)
-        .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
-        .join(', ');
-      const customItems = { ...c.customItems, [bagName]: { ...existing, label, contents: counts } };
-      const nc = { ...c, customItems };
+      const label = Object.entries(counts).map(([name, count]) => count > 1 ? `${name} x${count}` : name).join(', ');
+      let items = { ...c.items, [bagName]: { ...existing, label, contents:counts } };
+      if (items[itemName] && !itemExistsAnywhere({ ...c, items }, itemName)) { delete items[itemName]; }
+      const nc = { ...c, items };
       charRef.current = nc;
       return nc;
     });
   };
 
-  // Add more items to an existing bag
   const addToBag = (bagName, selectedItems) => {
     setCharacter(c => {
-      const existing = c.customItems[bagName];
+      const existing = c.items?.[bagName];
       if (!existing) return c;
       const counts = { ...(existing.contents || {}) };
       selectedItems.forEach(name => { counts[name] = (counts[name] || 0) + 1; });
-      const label = Object.entries(counts)
-        .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
-        .join(', ');
-      let inventory = [...c.inventory];
-      selectedItems.forEach(name => {
-        const idx = inventory.indexOf(name);
-        if (idx !== -1) inventory.splice(idx, 1);
-      });
-      const customItems = {
-        ...c.customItems,
-        [bagName]: { ...existing, label, contents: counts },
-      };
-      const nc = { ...c, inventory, customItems };
+      let inventory = normalizeStacks(c.inventory);
+      const selectedCounts = {};
+      selectedItems.forEach(name => { selectedCounts[name] = (selectedCounts[name] || 0) + 1; });
+      Object.entries(selectedCounts).forEach(([name, qty]) => { inventory = takeStack(inventory, name, qty).stacks; });
+      const label = Object.entries(counts).map(([name, count]) => count > 1 ? `${name} x${count}` : name).join(', ');
+      const items = { ...c.items, [bagName]: { ...existing, label, contents:counts } };
+      const nc = { ...c, inventory, items };
       charRef.current = nc;
       return nc;
     });
@@ -999,11 +940,8 @@ export function useCharacter(log) {
   const equipToSlot = (slotId, itemName) => {
     setCharacter(c => {
       const prev = c.slots[slotId];
-      const idx  = c.inventory.indexOf(itemName);
-      let inventory = idx !== -1
-        ? [...c.inventory.slice(0, idx), ...c.inventory.slice(idx + 1)]
-        : c.inventory;
-      if (prev) inventory = [...inventory, prev];
+      let inventory = takeStack(c.inventory, itemName, 1).stacks;
+      if (prev) inventory = addStack(inventory, prev, 1);
       const nc = reconcileHp(c, { ...c, slots:{ ...c.slots, [slotId]:itemName }, inventory });
       charRef.current = nc;
       return nc;
@@ -1014,27 +952,21 @@ export function useCharacter(log) {
     setCharacter(c => {
       const item = c.slots[slotId];
       if (!item) return c;
-      const nc = reconcileHp(c, { ...c, slots:{ ...c.slots, [slotId]:null }, inventory:[...c.inventory, item] });
+      const nc = reconcileHp(c, { ...c, slots:{ ...c.slots, [slotId]:null }, inventory:addStack(c.inventory, item, 1) });
       charRef.current = nc;
       return nc;
     });
   };
 
-  // Equip an inventory item onto a companion's slot. Mirrors equipToSlot: the
-  // item leaves the shared inventory, and anything previously in that slot
-  // returns to inventory.
   const equipCompanionItem = (companionName, slotId, itemName) => {
     setCharacter(c => {
       const comp = c.companions?.[companionName];
       if (!comp) return c;
       const compSlots = comp.slots || {};
       const prev = compSlots[slotId];
-      const idx  = c.inventory.indexOf(itemName);
-      let inventory = idx !== -1
-        ? [...c.inventory.slice(0, idx), ...c.inventory.slice(idx + 1)]
-        : c.inventory;
-      if (prev) inventory = [...inventory, prev];
-      const nc = { ...c, inventory, companions: { ...c.companions, [companionName]: { ...comp, slots: { ...compSlots, [slotId]: itemName } } } };
+      let inventory = takeStack(c.inventory, itemName, 1).stacks;
+      if (prev) inventory = addStack(inventory, prev, 1);
+      const nc = { ...c, inventory, companions:{ ...c.companions, [companionName]:{ ...comp, slots:{ ...compSlots, [slotId]:itemName } } } };
       charRef.current = nc;
       return nc;
     });
@@ -1045,7 +977,7 @@ export function useCharacter(log) {
       const comp = c.companions?.[companionName];
       const item = comp?.slots?.[slotId];
       if (!item) return c;
-      const nc = { ...c, inventory: [...c.inventory, item], companions: { ...c.companions, [companionName]: { ...comp, slots: { ...comp.slots, [slotId]: null } } } };
+      const nc = { ...c, inventory:addStack(c.inventory, item, 1), companions:{ ...c.companions, [companionName]:{ ...comp, slots:{ ...comp.slots, [slotId]:null } } } };
       charRef.current = nc;
       return nc;
     });

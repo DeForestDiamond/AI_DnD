@@ -97,7 +97,7 @@ export const slotFromItemName = (name) => {
 export const parseDMItem = (raw) => {
   const parts = raw.split('|').map(s => s.trim());
   const name = parts[0];
-  if (parts.length === 1) return { name, data: ITEM_DB[name] || { type:'misc' } };
+  if (parts.length === 1) return { name, data: { type:'misc' } };
   const kind = parts[1]?.toLowerCase();
   if (kind === 'weapon') {
     const damageField = parts[2] || '1d6';
