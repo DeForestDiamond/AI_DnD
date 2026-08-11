@@ -7,7 +7,7 @@ import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems } fro
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
 import { useGame, buildSystemPrompt, buildSystemPromptSonnet, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
-import { rollAntagonist, rollArc, makeArc, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
+import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
@@ -439,7 +439,7 @@ export default function App() {
         seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. PLAYER AGENCY IS ABSOLUTE: do not invent any action, decision, conversation, combat, agreement, relationship, knowledge, or item acquisition for the player beyond what the player's opening explicitly states. Begin before the first unresolved action and let the player make it. Establish why the player is present and what they actually know before introducing mysteries that depend on context. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}\n\nThe character's backstory is background only — do NOT open in their history or build the scene around it unless the player's opening above says to.`;
       } else {
         const seed = rollAdventureSeed(char.level);
-        arcAntagonist = seed.antagonist;
+        arcAntagonist = antagonistOverride?.trim() || seed.antagonist;
         seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
 You MUST open the adventure using ALL of the following parameters exactly as given. This is not a suggestion. Do not substitute, reinterpret, or ignore any field.
 
@@ -453,7 +453,7 @@ OPENING LOCATION (the specific place the scene starts): ${seed.location}
 OPENING STYLE (HOW to open the scene — follow this structure, do not default to a generic establishing shot): ${seed.openingStyle}
 WILDCARD (a distinctive detail to work into the opening): ${seed.wildcard}
 ADVENTURE HOOK (what draws the player in): ${seed.hook}
-ANTAGONIST (do NOT reveal or name yet — plant subtle setup only): ${seed.antagonist}
+ANTAGONIST (do NOT reveal or name yet — plant subtle setup only): ${arcAntagonist}
 
 REQUIRED: Set the opening in a real Faerûn location — a canon city or region of the Forgotten Realms (e.g. a tavern in Baldur's Gate, the docks of Waterdeep, a roadhouse on the Trade Way near Daggerford). You may invent a specific local spot (a named inn, shrine, or alley) but it must sit inside a real canon place. Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock "you stand in X" description. Emit a [LOCATION:] tag with the canon place name.
 
@@ -2084,8 +2084,11 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
 
       {adventureStartChar && (
         <AdventureStartModal
+          antagonists={antagonistsForLevel(adventureStartChar.level)}
+          defeatedAntagonists={adventureStartChar.defeatedAntagonists || []}
           onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
           onManual={(text, antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text, antagonist); }}
+          onChooseAntagonist={(antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, antagonist); }}
         />
       )}
 

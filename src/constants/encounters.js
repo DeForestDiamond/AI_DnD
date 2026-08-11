@@ -285,10 +285,15 @@ export const rollArc = (level, exclude = null, defeated = []) => {
   return makeArc(antagonist);
 };
 
-export const rollAntagonist = (level, exclude = null, defeated = []) => {
-  let pool = [...LOW_ANTAGONISTS];
+export const antagonistsForLevel = (level) => {
+  const pool = [...LOW_ANTAGONISTS];
   if (level >= 5) pool.push(...MID_ANTAGONISTS, ...NAMED_MID);
   if (level >= 9) pool.push(...HIGH_ANTAGONISTS, ...NAMED_HIGH);
+  return pool;
+};
+
+export const rollAntagonist = (level, exclude = null, defeated = []) => {
+  let pool = antagonistsForLevel(level);
   // Never re-roll a named foe whose arc is already finished.
   if (defeated?.length) {
     const done = new Set(defeated.map(d => String(d).toLowerCase()));
