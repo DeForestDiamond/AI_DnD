@@ -1,0 +1,37 @@
+name: Add item uniqueness prompt rule
+'on':
+  push:
+    branches: [feat/stacked-item-model]
+    paths: [.github/workflows/add-item-uniqueness-rule.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add shared prompt rule
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/hooks/useGame.js')
+          s = p.read_text()
+          anchor = '''CUSTOM ITEMS — always include type and stats:\n'''
+          rule = '''ITEM NAMES ARE UNIQUE DEFINITIONS — there can be only ONE authoritative item definition for any exact item name. Multiple copies of the same item are a quantity stack, not separate variants. If you create or redefine an item using a name that already exists, the NEW definition OVERRIDES the old definition for EVERY copy with that name — carried, stashed, or equipped. Therefore:\n  - Reuse the exact same name ONLY when the new item is intentionally identical to the existing one.\n  - If an item has different stats, enchantment, quality, material, curse, history, or other properties, GIVE IT A DIFFERENT NAME.\n  - Never create two mechanically different items with the same name and expect the app to remember both definitions. It cannot: same name means same item.\n  EXAMPLE: If "Ashen Longsword" already exists as +1 and you later emit [ITEM: Ashen Longsword | weapon | 1d8+3 | ...], every Ashen Longsword now uses the +3 definition. Name the distinct version something else instead.\n\nCUSTOM ITEMS — always include type and stats:\n'''
+          if rule in s:
+              print('rule already present')
+          else:
+              if anchor not in s:
+                  raise SystemExit('CUSTOM ITEMS anchor not found')
+              s = s.replace(anchor, rule, 1)
+              p.write_text(s)
+          PY
+      - run: npm ci
+      - run: npm run build
+      - name: Commit
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add src/hooks/useGame.js
+          git commit -m "prompt: explain unique item-name definitions"
+          git push
