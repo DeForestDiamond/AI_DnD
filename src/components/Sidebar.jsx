@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Component } from 'react';
 import { PACING, ENVIRONMENTS } from '../constants/encounters.js';
 import { colors, fonts, btn } from '../styles/theme.js';
 import { SLOTS } from '../constants/items.js';
@@ -103,6 +103,22 @@ function XPBar({ xp, level }) {
       </div>
     </div>
   );
+}
+
+class PanelErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error:null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error('Sidebar panel render failed:', error, info); }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div style={{border:`1px solid ${colors.redFaint||'#8a3a3a'}`,borderRadius:4,padding:8,color:'#c96a4c',fontSize:11,lineHeight:1.45}}>
+        <div style={{fontFamily:fonts.display,fontSize:12,marginBottom:4}}>CRAFTING PANEL ERROR</div>
+        <div style={{fontFamily:fonts.mono,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{String(this.state.error?.message || this.state.error)}</div>
+        <div style={{color:colors.textGhost,marginTop:5}}>The rest of the game is still safe. Copy this error and send it back for the exact failing data path.</div>
+      </div>
+    );
+  }
 }
 
 function CollapsibleSection({ title, count, defaultOpen = false, children }) {
@@ -1588,7 +1604,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
 
       </>}
 
-      {activeTab==='crafting' && <>
+      {activeTab==='crafting' && <PanelErrorBoundary>
       {/* Crafting — turn materials into gear */}
       {onProposeCrafting && (
         <CraftingPanel character={character} db={db} onProposeCrafting={onProposeCrafting} onExecuteCrafting={onExecuteCrafting} />
@@ -1598,7 +1614,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {onProposeDismantle && (
         <SalvagePanel character={character} db={db} onProposeDismantle={onProposeDismantle} onExecuteDismantle={onExecuteDismantle} />
       )}
-      </>}
+      </PanelErrorBoundary>}
 
       {activeTab==='settings' && <>
       {/* Start over with the same character */}
