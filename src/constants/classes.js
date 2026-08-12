@@ -15,6 +15,9 @@ export const CLASSES = [
   { name:'Ranger',      emoji:'🏹',  desc:'Wilderness hunter and tracker. Marks prey, strikes from range or blade, and bends nature magic to the hunt. DEX and WIS primary.',                 stats:{str:10,dex:17,con:13,int:10,wis:14,cha:8 } },
   { name:'Sorcerer',    emoji:'🔥',  desc:'Innate arcane caster who channels raw magic from their bloodline. CHA-based spellcasting with Metamagic to bend spells to their will. Fragile but flexible.', stats:{str:8, dex:14,con:13,int:10,wis:11,cha:17} },
   { name:'Druid',       emoji:'🍃',  desc:'Guardian of the natural world, wielding primal magic. WIS-based spellcasting and Wild Shape to transform into beasts.',                                       stats:{str:10,dex:14,con:14,int:10,wis:17,cha:8 } },
+  { name:'Bard',        emoji:'🎵',  desc:'Versatile performer and full spellcaster. Inspires allies, masters skills, and bends magic through force of personality. CHA primary.', stats:{str:8, dex:14,con:12,int:10,wis:10,cha:17} },
+  { name:'Monster Hunter', emoji:'🗡️', desc:'Specialist in hunting supernatural threats. Studies weaknesses, prepares tools and traps, and turns monster lore into lethal precision. DEX and WIS primary.', stats:{str:10,dex:17,con:14,int:12,wis:15,cha:8 } },
+  { name:'Gunslinger',  emoji:'🔫',  desc:'Deadly firearm specialist who wins through speed, precision, trick shots, and nerve. DEX primary, WIS secondary.', stats:{str:8, dex:17,con:14,int:10,wis:14,cha:10} },
 ];
 
 export const RACES = [
@@ -65,4 +68,7 @@ export const STARTING_GEAR = {
   Ranger:       { slots:{ ...EMPTY_SLOTS, mainhand:'Longbow', armor:'Studded Leather' },                      inventory:['Shortsword','Shortsword','Hunter\'s Kit','Torch','Rations','Rations','Rations'] },
   Sorcerer:     { slots:{ ...EMPTY_SLOTS, mainhand:'Dagger' },                                             inventory:['Arcane Focus','Component Pouch','Torch','Rations','Rations','Rations'] },
   Druid:        { slots:{ ...EMPTY_SLOTS, mainhand:'Quarterstaff', offhand:'Shield' },                     inventory:['Druidic Focus','Herbalism Kit','Torch','Rations','Rations','Rations'] },
+  Bard:         { slots:{ ...EMPTY_SLOTS, mainhand:'Rapier', armor:'Leather Armor' },                    inventory:['Lute','Dagger','Torch','Rations','Rations','Rations'] },
+  'Monster Hunter': { slots:{ ...EMPTY_SLOTS, mainhand:'Longsword', armor:'Studded Leather' },                  inventory:['Hand Crossbow',"Hunter's Kit",'Torch','Rations','Rations','Rations'] },
+  Gunslinger:    { slots:{ ...EMPTY_SLOTS, mainhand:'Pistol', armor:'Leather Armor' },                         inventory:['Dagger','Gunsmith Tools','Torch','Rations','Rations','Rations'] },
 };

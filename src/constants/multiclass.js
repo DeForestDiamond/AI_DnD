@@ -279,6 +279,18 @@ export const MULTICLASS_OPTIONS = {
       9: ['Learn 9th-level spells', 'Beast Spells - cast while Wild Shaped'],
       10: ['Archdruid - Wild Shape at will and cast through beast forms freely'],},
   },
+  Bard: {
+    emoji: '🎵', desc: 'Versatile CHA caster and master of inspiration, performance, and skill.', hpPerLevel: 5,
+    features: {1:['Bardic Inspiration','Spellcasting'],2:['Jack of All Trades','Song of Rest'],3:['Bard College subclass','Expertise'],4:['Ability Score Improvement'],5:['Font of Inspiration','Improved Bardic Inspiration'],6:['Countercharm','Magical Secrets'],7:['Improved Inspiration'],8:['Additional Expertise'],9:['Superior Inspiration'],10:['Peerless Bard']},
+  },
+  'Monster Hunter': {
+    emoji:'🗡️', desc:'Prepared supernatural predator who studies and exploits dangerous prey.', hpPerLevel:6,
+    features:{1:["Hunter's Lore",'Prepared Arsenal'],2:['Marked Quarry','Monster Slayer'],3:['Hunter Discipline subclass','Field Preparation'],4:['Ability Score Improvement'],5:['Extra Attack','Hardened Hunter'],6:['Relentless Pursuit'],7:['Exploit Weakness'],8:['Unnatural Resilience'],9:['Apex Quarry'],10:['Legendary Hunter']},
+  },
+  Gunslinger: {
+    emoji:'🔫', desc:'DEX firearm specialist using grit, speed, precision, and trick shots.', hpPerLevel:5,
+    features:{1:['Firearm Proficiency','Grit','Quick Draw'],2:['Trick Shots'],3:['Gunslinger Archetype subclass','Deadeye'],4:['Ability Score Improvement'],5:['Extra Attack','Fast Reload'],6:['Piercing Shot'],7:['Evasive Footwork'],8:['Vicious Intent'],9:['Hemorrhaging Critical'],10:['Legendary Gunslinger']},
+  },
 };
 
 // Sneak attack dice by total rogue levels

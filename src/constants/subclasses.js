@@ -11,10 +11,22 @@ export const SUBCLASS_PICK_LEVEL = {
   Cleric: 1, Warlock: 1, Wizard: 2,
   Fighter: 3, Rogue: 3, Monk: 3, Barbarian: 3, Artificer: 3,
   Illrigger: 3, 'Blood Hunter': 3, Paladin: 3, Ranger: 3,
-  Sorcerer: 1, Druid: 2,
+  Sorcerer: 1, Druid: 2, Bard: 3, 'Monster Hunter': 3, Gunslinger: 3,
 };
 
 export const SUBCLASSES = {
+  Bard: {
+    'College of Lore': {emoji:'📚',desc:'Collector of secrets, skills, and stolen magic.',features:[{name:'Cutting Words',desc:'Spend inspiration to undermine an enemy.'},{name:'Additional Magical Secrets',desc:'Learn magic normally unavailable to bards.'}]},
+    'College of Valor': {emoji:'⚔️',desc:'Battlefield bard who turns inspiration into martial courage.',features:[{name:'Combat Inspiration',desc:'Allies can use inspiration for offense or defense.'},{name:'Battle Magic',desc:'Weave spellcasting and weapon attacks together.'}]},
+  },
+  'Monster Hunter': {
+    'Occult Slayer': {emoji:'🕯️',desc:'Specialist in curses, undead, fiends, and hostile magic.',features:[{name:'Warded Mind',desc:'Harden yourself against supernatural intrusion.'},{name:'Ritual Countermeasures',desc:'Prepare wards and banes against identified prey.'}]},
+    'Beast Stalker': {emoji:'🐾',desc:'Tracks apex monsters until nowhere remains safe.',features:[{name:'Predator Tracking',desc:'Read impossible trails and monster signs.'},{name:'Ambush Preparation',desc:'Build traps and choose terrain to counter your quarry.'}]},
+  },
+  Gunslinger: {
+    Deadeye: {emoji:'🎯',desc:'Precision shooter built around one impossible shot.',features:[{name:'Called Shot',desc:'Spend grit to target a weak point.'},{name:'Steady Aim',desc:'Trade movement for extreme accuracy.'}]},
+    Pistolero: {emoji:'💨',desc:'Aggressive close-range gunfighter built around movement and draw speed.',features:[{name:'Fan the Hammer',desc:'Unleash a rapid burst of close-range shots.'},{name:'Lightning Draw',desc:'React to danger before slower opponents can act.'}]},
+  },
   Paladin: {
     'Oath of Devotion': {
       emoji: '🕊️',
