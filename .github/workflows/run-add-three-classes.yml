@@ -1,0 +1,42 @@
+name: Run three class integration
+on:
+  push:
+    branches:
+      - fix/levelup-progression-6-10
+    paths:
+      - scripts/add_three_classes.py
+      - .github/workflows/run-add-three-classes.yml
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/add_three_classes.py
+      - run: npm ci
+      - run: npm run build
+      - name: Audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          for cls in ['Bard','Monster Hunter','Gunslinger']:
+              for path in ['src/constants/classes.js','src/constants/progression.js','src/constants/multiclass.js','src/constants/abilities.js','src/constants/subclasses.js']:
+                  assert cls in Path(path).read_text(), f'{cls} missing from {path}'
+          s=Path('src/constants/multiclass.js').read_text()
+          for cls in ['Bard','Monster Hunter','Gunslinger']:
+              pat = rf"'{re.escape(cls)}':\s*\{{" if ' ' in cls else rf'{cls}:\s*\{{'
+              m=re.search(pat,s); assert m
+              start=s.find('features:',m.start()); end=s.find('\n  },',start); block=s[start:end]
+              missing=[n for n in range(1,11) if not re.search(rf'(?:\{{|,)\s*{n}:\s*\[',block)]
+              assert not missing, f'{cls} missing {missing}'
+          print('new classes integrated')
+          PY
+      - name: Commit generated changes
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add src/constants/classes.js src/constants/items.js src/constants/progression.js src/constants/multiclass.js src/constants/abilities.js src/constants/subclasses.js src/App.jsx
+          git commit -m "feat: add Bard Monster Hunter and Gunslinger"
+          git push
