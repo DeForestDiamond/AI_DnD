@@ -1,0 +1,49 @@
+name: Render crafting smoke
+'on':
+  push:
+    branches: [feat/stacked-item-model]
+    paths: [.github/workflows/render-crafting-smoke.yml]
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm install --no-save react-test-renderer@18.2.0
+      - name: Crafting tab render smoke
+        run: |
+          cat > /tmp/smoke.mjs <<'NODE'
+          import React from 'react';
+          import TestRenderer, { act } from 'react-test-renderer';
+          import { createServer } from 'vite';
+          const vite = await createServer({ server:{ middlewareMode:true }, appType:'custom' });
+          try {
+            const mod = await vite.ssrLoadModule('/src/components/Sidebar.jsx');
+            const character = {
+              name:'Test', stats:{str:10,dex:14,con:10,int:16,wis:10,cha:10}, level:10, xp:0, hp:50, maxHp:50,
+              cls:{name:'Artificer'}, race:{name:'Human'}, classLevels:{Artificer:10}, subclasses:{}, abilities:{cantrips:[],spells:[],infusions:[],martial:[]},
+              slots:{mainhand:'Arcane Pistol',offhand:null,armor:null,head:null,neck:null,cloak:null,hands:null,ring1:null,ring2:null,feet:null,face:null,shoulders:null,torso:null,arms:null,waist:null},
+              inventory:[{name:'Iron Ingot',qty:300000},{name:'Arcane Pistol',qty:1},{name:'Test Bag',qty:1}],
+              stash:[{name:'Mithral Plate',qty:12}], coins:1000, companions:{}, npcs:{}, towns:{}, contextExclusions:{companions:{},npcs:{},towns:{}},
+              items:{
+                'Iron Ingot':{type:'misc'},
+                'Mithral Plate':{type:'misc'},
+                'Arcane Pistol':{type:'weapon',damage:'1d10',label:'test pistol'},
+                'Test Bag':{type:'bag',label:'Copper Wire x5',contents:{'Copper Wire':5}},
+                'Copper Wire':{type:'misc'}
+              }
+            };
+            let root;
+            await act(async()=>{ root=TestRenderer.create(React.createElement(mod.Sidebar, {
+              character, onSaveClick:()=>{}, onProposeCrafting:async()=>[], onExecuteCrafting:()=>'', onProposeDismantle:async()=>({recovers:[]}), onExecuteDismantle:()=>'', selectedModel:'gpt'
+            })); });
+            const buttons=root.root.findAllByType('button');
+            const craft=buttons.find(b=>String(b.props.children).includes('CRAFTING'));
+            if(!craft) throw new Error('crafting tab button not found');
+            await act(async()=>{ craft.props.onClick(); });
+            console.log('CRAFTING_TAB_RENDER_OK');
+          } finally { await vite.close(); }
+          NODE
+          node /tmp/smoke.mjs
