@@ -14,7 +14,7 @@ jobs:
       - run: npm install --no-save react-test-renderer@18.2.0
       - name: Crafting tab render smoke
         run: |
-          cat > /tmp/smoke.mjs <<'NODE'
+          cat > smoke.mjs <<'NODE'
           import React from 'react';
           import TestRenderer, { act } from 'react-test-renderer';
           import { createServer } from 'vite';
@@ -46,4 +46,4 @@ jobs:
             console.log('CRAFTING_TAB_RENDER_OK');
           } finally { await vite.close(); }
           NODE
-          node /tmp/smoke.mjs
+          node smoke.mjs
