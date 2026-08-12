@@ -1,0 +1,17 @@
+name: Audit item info markers
+'on':
+  push:
+    branches: [feat/stacked-item-model]
+    paths: [.github/workflows/audit-item-info-markers.yml]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo '--- info markers ---'
+          grep -n -C 5 'ⓘ' src/components/Sidebar.jsx || true
+          echo '--- info open state ---'
+          grep -n -C 3 'infoOpen' src/components/Sidebar.jsx || true
