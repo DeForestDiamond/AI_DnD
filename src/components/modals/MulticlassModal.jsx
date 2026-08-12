@@ -51,7 +51,7 @@ export function MulticlassModal({ character, classLevels, onChooseClass, onChoos
                   </div>
                 )}
                 {newFeatures.length === 0 && (
-                  <div style={{fontSize:9,color:colors.textGhost}}>+ {data?.hpPerLevel} HP per level</div>
+                  <div style={{fontSize:9,color:colors.textGhost}}>No new class feature listed for this level.</div>
                 )}
               </div>
             );

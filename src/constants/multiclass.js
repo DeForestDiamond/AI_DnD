@@ -10,7 +10,13 @@ export const MULTICLASS_OPTIONS = {
       2: ['Action Surge - one extra action per rest'],
       3: ['Combat Mastery - +1 to all attack rolls'],
       5: ['Extra Attack - attack twice per action'],
-    },
+    
+      4: ['Ability Score Improvement'],
+      6: ['Indomitable - reroll a failed saving throw', 'Extra Attack improves - attack three times per action'],
+      7: ['Improved Combat Mastery - martial attacks become even more reliable'],
+      8: ['Indomitable improves - two uses between rests'],
+      9: ['Extra Attack improves again - attack four times per action'],
+      10: ['Legendary Warrior - peak martial endurance and battlefield control'],},
   },
   Rogue: {
     emoji: '\uD83D\uDDE1\uFE0F',
@@ -26,7 +32,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['Sneak Attack increases to +2d6'],
       4: ['Uncanny Dodge - halve damage from one attack per round'],
       5: ['Sneak Attack increases to +3d6', 'Evasion - no damage on successful DEX saves'],
-    },
+    
+      6: ['Reliable Talent - proficient skill checks cannot roll below 10'],
+      7: ['Sneak Attack increases to +4d6', 'Blindsense - detect nearby hidden creatures'],
+      8: ['Slippery Mind - proficiency in Wisdom saving throws'],
+      9: ['Sneak Attack increases to +5d6', 'Elusive - attackers cannot gain advantage against you while conscious'],
+      10: ['Stroke of Luck - turn a failed attack or ability check into a success once per rest'],},
   },
   Wizard: {
     emoji: '\uD83D\uDD2E',
@@ -38,7 +49,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['Learn 2nd level spells'],
       4: ['Learn 3rd level spells', 'Cantrip Formulae - swap a prepared cantrip on a rest'],
       5: ['Learn 4th level spells', 'Arcane Recovery improves - regain more slots on a short rest'],
-    },
+    
+      6: ['Learn 6th-level spells'],
+      7: ['Learn 7th-level spells'],
+      8: ['Learn 8th-level spells'],
+      9: ['Learn 9th-level spells'],
+      10: ['Spell Mastery - cast chosen low-level spells without expending slots', 'Signature Spells - chosen high-level spells are always ready'],},
   },
   Cleric: {
     emoji: '\u2728',
@@ -50,7 +66,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['2nd level divine spells'],
       4: ['3rd level divine spells', 'Destroy Undead - the weakest undead crumble rather than flee'],
       5: ['4th level divine spells', 'Channel Divinity twice per rest'],
-    },
+    
+      6: ['Learn 6th-level divine spells', 'Channel Divinity improves'],
+      7: ['Learn 7th-level divine spells'],
+      8: ['Learn 8th-level divine spells', 'Destroy Undead improves'],
+      9: ['Learn 9th-level divine spells'],
+      10: ['Divine Intervention perfected - your deity answers without a roll'],},
   },
   Artificer: {
     emoji: '\u2699\uFE0F',
@@ -75,7 +96,12 @@ export const MULTICLASS_OPTIONS = {
         'Extra Attack - attack twice when taking the attack action',
         'Infusions: Homunculus Servant - create a small magical construct companion',
       ],
-    },
+    
+      6: ['Spell-Storing Item - store a spell in an object for repeated use'],
+      7: ['Magic Item Savant - attune to more magic items and ignore more restrictions'],
+      8: ['Magic Item Master - attune to still more magic items'],
+      9: ['Soul of Artifice - attuned magic items bolster your saving throws'],
+      10: ['Master Artificer - peak infusion capacity and magical construction expertise'],},
   },
   Illrigger: {
     emoji: '\uD83D\uDC41\uFE0F',
@@ -93,7 +119,12 @@ export const MULTICLASS_OPTIONS = {
         'Extra Attack - attack twice when taking the attack action',
         'Consume the Wicked - restore HP equal to Interdict damage dealt',
       ],
-    },
+    
+      6: ['Greater Interdict - place and burn more seals before resting'],
+      7: ['Infernal Conduit - channel stronger hellish power through marked foes'],
+      8: ['Master of Seals - Interdict boons intensify and spread more easily'],
+      9: ['Hellbound Executioner - condemned foes suffer devastating punishment when seals burn'],
+      10: ["Archfiend's Champion - command the full power of your infernal covenant"],},
   },
   Monk: {
     emoji: '\uD83D\uDC4A',
@@ -108,7 +139,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['Deflect Missiles - catch and redirect ranged attacks', 'Monastic Tradition subclass'],
       4: ['Slow Fall - reduce fall damage by 5x Monk level'],
       5: ['Extra Attack', 'Stunning Strike - spend Ki to stun on hit'],
-    },
+    
+      6: ['Ki-Empowered Strikes - unarmed attacks count as magical', 'Monastic Tradition feature improves'],
+      7: ['Evasion - avoid area damage on successful Dexterity saves', 'Stillness of Mind - end fear or charm on yourself'],
+      8: ['Purity of Body - immunity to disease and poison'],
+      9: ['Diamond Soul - proficiency in all saving throws and spend Ki to reroll saves'],
+      10: ['Perfect Self - regain Ki when entering battle with none remaining'],},
   },
   Barbarian: {
     emoji: '\uD83E\uDEA3',
@@ -123,7 +159,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['Primal Path subclass', 'Bear Totem - resistance to ALL damage while raging'],
       4: ['Ability Score Improvement'],
       5: ['Extra Attack', 'Fast Movement - +10ft speed when not in heavy armor'],
-    },
+    
+      6: ['Feral Instinct - advantage on initiative and resist being surprised'],
+      7: ['Brutal Critical - deal an additional weapon die on critical hits'],
+      8: ['Relentless Rage - stay standing when damage would drop you to 0 HP'],
+      9: ['Persistent Rage - Rage ends only when you choose or fall unconscious'],
+      10: ['Primal Champion - Strength and Constitution reach superhuman heights'],},
   },
   Warlock: {
     emoji: '\uD83C\uDF11',
@@ -142,7 +183,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['Pact Boon - Pact of the Blade (summon weapon), Chain (familiar), or Tome (spellbook)'],
       4: ['Additional Eldritch Invocation'],
       5: ['3rd level patron spells', 'Contact Other Plane ritual'],
-    },
+    
+      6: ['Mystic Arcanum - learn one 6th-level patron spell'],
+      7: ['Mystic Arcanum - learn one 7th-level patron spell', 'Additional Eldritch Invocation'],
+      8: ['Mystic Arcanum - learn one 8th-level patron spell'],
+      9: ['Mystic Arcanum - learn one 9th-level patron spell', 'Additional Eldritch Invocation'],
+      10: ['Eldritch Master - beseech your patron to rapidly restore pact magic'],},
   },
   'Blood Hunter': {
     emoji: '\uD83E\uDE78',
@@ -158,7 +204,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['Blood Hunter Order subclass', 'Brand of Castigation'],
       4: ['Ability Score Improvement'],
       5: ['Extra Attack', 'Grim Psychometry - read psychic impressions from objects'],
-    },
+    
+      6: ['Brand of Tethering - branded prey struggle to escape your reach'],
+      7: ['Crimson Rite damage increases', 'Blood Maledict improves'],
+      8: ['Hardened Soul - supernatural resolve against fear and corruption'],
+      9: ['Brand of Sundering - branded prey become increasingly vulnerable to your attacks'],
+      10: ['Sanguine Mastery - Crimson Rites and Blood Curses reach their peak'],},
   },
   Paladin: {
     emoji: '🛡️',
@@ -170,7 +221,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['Sacred Oath subclass', 'Channel Divinity'],
       5: ['Extra Attack'],
       6: ['Aura of Protection - you and nearby allies add your CHA mod to saves'],
-    },
+    
+      4: ['Ability Score Improvement'],
+      7: ['Improved Divine Smite - every melee hit carries radiant power'],
+      8: ['Cleansing Touch - end hostile spell effects with a touch'],
+      9: ['Aura improvements - protective auras reach farther'],
+      10: ['Sacred Oath capstone - embody the ultimate power of your oath'],},
   },
   Ranger: {
     emoji: '🏹',
@@ -181,7 +237,13 @@ export const MULTICLASS_OPTIONS = {
       2: ['Spellcasting (half-caster)', "Hunter's Mark - bonus damage and tracking on marked prey", 'Fighting style'],
       3: ['Ranger Conclave subclass', 'Primeval Awareness'],
       5: ['Extra Attack'],
-    },
+    
+      4: ['Ability Score Improvement'],
+      6: ['Favored Enemy and Natural Explorer improve'],
+      7: ['Feral Senses - fight unseen foes without losing your edge'],
+      8: ['Vanish - Hide as a bonus action and resist mundane tracking'],
+      9: ['Foe Slayer - add Wisdom to a crucial attack or damage roll against chosen prey'],
+      10: ['Master Ranger - peak tracking, survival, and hunter instincts'],},
   },
   Sorcerer: {
     emoji: '🔥',
@@ -193,7 +255,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['Metamagic - bend spells with options like Twin and Quicken'],
       4: ['Learn 3rd level spells', 'More Sorcery Points, and spell slots can be traded for them'],
       5: ['Learn 4th level spells', 'A second Metamagic option'],
-    },
+    
+      6: ['Learn 6th-level spells', 'Sorcery Point pool expands'],
+      7: ['Learn 7th-level spells'],
+      8: ['Learn 8th-level spells', 'Metamagic mastery improves'],
+      9: ['Learn 9th-level spells'],
+      10: ['Sorcerous Restoration - recover Sorcery Points when depleted'],},
   },
   Druid: {
     emoji: '🍃',
@@ -205,7 +272,12 @@ export const MULTICLASS_OPTIONS = {
       3: ['Learn 2nd-level spells'],
       4: ['Learn 3rd-level spells', 'Wild Shape improves - swimming forms'],
       5: ['Learn 4th-level spells', 'Wild Shape improves again - flying forms'],
-    },
+    
+      6: ['Learn 6th-level spells', 'Wild Shape becomes dramatically more powerful'],
+      7: ['Learn 7th-level spells'],
+      8: ['Learn 8th-level spells', 'Timeless Body - age at a fraction of the normal rate'],
+      9: ['Learn 9th-level spells', 'Beast Spells - cast while Wild Shaped'],
+      10: ['Archdruid - Wild Shape at will and cast through beast forms freely'],},
   },
 };
 
