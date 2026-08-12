@@ -12,6 +12,7 @@ import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
 import { SaveModal } from './components/modals/SaveModal.jsx';
+import { stackCounts, stackCount, stackHas, addStack, takeStack } from './utils/itemStacks.js';
 import { MulticlassModal } from './components/modals/MulticlassModal.jsx';
 import { ItemPickerModal } from './components/modals/ItemPickerModal.jsx';
 import { AbilitiesModal } from './components/modals/AbilitiesModal.jsx';
@@ -1167,26 +1168,24 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     return { goal, objectives };
   };
 
-  // Bags hold their contents in customItems[bag].contents rather than the
-  // inventory array, so anything packed away is invisible to crafting unless we
-  // look inside. Returns { name: {inv, stash, bags: [{bag, store, count}]} }.
+  // Bags keep their contents on the bag definition in the single item registry.
+  // A bag's physical stack determines whether those contents count as inventory
+  // or stash for crafting/salvage filters.
   const materialSources = (c) => {
     const src = {};
     const bump = (nm, key, n) => {
       src[nm] = src[nm] || { inv: 0, stash: 0, bags: [] };
       if (key === 'bags') src[nm].bags.push(n); else src[nm][key] += n;
     };
-    (c.inventory || []).forEach(nm => bump(nm, 'inv', 1));
-    (c.stash || []).forEach(nm => bump(nm, 'stash', 1));
-    for (const store of ['customItems', 'stashedCustomItems']) {
-      Object.entries(c[store] || {}).forEach(([bagName, d]) => {
-        if (d?.type === 'bag' && d.contents) {
-          Object.entries(d.contents).forEach(([item, count]) => {
-            if (count > 0) bump(item, 'bags', { bag: bagName, store, count });
-          });
-        }
+    Object.entries(stackCounts(c.inventory)).forEach(([nm, qty]) => bump(nm, 'inv', qty));
+    Object.entries(stackCounts(c.stash)).forEach(([nm, qty]) => bump(nm, 'stash', qty));
+    Object.entries(c.items || {}).forEach(([bagName, d]) => {
+      if (d?.type !== 'bag' || !d.contents) return;
+      const bagStore = stackHas(c.stash, bagName) && !stackHas(c.inventory, bagName) ? 'stash' : 'inventory';
+      Object.entries(d.contents).forEach(([item, count]) => {
+        if (count > 0) bump(item, 'bags', { bag: bagName, store: bagStore, count });
       });
-    }
+    });
     return src;
   };
   const totalHeld = (s) => (s ? s.inv + s.stash + s.bags.reduce((a, b) => a + b.count, 0) : 0);
@@ -1233,32 +1232,17 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
 
     const apply = (next) => {
       if (stashTakes.length) {
-        // Single pass over the stash. This previously ran findIndex AND splice
-        // once per item consumed, which on a craft eating thousands of ingots is
-        // the same quadratic freeze the inventory removal had.
-        const want = new Map();
-        stashTakes.forEach(t => {
-          const k = t.name.toLowerCase();
-          want.set(k, (want.get(k) || 0) + t.count);
-        });
-        const kept = [];
-        for (const nm of (next.stash || [])) {
-          const k = nm.toLowerCase();
-          const left = want.get(k) || 0;
-          if (left > 0) { want.set(k, left - 1); continue; }
-          kept.push(nm);
-        }
-        next = { ...next, stash: kept };
+        for (const t of stashTakes) next = { ...next, stash: takeStack(next.stash, t.name, t.count).stacks };
       }
       for (const t of bagTakes) {
-        const store = { ...(next[t.store] || {}) };
-        const bag = store[t.bag];
+        const items = { ...(next.items || {}) };
+        const bag = items[t.bag];
         if (!bag?.contents) continue;
         const contents = { ...bag.contents };
         contents[t.name] = (contents[t.name] || 0) - t.take;
         if (contents[t.name] <= 0) delete contents[t.name];
-        store[t.bag] = { ...bag, contents };
-        next = { ...next, [t.store]: store };
+        items[t.bag] = { ...bag, contents };
+        next = { ...next, items };
       }
       return next;
     };
@@ -1341,8 +1325,10 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
 
     // A set creates every piece from one craft; the materials are consumed once.
     const isSet = Array.isArray(option.pieces) && option.pieces.length > 0;
-    const one = isSet ? option.pieces.map(tagFor).join('') : tagFor(option);
-    const tag = one.repeat(batch);   // identical copies; [ITEM:] stacks them
+    const withQty = (tag, qty) => qty > 1 ? tag.replace(/]$/, ` | qty:${qty}]`) : tag;
+    const tag = isSet
+      ? option.pieces.map(piece => withQty(tagFor(piece), batch)).join('')
+      : withQty(tagFor(option), batch);
 
     const { removeTags, apply, bagTakes } = consumeMaterials(c, consumes);
     let next = apply(applyEffects(tag + removeTags, c));
@@ -1352,8 +1338,8 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     // the same call, so a silent failure here costs the player the materials
     // and gives nothing back — say so loudly rather than appearing to work.
     const wanted = isSet ? option.pieces.map(pc => pc.name) : [option.name];
-    const before = (c.inventory || []).filter(n => wanted.includes(n)).length;
-    const after = (next.inventory || []).filter(n => wanted.includes(n)).length;
+    const before = wanted.reduce((sum, n) => sum + stackCount(c.inventory, n), 0);
+    const after = wanted.reduce((sum, n) => sum + stackCount(next.inventory, n), 0);
     if (after <= before) {
       log(`[CRAFT] FAILED: no item was created. Tag was: ${tag.slice(0, 300)}`);
       throw new Error(`The forge produced nothing usable — materials NOT consumed. Try again, or reword the item.`);
@@ -1374,7 +1360,7 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     const char = charRef.current;
     if (!items.length) throw new Error('Select something to break down');
 
-    const db = { ...(char.customItems || {}), ...(char.stashedCustomItems || {}) };
+    const db = char.items || {};
     const itemList = items.map(it => {
       const d = db[it.name];
       const bits = [];
@@ -1493,7 +1479,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
   // inventory. Carries the label across as the description and removes the item.
   const promoteConstructToCompanion = (name) => {
     const c = charRef.current;
-    const store = c.customItems?.[name] ? 'customItems' : (c.stashedCustomItems?.[name] ? 'stashedCustomItems' : null);
+    const store = c.items?.[name] ? 'items' : null;
     if (!store) return;
     const d = c[store][name];
     if (d?.type !== 'construct') return;
@@ -1510,8 +1496,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     };
     const nextStore = { ...c[store] };
     delete nextStore[name];
-    const inventory = (c.inventory || []).filter(x => x !== name);
-    const stash = (c.stash || []).filter(x => x !== name);
+    const inventory = takeStack(c.inventory, name, stackCount(c.inventory, name)).stacks;
+    const stash = takeStack(c.stash, name, stackCount(c.stash, name)).stacks;
     updateChar({ ...c, [store]: nextStore, inventory, stash,
       companions: { ...(c.companions || {}), [name]: entry } });
     log(`[CONSTRUCT] Promoted "${name}" to a companion`);
@@ -1522,7 +1508,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
   const cycleConstructStatus = (name) => {
     const c = charRef.current;
     const ORDER = ['dormant', 'active', 'bound'];
-    const store = c.customItems?.[name] ? 'customItems' : (c.stashedCustomItems?.[name] ? 'stashedCustomItems' : null);
+    const store = c.items?.[name] ? 'items' : null;
     if (!store) return;
     const item = c[store][name];
     if (item?.type !== 'construct') return;
@@ -1998,7 +1984,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
   );
 
   // ── Playing ────────────────────────────────────────────────────────────────
-  const db = allItems(character.customItems || {});
+  const db = allItems(character.items || {});
 
   return (
     <div style={{...parchment,flexDirection:'row',height:'100vh',overflow:'hidden'}}>

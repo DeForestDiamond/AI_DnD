@@ -1,8 +1,8 @@
 import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod, allItems, effectiveMaxHp } from './useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
-import { ITEM_DB } from '../constants/items.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
 import { subclassPromptLines } from '../constants/subclasses.js';
+import { stackCounts, stackNames } from '../utils/itemStacks.js';
 
 // Player-authored standing instructions, injected into every prompt so they
 // never scroll out of context. Empty string when unset.
@@ -112,13 +112,13 @@ export const MODEL_CONFIGS = {
 // static = race, class, deity, playstyle, abilities — changes rarely
 // dynamic = HP, stats, inventory, equipped, gold, location — changes every message
 const buildCharBlock = (char) => {
-  const effStats    = effectiveStats(char.stats, char.slots, char.customItems || {});
-  const ac          = calcAC(char.slots, char.stats, char.customItems || {});
+  const effStats    = effectiveStats(char.stats, char.slots, char.items || {});
+  const ac          = calcAC(char.slots, char.stats, char.items || {});
   const pb          = profBonus(char.level);
-  const weapon      = getMainWeapon(char.slots, char.stats, char.customItems || {});
+  const weapon      = getMainWeapon(char.slots, char.stats, char.items || {});
   const classLevels = char.classLevels || { [char.cls?.name]: char.level };
   const classDesc   = Object.entries(classLevels).map(([c,l]) => `${c} ${l}`).join(' / ');
-  const db          = { ...ITEM_DB, ...(char.customItems||{}) };
+  const db          = allItems(char.items || {});
   const equippedList = Object.entries(char.slots).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join(', ') || 'nothing';
   const weaponLine  = weapon ? `${weapon.name} (${weapon.damage}${weapon.bonus?`+${weapon.bonus}`:''}${(weapon.extras||[]).map(e=>` plus ${e.dice} ${e.type}`).join('')}, Attack bonus +${weapon.statBonus+pb+(weapon.bonus||0)}, ${weapon.finesse?'finesse/Dexterity':'Strength'}${weapon.label?', '+weapon.label:''})` : 'Unarmed (1 damage)';
   const sneakLine   = char.sneakAttackDice ? `\n- SNEAK ATTACK: ${char.sneakAttackDice} extra damage when attacking with advantage or from hiding` : '';
@@ -127,19 +127,19 @@ const buildCharBlock = (char) => {
   const stackedInv  = stackInventory(char.inventory);
   const invDisplay  = Object.entries(stackedInv).map(([n,c])=>c>1?`${n} x${c}`:n).join(', ') || 'empty';
   // Descriptions for custom items the player owns (inventory + equipped), so the
-  // DM knows what they do — their flavor/label lives in customItems, not the name.
+  // DM knows what they do — their flavor/label lives in the character item registry, not the name.
   // Two tiers, because they change at very different rates. Worn gear and
   // constructs are stable — you equip something once and keep it — while carried
   // inventory churns constantly as loot arrives. Caching is prefix-based, so the
   // stable half goes FIRST: picking something up then rebuilds only the carried
   // block and the history behind it, leaving worn gear and constructs cached.
   const equippedNames = new Set(Object.values(char.slots || {}).filter(Boolean));
-  const isConstruct   = (n) => (char.customItems?.[n] || {}).type === 'construct';
+  const isConstruct   = (n) => (char.items?.[n] || {}).type === 'construct';
   const stableNames   = new Set([...equippedNames, ...Object.keys(stackedInv).filter(isConstruct)]);
   const carriedNames  = Object.keys(stackedInv).filter(n => !stableNames.has(n));
 
   const detailsFor = (names) => [...names]
-    .map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
+    .map(n => { const d = char.items?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
     .filter(Boolean).join('; ');
 
   const itemDetailLine = '';
@@ -224,8 +224,8 @@ export const ARC_OBJECTIVES_IN_PROMPT = false;
 // player's switch for putting a construct out of play). Because it depends on
 // inventory it must NOT sit in the cached static block: it goes with the gear.
 const buildConstructSection = (char) => {
-  const cdb = char.customItems || {};
-  const names = [...new Set(char.inventory || [])].filter(nm => cdb[nm]?.type === 'construct');
+  const cdb = char.items || {};
+  const names = stackNames(char.inventory).filter(nm => cdb[nm]?.type === 'construct');
   if (!names.length) return '';
   return `CONSTRUCTS & BOUND ENTITIES (owned by the player, commanded — not carried gear):\n` +
     names.map(nm => {
@@ -407,6 +407,12 @@ LOOT IS ITEMISED, NEVER BUNDLED. Whatever you describe on the shelf, in the ches
   RIGHT: [ITEM: Uncut Ruby | qty:3][ITEM: Flawed Emerald | qty:2][ITEM: Black Pearl]
 If the CONTAINER itself is worth owning — a Bag of Holding, a strongbox, a lockbox — grant the container as its own item AND itemise what was inside it. If you described five things, five things arrive; do not describe richly and then grant one vague parcel.
 
+ITEM NAMES ARE UNIQUE DEFINITIONS — there can be only ONE authoritative item definition for any exact item name. Multiple copies of the same item are a quantity stack, not separate variants. If you create or redefine an item using a name that already exists, the NEW definition OVERRIDES the old definition for EVERY copy with that name — carried, stashed, or equipped. Therefore:
+  - Reuse the exact same name ONLY when the new item is intentionally identical to the existing one.
+  - If an item has different stats, enchantment, quality, material, curse, history, or other properties, GIVE IT A DIFFERENT NAME.
+  - Never create two mechanically different items with the same name and expect the app to remember both definitions. It cannot: same name means same item.
+  EXAMPLE: If "Ashen Longsword" already exists as +1 and you later emit [ITEM: Ashen Longsword | weapon | 1d8+3 | ...], every Ashen Longsword now uses the +3 definition. Name the distinct version something else instead.
+
 CUSTOM ITEMS — always include type and stats:
   Weapon:     [ITEM: Obsidian Dagger | weapon | 1d6 | finesse | melee | label]
     label (optional): description shown in sidebar e.g. "cursed, deals necrotic damage"
@@ -474,8 +480,8 @@ QUEST ITEMS — regular [ITEM:] with a descriptive name so they sort correctly:
   [ITEM: Brass Token | misc | grants an audience with Lady Saryn Waeveran]
   [ITEM: Waeveran Crest | misc | a noble house's sigil, opens doors in the city]
   When a quest item is used, opened, decoded, or changed, transform it with UPDATE — never REMOVE then re-add:
-  [UPDATE: Sealed Letter | Opened Letter]   [UPDATE: Broken Amulet | Restored Amulet]
-  UPDATE keeps all of the item's stats, bonuses, and custom data — only the name changes. Safe for magic items: [UPDATE: Dull Blade | Awakened Blade] keeps its damage and bonuses.
+  MODIFYING AN EXISTING ITEM: emit the complete updated [ITEM:] definition with | qty:0. qty:0 updates the authoritative definition without adding another copy. Example: [ITEM: Awakened Blade | weapon | 2d8+2 | versatile | melee | awakened runes blaze along the edge | qty:0]
+  IMPORTANT: item NAME is its identity. To rename an existing item, use the exact final name consistently in narration and item management; do not invent two different definitions with the same name.
 
 CRITICAL: Mentioning an item in prose does NOT add it to inventory. Only [ITEM:] does.`;
 
@@ -522,10 +528,10 @@ export const buildSystemPrompt = (char) => {
   const crHard  = lvl <= 1 ? '1'   : `${lvl}`;
   const crTough = `${lvl + 1}`;
   const crCap   = `${lvl + 3}`;
-  const effStats    = effectiveStats(char.stats, char.slots, char.customItems || {});
-  const ac          = calcAC(char.slots, char.stats, char.customItems || {});
+  const effStats    = effectiveStats(char.stats, char.slots, char.items || {});
+  const ac          = calcAC(char.slots, char.stats, char.items || {});
   const pb          = profBonus(char.level);
-  const weapon      = getMainWeapon(char.slots, char.stats, char.customItems || {});
+  const weapon      = getMainWeapon(char.slots, char.stats, char.items || {});
   const classLevels = char.classLevels || { [char.cls?.name]: char.level };
   const classDesc   = Object.entries(classLevels).map(([c,l]) => `${c} ${l}`).join(' / ');
   const dexBuild = char.cls?.name === 'Artificer'
@@ -567,14 +573,14 @@ export const buildSystemPrompt = (char) => {
     .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
     .join(', ') || 'empty';
   // Descriptions for custom items the player owns (inventory + equipped), so the
-  // DM knows what they do — their flavor/label lives in customItems, not the name.
+  // DM knows what they do — their flavor/label lives in the character item registry, not the name.
   // Two tiers by change rate — see the Sonnet builder for the reasoning.
   const equippedNames = new Set(Object.values(char.slots || {}).filter(Boolean));
-  const isConstruct   = (n) => (char.customItems?.[n] || {}).type === 'construct';
+  const isConstruct   = (n) => (char.items?.[n] || {}).type === 'construct';
   const stableNames   = new Set([...equippedNames, ...Object.keys(stackedInv).filter(isConstruct)]);
   const carriedNames  = Object.keys(stackedInv).filter(n => !stableNames.has(n));
   const detailsFor = (names) => [...names]
-    .map(n => { const d = char.customItems?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
+    .map(n => { const d = char.items?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
     .filter(Boolean).join('; ');
   const itemDetailLine = '';
   // Constructs are derived from inventory, so this section CANNOT live in the
@@ -592,7 +598,7 @@ export const buildSystemPrompt = (char) => {
   ].filter(Boolean).join('\n');
 
   // Check for active holy focus in offhand
-  const db = { ...ITEM_DB, ...(char.customItems||{}) };
+  const db = allItems(char.items || {});
   const offhandData = char.slots.offhand ? db[char.slots.offhand] : null;
   const focusLine = offhandData?.type === 'focus'
     ? `\n- HOLY FOCUS: ${char.slots.offhand} equipped (${offhandData.label}${offhandData.radiantBonus ? ` — add ${offhandData.radiantBonus} radiant damage to all attacks` : ''}${offhandData.perceptionAdv ? ' — advantage on perception checks' : ''})`
@@ -909,13 +915,7 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 };
 
 // Stack duplicate inventory items for display
-export const stackInventory = (inventory) => {
-  const stacked = {};
-  inventory.forEach(name => {
-    stacked[name] = (stacked[name] || 0) + 1;
-  });
-  return stacked;
-};
+export const stackInventory = (inventory) => stackCounts(inventory);
 
 // ── The Hook ───────────────────────────────────────────────────────────────────
 export function useGame({ charRef, apiKey, openAiApiKey }) {
@@ -1106,7 +1106,7 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
     // Don't trigger if the attack word is inside quotes (player is speaking dialogue, not acting)
     const insideQuotes = /["'「][^"'「」]*\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge)\b[^"'「」]*["'」]/i;
     if (attackWords.test(userMsg) && !insideQuotes.test(userMsg) && !/\b(don't|dont|not|no|avoid|retreat|run|flee|hide|sneak)\b/i.test(userMsg)) {
-      const weapon = getMainWeapon(char.slots, char.stats, char.customItems || {});
+      const weapon = getMainWeapon(char.slots, char.stats, char.items || {});
       if (!weapon) log?.('[ATTACK] Attack word detected but no weapon equipped in mainhand — no roll made');
       if (weapon) {
         const result = performAttack(weapon, char.stats, char.level);
@@ -1170,9 +1170,9 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
     // to-hit bonus. Without this it fell through to a stat that doesn't exist
     // and rolled at +0 regardless of Strength or weapon.
     if (/^(attack|attackroll|attacks|tohit|hit|melee|ranged|weapon|weaponattack)$/.test(statName)) {
-      const weapon = getMainWeapon(char.slots, char.stats, char.customItems || {});
+      const weapon = getMainWeapon(char.slots, char.stats, char.items || {});
       const pb2 = profBonus(char.level);
-      const effAtk = effectiveStats(char.stats, char.slots, char.customItems || {});
+      const effAtk = effectiveStats(char.stats, char.slots, char.items || {});
       // Whatever happens, an attack must never resolve at +0. If the equipped
       // item has no definition (lost or renamed entry) fall back to the better
       // of STR/DEX rather than a phantom stat, and name the culprit.
@@ -1185,7 +1185,7 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
         abilityMod = Math.max(statMod(effAtk.str), statMod(effAtk.dex));
         const held = char.slots?.mainhand;
         label = held ? `${held} (no stats on file)` : 'unarmed';
-        if (held) log?.(`[ROLL] WARNING: "${held}" is equipped but has no entry in customItems — attack resolved from raw STR/DEX. Re-issue or re-craft the item to restore its stats.`);
+        if (held) log?.(`[ROLL] WARNING: "${held}" is equipped but has no entry in the character item registry — attack resolved from raw STR/DEX. Re-issue or re-craft the item to restore its stats.`);
       }
       const atkBonus = abilityMod + pb2 + enchant;
       const d20 = rollDie(20);
@@ -1213,10 +1213,10 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
     if (!statMap[statName] && !SKILL_ABILITY[statName] && !['str','dex','con','int','wis','cha'].includes(statKey)) {
       log?.(`[ROLL] WARNING: "${statLabel}" is not a known ability or skill — rolling against a default of 10 (+0). Tell the DM to name an ability or a 5e skill.`);
     }
-    const effStats = effectiveStats(char.stats, char.slots, char.customItems || {});
+    const effStats = effectiveStats(char.stats, char.slots, char.items || {});
     const statVal  = effStats[statKey] || 10;
     // Equipped gear with a bonus for this exact skill (e.g. stealth:+3) adds flat
-    const db = allItems(char.customItems || {});
+    const db = allItems(char.items || {});
     let gearBonus = 0;
     Object.values(char.slots || {}).forEach(itemName => {
       const b = itemName && db[itemName]?.bonuses;

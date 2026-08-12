@@ -44,23 +44,10 @@ export function parseSaveJSON(raw) {
 
 export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, onLoadFull, onLoadCharacter }) {
 
-  // ── Inventory/stash storage compression ──────────────────────────────────────
-  // In memory, inventory & stash are arrays of individual item-name strings
-  // (4000 cigarillos = 4000 strings) — every consumer relies on that array shape,
-  // so we DON'T change it in memory. We only compress at the save boundary:
-  // arrays become { name: count } objects on disk, and expand back to arrays on
-  // load. A save with 4000 identical items stores one line instead of 4000.
-  const compressList = (arr) => {
-    if (!Array.isArray(arr)) return arr; // already compressed or absent — leave it
-    const counts = {};
-    for (const name of arr) counts[name] = (counts[name] || 0) + 1;
-    return counts;
-  };
-  const compressCharForSave = (char) => ({
-    ...char,
-    inventory: compressList(char.inventory),
-    stash: compressList(char.stash),
-  });
+  // Inventory and stash are already compact [{name, qty}] stacks in memory.
+  // Save the character exactly as it exists; migration handles older compressed
+  // {name:count} and string-array formats on load.
+  const compressCharForSave = (char) => ({ ...char });
 
   const buildState = (type) => ({
     _type: type,
