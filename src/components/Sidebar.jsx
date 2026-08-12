@@ -53,6 +53,19 @@ const categorizeItem = (name, data) => {
   return 'misc';
 };
 
+const hasInspectableItemInfo = (d) => {
+  if (!d) return false;
+  if (d.label?.trim()) return true;
+  if (d.slot) return true;
+  if (d.ac !== undefined) return true;
+  if (d.damage) return true;
+  if (d.bonus) return true;
+  if (Array.isArray(d.extras) && d.extras.length) return true;
+  if (d.bonuses && Object.keys(d.bonuses).length) return true;
+  if (d.type && d.type !== 'misc') return true;
+  return false;
+};
+
 const CATEGORY_META = {
   constructs:  { label: '🗿 Constructs',        emoji: '🗿' },
   weapons:     { label: '⚔️ Weapons',           emoji: '⚔️' },
@@ -502,10 +515,10 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
           return (
             <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
               <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
-              <span onClick={()=>setInfoOpen(p => ({ ...p, [nm]: !p[nm] }))}
-                style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',cursor:stockData(nm)?'pointer':'default'}}>
+              <span onClick={()=>{ if (hasInspectableItemInfo(stockData(nm))) setInfoOpen(p => ({ ...p, [nm]: !p[nm] })); }}
+                style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',cursor:hasInspectableItemInfo(stockData(nm))?'pointer':'default'}}>
                 {nm}
-                {stockData(nm) && <span style={{color:colors.textDead,fontSize:10}}> ⓘ</span>}
+                {hasInspectableItemInfo(stockData(nm)) && <span style={{color:colors.textDead,fontSize:10}}> ⓘ</span>}
                 {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title="in stash">📦</span>}
                 {src.bag > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title={`in ${src.bags.join(', ')}`}>👜</span>}
               </span>
@@ -788,10 +801,10 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
           return (
             <div key={nm} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:6,padding:'2px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
               <input type="checkbox" checked={on} onChange={()=>toggle(nm, max)} style={{accentColor:colors.gold,cursor:'pointer',flexShrink:0}}/>
-              <span onClick={()=>setInfoOpen(p => ({ ...p, [nm]: !p[nm] }))}
-                style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',cursor:stockData(nm)?'pointer':'default'}}>
+              <span onClick={()=>{ if (hasInspectableItemInfo(stockData(nm))) setInfoOpen(p => ({ ...p, [nm]: !p[nm] })); }}
+                style={{flex:1,minWidth:0,fontSize:12,color:on?colors.text:colors.textDim,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',cursor:hasInspectableItemInfo(stockData(nm))?'pointer':'default'}}>
                 {nm}
-                {stockData(nm) && <span style={{color:colors.textDead,fontSize:10}}> ⓘ</span>}
+                {hasInspectableItemInfo(stockData(nm)) && <span style={{color:colors.textDead,fontSize:10}}> ⓘ</span>}
                 {src.stash > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title="in stash">📦</span>}
                 {src.bag > 0 && <span style={{fontSize:9,color:colors.textGhost,marginLeft:4}} title={`in ${src.bags.join(', ')}`}>👜</span>}
               </span>
