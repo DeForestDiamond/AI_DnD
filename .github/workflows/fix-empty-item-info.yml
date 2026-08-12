@@ -1,0 +1,58 @@
+name: Fix empty item info markers
+'on':
+  push:
+    branches: [feat/stacked-item-model]
+    paths: [.github/workflows/fix-empty-item-info.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch meaningful item info predicate
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/components/Sidebar.jsx')
+          s=p.read_text()
+          anchor="const CATEGORY_META = {"
+          helper="""const hasInspectableItemInfo = (d) => {
+  if (!d) return false;
+  if (d.label?.trim()) return true;
+  if (d.slot) return true;
+  if (d.ac !== undefined) return true;
+  if (d.damage) return true;
+  if (d.bonus) return true;
+  if (Array.isArray(d.extras) && d.extras.length) return true;
+  if (d.bonuses && Object.keys(d.bonuses).length) return true;
+  if (d.type && d.type !== 'misc') return true;
+  return false;
+};
+
+"""
+          if 'const hasInspectableItemInfo' not in s:
+              if anchor not in s: raise SystemExit('category anchor missing')
+              s=s.replace(anchor, helper+anchor, 1)
+          old_cursor="cursor:stockData(nm)?'pointer':'default'"
+          old_marker="{stockData(nm) && <span style={{color:colors.textDead,fontSize:10}}> ⓘ</span>}"
+          if s.count(old_cursor) != 2: raise SystemExit(f'expected 2 cursor predicates, found {s.count(old_cursor)}')
+          if s.count(old_marker) != 2: raise SystemExit(f'expected 2 info marker predicates, found {s.count(old_marker)}')
+          s=s.replace(old_cursor, "cursor:hasInspectableItemInfo(stockData(nm))?'pointer':'default'")
+          s=s.replace(old_marker, "{hasInspectableItemInfo(stockData(nm)) && <span style={{color:colors.textDead,fontSize:10}}> ⓘ</span>}")
+          # Don't toggle an invisible/empty disclosure when the row itself is tapped.
+          old_click="<span onClick={()=>setInfoOpen(p => ({ ...p, [nm]: !p[nm] }))}"
+          new_click="<span onClick={()=>{ if (hasInspectableItemInfo(stockData(nm))) setInfoOpen(p => ({ ...p, [nm]: !p[nm] })); }}"
+          if s.count(old_click) != 2: raise SystemExit(f'expected 2 info click handlers, found {s.count(old_click)}')
+          s=s.replace(old_click,new_click)
+          p.write_text(s)
+          PY
+      - run: npm ci
+      - run: npm run build
+      - name: Commit
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add src/components/Sidebar.jsx
+          git commit -m "fix: hide empty item info markers"
+          git push
