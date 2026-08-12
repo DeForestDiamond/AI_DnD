@@ -1,0 +1,205 @@
+name: Fill level-up progression
+'on':
+  push:
+    branches: [fix/levelup-progression-6-10]
+    paths: [.github/workflows/fill-levelup-progression.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fill class feature tables and remove HP fallback
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('src/constants/multiclass.js')
+          s = p.read_text()
+
+          additions = {
+            'Fighter': {
+              4: ['Ability Score Improvement'],
+              6: ['Indomitable - reroll a failed saving throw', 'Extra Attack improves - attack three times per action'],
+              7: ['Improved Combat Mastery - martial attacks become even more reliable'],
+              8: ['Indomitable improves - two uses between rests'],
+              9: ['Extra Attack improves again - attack four times per action'],
+              10:['Legendary Warrior - peak martial endurance and battlefield control'],
+            },
+            'Rogue': {
+              6: ['Reliable Talent - proficient skill checks cannot roll below 10'],
+              7: ['Sneak Attack increases to +4d6', 'Blindsense - detect nearby hidden creatures'],
+              8: ['Slippery Mind - proficiency in Wisdom saving throws'],
+              9: ['Sneak Attack increases to +5d6', 'Elusive - attackers cannot gain advantage against you while conscious'],
+              10:['Stroke of Luck - turn a failed attack or ability check into a success once per rest'],
+            },
+            'Wizard': {
+              6: ['Learn 6th-level spells'],
+              7: ['Learn 7th-level spells'],
+              8: ['Learn 8th-level spells'],
+              9: ['Learn 9th-level spells'],
+              10:['Spell Mastery - cast chosen low-level spells without expending slots', 'Signature Spells - chosen high-level spells are always ready'],
+            },
+            'Cleric': {
+              6: ['Learn 6th-level divine spells', 'Channel Divinity improves'],
+              7: ['Learn 7th-level divine spells'],
+              8: ['Learn 8th-level divine spells', 'Destroy Undead improves'],
+              9: ['Learn 9th-level divine spells'],
+              10:['Divine Intervention perfected - your deity answers without a roll'],
+            },
+            'Artificer': {
+              6: ['Spell-Storing Item - store a spell in an object for repeated use'],
+              7: ['Magic Item Savant - attune to more magic items and ignore more restrictions'],
+              8: ['Magic Item Master - attune to still more magic items'],
+              9: ['Soul of Artifice - attuned magic items bolster your saving throws'],
+              10:['Master Artificer - peak infusion capacity and magical construction expertise'],
+            },
+            'Illrigger': {
+              6: ['Greater Interdict - place and burn more seals before resting'],
+              7: ['Infernal Conduit - channel stronger hellish power through marked foes'],
+              8: ['Master of Seals - Interdict boons intensify and spread more easily'],
+              9: ['Hellbound Executioner - condemned foes suffer devastating punishment when seals burn'],
+              10:['Archfiend\'s Champion - command the full power of your infernal covenant'],
+            },
+            'Monk': {
+              6: ['Ki-Empowered Strikes - unarmed attacks count as magical', 'Monastic Tradition feature improves'],
+              7: ['Evasion - avoid area damage on successful Dexterity saves', 'Stillness of Mind - end fear or charm on yourself'],
+              8: ['Purity of Body - immunity to disease and poison'],
+              9: ['Diamond Soul - proficiency in all saving throws and spend Ki to reroll saves'],
+              10:['Perfect Self - regain Ki when entering battle with none remaining'],
+            },
+            'Barbarian': {
+              6: ['Feral Instinct - advantage on initiative and resist being surprised'],
+              7: ['Brutal Critical - deal an additional weapon die on critical hits'],
+              8: ['Relentless Rage - stay standing when damage would drop you to 0 HP'],
+              9: ['Persistent Rage - Rage ends only when you choose or fall unconscious'],
+              10:['Primal Champion - Strength and Constitution reach superhuman heights'],
+            },
+            'Warlock': {
+              6: ['Mystic Arcanum - learn one 6th-level patron spell'],
+              7: ['Mystic Arcanum - learn one 7th-level patron spell', 'Additional Eldritch Invocation'],
+              8: ['Mystic Arcanum - learn one 8th-level patron spell'],
+              9: ['Mystic Arcanum - learn one 9th-level patron spell', 'Additional Eldritch Invocation'],
+              10:['Eldritch Master - beseech your patron to rapidly restore pact magic'],
+            },
+            'Blood Hunter': {
+              6: ['Brand of Tethering - branded prey struggle to escape your reach'],
+              7: ['Crimson Rite damage increases', 'Blood Maledict improves'],
+              8: ['Hardened Soul - supernatural resolve against fear and corruption'],
+              9: ['Brand of Sundering - branded prey become increasingly vulnerable to your attacks'],
+              10:['Sanguine Mastery - Crimson Rites and Blood Curses reach their peak'],
+            },
+            'Paladin': {
+              4: ['Ability Score Improvement'],
+              7: ['Improved Divine Smite - every melee hit carries radiant power'],
+              8: ['Cleansing Touch - end hostile spell effects with a touch'],
+              9: ['Aura improvements - protective auras reach farther'],
+              10:['Sacred Oath capstone - embody the ultimate power of your oath'],
+            },
+            'Ranger': {
+              4: ['Ability Score Improvement'],
+              6: ['Favored Enemy and Natural Explorer improve'],
+              7: ['Feral Senses - fight unseen foes without losing your edge'],
+              8: ['Vanish - Hide as a bonus action and resist mundane tracking'],
+              9: ['Foe Slayer - add Wisdom to a crucial attack or damage roll against chosen prey'],
+              10:['Master Ranger - peak tracking, survival, and hunter instincts'],
+            },
+            'Sorcerer': {
+              6: ['Learn 6th-level spells', 'Sorcery Point pool expands'],
+              7: ['Learn 7th-level spells'],
+              8: ['Learn 8th-level spells', 'Metamagic mastery improves'],
+              9: ['Learn 9th-level spells'],
+              10:['Sorcerous Restoration - recover Sorcery Points when depleted'],
+            },
+            'Druid': {
+              6: ['Learn 6th-level spells', 'Wild Shape becomes dramatically more powerful'],
+              7: ['Learn 7th-level spells'],
+              8: ['Learn 8th-level spells', 'Timeless Body - age at a fraction of the normal rate'],
+              9: ['Learn 9th-level spells', 'Beast Spells - cast while Wild Shaped'],
+              10:['Archdruid - Wild Shape at will and cast through beast forms freely'],
+            },
+          }
+
+          # Locate each top-level class block, then its features object, and append only missing levels.
+          def find_matching(text, open_pos):
+            depth = 0
+            quote = None
+            esc = False
+            for i in range(open_pos, len(text)):
+              ch = text[i]
+              if quote:
+                if esc: esc = False
+                elif ch == '\\': esc = True
+                elif ch == quote: quote = None
+                continue
+              if ch in "'\"`": quote = ch; continue
+              if ch == '{': depth += 1
+              elif ch == '}':
+                depth -= 1
+                if depth == 0: return i
+            raise RuntimeError('unmatched brace')
+
+          for cls, levels in additions.items():
+            key_pat = rf"(?:^|\n)  {re.escape(cls) if ' ' not in cls else re.escape(repr(cls))}:\s*\{{"
+            # quoted object keys need literal source form
+            if cls == 'Blood Hunter':
+              m = re.search(r"\n  'Blood Hunter':\s*\{", s)
+            else:
+              m = re.search(rf"\n  {re.escape(cls)}:\s*\{{", s)
+            if not m: raise SystemExit(f'class block missing: {cls}')
+            class_open = s.find('{', m.start())
+            class_close = find_matching(s, class_open)
+            block = s[class_open:class_close+1]
+            fm = re.search(r'features:\s*\{', block)
+            if not fm: raise SystemExit(f'features missing: {cls}')
+            feat_open = class_open + fm.end() - 1
+            feat_close = find_matching(s, feat_open)
+            feat_text = s[feat_open:feat_close+1]
+            missing = []
+            for lvl, feats in levels.items():
+              if re.search(rf'\n\s*{lvl}:\s*\[', feat_text):
+                continue
+              vals = ', '.join(repr(x) for x in feats)
+              missing.append(f"      {lvl}: [{vals}],")
+            if missing:
+              insert = '\n' + '\n'.join(missing)
+              s = s[:feat_close] + insert + s[feat_close:]
+
+          p.write_text(s)
+
+          modal = Path('src/components/modals/MulticlassModal.jsx')
+          ms = modal.read_text()
+          old = """                {newFeatures.length === 0 && (\n                  <div style={{fontSize:9,color:colors.textGhost}}>+ {data?.hpPerLevel} HP per level</div>\n                )}"""
+          new = """                {newFeatures.length === 0 && (\n                  <div style={{fontSize:9,color:colors.textGhost}}>No new class feature listed for this level.</div>\n                )}"""
+          if old not in ms: raise SystemExit('HP fallback block not found')
+          modal.write_text(ms.replace(old, new, 1))
+          PY
+      - run: npm ci
+      - run: npm run build
+      - name: Audit levels 1-10
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path('src/constants/multiclass.js').read_text()
+          classes=['Fighter','Rogue','Wizard','Cleric','Artificer','Illrigger','Monk','Barbarian','Warlock','Blood Hunter','Paladin','Ranger','Sorcerer','Druid']
+          for cls in classes:
+            pat = r"'Blood Hunter':\s*\{" if cls=='Blood Hunter' else rf'{cls}:\s*\{{'
+            m=re.search(pat,s)
+            assert m, cls
+            start=s.find('features:',m.start())
+            end=s.find('\n    },',start)
+            block=s[start:end]
+            missing=[n for n in range(1,11) if not re.search(rf'\n\s*{n}:\s*\[',block)]
+            if missing: raise SystemExit(f'{cls} missing levels {missing}')
+          print('All 14 classes have explicit feature rows for levels 1-10')
+          PY
+      - name: Commit
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add src/constants/multiclass.js src/components/modals/MulticlassModal.jsx
+          git commit -m "fix: complete level-up feature display through level 10"
+          git push
