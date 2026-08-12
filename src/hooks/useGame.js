@@ -407,6 +407,12 @@ LOOT IS ITEMISED, NEVER BUNDLED. Whatever you describe on the shelf, in the ches
   RIGHT: [ITEM: Uncut Ruby | qty:3][ITEM: Flawed Emerald | qty:2][ITEM: Black Pearl]
 If the CONTAINER itself is worth owning — a Bag of Holding, a strongbox, a lockbox — grant the container as its own item AND itemise what was inside it. If you described five things, five things arrive; do not describe richly and then grant one vague parcel.
 
+ITEM NAMES ARE UNIQUE DEFINITIONS — there can be only ONE authoritative item definition for any exact item name. Multiple copies of the same item are a quantity stack, not separate variants. If you create or redefine an item using a name that already exists, the NEW definition OVERRIDES the old definition for EVERY copy with that name — carried, stashed, or equipped. Therefore:
+  - Reuse the exact same name ONLY when the new item is intentionally identical to the existing one.
+  - If an item has different stats, enchantment, quality, material, curse, history, or other properties, GIVE IT A DIFFERENT NAME.
+  - Never create two mechanically different items with the same name and expect the app to remember both definitions. It cannot: same name means same item.
+  EXAMPLE: If "Ashen Longsword" already exists as +1 and you later emit [ITEM: Ashen Longsword | weapon | 1d8+3 | ...], every Ashen Longsword now uses the +3 definition. Name the distinct version something else instead.
+
 CUSTOM ITEMS — always include type and stats:
   Weapon:     [ITEM: Obsidian Dagger | weapon | 1d6 | finesse | melee | label]
     label (optional): description shown in sidebar e.g. "cursed, deals necrotic damage"
