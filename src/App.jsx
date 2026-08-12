@@ -205,7 +205,7 @@ export default function App() {
   // ── Unified load handlers ──────────────────────────────────────────────────
   // Every load path (file, legacy code, autosave — welcome or playing phase)
   // funnels through these two so behavior can't drift between entry points.
-  const SPELLCASTER_CLASSES = ['Artificer','Cleric','Wizard','Warlock','Sorcerer','Druid','Paladin','Ranger'];
+  const SPELLCASTER_CLASSES = ['Artificer','Cleric','Wizard','Warlock','Sorcerer','Druid','Paladin','Ranger','Bard'];
 
   const queuePostLoadModals = (char) => {
     const needsDeity = char._needsDeitySelection && isClericCharacter(char);

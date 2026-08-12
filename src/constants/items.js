@@ -14,6 +14,7 @@ export const WEAPON_DB = {
   'Javelin':       { type:'weapon', damage:'1d6', bonus:0, finesse:false, range:'melee'  },
   'Dart':          { type:'weapon', damage:'1d4', bonus:0, finesse:true,  range:'ranged' },
   'Quarterstaff':  { type:'weapon', damage:'1d6', bonus:0, finesse:false, range:'melee'  },
+  'Pistol':        { type:'weapon', damage:'1d10', bonus:0, finesse:true, range:'ranged', label:'DEX-based firearm' },
   'Arcane Pistol': { type:'weapon', damage:'1d10', bonus:0, finesse:false, range:'ranged', label:'INT-based, arcane focus, no ammo required' },
 };
 
@@ -38,13 +39,19 @@ export const MAGIC_ITEM_DB = {
   'Cloak of Elvenkind':      { type:'magic', slot:'cloak', bonuses:{},        label:'Stealth' },
 };
 
+export const GEAR_DB = {
+  'Gunsmith Tools': { type:'misc', label:'Tools for maintaining, repairing, and modifying firearms' },
+  "Hunter's Kit": { type:'misc', label:'Specialized tools, reagents, traps, and field supplies for hunting monsters' },
+};
+
 export const FOCUS_DB = {
+  'Lute': { type:'focus', slot:'mainhand', bonuses:{}, label:'Bardic spellcasting focus and musical instrument' },
   "The Dawnbringer's Codex": { type:'focus', slot:'offhand', bonuses:{ cha:1 }, label:'+1 CHA, +1d4 radiant', radiantBonus:'1d4', deity:'Lathander' },
   "The Lunar Codex":         { type:'focus', slot:'offhand', bonuses:{ wis:1 }, label:'+1 WIS, perception+', perceptionAdv:true, deity:'Selune' },
   "Arcane Pistol":           { type:'weapon', slot:'mainhand', damage:'1d10', bonus:1, finesse:false, range:'ranged', label:'Arcane firearm, +1d8 on Artificer spells cast through it', arcaneFirearm:true },
 };
 
-export const ITEM_DB = { ...WEAPON_DB, ...ARMOR_DB, ...MAGIC_ITEM_DB, ...FOCUS_DB };
+export const ITEM_DB = { ...WEAPON_DB, ...ARMOR_DB, ...MAGIC_ITEM_DB, ...GEAR_DB, ...FOCUS_DB };
 
 export const SLOTS = [
   // Wands, staves, orbs and instruments are held in the main hand too, so it

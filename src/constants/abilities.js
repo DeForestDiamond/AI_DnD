@@ -321,6 +321,16 @@ export const CLASS_ABILITIES = {
     cantripsKnown: { 1:3, 2:3, 3:3, 4:4, 5:4, 6:4, 7:4, 8:4, 9:4, 10:5 },
     spellsKnown: { 1:2, 2:3, 3:4, 4:5, 5:6, 6:7, 7:8, 8:9, 9:10, 10:11 },
   },
+
+  Bard: {
+    cantrips:['Dancing Lights','Friends','Light','Mage Hand','Mending','Message','Minor Illusion','Prestidigitation','True Strike','Vicious Mockery'],
+    martial:{1:['Bardic Inspiration'],2:['Jack of All Trades','Song of Rest'],3:['Expertise'],4:['Versatile Performance'],5:['Font of Inspiration'],6:['Countercharm','Magical Secrets'],7:['Improved Inspiration'],8:['Additional Expertise'],9:['Superior Inspiration'],10:['Peerless Performance']},
+    martialKnown:{1:1,2:2,3:1,4:1,5:1,6:2,7:1,8:1,9:1,10:1},
+    spells:{1:['Charm Person','Cure Wounds','Detect Magic','Disguise Self','Dissonant Whispers','Faerie Fire','Feather Fall','Healing Word','Heroism','Sleep','Thunderwave'],2:['Calm Emotions','Detect Thoughts','Enhance Ability','Hold Person','Invisibility','Knock','Lesser Restoration','See Invisibility','Shatter','Silence','Suggestion'],3:['Clairvoyance','Dispel Magic','Fear','Hypnotic Pattern','Major Image','Sending','Speak with Dead','Tongues'],4:['Dimension Door','Freedom of Movement','Greater Invisibility','Locate Creature','Polymorph'],5:['Animate Objects','Dominate Person','Geas','Greater Restoration','Hold Monster','Legend Lore','Mass Cure Wounds','Raise Dead','Scrying'],6:['Mass Suggestion',"Otto's Irresistible Dance",'True Seeing'],7:['Etherealness','Forcecage','Mirage Arcane','Teleport'],8:['Dominate Monster','Feeblemind','Glibness','Mind Blank'],9:['Foresight','Power Word Heal','True Polymorph'],10:['Magical Secrets','Peerless Inspiration']},
+    cantripsKnown:{1:2,2:2,3:2,4:3,5:3,6:3,7:3,8:4,9:4,10:4}, spellsKnown:{1:4,2:5,3:6,4:7,5:8,6:10,7:12,8:14,9:16,10:18},
+  },
+  'Monster Hunter': {cantrips:[],martial:{1:["Hunter's Lore",'Prepared Arsenal'],2:['Marked Quarry','Monster Slayer'],3:['Field Preparation'],4:['Ability Score Improvement'],5:['Extra Attack','Hardened Hunter'],6:['Relentless Pursuit'],7:['Exploit Weakness'],8:['Unnatural Resilience'],9:['Apex Quarry'],10:['Legendary Hunter']},martialKnown:{1:2,2:2,3:1,4:1,5:2,6:1,7:1,8:1,9:1,10:1}},
+  Gunslinger: {cantrips:[],martial:{1:['Grit','Quick Draw','Firearm Proficiency'],2:['Deadeye Shot','Disarming Shot','Forceful Shot'],3:['Trick Shot Mastery'],4:['Ability Score Improvement'],5:['Extra Attack','Fast Reload'],6:['Piercing Shot'],7:['Evasive Footwork'],8:['Vicious Intent'],9:['Hemorrhaging Critical'],10:['Legendary Gunslinger']},martialKnown:{1:3,2:3,3:1,4:1,5:2,6:1,7:1,8:1,9:1,10:1}},
 };
 
 // Get how many of each ability type a class gets at a given level (cumulative)
