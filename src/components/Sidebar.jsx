@@ -646,6 +646,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
     return source === 'inventory' ? inv : source === 'stash' ? stash : inv + stash;
   };
   const sourceNames = allNames.filter(nm => sourceCount(nm) > 0);
+  const equipped = new Set(Object.values(character.slots || {}).filter(Boolean));
   const stockData = (nm) => db[nm];
   // Inverse of crafting: finished goods, not raw materials.
   const isSalvageable = (nm) => {
