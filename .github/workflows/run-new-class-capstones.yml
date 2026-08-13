@@ -1,0 +1,42 @@
+name: Run compressed class capstone fix
+on:
+  push:
+    branches:
+      - feat/deferred-level-up-sidebar
+    paths:
+      - scripts/fix_new_class_capstones.py
+      - .github/workflows/run-new-class-capstones.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/fix_new_class_capstones.py
+      - run: npm ci
+      - run: npm run build
+      - name: Audit compressed progression
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          m=Path('src/constants/multiclass.js').read_text()
+          a=Path('src/constants/abilities.js').read_text()
+          for text in [m,a]:
+              for cls in ['Bard','Monster Hunter','Gunslinger']:
+                  assert cls in text
+          assert 'full level-20 Bard kit unlocked' in m
+          assert 'full level-20 Monster Hunter kit unlocked' in m
+          assert 'full level-20 Gunslinger kit unlocked' in m
+          assert 'Magical Secrets Mastery' in a
+          assert 'Perfect Quarry' in a
+          assert 'Grit Mastery' in a
+          print('compressed level-20 progression audit passed')
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add src/constants/multiclass.js src/constants/abilities.js
+          git commit -m "fix: compress new classes to full level-20 kits by level 10"
+          git push
