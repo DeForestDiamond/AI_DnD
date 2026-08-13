@@ -76,6 +76,16 @@ s = s.replace(
     1,
 )
 
+# The quest-item paragraph still named the retired UPDATE command even though the
+# next line already described the current qty:0 mechanism.
+s = s.replace(
+    "  When a quest item is used, opened, decoded, or changed, transform it with UPDATE — never REMOVE then re-add:\n"
+    "  MODIFYING AN EXISTING ITEM: emit the complete updated [ITEM:] definition with | qty:0. qty:0 updates the authoritative definition without adding another copy.",
+    "  When a quest item is used, opened, decoded, or changed, modify its authoritative definition — never REMOVE then re-add:\n"
+    "  MODIFYING AN EXISTING ITEM: emit the complete updated [ITEM:] definition with | qty:0. qty:0 updates the authoritative definition without adding another copy.",
+    1,
+)
+
 # Choice-length mechanics belong to each model's FORMAT/HARD RULES and final
 # checklist. Repeating the same paragraph inside the shared item/tag reference
 # spends static prompt tokens without strengthening the rule.
