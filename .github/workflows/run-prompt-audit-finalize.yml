@@ -1,0 +1,25 @@
+name: Run prompt audit finalizer
+on:
+  push:
+    branches:
+      - refactor/system-prompt-audit
+    paths:
+      - scripts/prompt_audit_finalize.py
+      - .github/workflows/run-prompt-audit-finalize.yml
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/prompt_audit_finalize.py
+      - run: npm ci
+      - run: npm run build
+      - name: Commit final cleanup
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add src/hooks/useGame.js
+          git commit -m "refactor: finalize system prompt cleanup"
+          git push
