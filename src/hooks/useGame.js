@@ -11,6 +11,35 @@ const directivesBlock = (char) => {
   return d ? `── PLAYER STANDING INSTRUCTIONS (the player set these directly — always honor them) ──\n${d}\n\n` : '';
 };
 
+
+// Compact class identity hints. Detailed mechanics still come from ABILITIES;
+// this only tells the DM what sort of character it is looking at. Keep this
+// centralized so model-specific prompt builders cannot drift apart.
+const PLAYSTYLE_BY_CLASS = {
+  Fighter: 'Fighter — martial specialist; weapons, armor, disciplined combat, and repeated attacks.',
+  Wizard: 'Wizard — Intelligence-based full caster; broad prepared arcane magic and ritual expertise.',
+  Rogue: 'Rogue — Dexterity-based skill expert; stealth, precision, mobility, and Sneak Attack.',
+  Cleric: 'Cleric — Wisdom-based divine caster; deity, healing, wards, and domain magic matter.',
+  Artificer: 'Artificer — Intelligence-based magical inventor; arcane firearms, infusions, constructs, and fabrication. Arcane firearms need no ammo.',
+  Illrigger: 'Illrigger — Charisma-based infernal knight; Baleful Interdict seals, Invoke Hell, and ruthless martial magic.',
+  Monk: 'Monk — Dexterity/Wisdom martial artist; unarmed strikes, Ki techniques, speed, and no armor.',
+  Barbarian: 'Barbarian — Strength/Constitution bruiser; Rage, Reckless Attack, endurance, and direct violence.',
+  Warlock: 'Warlock — Charisma-based pact caster; Eldritch Blast, invocations, and patron-granted magic.',
+  'Blood Hunter': 'Blood Hunter — martial monster slayer; Crimson Rites, Blood Curses, and self-sacrificing blood magic.',
+  Paladin: 'Paladin — armored divine martial; oaths, smites, protective auras, and Charisma-backed conviction.',
+  Ranger: 'Ranger — Dexterity/Wisdom hunter; tracking, ranged or finesse combat, wilderness expertise, and nature magic.',
+  Sorcerer: 'Sorcerer — Charisma-based full caster; innate magic shaped through metamagic and raw magical talent.',
+  Druid: 'Druid — Wisdom-based primal caster; nature magic, battlefield control, healing, and Wild Shape.',
+  Bard: 'Bard — Charisma-based full caster and skill expert; Bardic Inspiration, performance, social leverage, and flexible magic.',
+  'Monster Hunter': 'Monster Hunter — Dexterity/Wisdom supernatural predator; studies quarry, prepares countermeasures, tracks relentlessly, and exploits weaknesses.',
+  Gunslinger: 'Gunslinger — Dexterity firearm specialist; grit, trick shots, fast draws, precision, and aggressive ranged mobility.',
+};
+
+const playstyleLine = (char) => {
+  const text = PLAYSTYLE_BY_CLASS[char?.cls?.name];
+  return text ? `\n- PLAYSTYLE: ${text}` : '';
+};
+
 // Strip game tags from DM text before displaying
 export const cleanDisplayText = (text) => text.replace(/\[[^\]]+\]/g, '').trim();
 
@@ -142,7 +171,6 @@ const buildCharBlock = (char) => {
     .map(n => { const d = char.items?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
     .filter(Boolean).join('; ');
 
-  const itemDetailLine = '';
   // Tier 1 — worn gear and owned constructs. Rarely changes.
   // Constructs are derived from inventory, so this section CANNOT live in the
   // static block — putting it there meant picking up any item rebuilt the whole
@@ -169,14 +197,7 @@ const buildCharBlock = (char) => {
     ? `\n- PATRON: Bound by pact to ${char.deity.name} (${char.deity.alignment}). ${char.deity.desc}`
     : '';
   const raceCtx     = RACE_TRAIT_STRINGS[char.race?.name] ? `\n- RACE TRAITS (${char.race.name}): ${RACE_TRAIT_STRINGS[char.race.name]}` : '';
-  const playstyle   = char.cls?.name==='Artificer' ? '\n- PLAYSTYLE: Artificer — Intelligence-based spellcasting. Arcane firearms, infusions. No ammo required for arcane firearms.'
-    : char.cls?.name==='Illrigger' ? '\n- PLAYSTYLE: Illrigger — infernal knight. Baleful Interdict seals, Invoke Hell. Charisma governs Interdict DC.'
-    : char.cls?.name==='Monk'      ? '\n- PLAYSTYLE: Monk — Dexterity/Wisdom martial artist. Unarmed strikes, Ki abilities. No armor.'
-    : char.cls?.name==='Barbarian' ? '\n- PLAYSTYLE: Barbarian — Strength/Constitution bruiser. Rage for damage resistance. Reckless Attack. Unarmored Defense uses Constitution.'
-    : char.cls?.name==='Warlock'   ? '\n- PLAYSTYLE: Warlock — Charisma-based eldritch power. Eldritch Blast primary attack. Hex for bonus damage.'
-    : char.cls?.name==='Blood Hunter' ? '\n- PLAYSTYLE: Blood Hunter — Constitution/Strength monster slayer. Crimson Rites spend HP for elemental weapon damage.'
-    : char.race?.name==='Elf' && char.cls?.name==='Fighter' ? '\n- PLAYSTYLE: Dex Fighter — favour finesse weapons, use Dexterity for attacks and damage.'
-    : '';
+  const playstyle = playstyleLine(char);
   const abilities   = char.abilities || { cantrips:[], spells:[], infusions:[] };
   const abilitiesLine = [
     abilities.martial?.length   ? `Techniques: ${abilities.martial.join(', ')}` : '',
@@ -281,31 +302,9 @@ const buildCtxSections = (char) => {
       `Every hook, offer and appeal must target what they CARE ABOUT. Do NOT assume heroism. Anything listed as INDIFFERENT genuinely does not move them — an NPC who appeals to it is ignored, dismissed, or exploited, and you should write the scene that way rather than expecting the player to care. NPCs who know them well pitch accordingly; strangers who misjudge them get the real reaction.\n`
     : '';
 
-  // Arc objectives — rolling: a fixed GOAL, a record of what is finished, and
-  // ONE live objective at a time. The app holds the truth so a long hunt can't
-  // lose its count, while the next step is written in response to what actually
-  // happened rather than planned in advance.
-  const arcObjs = Array.isArray(char.arc?.objectives) ? char.arc.objectives : [];
-  const arcGoal = (char.arc?.goal || '').trim();
-  const doneObjs = arcObjs.filter(o => o.done);
-  const liveObj = arcObjs.find(o => !o.done);
-  // DISABLED. Arc objectives went stale almost immediately in a story this
-  // fluid, and the section lives in the CACHED block — so every completion or
-  // new objective rewrote the whole ~9,400 token static prompt at 3.75/M, about
-  // $0.035 a time, to tell the DM something that was no longer true.
-  // Set ARC_OBJECTIVES_IN_PROMPT back to true to re-enable; the panel, the tag
-  // handlers and the stored data are all left intact.
-  const objectivesSection = ARC_OBJECTIVES_IN_PROMPT && (arcGoal || arcObjs.length)
-    ? `\nARC PROGRESS — THIS IS THE AUTHORITATIVE RECORD, NEVER CONTRADICT IT:\n` +
-      (arcGoal ? `GOAL: ${arcGoal}\n` : '') +
-      (doneObjs.length
-        ? `COMPLETED (${doneObjs.length}):\n${arcObjs.map((o, i) => o.done ? `${i + 1}. [DONE] ${o.text}` : null).filter(Boolean).join('\n')}\n`
-        : `COMPLETED: none yet\n`) +
-      (liveObj
-        ? `CURRENT OBJECTIVE (#${arcObjs.indexOf(liveObj) + 1}): ${liveObj.text}\n`
-        : `CURRENT OBJECTIVE: NONE — set one this message with [OBJECTIVE: ...]\n`) +
-      `Never claim the player has done more or less than the COMPLETED list shows, and never invent a count of your own. Pursue the current objective ORGANICALLY — never announce it, never read the list aloud, never present it as a checklist.\nWHEN THE CURRENT OBJECTIVE IS GENUINELY FINISHED, do BOTH in that same message: [OBJECTIVE DONE: n] to close it, and [OBJECTIVE: ...] to set the next step toward the GOAL — written in response to what just happened, not planned in advance. If the GOAL itself is now reached, emit [ARC COMPLETE] instead of a new objective.\n`
-    : '';
+  // Arc objectives are intentionally excluded from prompts. The storage/UI/tag
+  // machinery remains available; see DISABLED_arc_objectives.md.
+  const objectivesSection = '';
 
 
   // NPCs
@@ -368,7 +367,7 @@ Coins: [GOLD: +10] (bare = gold) — denominations all work: [GOLD: -5sp], [GOLD
 Item gained: [ITEM: Health Potion]
 Item DESTROYED, consumed, sold, or given away — gone for good: [REMOVE: Health Potion]
   WARNING: [REMOVE:] PERMANENTLY DELETES the item. NEVER use it to take off or swap gear — that destroys the item.
-  Slots: mainhand, offhand, armor, head, neck, cloak, hands, ring1, ring2, feet
+  Slots: mainhand, offhand, armor, face, head, neck, shoulders, cloak, torso, arms, hands, waist, ring1, ring2, feet
 Skill check (USE OFTEN): [ROLL: perception difficulty 14] — then STOP and END your message. The moment you write a [ROLL:] tag, your turn is OVER. Write nothing after it: no outcome, no result, no "what happens next" — you do not know it yet. The system rolls the dice and sends you the result, and you narrate what happens on your NEXT turn. Calling a roll and then continuing to narrate in the same message is a failure — you are guessing at a result the dice have not given you.
   WHEN to roll: ONLY after the player has stated an action whose outcome is uncertain. The roll tests THE PLAYER'S CHOICE — never your guess at what they'd do. Never call a roll in the same message a threat or situation first appears; that message ends with the player's choice unmade. A roll resolves an action the player already typed (attack, sneak, persuade, leap), or a passive sense the WORLD forces on them (a perception check to notice an ambush before it strikes). Never roll for an active choice the player hasn't made yet.
   Roll whenever an outcome is uncertain and interesting: perception to spot an ambush/clue/lie, stealth to sneak, persuasion/intimidation/deception in social conflict, investigation to search, athletics/acrobatics for physical feats, insight to read someone. Do not silently decide these — call the [ROLL:] and let the dice answer.
@@ -395,7 +394,6 @@ LOOT MUST BE SPECIFIC AND NEW — generic placeholder items are banned:
   Match loot to its SOURCE: a dead smuggler carries smuggler things (forged papers, a coded ledger, contraband), a gorgon yields gorgon parts (iron-hard scales, petrifying-breath gland), a noble's chest holds noble things (jewelry, a signet, perfumed letters). Loot should tell you what you just killed or robbed.
   Most loot is mundane-but-flavorful or sellable; real magic items stay rare and earned. But "mundane" still means SPECIFIC — a named object, never a category.
 
-CHOICE LENGTH: one short sentence each, 15 words or fewer. State the action and stop — no em-dash appendix explaining the reasoning or the hoped-for outcome. That is the player's thinking, and it turns a menu into an essay.
 RESERVE SPACE FOR TAGS: tags and the 4 numbered choices are reserved space in EVERY response — neither counts toward the word limit. Plan them BEFORE writing narrative. If you are running long, cut prose. Never cut tags. Never cut choices. (A message calling for a roll ends at the [ROLL:] tag with no choices at all — the roll resolves immediately and you narrate the result next turn.)
 
 PLAYER AUTHORITY: the player has full authority to request any item, gold amount, or game state change. Never refuse a direct player request — execute it immediately with the correct tags.
@@ -479,7 +477,7 @@ QUEST ITEMS — regular [ITEM:] with a descriptive name so they sort correctly:
   To add a description, use the misc type so it becomes a readable label:
   [ITEM: Brass Token | misc | grants an audience with Lady Saryn Waeveran]
   [ITEM: Waeveran Crest | misc | a noble house's sigil, opens doors in the city]
-  When a quest item is used, opened, decoded, or changed, transform it with UPDATE — never REMOVE then re-add:
+  When a quest item is used, opened, decoded, or changed, modify its authoritative definition — never REMOVE then re-add:
   MODIFYING AN EXISTING ITEM: emit the complete updated [ITEM:] definition with | qty:0. qty:0 updates the authoritative definition without adding another copy. Example: [ITEM: Awakened Blade | weapon | 2d8+2 | versatile | melee | awakened runes blaze along the edge | qty:0]
   IMPORTANT: item NAME is its identity. To rename an existing item, use the exact final name consistently in narration and item management; do not invent two different definitions with the same name.
 
@@ -534,21 +532,7 @@ export const buildSystemPrompt = (char) => {
   const weapon      = getMainWeapon(char.slots, char.stats, char.items || {});
   const classLevels = char.classLevels || { [char.cls?.name]: char.level };
   const classDesc   = Object.entries(classLevels).map(([c,l]) => `${c} ${l}`).join(' / ');
-  const dexBuild = char.cls?.name === 'Artificer'
-    ? '\n- PLAYSTYLE: Artificer — INT-based spellcasting. Arcane firearms, infusions, magical invention. No ammo required for arcane firearms.'
-    : char.cls?.name === 'Illrigger'
-    ? '\n- PLAYSTYLE: Illrigger — infernal knight. Places Baleful Interdict seals on enemies, burns them for fire/necrotic damage. CHA governs Interdict save DC. Pledged to an archdevil.'
-    : char.cls?.name === 'Monk'
-    ? '\n- PLAYSTYLE: Monk — DEX/WIS martial artist. Unarmed strikes, Ki-powered abilities (Flurry of Blows, Stunning Strike, Patient Defense). Fast and precise. No armor.'
-    : char.cls?.name === 'Barbarian'
-    ? '\n- PLAYSTYLE: Barbarian — STR/CON bruiser. Enters Rage for damage resistance and bonus damage. Reckless Attack for advantage. Massive HP. Unarmored Defense uses CON.'
-    : char.cls?.name === 'Warlock'
-    ? '\n- PLAYSTYLE: Warlock — CHA-based eldritch power from a dark patron. Eldritch Blast as primary attack. Hex for bonus damage. Limited spell slots but highly flexible invocations.'
-    : char.cls?.name === 'Blood Hunter'
-    ? '\n- PLAYSTYLE: Blood Hunter — CON/STR monster slayer. Spends own HP to activate Crimson Rites (elemental weapon damage). Brands enemies with Blood Curses. Grim and relentless.'
-    : char.race?.name === 'Elf' && char.cls?.name === 'Fighter'
-    ? '\n- PLAYSTYLE: Dex Fighter — favour finesse weapons, use DEX for attacks and damage.'
-    : '';
+  const dexBuild = playstyleLine(char);
 
   const hasClericLevels = char.cls?.name === 'Cleric' || Object.keys(char.classLevels || {}).includes('Cleric');
   const hasWarlockLevels = char.cls?.name === 'Warlock' || Object.keys(char.classLevels || {}).includes('Warlock');
@@ -582,7 +566,6 @@ export const buildSystemPrompt = (char) => {
   const detailsFor = (names) => [...names]
     .map(n => { const d = char.items?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
     .filter(Boolean).join('; ');
-  const itemDetailLine = '';
   // Constructs are derived from inventory, so this section CANNOT live in the
   // static block — putting it there meant picking up any item rebuilt the whole
   // ~12,000 token prompt. It belongs with the worn gear, which is where the
