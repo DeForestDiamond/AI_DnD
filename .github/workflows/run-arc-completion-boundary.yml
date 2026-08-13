@@ -1,0 +1,36 @@
+name: Run arc completion boundary patch
+on:
+  push:
+    branches:
+      - refactor/system-prompt-audit
+    paths:
+      - scripts/fix_arc_completion_boundary.py
+      - .github/workflows/run-arc-completion-boundary.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/fix_arc_completion_boundary.py
+      - run: npm ci
+      - run: npm run build
+      - name: Audit completion rule
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('src/hooks/useGame.js').read_text()
+          assert 'THE ANTAGONIST IS THE HARD BOUNDARY OF THE ARC' in s
+          assert 'hidden superior' in s
+          assert 'FUTURE ARC' in s
+          assert 'Emit [ARC COMPLETE] in the resolution message' in s
+          print('arc completion boundary audit passed')
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add src/hooks/useGame.js
+          git commit -m "fix: end arcs when the assigned antagonist is resolved"
+          git push
