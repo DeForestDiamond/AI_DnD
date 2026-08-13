@@ -3,7 +3,7 @@ import { animations, colors, fonts, btn, panel, cardStyle } from './styles/theme
 import { CLASSES, RACES, STAT_NAMES, STAT_DESC } from './constants/classes.js';
 import { DEITIES } from './constants/deities.js';
 import { SLOTS } from './constants/items.js';
-import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems } from './hooks/useCharacter.js';
+import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
 import { useGame, buildSystemPrompt, buildSystemPromptSonnet, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
@@ -13,7 +13,6 @@ import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
 import { SaveModal } from './components/modals/SaveModal.jsx';
 import { stackCounts, stackCount, stackHas, addStack, takeStack } from './utils/itemStacks.js';
-import { MulticlassModal } from './components/modals/MulticlassModal.jsx';
 import { ItemPickerModal } from './components/modals/ItemPickerModal.jsx';
 import { AbilitiesModal } from './components/modals/AbilitiesModal.jsx';
 import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx';
@@ -183,8 +182,6 @@ export default function App() {
     moveToStash, moveToInventory,
     createBag, addToBag, removeFromBag, deleteItem, deleteFromBag, renameItem,
     toggleContextExclusion,
-    pendingStatPoint, setPendingStatPoint,
-    levelUpMsg,
   } = useCharacter(log);
 
   const voice = useVoice();
@@ -1728,6 +1725,29 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     await handleSend(lastUserMsg.text, truncated);
   };
 
+  const bankedLevelUps = levelUpsAvailable(character);
+
+  const handleLevelClassSelect = (cls) => {
+    if (['Cleric','Warlock','Paladin'].includes(cls) && !charRef.current.deity) {
+      setDeityModalContext('multiclass');
+      setDeityModalClass(cls);
+      setShowDeityModal(true);
+    }
+  };
+
+  const handleLevelStatSelect = (className, stat) => {
+    const cur = charRef.current;
+    if (levelUpsAvailable(cur) <= 0) return;
+    const newLevels = { ...(cur.classLevels || {}), [className]: ((cur.classLevels || {})[className] || 0) + 1 };
+    const projected = { ...cur, level:(cur.level || 1) + 1, classLevels:newLevels };
+    spendStatPoint(className, stat);
+    const owed = owedSubclasses(projected);
+    if (owed.length) {
+      setSubclassQueue(q => [...new Set([...q, ...owed])]);
+      setShowSubclassModal(true);
+    }
+  };
+
   // ── Slot handling ──────────────────────────────────────────────────────────
   const handleCompanionSlotClick = (companionName, slotId) => {
     const options = equippableInSlot(character, slotId);
@@ -2041,32 +2061,6 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         />
       )}
 
-      {pendingStatPoint && (
-        <MulticlassModal
-          character={character}
-          classLevels={character.classLevels || { [character.cls?.name]: character.level }}
-          deityPending={showDeityModal}
-          onChooseClass={(cls) => {
-            if (['Cleric','Warlock','Paladin'].includes(cls) && !character.deity) {
-              setDeityModalContext('multiclass');
-              setDeityModalClass(cls);
-              setShowDeityModal(true);
-            }
-          }}
-          onChooseStat={(className, stat) => {
-            spendStatPoint(className, stat);
-            // If this level-up crosses the class's subclass pick level (e.g.
-            // Druid 2, Monk 3), prompt now instead of waiting for a file load.
-            const cur = charRef.current;
-            const newLevels = { ...(cur.classLevels || {}), [className]: ((cur.classLevels || {})[className] || 0) + 1 };
-            const owed = owedSubclasses({ ...cur, classLevels: newLevels });
-            if (owed.length) {
-              setSubclassQueue(q => [...new Set([...q, ...owed])]);
-              setShowSubclassModal(true);
-            }
-          }}
-        />
-      )}
 
       {adventureStartChar && (
         <AdventureStartModal
@@ -2098,11 +2092,6 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         />
       )}
 
-      {levelUpMsg && !pendingStatPoint && (
-        <div style={{position:'fixed',top:20,left:'50%',transform:'translateX(-50%)',background:`linear-gradient(135deg,${colors.gold},${colors.goldDim})`,color:colors.bg,fontFamily:fonts.display,fontWeight:'bold',fontSize:13,padding:'12px 24px',borderRadius:6,zIndex:200,animation:'levelUp 6s ease forwards',whiteSpace:'nowrap'}}>
-          {levelUpMsg}
-        </div>
-      )}
 
       {apiError && (
         <div style={{position:'fixed',top:20,left:'50%',transform:'translateX(-50%)',background:'#3a0808',border:`1px solid ${colors.red}`,color:colors.red,fontFamily:fonts.display,fontSize:11,padding:'8px 16px',borderRadius:4,zIndex:200,maxWidth:400,textAlign:'center'}}>
@@ -2127,7 +2116,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
           URL.revokeObjectURL(url);
         }}
         onCopyDebug={() => navigator.clipboard?.writeText(debugLog.join('\n'))}
-            debugStatus={`char: lv${character.level} xp:${character.xp} pending:${String(pendingStatPoint)} | arc: ${character.arc?.antagonist || 'none'} | arcLocation: ${character.arc?.arcLocation || 'none'}`}
+            debugStatus={`char: lv${character.level} xp:${character.xp} levelups:${bankedLevelUps} | arc: ${character.arc?.antagonist || 'none'} | arcLocation: ${character.arc?.arcLocation || 'none'}`}
             directives={character.directives || ''}
             onChangeDirectives={(text)=>updateChar({ ...charRef.current, directives: text })}
             voiceSettings={voice.voiceSupported ? {
@@ -2138,6 +2127,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
               availableVoices: voice.availableVoices, preview: voice.previewVoice,
             } : null}
             character={character}
+            levelUpsAvailable={bankedLevelUps}
+            onLevelClassSelect={handleLevelClassSelect}
+            onLevelStatSelect={handleLevelStatSelect}
             onSlotClick={handleSlotClick}
             onCompanionSlotClick={handleCompanionSlotClick}
             onCompanionUnequip={unequipCompanionItem}
@@ -2221,6 +2213,12 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             <span style={{fontFamily:fonts.display,fontSize:13,color:colors.gold,letterSpacing:2}}>🐉 TALES OF THE REALM</span>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:6}}>
+            {bankedLevelUps > 0 && (
+              <span title={`${bankedLevelUps} level-up${bankedLevelUps===1?'':'s'} available — open the LEVEL tab in the sidebar whenever you are ready`}
+                style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:0.6,border:`1px solid ${colors.goldDim}`,background:'rgba(201,168,76,0.10)',padding:'4px 7px',borderRadius:3,whiteSpace:'nowrap'}}>
+                ⭐ LEVEL UP{bankedLevelUps > 1 ? ` ×${bankedLevelUps}` : ''}
+              </span>
+            )}
             {/* Story log toggle */}
             {storySummary && (
               <button onClick={()=>setSummaryOpen(v=>!v)}

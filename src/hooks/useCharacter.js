@@ -24,6 +24,21 @@ export const calcMaxHp = (clsName, con, level = 1) => {
   return base + conMod + (level - 1) * (perLv + conMod);
 };
 
+
+// Level-ups are derived from XP instead of stored as transient UI state. This
+// makes them safely bankable across turns, saves, and reloads: XP says how many
+// levels the character has earned; character.level says how many were spent.
+export const levelUpsAvailable = (char) => {
+  if (!char) return 0;
+  const xp = char.xp || 0;
+  const current = Math.max(1, char.level || 1);
+  const earned = XP_THRESHOLDS.reduce(
+    (lvl, threshold, idx) => (idx > 0 && threshold >= 0 && xp >= threshold ? idx : lvl),
+    1
+  );
+  return Math.max(0, earned - current);
+};
+
 // CON granted by equipped gear raises max HP the way 5e does: +1 hit point per
 // level per point of CON modifier. maxHp stays a stored value (level-up, damage
 // and healing all keep working on it); this is the gear contribution on top.
@@ -476,8 +491,6 @@ export function useCharacter(log) {
   // without one. It must be a PARAMETER though — optional chaining guards a null
   // value, not an undefined identifier, so a bare log?.() would throw.
   const [character, setCharacter]         = useState(EMPTY_CHAR);
-  const [pendingStatPoint, setPendingStatPoint] = useState(false);
-  const [levelUpMsg, setLevelUpMsg]       = useState(null);
   const charRef = useRef(character);
   useEffect(() => { charRef.current = character; }, [character]);
 
@@ -486,23 +499,10 @@ export function useCharacter(log) {
     charRef.current = newChar;
   };
 
-  const checkLevelUp = (char) => {
-    const next = char.level + 1;
-    if (next >= XP_THRESHOLDS.length) return char;
-    const threshold = XP_THRESHOLDS[next];
-    if (threshold === 0 || char.xp === 0) return char;
-    if (char.xp < threshold) return char;
-    const expectedLevel = XP_THRESHOLDS.reduce((lvl, t, idx) => (t > 0 && char.xp >= t) ? idx : lvl, 1);
-    if (char.level >= expectedLevel) return char;
-    setLevelUpMsg(` Level ${next}! Choose your path!`);
-    setTimeout(() => setLevelUpMsg(null), 8000);
-    setPendingStatPoint(true);
-    return { ...char, level: next };
-  };
-
   // className = which class to advance, stat = which stat to boost
   const spendStatPoint = (className, stat) => {
     setCharacter(c => {
+      if (levelUpsAvailable(c) <= 0) return c;
       const classLevels  = { ...(c.classLevels || {}) };
       classLevels[className] = (classLevels[className] || 0) + 1;
       const newStats  = { ...c.stats, [stat]: c.stats[stat] + 1 };
@@ -510,12 +510,11 @@ export function useCharacter(log) {
       const conMod     = statMod(newStats.con);
       const hpGain     = Math.max(1, hpPerLevel + conMod);
       const newMaxHp   = c.maxHp + hpGain;
-      const withMax = { ...c, stats:newStats, maxHp:newMaxHp, classLevels };
+      const withMax = { ...c, level:(c.level || 1) + 1, stats:newStats, maxHp:newMaxHp, classLevels };
       const nc = { ...withMax, hp: Math.min(c.hp + hpGain, effectiveMaxHp(withMax)) };
       charRef.current = nc;
       return nc;
     });
-    setPendingStatPoint(false);
   };
 
   // Apply all DM game effect tags to character
@@ -748,7 +747,8 @@ export function useCharacter(log) {
       c.slots = { ...c.slots, [slotId]: name };
     });
 
-    c = skipLevelUp ? c : checkLevelUp(c);
+    // XP no longer auto-spends a level here. Available level-ups are derived
+    // from XP and can be banked until the player chooses to spend them.
     // Equipment tags may have changed CON-granting gear; keep the HP ratio.
     return reconcileHp(currentChar, c);
   };
@@ -989,8 +989,6 @@ export function useCharacter(log) {
   const loadCharacter = (char) => {
     const { char:migrated } = migrateCharacter(char);
     updateChar(migrated);
-    setPendingStatPoint(false);
-    setLevelUpMsg(null);
     return migrated;
   };
 
@@ -1002,7 +1000,5 @@ export function useCharacter(log) {
     moveToStash, moveToInventory,
     createBag, addToBag, removeFromBag, deleteItem, deleteFromBag, renameItem,
     toggleContextExclusion,
-    pendingStatPoint, setPendingStatPoint,
-    levelUpMsg, setLevelUpMsg,
   };
 }

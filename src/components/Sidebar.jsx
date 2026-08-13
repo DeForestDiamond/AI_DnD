@@ -7,6 +7,7 @@ import { statMod, modStr, profBonus, calcAC, getMainWeapon, effectiveStats, equi
 import { stackInventory, SKILL_ABILITY, SKILL_LIST } from '../hooks/useGame.js';
 import { coinsToString } from '../constants/currency.js';
 import { XP_THRESHOLDS } from '../constants/progression.js';
+import { MULTICLASS_OPTIONS } from '../constants/multiclass.js';
 import { stackCounts, stackCount, stackHas } from '../utils/itemStacks.js';
 
 // ── Inventory categorization ───────────────────────────────────────────────────
@@ -1205,9 +1206,10 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
   const db       = allItems(character.items || {});
   const [activeTab, setActiveTab] = useState('character');
+  const [levelClassChoice, setLevelClassChoice] = useState(null);
   const [stashFilter, setStashFilter] = useState('');
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   // Track WHICH antagonist was revealed, not just that one was: if an arc
@@ -1327,16 +1329,108 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {/* Tab bar */}
       <div style={{display:'flex',gap:6,marginBottom:4}}>
         {[
-          ['character', '🎲 CHARACTER'],
-          ['crafting',  '🔨 CRAFTING'],
-          ['settings',  '⚙️ SETTINGS'],
+          ['character', '🎲 CHAR'],
+          ['levelup',   `⭐ LEVEL${levelUpsAvailable > 0 ? ` · ${levelUpsAvailable}` : ''}`],
+          ['crafting',  '🔨 CRAFT'],
+          ['settings',  '⚙️ SET'],
         ].map(([id, label]) => (
           <button key={id} onClick={()=>setActiveTab(id)}
-            style={{flex:1,background:activeTab===id?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab===id?colors.gold:colors.borderDim}`,color:activeTab===id?colors.gold:colors.textFaint,padding:'8px 2px',fontSize:10,fontFamily:fonts.display,letterSpacing:0.5,borderRadius:3,cursor:'pointer',whiteSpace:'nowrap'}}>
+            style={{flex:1,background:activeTab===id?'rgba(201,168,76,0.15)':'transparent',border:`1px solid ${activeTab===id?colors.gold:(id==='levelup'&&levelUpsAvailable>0?colors.goldFaint:colors.borderDim)}`,color:activeTab===id?colors.gold:(id==='levelup'&&levelUpsAvailable>0?colors.goldFaint:colors.textFaint),padding:'8px 1px',fontSize:9,fontFamily:fonts.display,letterSpacing:0.2,borderRadius:3,cursor:'pointer',whiteSpace:'nowrap'}}>
             {label}
           </button>
         ))}
       </div>
+
+
+      {activeTab==='levelup' && <>
+        <div style={{padding:'8px 0 2px'}}>
+          <div style={{fontFamily:fonts.display,color:levelUpsAvailable>0?colors.gold:colors.textGhost,fontSize:14,letterSpacing:1,marginBottom:4}}>
+            ⭐ LEVEL UP {levelUpsAvailable > 1 ? `×${levelUpsAvailable}` : ''}
+          </div>
+          <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.45,marginBottom:10}}>
+            {levelUpsAvailable > 0
+              ? `${levelUpsAvailable} level${levelUpsAvailable===1?' is':'s are'} available. Spend one now or leave it banked — earned levels persist until you choose them.`
+              : 'No level-up is currently available. Keep adventuring; this tab will light up when your XP reaches the next threshold.'}
+          </div>
+        </div>
+
+        {levelUpsAvailable > 0 && !levelClassChoice && <>
+          <div style={{fontFamily:fonts.display,fontSize:9,color:colors.textGhost,letterSpacing:2,marginBottom:6}}>YOUR CLASSES</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:12}}>
+            {Object.entries(character.classLevels || { [character.cls?.name]: character.level }).map(([cls, lvl]) => {
+              const data = MULTICLASS_OPTIONS[cls];
+              const maxed = lvl >= 10;
+              const features = data?.features?.[lvl + 1] || [];
+              return (
+                <div key={cls} onClick={()=>{ if (!maxed) { onLevelClassSelect?.(cls); setLevelClassChoice(cls); } }}
+                  style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:5,padding:8,cursor:maxed?'default':'pointer',opacity:maxed?0.45:1}}>
+                  <div style={{display:'flex',gap:5,alignItems:'center',marginBottom:3}}>
+                    <span style={{fontSize:17}}>{data?.emoji || '🎲'}</span>
+                    <div>
+                      <div style={{fontFamily:fonts.display,fontSize:11,color:colors.gold}}>{cls}</div>
+                      <div style={{fontSize:9,color:colors.textGhost}}>{maxed ? 'Class maxed' : `Level ${lvl} → ${lvl+1}`}</div>
+                    </div>
+                  </div>
+                  {!maxed && features.slice(0,3).map((f,i)=><div key={i} style={{fontSize:9,color:colors.textFaint,lineHeight:1.3}}>+ {f}</div>)}
+                </div>
+              );
+            })}
+          </div>
+
+          {Object.keys(MULTICLASS_OPTIONS).some(c => !character.classLevels?.[c]) && <>
+            <div style={{fontFamily:fonts.display,fontSize:9,color:colors.textGhost,letterSpacing:2,marginBottom:6}}>MULTICLASS INTO</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+              {Object.keys(MULTICLASS_OPTIONS).filter(c => !character.classLevels?.[c]).map(cls => {
+                const data = MULTICLASS_OPTIONS[cls];
+                const features = data?.features?.[1] || [];
+                return (
+                  <div key={cls} onClick={()=>{ onLevelClassSelect?.(cls); setLevelClassChoice(cls); }}
+                    style={{background:'rgba(255,255,255,0.02)',border:`1px solid ${colors.borderDim}`,borderRadius:5,padding:8,cursor:'pointer'}}>
+                    <div style={{display:'flex',gap:5,alignItems:'center',marginBottom:3}}>
+                      <span style={{fontSize:17}}>{data?.emoji || '🎲'}</span>
+                      <div>
+                        <div style={{fontFamily:fonts.display,fontSize:11,color:colors.textDim}}>{cls}</div>
+                        <div style={{fontSize:9,color:colors.textGhost}}>New — Level 1</div>
+                      </div>
+                    </div>
+                    {features.slice(0,2).map((f,i)=><div key={i} style={{fontSize:9,color:colors.textGhost,lineHeight:1.3}}>+ {f}</div>)}
+                  </div>
+                );
+              })}
+            </div>
+          </>}
+        </>}
+
+        {levelUpsAvailable > 0 && levelClassChoice && (() => {
+          const currentClassLevel = character.classLevels?.[levelClassChoice] || 0;
+          const newLevel = currentClassLevel + 1;
+          const data = MULTICLASS_OPTIONS[levelClassChoice];
+          const features = data?.features?.[newLevel] || [];
+          return <>
+            <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:8}}>
+              {data?.emoji || '🎲'} {levelClassChoice} Level {newLevel}
+            </div>
+            {features.length > 0 && (
+              <div style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginBottom:10}}>
+                <div style={{fontFamily:fonts.display,fontSize:9,color:colors.textGhost,letterSpacing:2,marginBottom:5}}>NEW FEATURES</div>
+                {features.map((f,i)=><div key={i} style={{fontSize:10,color:colors.green,marginBottom:2}}>✦ {f}</div>)}
+              </div>
+            )}
+            <div style={{fontSize:11,color:colors.textFaint,marginBottom:8}}>Choose a stat to increase by 1.</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+              {Object.entries(character.stats).map(([k,v]) => (
+                <div key={k} onClick={()=>{ onLevelStatSelect?.(levelClassChoice, k); setLevelClassChoice(null); }}
+                  style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:5,padding:'8px 6px',cursor:'pointer',textAlign:'center'}}>
+                  <div style={{fontFamily:fonts.display,fontSize:9,color:colors.textFaint,letterSpacing:1}}>{STAT_NAMES[k]?.toUpperCase()}</div>
+                  <div style={{fontFamily:fonts.mono,fontSize:18,color:colors.gold,fontWeight:'bold'}}>{v}</div>
+                  <div style={{fontSize:9,color:colors.textGhost}}>→ {v+1} ({modStr(v+1)})</div>
+                </div>
+              ))}
+            </div>
+            <button onClick={()=>setLevelClassChoice(null)} style={{...btn(false),width:'100%',marginTop:10,fontSize:10}}>← Back to class selection</button>
+          </>;
+        })()}
+      </>}
 
       {activeTab==='settings' && <>
       {/* Save button */}
