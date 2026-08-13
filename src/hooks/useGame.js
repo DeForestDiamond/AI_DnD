@@ -236,9 +236,7 @@ Weapon: ${weaponLine}${sneakLine}${focusLine}
 };
 
 // ── Shared context sections (bio, companions, NPCs, towns) ─────────────────────
-// Arc objectives are DISABLED — see DISABLED_arc_objectives.md in the repo root
-// for why, what is still wired up, and how to bring it back.
-export const ARC_OBJECTIVES_IN_PROMPT = false;
+// Arc objectives are disabled; see DISABLED_arc_objectives.md for the retained UI/storage/tag machinery.
 
 // Constructs & bound entities — owned and commanded, not worn. Derived from the
 // carried inventory (the stash is invisible to the DM by design, which is the
@@ -532,7 +530,7 @@ export const buildSystemPrompt = (char) => {
   const weapon      = getMainWeapon(char.slots, char.stats, char.items || {});
   const classLevels = char.classLevels || { [char.cls?.name]: char.level };
   const classDesc   = Object.entries(classLevels).map(([c,l]) => `${c} ${l}`).join(' / ');
-  const dexBuild = playstyleLine(char);
+  const playstyle = playstyleLine(char);
 
   const hasClericLevels = char.cls?.name === 'Cleric' || Object.keys(char.classLevels || {}).includes('Cleric');
   const hasWarlockLevels = char.cls?.name === 'Warlock' || Object.keys(char.classLevels || {}).includes('Warlock');
@@ -732,7 +730,7 @@ When the player wins, the threat is OVER. The scene goes quiet: loot, catch brea
 CHARACTER: ${char.name} | ${char.race?.name} ${classDesc} | Total Level ${char.level} | ${char.xp||0} XP
 STATS: STR ${effStats.str}(${modStr(effStats.str)}) DEX ${effStats.dex}(${modStr(effStats.dex)}) CON ${effStats.con}(${modStr(effStats.con)}) INT ${effStats.int}(${modStr(effStats.int)}) WIS ${effStats.wis}(${modStr(effStats.wis)}) CHA ${effStats.cha}(${modStr(effStats.cha)})
 COMBAT: Hit Points ${char.hp}/${effectiveMaxHp(char)} | Armor Class ${ac} | Proficiency Bonus +${pb} | Weapon: ${weaponLine}${sneakLine}${focusLine}
-COINS: ${coinsToString(char.coins)}  (equipped gear, inventory and item descriptions are listed above)${itemDetailLine}${dexBuild}${clericDeity}${raceContext}${subclassPromptLines(char)}${char.arc?.antagonist ? `
+COINS: ${coinsToString(char.coins)}  (equipped gear, inventory and item descriptions are listed above)${itemDetailLine}${playstyle}${clericDeity}${raceContext}${subclassPromptLines(char)}${char.arc?.antagonist ? `
 
 ══ ACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does) ══
 ${char.arc.antagonist}
