@@ -20,69 +20,52 @@ jobs:
           p = Path('src/constants/encounters.js')
           s = p.read_text()
 
-          named_high = '''const NAMED_HIGH = [ // levels 9+
-  'Klauth, "Old Snarl", the ancient red dragon of the Sword Coast North',
-  'Szass Tam, lich and Zulkir of Necromancy, ruler of Thay',
-  'Halaster Blackcloak, the mad archmage of Undermountain',
-  'Larloch, the Shadow King, demilich of Warlock\\'s Crypt',
-  'Iymrith, the ancient blue dragon of Anauroch',
-  'Arauthator, "Old White Death", the ancient white dragon',
-  'Acererak, the demilich, and the tombs he leaves as traps',
-  'Zariel, Archduchess of Avernus, and her Blood War legions',
-  'Tiamat\\'s faithful, working to bring the Dragon Queen through',
-];'''
-          epic = named_high + '''
-const NAMED_EPIC = [ // level 10 only — equivalent to D&D level 20
-  'Vlaakith CLVII, lich-queen of the githyanki and ruler of Tu’narath',
-  'Orcus, Demon Prince of Undeath, wielder of the Wand of Orcus',
-  'Demogorgon, Prince of Demons, the two-headed terror of the Abyss',
-  'Graz’zt, the Dark Prince, schemer and ruler of Azzagrat',
-  'Juiblex, the Faceless Lord, Demon Prince of Slimes and Oozes',
-  'Mephistopheles, Archduke of Cania and master of hellfire',
-  'Asmodeus, Lord of the Nine Hells',
-  'Vecna, lich-god of secrets and forbidden knowledge',
-  'Gromph Baenre, archmage of Menzoberranzan',
-  'Arkhan the Cruel, dragonborn champion of Tiamat bearing the Hand of Vecna',
-];'''
-          if named_high not in s:
-              raise SystemExit('NAMED_HIGH anchor not found; refusing to guess')
+          high_end = "  'Tiamat\\'s faithful, working to bring the Dragon Queen through',\n];"
+          epic_lines = [
+              "const NAMED_EPIC = [ // level 10 only — equivalent to D&D level 20",
+              "  'Vlaakith CLVII, lich-queen of the githyanki and ruler of Tu’narath',",
+              "  'Orcus, Demon Prince of Undeath, wielder of the Wand of Orcus',",
+              "  'Demogorgon, Prince of Demons, the two-headed terror of the Abyss',",
+              "  'Graz’zt, the Dark Prince, schemer and ruler of Azzagrat',",
+              "  'Juiblex, the Faceless Lord, Demon Prince of Slimes and Oozes',",
+              "  'Mephistopheles, Archduke of Cania and master of hellfire',",
+              "  'Asmodeus, Lord of the Nine Hells',",
+              "  'Vecna, lich-god of secrets and forbidden knowledge',",
+              "  'Gromph Baenre, archmage of Menzoberranzan',",
+              "  'Arkhan the Cruel, dragonborn champion of Tiamat bearing the Hand of Vecna',",
+              "];",
+          ]
+          if high_end not in s:
+              raise SystemExit('NAMED_HIGH end anchor not found; refusing to guess')
           if 'const NAMED_EPIC' in s:
               raise SystemExit('NAMED_EPIC already exists')
-          s = s.replace(named_high, epic, 1)
+          s = s.replace(high_end, high_end + '\n' + '\n'.join(epic_lines), 1)
 
-          fixed_anchor = '''  ['Zariel, Archduchess of Avernus, and her Blood War legions','Avernus'],
-  ["a githyanki lich-queen's fleet in the Astral",'Astral Plane'],'''
-          fixed_new = '''  ['Zariel, Archduchess of Avernus, and her Blood War legions','Avernus'],
-  ['Vlaakith CLVII, lich-queen of the githyanki and ruler of Tu’narath','Astral Plane'],
-  ['Orcus, Demon Prince of Undeath, wielder of the Wand of Orcus','Abyss'],
-  ['Demogorgon, Prince of Demons, the two-headed terror of the Abyss','Abyss'],
-  ['Graz’zt, the Dark Prince, schemer and ruler of Azzagrat','Abyss'],
-  ['Juiblex, the Faceless Lord, Demon Prince of Slimes and Oozes','Abyss'],
-  ['Mephistopheles, Archduke of Cania and master of hellfire','Cania, the Eighth Hell'],
-  ['Asmodeus, Lord of the Nine Hells','Nessus, the Ninth Hell'],
-  ['Gromph Baenre, archmage of Menzoberranzan','Menzoberranzan'],
-  ['Arkhan the Cruel, dragonborn champion of Tiamat bearing the Hand of Vecna','Avernus'],
-  ["a githyanki lich-queen's fleet in the Astral",'Astral Plane'],'''
+          fixed_anchor = "  ['Zariel, Archduchess of Avernus, and her Blood War legions','Avernus'],\n"
+          fixed_lines = [
+              "  ['Vlaakith CLVII, lich-queen of the githyanki and ruler of Tu’narath','Astral Plane'],",
+              "  ['Orcus, Demon Prince of Undeath, wielder of the Wand of Orcus','Abyss'],",
+              "  ['Demogorgon, Prince of Demons, the two-headed terror of the Abyss','Abyss'],",
+              "  ['Graz’zt, the Dark Prince, schemer and ruler of Azzagrat','Abyss'],",
+              "  ['Juiblex, the Faceless Lord, Demon Prince of Slimes and Oozes','Abyss'],",
+              "  ['Mephistopheles, Archduke of Cania and master of hellfire','Cania, the Eighth Hell'],",
+              "  ['Asmodeus, Lord of the Nine Hells','Nessus, the Ninth Hell'],",
+              "  ['Gromph Baenre, archmage of Menzoberranzan','Menzoberranzan'],",
+              "  ['Arkhan the Cruel, dragonborn champion of Tiamat bearing the Hand of Vecna','Avernus'],",
+          ]
           if fixed_anchor not in s:
               raise SystemExit('Fixed-location anchor not found; refusing to guess')
-          s = s.replace(fixed_anchor, fixed_new, 1)
+          s = s.replace(fixed_anchor, fixed_anchor + '\n'.join(fixed_lines) + '\n', 1)
 
-          level_anchor = '''  if (level >= 5) pool.push(...MID_ANTAGONISTS, ...NAMED_MID);
-  if (level >= 9) pool.push(...HIGH_ANTAGONISTS, ...NAMED_HIGH);
-  return pool;'''
-          level_new = '''  if (level >= 5) pool.push(...MID_ANTAGONISTS, ...NAMED_MID);
-  if (level >= 9) pool.push(...HIGH_ANTAGONISTS, ...NAMED_HIGH);
-  if (level >= 10) pool.push(...NAMED_EPIC);
-  return pool;'''
+          level_anchor = "  if (level >= 9) pool.push(...HIGH_ANTAGONISTS, ...NAMED_HIGH);\n  return pool;"
           if level_anchor not in s:
               raise SystemExit('Level-pool anchor not found; refusing to guess')
-          s = s.replace(level_anchor, level_new, 1)
+          s = s.replace(level_anchor, "  if (level >= 9) pool.push(...HIGH_ANTAGONISTS, ...NAMED_HIGH);\n  if (level >= 10) pool.push(...NAMED_EPIC);\n  return pool;", 1)
 
           export_anchor = 'export const NAMED_ANTAGONISTS = [...NAMED_MID, ...NAMED_HIGH];'
-          export_new = 'export const NAMED_ANTAGONISTS = [...NAMED_MID, ...NAMED_HIGH, ...NAMED_EPIC];'
           if export_anchor not in s:
               raise SystemExit('Named export anchor not found; refusing to guess')
-          s = s.replace(export_anchor, export_new, 1)
+          s = s.replace(export_anchor, 'export const NAMED_ANTAGONISTS = [...NAMED_MID, ...NAMED_HIGH, ...NAMED_EPIC];', 1)
 
           p.write_text(s)
           for required in ['Vlaakith CLVII','Orcus, Demon Prince','Demogorgon, Prince','Graz’zt','Juiblex','Mephistopheles','Asmodeus','Vecna, lich-god','Gromph Baenre','Arkhan the Cruel']:
