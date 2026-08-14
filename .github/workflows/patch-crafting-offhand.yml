@@ -1,0 +1,39 @@
+name: Clarify crafting offhand slot
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch crafting prompt
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/App.jsx')
+          s = p.read_text()
+          old = 'an amulet is magic/neck, a ring is magic/ring. Giving a cloak type "armor" puts it in the armour slot and throws away the wearer\'s real armour — never do this.'
+          new = 'an amulet is magic/neck, a ring is magic/ring. OFFHAND is shared: a shield is magic/offhand with an appropriate ac:N bonus and any other effects; a spellcasting focus is magic/offhand with appropriate bonuses/effects. Giving a cloak type "armor" puts it in the armour slot and throws away the wearer\'s real armour — never do this.'
+          if old not in s:
+              raise SystemExit('Crafting item-type anchor not found; refusing to guess')
+          if 'OFFHAND is shared' in s:
+              raise SystemExit('Offhand rule already present')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          assert s.count('OFFHAND is shared') == 1
+      - name: Build
+        run: npm ci && npm run build
+      - name: Commit and clean up
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/patch-crafting-offhand.yml
+          git add src/App.jsx
+          git commit -m "Clarify shield and focus crafting slots"
+          git push
