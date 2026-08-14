@@ -176,6 +176,18 @@ const NAMED_HIGH = [ // levels 9+
   'Zariel, Archduchess of Avernus, and her Blood War legions',
   'Tiamat\'s faithful, working to bring the Dragon Queen through',
 ];
+const NAMED_EPIC = [ // level 10 only — equivalent to D&D level 20
+  'Vlaakith CLVII, lich-queen of the githyanki and ruler of Tu’narath',
+  'Orcus, Demon Prince of Undeath, wielder of the Wand of Orcus',
+  'Demogorgon, Prince of Demons, the two-headed terror of the Abyss',
+  'Graz’zt, the Dark Prince, schemer and ruler of Azzagrat',
+  'Juiblex, the Faceless Lord, Demon Prince of Slimes and Oozes',
+  'Mephistopheles, Archduke of Cania and master of hellfire',
+  'Asmodeus, Lord of the Nine Hells',
+  'Vecna, lich-god of secrets and forbidden knowledge',
+  'Gromph Baenre, archmage of Menzoberranzan',
+  'Arkhan the Cruel, dragonborn champion of Tiamat bearing the Hand of Vecna',
+];
 
 // ── Arc locations ──────────────────────────────────────────────────────────────
 // The app owns WHERE an arc happens just as it owns WHO the antagonist is.
@@ -227,6 +239,15 @@ const FIXED_ARC_LOCATIONS = new Map([
   ["Larloch, the Shadow King, demilich of Warlock's Crypt","Warlock’s Crypt"],
   ['Iymrith, the ancient blue dragon of Anauroch','Anauroch'],
   ['Zariel, Archduchess of Avernus, and her Blood War legions','Avernus'],
+  ['Vlaakith CLVII, lich-queen of the githyanki and ruler of Tu’narath','Astral Plane'],
+  ['Orcus, Demon Prince of Undeath, wielder of the Wand of Orcus','Abyss'],
+  ['Demogorgon, Prince of Demons, the two-headed terror of the Abyss','Abyss'],
+  ['Graz’zt, the Dark Prince, schemer and ruler of Azzagrat','Abyss'],
+  ['Juiblex, the Faceless Lord, Demon Prince of Slimes and Oozes','Abyss'],
+  ['Mephistopheles, Archduke of Cania and master of hellfire','Cania, the Eighth Hell'],
+  ['Asmodeus, Lord of the Nine Hells','Nessus, the Ninth Hell'],
+  ['Gromph Baenre, archmage of Menzoberranzan','Menzoberranzan'],
+  ['Arkhan the Cruel, dragonborn champion of Tiamat bearing the Hand of Vecna','Avernus'],
   ["a githyanki lich-queen's fleet in the Astral",'Astral Plane'],
   ['the corpse of a dead god, and what is nesting inside it','Astral Plane'],
   ['a Far Realm intrusion that should not have a shape','Far Realm'],
@@ -289,6 +310,7 @@ export const antagonistsForLevel = (level) => {
   const pool = [...LOW_ANTAGONISTS];
   if (level >= 5) pool.push(...MID_ANTAGONISTS, ...NAMED_MID);
   if (level >= 9) pool.push(...HIGH_ANTAGONISTS, ...NAMED_HIGH);
+  if (level >= 10) pool.push(...NAMED_EPIC);
   return pool;
 };
 
@@ -308,7 +330,7 @@ export const rollAntagonist = (level, exclude = null, defeated = []) => {
 };
 
 // Exposed so the UI can tell a named foe from a generic one.
-export const NAMED_ANTAGONISTS = [...NAMED_MID, ...NAMED_HIGH];
+export const NAMED_ANTAGONISTS = [...NAMED_MID, ...NAMED_HIGH, ...NAMED_EPIC];
 
 // ── Pacing knob ────────────────────────────────────────────────────────────────
 // grace: turns with zero encounter chance. After that, chance = base + perTurn per turn, capped.
