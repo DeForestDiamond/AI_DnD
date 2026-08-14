@@ -184,7 +184,7 @@ export const parseDMItem = (raw) => {
     //   as the label instead of silently dropping it (a hollow item).
     const bonuses = {};
     let stray = '';
-    (parts[3] || '').split(',').forEach(b => {
+    (parts[3] || '').split(/[\s,]+/).forEach(b => {
       const m = b.trim().match(BONUS_RE);
       if (m) bonuses[m[1].toLowerCase()] = parseInt(m[2]);
       else if (b.trim()) stray += (stray ? ', ' : '') + b.trim();
