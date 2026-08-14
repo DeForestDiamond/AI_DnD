@@ -1,0 +1,41 @@
+name: Add loot creativity prompt rule
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch loot rule
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/hooks/useGame.js')
+          s = p.read_text()
+          anchor = 'LOOT MUST BE SPECIFIC AND NEW — generic placeholder items are banned:\n'
+          addition = 'LOOT MUST BE SPECIFIC AND NEW — generic placeholder items are banned:\n  BE CREATIVE AND DON’T BE LAZY. MAKE NEW THINGS. LOOT IS HALF THE FUN. When loot is appropriate, invent memorable items, materials, curiosities, tools, consumables, trophies, and gear that fit the source and situation instead of falling back on the same familiar rewards.\n'
+          if anchor not in s:
+              raise SystemExit('Loot-rule anchor not found; refusing to guess')
+          if 'LOOT IS HALF THE FUN' in s:
+              raise SystemExit('Rule already present')
+          s = s.replace(anchor, addition, 1)
+          p.write_text(s)
+          assert s.count('LOOT IS HALF THE FUN') == 1
+          assert len(s.splitlines()) > 1200
+      - name: Build
+        run: npm ci && npm run build
+      - name: Commit patch and remove workflow
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/add-loot-creativity-rule.yml
+          git add src/hooks/useGame.js
+          git commit -m "Encourage creative loot generation"
+          git push
