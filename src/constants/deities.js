@@ -34,6 +34,14 @@ export const DEITIES = [
     flavor: 'Your calling is to protect others—a solemn duty you uphold with unwavering resolve.'
   },
   {
+    name: 'Tyr',
+    emoji: '⚖️',
+    alignment: 'Lawful Good',
+    domains: ['Order', 'War', 'Justice'],
+    desc: 'God of justice, law, and righteous judgment. The Even-Handed judges wrongdoing without fear or favor.',
+    flavor: 'You wield divine authority in the pursuit of justice, holding guilty and powerful alike accountable beneath the law.'
+  },
+  {
     name: 'Mystra',
     emoji: '✨',
     alignment: 'Lawful Neutral',
