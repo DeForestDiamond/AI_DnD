@@ -74,7 +74,7 @@ export const SKILL_LIST = [
 
 export const SKILL_ABILITY = {
   athletics:'str',
-  acrobatics:'dex', stealth:'dex', sleight:'dex', sleightofhand:'dex',
+  acrobatics:'dex', stealth:'dex', sleight:'dex', sleightofhand:'dex', initiative:'dex',
   arcana:'int', history:'int', investigation:'int', nature:'int', religion:'int',
   animal:'wis', animalhandling:'wis', insight:'wis', medicine:'wis', perception:'wis', survival:'wis',
   deception:'cha', intimidation:'cha', performance:'cha', persuasion:'cha',
