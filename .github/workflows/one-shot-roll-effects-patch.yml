@@ -1,0 +1,77 @@
+name: One-shot roll effects patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-shot-roll-effects-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Preserve state tags from roll setup messages
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/App.jsx')
+          text = path.read_text()
+
+          old = r'''      // Log XP gains
+      const xpMatch = finalText.match(/\[XP:\s*\+?(\d+)\]/i);
+      if (xpMatch) log(`[XP] +${xpMatch[1]} XP gained`);
+
+      // Log items gained
+      const itemMatches = [...finalText.matchAll(/\[ITEM:\s*([^\]|]+)/gi)];
+      itemMatches.forEach(m => log(`[ITEM] ${m[1].trim()} added`));
+
+      // Log damage taken
+      const dmgMatch = finalText.match(/\[DAMAGE:\s*(\d+)\]/i);
+      if (dmgMatch) log(`[DAMAGE] ${dmgMatch[1]} damage taken`);
+
+      let newChar = applyEffects(finalText, charRef.current);'''
+
+          new = r'''      // A roll request causes a second DM response. State-change tags in the
+      // pre-roll setup used to be lost because only the follow-up narration was
+      // passed through applyEffects(). Preserve every non-roll tag from the setup
+      // and apply it exactly once together with the follow-up effects.
+      const effectsText = resultText
+        ? `${dmText.replace(/\[ROLL:[^\]]*\]/gi, '')}\n${finalText}`
+        : finalText;
+
+      // Log XP gains
+      const xpMatch = effectsText.match(/\[XP:\s*\+?(\d+)\]/i);
+      if (xpMatch) log(`[XP] +${xpMatch[1]} XP gained`);
+
+      // Log items gained
+      const itemMatches = [...effectsText.matchAll(/\[ITEM:\s*([^\]|]+)/gi)];
+      itemMatches.forEach(m => log(`[ITEM] ${m[1].trim()} added`));
+
+      // Log damage taken
+      const dmgMatch = effectsText.match(/\[DAMAGE:\s*(\d+)\]/i);
+      if (dmgMatch) log(`[DAMAGE] ${dmgMatch[1]} damage taken`);
+
+      let newChar = applyEffects(effectsText, charRef.current);'''
+
+          if old not in text:
+              raise SystemExit('Target block not found; refusing to modify App.jsx')
+
+          text = text.replace(old, new, 1)
+          path.write_text(text)
+
+      - name: Commit patch and remove one-shot workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/one-shot-roll-effects-patch.yml
+          git add src/App.jsx
+          git commit -m "Fix state effects in roll setup responses"
+          git push origin main
