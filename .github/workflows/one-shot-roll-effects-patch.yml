@@ -2,8 +2,6 @@ name: One-shot roll effects patch
 on:
   push:
     branches: [main]
-    paths:
-      - '.github/workflows/one-shot-roll-effects-patch.yml'
 permissions:
   contents: write
 jobs:
