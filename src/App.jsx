@@ -1669,7 +1669,15 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       const dmgMatch = finalText.match(/\[DAMAGE:\s*(\d+)\]/i);
       if (dmgMatch) log(`[DAMAGE] ${dmgMatch[1]} damage taken`);
 
-      let newChar = applyEffects(finalText, charRef.current);
+      // A roll request causes a second DM response. State-change tags in the
+      // pre-roll setup used to be lost because only the follow-up narration was
+      // passed through applyEffects(). Preserve every non-roll setup tag and
+      // apply it exactly once together with the follow-up effects.
+      const effectsText = resultText
+        ? `${dmText.replace(/\[ROLL:[^\]]*\]/gi, '')}\n${finalText}`
+        : finalText;
+
+      let newChar = applyEffects(effectsText, charRef.current);
       if (newChar.arc?.antagonist !== charRef.current.arc?.antagonist) {
         log(`[ARC] Arc complete — new antagonist rolled: ${newChar.arc?.antagonist}`);
         // Build a fresh campaign skeleton for the new arc, in the background so
