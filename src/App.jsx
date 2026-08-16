@@ -1336,13 +1336,33 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     // the same call, so a silent failure here costs the player the materials
     // and gives nothing back — say so loudly rather than appearing to work.
     const wanted = isSet ? option.pieces.map(pc => pc.name) : [option.name];
-    const before = wanted.reduce((sum, n) => sum + stackCount(c.inventory, n), 0);
-    const after = wanted.reduce((sum, n) => sum + stackCount(next.inventory, n), 0);
-    if (after <= before) {
-      log(`[CRAFT] FAILED: no item was created. Tag was: ${tag.slice(0, 300)}`);
+    // Compare against the inventory that would remain AFTER consuming materials.
+    // An upgrade may intentionally consume an item and recreate it with the SAME
+    // name. Comparing raw before/after counts makes 1 consumed -> 1 forged look
+    // like no item was created (1 -> 1), even though the replacement is valid.
+    // consumeMaterials takes inventory first, so subtract only the same-name
+    // quantity that would actually have been removed from inventory here.
+    const consumedByName = consumes.reduce((acc, m) => {
+      acc[m.name] = (acc[m.name] || 0) + (m.count || 1);
+      return acc;
+    }, {});
+    const expectedMade = isSet
+      ? wanted.reduce((acc, n) => ({ ...acc, [n]: (acc[n] || 0) + batch }), {})
+      : { [option.name]: batch };
+    const failures = wanted.filter(n => {
+      const beforeInv = stackCount(c.inventory, n);
+      const consumedFromInv = Math.min(beforeInv, consumedByName[n] || 0);
+      const postConsumeBaseline = beforeInv - consumedFromInv;
+      const afterInv = stackCount(next.inventory, n);
+      return afterInv < postConsumeBaseline + (expectedMade[n] || 0);
+    });
+    if (failures.length) {
+      log(`[CRAFT] FAILED: expected crafted item(s) missing: ${failures.join(', ')}. Tag was: ${tag.slice(0, 300)}`);
       throw new Error(`The forge produced nothing usable — materials NOT consumed. Try again, or reword the item.`);
     }
-    log(`[CRAFT] Inventory ${before} -> ${after} of "${wanted.join(', ')}"`);
+    const before = wanted.reduce((sum, n) => sum + stackCount(c.inventory, n), 0);
+    const after = wanted.reduce((sum, n) => sum + stackCount(next.inventory, n), 0);
+    log(`[CRAFT] Inventory ${before} -> ${after} of "${wanted.join(', ')}" (same-name upgrades allowed)`);
     updateChar(next);
     const madeDesc = `${batch > 1 ? `${batch}x ` : ''}${isSet ? `${option.name} (${option.pieces.length} pieces)` : option.name}`;
     log(`[CRAFT] Made ${madeDesc}; consumed ${consumes.map(m => `${m.name} x${m.count || 1}`).join(', ') || 'nothing'}`);
