@@ -13,8 +13,8 @@ jobs:
         with:
           ref: main
       - name: Patch prompt rules
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
           p = Path('src/hooks/useGame.js')
           s = p.read_text()
@@ -41,6 +41,7 @@ jobs:
               raise SystemExit('Companion equipment serialization still present')
 
           p.write_text(s)
+          PY
       - name: Build
         run: npm ci && npm run build
       - name: Commit and clean up
