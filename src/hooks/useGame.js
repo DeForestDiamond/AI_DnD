@@ -280,8 +280,7 @@ const buildCtxSections = (char) => {
       const fields = [data.trueName?`True name: ${data.trueName}`:'',data.race?`Race: ${data.race}`:'',data.role?`Role: ${data.role}`:'',data.appearance?`Appearance: ${data.appearance}`:'',data.personality?`Personality: ${data.personality}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join(' | ');
       const desc = [fields, data.desc].filter(Boolean).join(' | ');
       const ab = data.abilities ? (Array.isArray(data.abilities)?data.abilities.join(', '):data.abilities) : '';
-      const gear = data.slots ? Object.values(data.slots).filter(Boolean).join(', ') : '';
-      present.push(`- ${name}: ${desc}${ab?` | Abilities: ${ab}`:''}${gear?` | Equipped: ${gear}`:''}${data.notes?` | ${data.notes}`:''}`);
+      present.push(`- ${name}: ${desc}${ab?` | Abilities: ${ab}`:''}${data.notes?` | ${data.notes}`:''}`);
     });
     const parts = [];
     if (present.length) parts.push(`COMPANIONS (with the player, always):\n${present.join('\n')}`);
@@ -321,7 +320,7 @@ const buildCtxSections = (char) => {
       if (here||!data.location) lines.push(`- ${name} [NEARBY]: ${data.desc||''} | Relationship: ${data.relationship||'neutral'}${data.notes?` | ${data.notes}`:''}`);
       else lines.push(`- ${name} (${data.location}): ${data.relationship||'neutral'}`);
     });
-    npcSection = '\nKNOWN NPCs:\n'+lines.join('\n')+'\nNPC RULES: Never use NPCs as plot hooks or to drive the story. Do not assume any person, rumour, or event is connected to a known NPC unless the player explicitly names them.\n';
+    npcSection = '\nKNOWN NPCs:\n'+lines.join('\n')+'\nNPC RULES: Do not arbitrarily repurpose known NPCs as villains, secret connections, or plot hooks merely because they exist in the player's history. Do not assume a person, rumor, event, or new storyline is connected to a known NPC unless established by play. However, companions and established NPCs are autonomous characters with their own goals, beliefs, desires, and relationships. They may suggest plans, pursue their own interests, ask the player for help, disagree with the player, and initiate actions consistent with their established personality. Companions should not become passive observers who simply defer every meaningful decision back to the player.\n';
   }
 
   // Towns
