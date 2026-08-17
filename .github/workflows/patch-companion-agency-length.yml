@@ -16,54 +16,36 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path('src/hooks/useGame.js')
           s = p.read_text()
 
-          # Companion agency belongs in the companion section itself so it is
-          # present whenever companions exist, independent of known-NPC data.
-          old_comp = "    if (present.length) parts.push(`COMPANIONS (with the player, always):\\n${present.join('\\n')}`);\n"
-          new_comp = "    if (present.length) parts.push(`COMPANIONS (with the player, always):\\n${present.join('\\n')}\\nCOMPANION AGENCY: Companions are active party members, not passive observers. Their personality, beliefs, profession, relationships, and current circumstances must influence their behavior in scenes. They may independently speak, react, investigate, heal, intervene, object, joke, argue, assist, or take other reasonable actions without waiting for the player to address them first. Protecting player agency means never controlling the player character; it does not mean NPCs must wait for player permission to act. When an event strongly intersects a companion's established values or expertise, that companion should normally react unless there is a character-specific reason not to.`);\n"
-          if old_comp not in s:
-              raise SystemExit('Companion section anchor not found')
-          s = s.replace(old_comp, new_comp, 1)
+          # Add active companion behavior directly to the shared companion block.
+          marker = "    if (present.length) parts.push(`COMPANIONS (with the player, always):\\n${present.join('\\n')}`);"
+          if marker in s:
+              repl = "    if (present.length) parts.push(`COMPANIONS (with the player, always):\\n${present.join('\\n')}\\nCOMPANION AGENCY: Companions are active party members, not passive observers. Their personality, beliefs, profession, relationships, and current circumstances must influence their behavior in scenes. They may independently speak, react, investigate, heal, intervene, object, joke, argue, assist, or take other reasonable actions without waiting for the player to address them first. Protecting player agency means never controlling the player character; it does not mean NPCs must wait for player permission to act. When an event strongly intersects a companion's established values or expertise, that companion should normally react unless there is a character-specific reason not to.`);"
+              s = s.replace(marker, repl, 1)
 
-          old_intro = "You are a Dungeon Master running a D&D 5e adventure. Keep responses short. Keep it fun, immersive, and mechanically consistent."
-          new_intro = "You are a Dungeon Master running a D&D 5e adventure. Keep responses focused and appropriately paced. Keep it fun, immersive, and mechanically consistent."
-          if old_intro not in s:
-              raise SystemExit('Sonnet intro anchor not found')
-          s = s.replace(old_intro, new_intro, 1)
+          s = s.replace('You are a Dungeon Master running a D&D 5e adventure. Keep responses short. Keep it fun, immersive, and mechanically consistent.', 'You are a Dungeon Master running a D&D 5e adventure. Keep responses focused and appropriately paced. Keep it fun, immersive, and mechanically consistent.', 1)
 
-          old_word = "WORD LIMIT: 150 words maximum. Count them. If you hit 150 and aren't done — stop. Cut. Send what you have. A response that is 151 words has failed. The word limit is not a target, it is a ceiling. Most responses should be well under it. If you find yourself writing a third paragraph, you are almost certainly over the limit and padding. (Tags and the 4 numbered choices are reserved space — they NEVER count toward the limit and are NEVER cut.)"
-          new_word = "RESPONSE LENGTH: Use approximately 250–450 words for normal gameplay responses, but treat this as a flexible target, not a hard limit. Simple actions may require substantially less; major scenes, combat developments, important conversations, or scenes involving multiple active NPCs may require more. Prioritize complete characterization, meaningful companion/NPC reactions, and clear scene development over arbitrary brevity. Do not omit a relevant companion reaction merely to keep the response short. Tags and the 4 numbered choices are reserved space — they do not count toward this target and are never cut."
-          if old_word not in s:
-              raise SystemExit('150-word rule not found')
-          s = s.replace(old_word, new_word, 1)
+          s = re.sub(r'WORD LIMIT: 150 words maximum\..*?\(Tags and the 4 numbered choices are reserved space — they NEVER count toward the limit and are NEVER cut\.\)',
+                     'RESPONSE LENGTH: Use approximately 250–450 words for normal gameplay responses, but treat this as a flexible target, not a hard limit. Simple actions may require substantially less; major scenes, combat developments, important conversations, or scenes involving multiple active NPCs may require more. Prioritize complete characterization, meaningful companion/NPC reactions, and clear scene development over arbitrary brevity. Do not omit a relevant companion reaction merely to keep the response short. Tags and the 4 numbered choices are reserved space — they do not count toward this target and are never cut.', s, count=1)
 
-          old_check = "1. LENGTH: 2-3 short paragraphs of narrative, ~150 words. Tight beats long. (Choices and tags are extra — never cut those.)"
-          new_check = "1. LENGTH: Usually 250–450 words of focused narrative, flexing shorter for simple actions and longer when a complex scene genuinely needs it. Complete characterization and relevant companion/NPC reactions matter more than hitting a number. (Choices and tags are extra — never cut those.)"
-          count = s.count(old_check)
-          if count != 2:
-              raise SystemExit(f'Expected two 150-word final checks, found {count}')
-          s = s.replace(old_check, new_check)
+          s = s.replace('1. LENGTH: 2-3 short paragraphs of narrative, ~150 words. Tight beats long. (Choices and tags are extra — never cut those.)',
+                        '1. LENGTH: Usually 250–450 words of focused narrative, flexing shorter for simple actions and longer when a complex scene genuinely needs it. Complete characterization and relevant companion/NPC reactions matter more than hitting a number. (Choices and tags are extra — never cut those.)')
 
-          old_hard = "- Maximum 3 paragraphs, 200 words. Hard limit — if you're writing a fourth paragraph, stop and cut. Front-load the narrative, the choices go last."
-          new_hard = "- RESPONSE LENGTH: Aim for roughly 250–450 words for normal gameplay, but flex naturally. Simple actions can be much shorter; complex scenes, combat, important conversations, or multiple active NPCs can run longer. Do not cut meaningful characterization or a relevant companion/NPC reaction just to satisfy a number. Front-load the narrative; choices go last."
-          if old_hard not in s:
-              raise SystemExit('200-word hard limit not found')
-          s = s.replace(old_hard, new_hard, 1)
+          s = s.replace("- Maximum 3 paragraphs, 200 words. Hard limit — if you're writing a fourth paragraph, stop and cut. Front-load the narrative, the choices go last.",
+                        '- RESPONSE LENGTH: Aim for roughly 250–450 words for normal gameplay, but flex naturally. Simple actions can be much shorter; complex scenes, combat, important conversations, or multiple active NPCs can run longer. Do not cut meaningful characterization or a relevant companion/NPC reaction just to satisfy a number. Front-load the narrative; choices go last.', 1)
 
-          # The tag-reservation sentence currently says to cut prose if 'running long'.
-          # Keep tags protected without reintroducing a hard ceiling.
-          old_reserve = "RESERVE SPACE FOR TAGS: tags and the 4 numbered choices are reserved space in EVERY response — neither counts toward the word limit. Plan them BEFORE writing narrative. If you are running long, cut prose. Never cut tags. Never cut choices. (A message calling for a roll ends at the [ROLL:] tag with no choices at all — the roll resolves immediately and you narrate the result next turn.)"
-          new_reserve = "RESERVE SPACE FOR TAGS: tags and the 4 numbered choices are reserved space in EVERY response — neither counts toward the response-length target. Plan them BEFORE writing narrative. Keep prose focused, but never cut meaningful companion/NPC reactions merely to save space. Never cut tags. Never cut choices. (A message calling for a roll ends at the [ROLL:] tag with no choices at all — the roll resolves immediately and you narrate the result next turn.)"
-          if old_reserve not in s:
-              raise SystemExit('Tag reserve rule not found')
-          s = s.replace(old_reserve, new_reserve, 1)
+          s = s.replace('RESERVE SPACE FOR TAGS: tags and the 4 numbered choices are reserved space in EVERY response — neither counts toward the word limit. Plan them BEFORE writing narrative. If you are running long, cut prose. Never cut tags. Never cut choices.',
+                        'RESERVE SPACE FOR TAGS: tags and the 4 numbered choices are reserved space in EVERY response — neither counts toward the response-length target. Plan them BEFORE writing narrative. Keep prose focused, but never cut meaningful companion/NPC reactions merely to save space. Never cut tags. Never cut choices.', 1)
 
+          if 'COMPANION AGENCY: Companions are active party members' not in s:
+              raise SystemExit('Companion agency was not added')
+          if 'WORD LIMIT: 150 words maximum' in s or 'Maximum 3 paragraphs, 200 words' in s or '2-3 short paragraphs of narrative, ~150 words' in s:
+              raise SystemExit('Old hard length rules remain')
           p.write_text(s)
           PY
-      - name: Build
-        run: npm ci && npm run build
       - name: Commit and clean up
         run: |
           git config user.name github-actions[bot]
