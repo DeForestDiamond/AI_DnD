@@ -1,0 +1,53 @@
+name: Update NPC and companion prompt rules
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch prompt rules
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/hooks/useGame.js')
+          s = p.read_text()
+
+          old_rule = "NPC RULES: Never use NPCs as plot hooks or to drive the story. Do not assume any person, rumour, or event is connected to a known NPC unless the player explicitly names them."
+          new_rule = "NPC RULES: Do not arbitrarily repurpose known NPCs as villains, secret connections, or plot hooks merely because they exist in the player's history. Do not assume a person, rumor, event, or new storyline is connected to a known NPC unless established by play. However, companions and established NPCs are autonomous characters with their own goals, beliefs, desires, and relationships. They may suggest plans, pursue their own interests, ask the player for help, disagree with the player, and initiate actions consistent with their established personality. Companions should not become passive observers who simply defer every meaningful decision back to the player."
+          if s.count(old_rule) != 1:
+              raise SystemExit(f'Expected exactly one old NPC rule, found {s.count(old_rule)}')
+          s = s.replace(old_rule, new_rule, 1)
+
+          gear_line = "      const gear = data.slots ? Object.values(data.slots).filter(Boolean).join(', ') : '';\n"
+          if s.count(gear_line) != 1:
+              raise SystemExit(f'Expected exactly one companion gear line, found {s.count(gear_line)}')
+          s = s.replace(gear_line, '', 1)
+
+          gear_append = "${gear?` | Equipped: ${gear}`:''}"
+          if s.count(gear_append) != 1:
+              raise SystemExit(f'Expected exactly one companion equipment append, found {s.count(gear_append)}')
+          s = s.replace(gear_append, '', 1)
+
+          if 'NPC RULES: Do not arbitrarily repurpose known NPCs' not in s:
+              raise SystemExit('New NPC rule missing after patch')
+          if 'const gear = data.slots' in s or 'Equipped: ${gear}' in s:
+              raise SystemExit('Companion equipment serialization still present')
+
+          p.write_text(s)
+      - name: Build
+        run: npm ci && npm run build
+      - name: Commit and clean up
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/patch-npc-companion-prompt.yml
+          git add src/hooks/useGame.js
+          git commit -m "Update NPC autonomy rules and trim companion equipment"
+          git push
