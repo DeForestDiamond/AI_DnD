@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/patchPromptCacheLayout.mjs && node scripts/patchSaveUiSettings.mjs",
+    "predev": "node scripts/patchPromptCacheLayout.mjs && node scripts/patchSaveUiSettings.mjs && node scripts/patchGptPromptExperiment.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/patchPromptCacheLayout.mjs && node scripts/patchSaveUiSettings.mjs",
+    "prebuild": "node scripts/patchPromptCacheLayout.mjs && node scripts/patchSaveUiSettings.mjs && node scripts/patchGptPromptExperiment.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
