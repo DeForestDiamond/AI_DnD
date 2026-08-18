@@ -20,55 +20,48 @@ jobs:
           p = Path('src/hooks/useGame.js')
           s = p.read_text()
 
-          # Extract the existing arc policy from the volatile arcLine without
-          # rewriting its wording. Keep only antagonist + arc location dynamic.
           anchor = "  const arcLine = char.arc?.antagonist\n    ? `"
+          if anchor not in s:
+              raise SystemExit('arcLine anchor not found')
           a = s.index(anchor)
           inner_start = a + len(anchor)
           inner_end = s.index("`\n    : '';", inner_start)
           inner = s[inner_start:inner_end]
           marker = "${char.arc.arcLocation || 'Faerûn'}."
+          if marker not in inner:
+              raise SystemExit('arc location marker not found')
           cut = inner.index(marker) + len(marker)
           dynamic_arc = inner[:cut]
           policy = inner[cut:].lstrip()
-          if not policy.startswith('THIS IS WHERE THE SUBSTANTIVE ARC HAPPENS'):
-              raise SystemExit('Unexpected arc policy split point')
+          if len(policy) < 1000:
+              raise SystemExit(f'Arc policy unexpectedly short: {len(policy)} chars')
           if '`' in policy or '${' in policy:
-              raise SystemExit('Arc policy unexpectedly contains template syntax')
-
+              raise SystemExit('Arc policy contains template syntax; refusing unsafe move')
           s = s[:inner_start] + dynamic_arc + s[inner_end:]
 
-          # Put the extracted policy in a stable constant before the shared
-          # setting block. Both Haiku and Sonnet/GPT prompts already include
-          # SETTING_BLOCK, so inject ARC_RULES_BLOCK immediately before it.
           setting_anchor = "// ── Shared setting/geography (both models)"
+          if setting_anchor not in s:
+              raise SystemExit('setting block declaration anchor not found')
           pos = s.index(setting_anchor)
-          arc_const = (
-              "// ── Shared arc policy (stable; antagonist/location stay dynamic) ───────────────\n"
-              "const ARC_RULES_BLOCK = `── ARC RULES ──\\n" + policy.replace('\\', '\\\\') + "`;\n\n"
-          )
+          arc_const = "// ── Shared arc policy (stable; antagonist/location stay dynamic) ───────────────\nconst ARC_RULES_BLOCK = `── ARC RULES ──\n" + policy + "`;\n\n"
           s = s[:pos] + arc_const + s[pos:]
 
-          prompt_pair = "${SETTING_BLOCK}\\n\\n${NPC_BLOCK}"
-          count = s.count(prompt_pair)
-          if count < 1:
-              raise SystemExit('Could not find setting/NPC prompt insertion point')
-          s = s.replace(prompt_pair, "${ARC_RULES_BLOCK}\\n\\n${SETTING_BLOCK}\\n\\n${NPC_BLOCK}")
+          # Add the stable arc policy anywhere the shared setting block is emitted.
+          token = "${SETTING_BLOCK}"
+          uses = s.count(token)
+          if uses < 1:
+              raise SystemExit('No SETTING_BLOCK prompt use found')
+          s = s.replace(token, "${ARC_RULES_BLOCK}\\n\\n${SETTING_BLOCK}")
 
-          # Add actual OpenAI cache accounting to the debug log. The existing
-          # [PROMPT] line is only our size estimate; this line reports API usage.
-          usage_anchor = "      const usage = {\n        input_tokens: Math.max(0, totalInput - cached - cacheWrite),"
-          if usage_anchor not in s:
-              raise SystemExit('OpenAI usage anchor not found')
-          log_insert_anchor = "      if (promptRecord) onPrompt({ ...promptRecord, usage });"
-          if log_insert_anchor not in s:
+          # Actual API cache accounting, distinct from our prompt-size estimate.
+          log_anchor = "      if (promptRecord) onPrompt({ ...promptRecord, usage });"
+          if log_anchor not in s:
               raise SystemExit('OpenAI promptRecord anchor not found')
-          cache_log = (
-              "      if (log) log(`[CACHE] OpenAI actual: total ${totalInput.toLocaleString()} · cached ${cached.toLocaleString()} · write ${cacheWrite.toLocaleString()} · uncached ${Math.max(0, totalInput - cached - cacheWrite).toLocaleString()}`);\n"
-          )
-          s = s.replace(log_insert_anchor, cache_log + log_insert_anchor, 1)
+          cache_log = "      if (log) log(`[CACHE] OpenAI actual: total ${totalInput.toLocaleString()} · cached ${cached.toLocaleString()} · write ${cacheWrite.toLocaleString()} · uncached ${Math.max(0, totalInput - cached - cacheWrite).toLocaleString()}`);\n"
+          s = s.replace(log_anchor, cache_log + log_anchor, 1)
 
           p.write_text(s)
+          print(f'Moved {len(policy)} chars of arc policy to stable prompt; injected before {uses} setting-block use(s).')
           PY
       - name: Build
         run: npm ci && npm run build
