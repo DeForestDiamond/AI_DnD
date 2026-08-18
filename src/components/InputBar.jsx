@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { colors, fonts, btn } from '../styles/theme.js';
 
-// USD per million tokens (Anthropic standard rates). Cache writes are 1.25x
-// input, cache reads 0.1x input. Sonnet 4.5 = $3/$15, Haiku 4.5 = $1/$5.
+// USD per million tokens. Cache writes are billed separately from cache reads.
 const PRICING = {
   sonnet: { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.30 },
   haiku:  { input: 1.0, output: 5.0,  cacheWrite: 1.25, cacheRead: 0.10 },
@@ -86,41 +85,54 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
         )}
       </div>
       {tokenUsage && (() => {
-        // The API splits input when prompt caching is on: input_tokens is only the
-        // NEW/uncached portion; the cached bulk lives in cache_read/cache_creation.
-        // The true context size sent is the sum of all three.
+        // API usage splits prompt input into ordinary uncached input, cache reads,
+        // and cache writes. Keep each bucket visible so the footer never changes
+        // shape and a zero is meaningful instead of making the field disappear.
+        const fresh       = tokenUsage.input_tokens ?? 0;
         const cacheRead   = tokenUsage.cache_read_input_tokens ?? 0;
         const cacheCreate = tokenUsage.cache_creation_input_tokens ?? 0;
-        const cached      = cacheRead + cacheCreate;
-        const inputTotal  = (tokenUsage.input_tokens ?? 0) + cached;
+        const inputTotal  = fresh + cacheRead + cacheCreate;
         const output      = tokenUsage.output_tokens ?? 0;
+        const total       = inputTotal + output;
         const rate = PRICING[selectedModel] || PRICING.sonnet;
         const cost = (
-          (tokenUsage.input_tokens ?? 0) * rate.input +
-          cacheCreate                    * rate.cacheWrite +
-          cacheRead                      * rate.cacheRead +
-          output                         * rate.output
+          fresh       * rate.input +
+          cacheCreate * rate.cacheWrite +
+          cacheRead   * rate.cacheRead +
+          output      * rate.output
         ) / 1e6;
+
+        const cellStyle = {
+          minWidth:0,
+          whiteSpace:'nowrap',
+          fontSize:10,
+          color:'rgba(150,130,90,0.65)',
+          fontFamily:fonts.display,
+          letterSpacing:0.8,
+        };
+        const labelStyle = {
+          color:'rgba(150,130,90,0.42)',
+          marginRight:5,
+        };
+        const cells = [
+          ['INPUT', inputTotal.toLocaleString()],
+          ['CACHE HIT', cacheRead.toLocaleString()],
+          ['CACHE WRITE', cacheCreate.toLocaleString()],
+          ['FRESH', fresh.toLocaleString()],
+          ['OUTPUT', output.toLocaleString()],
+          ['TOTAL', total.toLocaleString()],
+          ['COST', `$${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(3)}`],
+        ];
+
         return (
-          <div style={{display:'flex',gap:16,marginTop:5,paddingTop:5,borderTop:`1px solid rgba(74,56,32,0.3)`,flexWrap:'wrap'}}>
-            <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
-              ↑ {inputTotal.toLocaleString()} tokens sent{cacheRead > 0 ? ` (${cacheRead.toLocaleString()} cached)` : ''}
-            </span>
-            {cacheCreate > 0 && (
-              <span title="The cached prompt expired (5 minute idle timeout) and had to be rebuilt — billed at 1.25x instead of 0.1x. The next turn will be cheap again."
-                style={{fontSize:10,color:'rgba(201,120,76,0.8)',fontFamily:fonts.display,letterSpacing:1}}>
-                ⟳ cache rebuilt ({cacheCreate.toLocaleString()})
-              </span>
-            )}
-            <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
-              ↓ {output.toLocaleString()} tokens received
-            </span>
-            <span style={{fontSize:10,color:'rgba(150,130,90,0.45)',fontFamily:fonts.display,letterSpacing:1}}>
-              ∑ {(inputTotal + output).toLocaleString()} total
-            </span>
-            <span style={{fontSize:10,color:'rgba(150,130,90,0.6)',fontFamily:fonts.display,letterSpacing:1}}>
-              ≈ ${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(3)} this turn
-            </span>
+          <div style={{marginTop:5,paddingTop:6,borderTop:`1px solid rgba(74,56,32,0.3)`,overflowX:'auto'}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7, minmax(105px, 1fr))',columnGap:14,minWidth:820}}>
+              {cells.map(([label, value]) => (
+                <div key={label} style={cellStyle}>
+                  <span style={labelStyle}>{label}</span>{value}
+                </div>
+              ))}
+            </div>
           </div>
         );
       })()}
