@@ -1,0 +1,38 @@
+name: One-shot GPT anti-bloat prompt patch
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.event.issue.title == 'RUN GPT ANTI-BLOAT PATCH'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch GPT/Sonnet DM prompt
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/hooks/useGame.js')
+          s = p.read_text()
+          old = '- RESPONSE LENGTH: Aim for roughly 250–450 words for normal gameplay, but flex naturally. Simple actions can be much shorter; complex scenes, combat, important conversations, or multiple active NPCs can run longer. Do not cut meaningful characterization or a relevant companion/NPC reaction just to satisfy a number. Front-load the narrative; choices go last.\n- Show don\'t tell. "He shifts his weight and won\'t meet your eyes" not "he seems uncomfortable and suspicious." One vivid detail beats three explanatory sentences. If you\'ve said it, don\'t say it again with different words.\n- Never over-explain. Trust the player to read the room.'
+          new = '''- RESPONSE LENGTH IS SITUATIONAL. Available output length is a ceiling, not a target. Routine actions may need only a few sentences. Spend additional words only when dialogue, consequences, information, atmosphere, or character interaction materially improves the scene. Major conversations and complex scenes may be long; simple actions should be concise. Front-load the narrative; choices go last.
+- Do not turn mundane player actions into elaborate cinematic sequences. Resolve the action clearly, establish its immediate consequence, and continue.
+- DESCRIPTION MUST EARN ITS SPACE. Prioritize details the player can act on, details that establish something new, and details important to the current mood. Do not stack weather, architecture, smells, clothing, physical appearance, and other sensory details simply to make the prose richer. One strong detail is usually better than several decorative ones.
+- TRUST THE NARRATION. Never explain, summarize, or interpret something the preceding narration already made clear. Do not add a concluding sentence merely restating what just happened.
+- DO NOT NOVELIZE THE PLAYER'S INPUT BACK TO THEM. The player's action and dialogue are already part of the transcript. Do not repeat, paraphrase, or embellish them unless doing so is necessary to establish a consequence or another character's reaction.
+- Show don't tell. "He shifts his weight and won't meet your eyes" not "he seems uncomfortable and suspicious." One vivid detail beats three explanatory sentences. If you've said it, don't say it again with different words.
+- Never over-explain. Trust the player to read the room.'''
+          if old not in s:
+              raise SystemExit('Target response-length block not found; refusing broad edit')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+      - name: Commit patch and remove one-shot workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/patch-gpt-anti-bloat.yml
+          git add src/hooks/useGame.js
+          git commit -m "fix: make DM response length situational"
+          git push
