@@ -1,0 +1,114 @@
+name: One-shot save UI settings patch
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.event.issue.title == 'RUN SAVE UI SETTINGS PATCH'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Persist DM and tag visibility in all saves
+        shell: python
+        run: |
+          from pathlib import Path
+
+          # ---- useSave.js ----
+          p = Path('src/hooks/useSave.js')
+          s = p.read_text()
+
+          old = "export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, onLoadFull, onLoadCharacter }) {"
+          new = "export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, settings, onLoadSettings, onLoadFull, onLoadCharacter }) {"
+          if old not in s: raise SystemExit('useSave signature anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """    _type: type,
+    _v: SAVE_VERSION,
+    // Character exports are a clean start:"""
+          new = """    _type: type,
+    _v: SAVE_VERSION,
+    settings: {
+      selectedModel: settings?.selectedModel || 'sonnet',
+      showRawTags: !!settings?.showRawTags,
+    },
+    // Character exports are a clean start:"""
+          if old not in s: raise SystemExit('buildState anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """        _type: 'fullsave', _v: SAVE_VERSION,
+        character: compressCharForSave({ ...char, _v: SAVE_VERSION }),
+        messages: msgs,"""
+          new = """        _type: 'fullsave', _v: SAVE_VERSION,
+        settings: {
+          selectedModel: settings?.selectedModel || 'sonnet',
+          showRawTags: !!settings?.showRawTags,
+        },
+        character: compressCharForSave({ ...char, _v: SAVE_VERSION }),
+        messages: msgs,"""
+          if old not in s: raise SystemExit('autosave payload anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """      const raw = localStorage.getItem('dnd-autosave');
+      if (!raw) return null;
+      return JSON.parse(raw);"""
+          new = """      const raw = localStorage.getItem('dnd-autosave');
+      if (!raw) return null;
+      const state = JSON.parse(raw);
+      if (state.settings && onLoadSettings) onLoadSettings(state.settings);
+      return state;"""
+          if old not in s: raise SystemExit('loadAutoSave anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """  const loadFromState = (state) => {
+    if (!state.character) throw new Error('No character data');
+    const { char: migrated, notes } = migrateCharacter(state.character);"""
+          new = """  const loadFromState = (state) => {
+    if (!state.character) throw new Error('No character data');
+    if (state.settings && onLoadSettings) onLoadSettings(state.settings);
+    const { char: migrated, notes } = migrateCharacter(state.character);"""
+          if old not in s: raise SystemExit('loadFromState anchor not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # ---- App.jsx ----
+          p = Path('src/App.jsx')
+          s = p.read_text()
+
+          old = """    debugLogRef,
+    promptLogRef,
+    onLoadFull: applyLoadedFull,
+    onLoadCharacter: applyLoadedCharacter,"""
+          new = """    debugLogRef,
+    promptLogRef,
+    settings: { selectedModel, showRawTags },
+    onLoadSettings: (savedSettings) => {
+      if (savedSettings?.selectedModel && MODEL_CONFIGS[savedSettings.selectedModel]) {
+        setSelectedModel(savedSettings.selectedModel);
+      }
+      if (typeof savedSettings?.showRawTags === 'boolean') {
+        setShowRawTags(savedSettings.showRawTags);
+      }
+    },
+    onLoadFull: applyLoadedFull,
+    onLoadCharacter: applyLoadedCharacter,"""
+          if old not in s: raise SystemExit('App useSave anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """  }, [character, phase]);"""
+          new = """  }, [character, phase, selectedModel, showRawTags]);"""
+          if old not in s: raise SystemExit('autosave effect dependency anchor not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+      - name: Build
+        run: npm ci && npm run build
+      - name: Commit patch and remove one-shot workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/patch-save-ui-settings.yml
+          git add src/hooks/useSave.js src/App.jsx
+          git commit -m "fix: persist DM and tag visibility in saves"
+          git push
