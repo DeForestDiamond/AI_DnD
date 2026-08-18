@@ -43,9 +43,9 @@ if (!s.includes('const ARC_RULES_BLOCK = `')) {
   if (sonnetStart < 0) throw new Error('Sonnet prompt anchor not found');
   const beforeSonnet = s.slice(0, sonnetStart);
   let sonnet = s.slice(sonnetStart);
-  const settingUse = '${SETTING_BLOCK}\\n\\n${NPC_BLOCK}';
+  const settingUse = '${SETTING_BLOCK}\n\n${NPC_BLOCK}';
   if (!sonnet.includes(settingUse)) throw new Error('Sonnet setting/NPC insertion point not found');
-  sonnet = sonnet.replace(settingUse, '${ARC_RULES_BLOCK}\\n\\n${SETTING_BLOCK}\\n\\n${NPC_BLOCK}');
+  sonnet = sonnet.replace(settingUse, '${ARC_RULES_BLOCK}\n\n${SETTING_BLOCK}\n\n${NPC_BLOCK}');
   s = beforeSonnet + sonnet;
   changed = true;
 }
