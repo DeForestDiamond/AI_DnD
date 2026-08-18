@@ -4,6 +4,18 @@ const path = 'src/hooks/useGame.js';
 let s = fs.readFileSync(path, 'utf8');
 let changed = false;
 
+// Repair the NPC-rule wording added earlier. That rule lives inside a
+// single-quoted JS string, so the ASCII apostrophe in "player's" terminates the
+// string and makes Vite fail to parse useGame.js. A typographic apostrophe keeps
+// the exact human-readable wording without becoming JS syntax.
+if (s.includes("merely because they exist in the player's history")) {
+  s = s.replaceAll(
+    "merely because they exist in the player's history",
+    "merely because they exist in the player’s history"
+  );
+  changed = true;
+}
+
 // Idempotent build/dev-time migration: the large arc policy used to live in
 // CURRENT STATE, making ~2k tokens volatile every turn. Keep only the actual
 // antagonist/location there and move the policy into the stable Sonnet/GPT
@@ -71,7 +83,7 @@ if (!s.includes('[CACHE] OpenAI actual:')) {
 
 if (changed) {
   fs.writeFileSync(path, s);
-  console.log('Prompt cache layout patched: arc policy is stable; antagonist/location remain volatile.');
+  console.log('Prompt migration applied: NPC syntax repaired and arc policy moved to stable cache.');
 } else {
   console.log('Prompt cache layout already patched.');
 }
