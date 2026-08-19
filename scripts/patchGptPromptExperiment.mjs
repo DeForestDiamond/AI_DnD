@@ -25,12 +25,8 @@ const newInstructions = `      // GPT prompt experiment: OpenAI gets a lighter p
         .replace(${js(actionOld)}, ${js(actionNew)});`;
 
 const oldDynamic = `    const dynamicTail = hasSplit ? systemPrompt.dynamic : '';`;
-const arcOld = `IF THE ANTAGONIST ABOVE IS NOT YET IN THE STORY, INTRODUCE IT NOW. It was assigned by the system — your job is to weave it in, not ignore it. Do NOT run an unrelated plotline while it sits unused. Start tying current events to it this turn: a sign, a rumor, a victim, its agents. Whatever the player is doing, this antagonist is the thread underneath it.
-KEEP THE THREAD WARM. Follow the player's own jobs and detours, never railroad — but don't let the antagonist vanish. Even when the player is busy elsewhere, surface it now and then (a rumor, a fresh sign of its work, a ripple into what they're doing) so the arc stays alive and ready to pick back up.`;
-const arcNew = `THE ANTAGONIST IS THE ACTIVE ARC, NOT A COMMAND TO RUSH. Build toward it at the pace the fiction supports. The player may first encounter rumors, consequences, victims, agents, evidence, false leads, locations, or other clues, and may investigate those across multiple scenes before meeting or even identifying the antagonist. Do not force an immediate confrontation or reveal simply because the antagonist has been assigned.
-KEEP THE THREAD AVAILABLE, NOT CONSTANT. Remember the antagonist and connect genuine arc developments back to it, but ordinary side content — travel incidents, tavern scenes, shopping, downtime, small jobs, random encounters, and self-contained local problems — may remain genuinely unrelated. Do not insert an antagonist sign into every scene merely to keep the arc visible.
-NO COMPETING ARC. Unrelated side content must stay small and self-contained. The moment a thread becomes a multi-scene mystery, recurring threat, conspiracy, quest chain, mastermind plot, or named villain driving ongoing events, it MUST belong to the assigned antagonist. Any secondary villain in such a thread is an agent, lieutenant, client, victim, rival, or consequence of the assigned antagonist — never a replacement main antagonist. Before creating a new recurring villain or hidden mastermind, check the ACTIVE ARC ANTAGONIST above; if it is not that antagonist or meaningfully connected to it, do not create it.
-LEAD-UP IS THE GOAL. When the player pursues the arc, advance through discoverable leads rather than teleporting them to the antagonist: clues point to people, people point to places, places reveal operations, and operations eventually expose the antagonist. Several investigation or travel scenes before confrontation are normal and desirable.`;
+const arcOld = `IF THE ANTAGONIST ABOVE IS NOT YET IN THE STORY, INTRODUCE IT NOW. It was assigned by the system — your job is to weave it in, not ignore it. Do NOT run an unrelated plotline while it sits unused. Start tying current events to it this turn: a sign, a rumor, a victim, its agents. Whatever the player is doing, this antagonist is the thread underneath it.\nKEEP THE THREAD WARM. Follow the player's own jobs and detours, never railroad — but don't let the antagonist vanish. Even when the player is busy elsewhere, surface it now and then (a rumor, a fresh sign of its work, a ripple into what they're doing) so the arc stays alive and ready to pick back up.`;
+const arcNew = `THE ANTAGONIST IS THE ACTIVE ARC, NOT A COMMAND TO RUSH. Build toward it at the pace the fiction supports. The player may first encounter rumors, consequences, victims, agents, evidence, false leads, locations, or other clues, and may investigate those across multiple scenes before meeting or even identifying the antagonist. Do not force an immediate confrontation or reveal simply because the antagonist has been assigned.\nKEEP THE THREAD AVAILABLE, NOT CONSTANT. Remember the antagonist and connect genuine arc developments back to it, but ordinary side content — travel incidents, tavern scenes, shopping, downtime, small jobs, random encounters, and self-contained local problems — may remain genuinely unrelated. Do not insert an antagonist sign into every scene merely to keep the arc visible.\nNO COMPETING ARC. Unrelated side content must stay small and self-contained. The moment a thread becomes a multi-scene mystery, recurring threat, conspiracy, quest chain, mastermind plot, or named villain driving ongoing events, it MUST belong to the assigned antagonist. Any secondary villain in such a thread is an agent, lieutenant, client, victim, rival, or consequence of the assigned antagonist — never a replacement main antagonist. Before creating a new recurring villain or hidden mastermind, check the ACTIVE ARC ANTAGONIST above; if it is not that antagonist or meaningfully connected to it, do not create it.\nLEAD-UP IS THE GOAL. When the player pursues the arc, advance through discoverable leads rather than teleporting them to the antagonist: clues point to people, people point to places, places reveal operations, and operations eventually expose the antagonist. Several investigation or travel scenes before confrontation are normal and desirable.`;
 
 const newDynamic = `    let dynamicTail = hasSplit ? systemPrompt.dynamic : '';
     // GPT prompt experiment: the assigned antagonist remains the arc anchor, but
@@ -53,10 +49,7 @@ const newInput = `      // GPT-5.6 explicit-only cache layout. Four useful break
       //   1) stable DM rules, 2) worn gear/constructs,
       //   3) previous turn's stable-history boundary, 4) current boundary.
       // Each gameplay turn adds two messages, so the prior history boundary is
-      // exactly three messages back inside the new stable-history slice. This
-      // lets OpenAI read the old cached history and write only the appended turn.
-      // Carried items sit after gear and before history: loot changes therefore
-      // fall back to the gear cache instead of rebuilding the giant static prompt.
+      // exactly three messages back inside the new stable-history slice.
       const cacheBreakpoint = () => ({ mode: 'explicit' });
       const developerContent = [
         {
@@ -88,11 +81,15 @@ const newInput = `      // GPT-5.6 explicit-only cache layout. Four useful break
         let text = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
         if (dynamicTail && i === messages.length - 1) text = \`${'${text}'}\\n\\n${'${dynamicTail}'}\`;
         const markHistory = i === previousHistoryBoundary || i === currentHistoryBoundary;
+        const role = m.role === 'assistant' ? 'assistant' : 'user';
         input.push({
           type: 'message',
-          role: m.role === 'assistant' ? 'assistant' : 'user',
+          role,
           content: [{
-            type: 'input_text',
+            // Responses API assistant history accepts output_text/refusal, while
+            // user/developer messages accept input_text. The breakpoint itself
+            // works on either role-valid text content item.
+            type: role === 'assistant' ? 'output_text' : 'input_text',
             text,
             ...(markHistory ? { prompt_cache_breakpoint: cacheBreakpoint() } : {}),
           }],
