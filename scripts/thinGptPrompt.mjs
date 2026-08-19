@@ -10,28 +10,19 @@ if (s.includes(marker)) {
   process.exit(0);
 }
 
-// patchGptPromptExperiment defines gptStaticInstructions inside the OpenAI request
-// branch. Insert immediately after that expression so the thinned variant shares
-// the same lexical scope instead of trying to reference it from outside the branch.
-const anchor = `        .replace(NPC_BLOCK, '')`;
-if (!s.includes(anchor)) {
-  throw new Error('GPT static-instructions anchor not found; refusing broad edit');
+// patchGptPromptExperiment defines gptStaticInstructions inside the OpenAI
+// request branch, immediately before the explicit cache layout. Insert here so
+// the thinned prompt is guaranteed to share the same lexical scope. Do not try
+// to infer the end of the gptStaticInstructions expression from surrounding
+// dynamic-state code; that code lives earlier in the function.
+const insertAnchor = `      const cacheBreakpoint = () => ({ mode: 'explicit' });`;
+if (!s.includes(insertAnchor)) {
+  throw new Error('GPT cache-breakpoint anchor not found; refusing broad edit');
 }
 
-const endAnchor = `        .replace(`;
-const start = s.indexOf(`      const gptStaticInstructions =`);
-if (start < 0) throw new Error('gptStaticInstructions definition not found');
-const dynamic = s.indexOf(`\n\n    let dynamicTail`, start);
-if (dynamic < 0) throw new Error('OpenAI static-instructions block end not found');
+const insert = `      // GPT prompt experiment: trim redundant prose/pressure rules for Sol.\n      // TTS-sensitive wording rules, tags, mechanics, autonomy, and stat spelling\n      // are intentionally left untouched.\n      const thinnedGptInstructions = gptStaticInstructions\n        .replace(/EVERY SCENE NEEDS A HOOK:[\\s\\S]*?(?=\\n\\nPACING:)/, '')\n        .replace(/SCENES MUST EARN THEIR MYSTERY:[\\s\\S]*?(?=\\n\\nMOMENTUM WITHOUT FORCING IT:)/, 'MYSTERY AND DIRECT THREATS: Strange elements should matter and give the player something actionable. Not every threat needs a mystery, twist, or hidden cause; straightforward danger and direct fights are valid.')\n        .replace(/ACTIONS HAVE CONSEQUENCES:[\\s\\S]*?world owes them a reaction\\./, 'ACTIONS HAVE CONSEQUENCES: Significant player actions should produce believable consequences when the fiction supports them. Do not invent escalation merely to acknowledge an action.');\n\n`;
 
-const block = s.slice(start, dynamic);
-const semicolon = block.lastIndexOf(';');
-if (semicolon < 0) throw new Error('gptStaticInstructions terminator not found');
-const insertAt = start + semicolon + 1;
-
-const insert = `\n\n      // GPT prompt experiment: trim redundant prose/pressure rules for Sol.\n      // TTS-sensitive wording rules, tags, mechanics, autonomy, and stat spelling\n      // are intentionally left untouched.\n      const thinnedGptInstructions = gptStaticInstructions\n        .replace(/EVERY SCENE NEEDS A HOOK:[\\s\\S]*?(?=\\n\\nPACING:)/, '')\n        .replace(/SCENES MUST EARN THEIR MYSTERY:[\\s\\S]*?(?=\\n\\nMOMENTUM WITHOUT FORCING IT:)/, 'MYSTERY AND DIRECT THREATS: Strange elements should matter and give the player something actionable. Not every threat needs a mystery, twist, or hidden cause; straightforward danger and direct fights are valid.')\n        .replace(/ACTIONS HAVE CONSEQUENCES:[\\s\\S]*?world owes them a reaction\\./, 'ACTIONS HAVE CONSEQUENCES: Significant player actions should produce believable consequences when the fiction supports them. Do not invent escalation merely to acknowledge an action.');`;
-
-s = s.slice(0, insertAt) + insert + s.slice(insertAt);
+s = s.replace(insertAnchor, insert + insertAnchor);
 
 const textAnchor = `          text: gptStaticInstructions,`;
 if (!s.includes(textAnchor)) {
