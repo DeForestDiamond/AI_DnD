@@ -30,7 +30,9 @@ const oldDynamic = `    const dynamicTail = hasSplit ? systemPrompt.dynamic : ''
 const arcOld = `IF THE ANTAGONIST ABOVE IS NOT YET IN THE STORY, INTRODUCE IT NOW. It was assigned by the system — your job is to weave it in, not ignore it. Do NOT run an unrelated plotline while it sits unused. Start tying current events to it this turn: a sign, a rumor, a victim, its agents. Whatever the player is doing, this antagonist is the thread underneath it.
 KEEP THE THREAD WARM. Follow the player's own jobs and detours, never railroad — but don't let the antagonist vanish. Even when the player is busy elsewhere, surface it now and then (a rumor, a fresh sign of its work, a ripple into what they're doing) so the arc stays alive and ready to pick back up.`;
 const arcNew = `THE ANTAGONIST IS THE ACTIVE ARC, NOT A COMMAND TO RUSH. Build toward it at the pace the fiction supports. The player may first encounter rumors, consequences, victims, agents, evidence, false leads, locations, or other clues, and may investigate those across multiple scenes before meeting or even identifying the antagonist. Do not force an immediate confrontation or reveal simply because the antagonist has been assigned.
-KEEP THE THREAD AVAILABLE, NOT CONSTANT. Remember the antagonist and connect genuine arc developments back to it, but unrelated jobs, travel, downtime, conversations, and side events may remain genuinely unrelated. Do not insert an antagonist sign or interruption into every scene merely to keep the arc visible. When the player pursues the arc, give them leads they can follow and room to investigate.`;
+KEEP THE THREAD AVAILABLE, NOT CONSTANT. Remember the antagonist and connect genuine arc developments back to it, but ordinary side content — travel incidents, tavern scenes, shopping, downtime, small jobs, random encounters, and self-contained local problems — may remain genuinely unrelated. Do not insert an antagonist sign into every scene merely to keep the arc visible.
+NO COMPETING ARC. Unrelated side content must stay small and self-contained. The moment a thread becomes a multi-scene mystery, recurring threat, conspiracy, quest chain, mastermind plot, or named villain driving ongoing events, it MUST belong to the assigned antagonist. Any secondary villain in such a thread is an agent, lieutenant, client, victim, rival, or consequence of the assigned antagonist — never a replacement main antagonist. Before creating a new recurring villain or hidden mastermind, check the ACTIVE ARC ANTAGONIST above; if it is not that antagonist or meaningfully connected to it, do not create it.
+LEAD-UP IS THE GOAL. When the player pursues the arc, advance through discoverable leads rather than teleporting them to the antagonist: clues point to people, people point to places, places reveal operations, and operations eventually expose the antagonist. Several investigation or travel scenes before confrontation are normal and desirable.`;
 
 const newDynamic = `    let dynamicTail = hasSplit ? systemPrompt.dynamic : '';
     // GPT prompt experiment: the assigned antagonist remains the arc anchor, but
@@ -62,5 +64,5 @@ if (s.includes(newDynamic)) {
 
 if (changed) {
   fs.writeFileSync(path, s);
-  console.log('GPT prompt experiment applied: NPC block removed; pacing and antagonist pressure softened.');
+  console.log('GPT prompt experiment applied: NPC block removed; pacing softened; competing arcs forbidden.');
 }
