@@ -4,7 +4,7 @@ A single-player Dungeons & Dragons web application with an AI Dungeon Master, po
 
 Set in the Forgotten Realms (Faerûn).
 
-<!-- Deployment trigger: 2026-08-20 -->
+<!-- Deployment trigger: 2026-08-20 branch-sync -->
 
 ## Requirements
 
