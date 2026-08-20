@@ -1,4 +1,4 @@
-# Tales of the Realm.
+# Tales of the Realm
 
 A single-player Dungeons & Dragons web application with an AI Dungeon Master, powered by the Anthropic API. The application handles game mechanics (dice, combat math, inventory, experience, leveling) in code; the AI handles narration and the world. It is designed primarily for mobile browsers and runs entirely client-side — there is no backend server, no account, and no data leaves your device except the API calls to Anthropic.
 
