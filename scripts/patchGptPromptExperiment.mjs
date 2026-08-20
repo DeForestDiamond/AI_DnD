@@ -163,7 +163,18 @@ if (s.includes(newDynamic)) {
   throw new Error('Dynamic-tail anchor not found; refusing broad edit');
 }
 
-if (s.includes(newInput)) {
+// thinGptPrompt.mjs deliberately inserts additional transformations immediately
+// before cacheBreakpoint(). Once that thinned output has ever been committed,
+// the exact newInput string no longer exists even though the explicit-cache
+// layout is already present. Detect the stable structural markers instead so
+// prebuild remains idempotent after later prompt patchers decorate this block.
+const hasExplicitInputLayout =
+  s.includes("const cacheBreakpoint = () => ({ mode: 'explicit' });") &&
+  s.includes('const developerContent = [') &&
+  s.includes('const stableHistoryCount = Math.max(0, messages.length - 2);') &&
+  s.includes('prompt_cache_breakpoint: cacheBreakpoint()');
+
+if (hasExplicitInputLayout) {
   console.log('GPT explicit cache input layout already applied.');
 } else if (s.includes(oldInput)) {
   s = s.replace(oldInput, newInput);
