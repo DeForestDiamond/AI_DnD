@@ -22,3 +22,5 @@ else:
         print('Attack roll display already patched')
     else:
         raise SystemExit('Could not find the message roll assignment; source shape changed')
+
+# touch to trigger one-shot workflow
