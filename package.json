@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/patchPromptCacheLayout.mjs && node scripts/patchSaveUiSettings.mjs && node scripts/patchGptPromptExperiment.mjs && node scripts/thinGptPrompt.mjs && node scripts/patchRollDisplayPlacement.mjs",
+    "predev": "node scripts/patchPromptCacheLayout.mjs && node scripts/patchSaveUiSettings.mjs && node scripts/patchGptPromptExperiment.mjs && node scripts/thinGptPrompt.mjs && node scripts/patchRollDisplayPlacement.mjs && node scripts/patchAttackMath.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/patchPromptCacheLayout.mjs && node scripts/patchSaveUiSettings.mjs && node scripts/patchGptPromptExperiment.mjs && node scripts/thinGptPrompt.mjs && node scripts/patchRollDisplayPlacement.mjs",
+    "prebuild": "node scripts/patchPromptCacheLayout.mjs && node scripts/patchSaveUiSettings.mjs && node scripts/patchGptPromptExperiment.mjs && node scripts/thinGptPrompt.mjs && node scripts/patchRollDisplayPlacement.mjs && node scripts/patchAttackMath.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
