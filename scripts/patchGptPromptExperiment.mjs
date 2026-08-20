@@ -17,9 +17,17 @@ const actionOld = 'ACTION OVER DESCRIPTION: When in doubt, make something happen
 const actionNew = 'MOMENTUM WITHOUT FORCING IT: Give the player useful things to notice, learn, ask about, or act on, but do not manufacture an event merely because a scene is quiet. A clue, answer, NPC reaction, discovery, or meaningful choice is forward movement. Action is only one kind of progress.';
 
 const newInstructions = `      // GPT prompt experiment: OpenAI gets a lighter prompt than Sonnet/Haiku.
-      // Developer instructions are sent as input_text blocks below because GPT-5.6
-      // explicit cache breakpoints cannot be attached to top-level instructions.
-      const gptStaticInstructions = (hasSplit ? systemPrompt.static : systemPrompt)
+      // Location-tiered NPC/town context is intentionally removed from the first
+      // cache layer and reinserted after its breakpoint below. A [LOCATION:] tag
+      // can therefore change nearby/distant detail without invalidating ~13k rules.
+      const gptCtx = hasSplit ? buildCtxSections(charRef.current) : null;
+      const gptLocationContext = gptCtx
+        ? [gptCtx.npcSection, gptCtx.townsSection].filter(Boolean).join('\\n')
+        : '';
+      let gptStaticInstructions = hasSplit ? systemPrompt.static : systemPrompt;
+      if (gptCtx?.npcSection) gptStaticInstructions = gptStaticInstructions.replace(gptCtx.npcSection, '');
+      if (gptCtx?.townsSection) gptStaticInstructions = gptStaticInstructions.replace(gptCtx.townsSection, '');
+      gptStaticInstructions = gptStaticInstructions
         .replace(NPC_BLOCK, '')
         .replace(${js(forwardOld)}, ${js(forwardNew)})
         .replace(${js(actionOld)}, ${js(actionNew)});`;
@@ -63,11 +71,11 @@ const oldInput = `      const input = messages.map(m => ({
         input[input.length - 1] = { ...last, content: \`${'${last.content}'}\\n\\n${'${dynamicTail}'}\` };
       }`;
 
-const newInput = `      // GPT-5.6 explicit-only cache layout. Four useful breakpoints:
-      //   1) stable DM rules, 2) worn gear/constructs,
+const newInput = `      // GPT-5.6 explicit-only cache layout. Four breakpoints:
+      //   1) true stable rules, 2) location context + worn gear/constructs,
       //   3) previous turn's stable-history boundary, 4) current boundary.
-      // Each gameplay turn adds two messages, so the prior history boundary is
-      // exactly three messages back inside the new stable-history slice.
+      // Carried items sit between gear and history. A location change now falls
+      // back to breakpoint 1 instead of invalidating the entire prompt.
       const cacheBreakpoint = () => ({ mode: 'explicit' });
       const developerContent = [
         {
@@ -75,6 +83,11 @@ const newInput = `      // GPT-5.6 explicit-only cache layout. Four useful break
           text: gptStaticInstructions,
           prompt_cache_breakpoint: cacheBreakpoint(),
         },
+        ...(gptLocationContext ? [{
+          type: 'input_text',
+          text: gptLocationContext,
+          ...(!systemPrompt.gear ? { prompt_cache_breakpoint: cacheBreakpoint() } : {}),
+        }] : []),
         ...(hasSplit && systemPrompt.gear ? [{
           type: 'input_text',
           text: systemPrompt.gear,
@@ -170,5 +183,5 @@ if (s.includes(newRequestBits)) {
 
 if (changed) {
   fs.writeFileSync(path, s);
-  console.log('GPT prompt experiment applied: separate lean dynamic prompt; explicit-only layered cache enabled.');
+  console.log('GPT prompt experiment applied: location context isolated; lean dynamic prompt; explicit-only layered cache enabled.');
 }
