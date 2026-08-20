@@ -25,15 +25,33 @@ const newInstructions = `      // GPT prompt experiment: OpenAI gets a lighter p
         .replace(${js(actionOld)}, ${js(actionNew)});`;
 
 const oldDynamic = `    const dynamicTail = hasSplit ? systemPrompt.dynamic : '';`;
-const arcOld = `IF THE ANTAGONIST ABOVE IS NOT YET IN THE STORY, INTRODUCE IT NOW. It was assigned by the system — your job is to weave it in, not ignore it. Do NOT run an unrelated plotline while it sits unused. Start tying current events to it this turn: a sign, a rumor, a victim, its agents. Whatever the player is doing, this antagonist is the thread underneath it.\nKEEP THE THREAD WARM. Follow the player's own jobs and detours, never railroad — but don't let the antagonist vanish. Even when the player is busy elsewhere, surface it now and then (a rumor, a fresh sign of its work, a ripple into what they're doing) so the arc stays alive and ready to pick back up.`;
-const arcNew = `THE ANTAGONIST IS THE ACTIVE ARC, NOT A COMMAND TO RUSH. Build toward it at the pace the fiction supports. The player may first encounter rumors, consequences, victims, agents, evidence, false leads, locations, or other clues, and may investigate those across multiple scenes before meeting or even identifying the antagonist. Do not force an immediate confrontation or reveal simply because the antagonist has been assigned.\nKEEP THE THREAD AVAILABLE, NOT CONSTANT. Remember the antagonist and connect genuine arc developments back to it, but ordinary side content — travel incidents, tavern scenes, shopping, downtime, small jobs, random encounters, and self-contained local problems — may remain genuinely unrelated. Do not insert an antagonist sign into every scene merely to keep the arc visible.\nNO COMPETING ARC. Unrelated side content must stay small and self-contained. The moment a thread becomes a multi-scene mystery, recurring threat, conspiracy, quest chain, mastermind plot, or named villain driving ongoing events, it MUST belong to the assigned antagonist. Any secondary villain in such a thread is an agent, lieutenant, client, victim, rival, or consequence of the assigned antagonist — never a replacement main antagonist. Before creating a new recurring villain or hidden mastermind, check the ACTIVE ARC ANTAGONIST above; if it is not that antagonist or meaningfully connected to it, do not create it.\nLEAD-UP IS THE GOAL. When the player pursues the arc, advance through discoverable leads rather than teleporting them to the antagonist: clues point to people, people point to places, places reveal operations, and operations eventually expose the antagonist. Several investigation or travel scenes before confrontation are normal and desirable.`;
-
 const newDynamic = `    let dynamicTail = hasSplit ? systemPrompt.dynamic : '';
-    // GPT prompt experiment: the assigned antagonist remains the arc anchor, but
-    // it is not required to invade every scene. Let clues, investigation and
-    // unrelated detours exist without immediately yeeting the player at it.
+    // GPT gets its OWN lean dynamic tail. Claude's dynamic prompt contains a large
+    // arc-policy essay plus a repeated preflight checklist that Sol does not need.
+    // Preserve only the actual CURRENT STATE lines, then add a compact GPT arc block.
     if (provider === 'openai' && dynamicTail) {
-      dynamicTail = dynamicTail.replace(${js(arcOld)}, ${js(arcNew)});
+      const arcMarker = '\\nACTIVE ARC ANTAGONIST';
+      const hooksMarker = '\\n\\nHOOKS — ARC OR NO ARC:';
+      let liveState = dynamicTail;
+      const arcIdx = liveState.indexOf(arcMarker);
+      if (arcIdx >= 0) liveState = liveState.slice(0, arcIdx);
+      const hooksIdx = liveState.indexOf(hooksMarker);
+      if (hooksIdx >= 0) liveState = liveState.slice(0, hooksIdx);
+      liveState = liveState.trim();
+
+      const arc = charRef.current?.arc;
+      const gptArc = arc?.antagonist ? [
+        '',
+        'ACTIVE ARC (HIDDEN): ' + arc.antagonist,
+        'ARC LOCATION (HIDDEN): ' + (arc.arcLocation || 'Faerûn'),
+        'This assigned antagonist is the one active campaign arc. Do not replace it with a different recurring villain, conspiracy, or quest chain. Small self-contained side events may be unrelated, but any multi-scene threat or continuing villain must connect to this antagonist.',
+        'Build toward the antagonist through believable leads, people, places, operations, evidence, and consequences. Investigation and travel before confrontation are desirable. Do not rush the reveal or spawn the antagonist beside the player.',
+        'If the player is away from the arc location, their current location may provide a brief believable lead toward it, but the substantive arc remains at or genuinely connected to the assigned arc location.',
+        'Use the character’s supplied disposition when motivating involvement; do not assume altruism. If the player ignores the arc, do not nag them every turn.',
+        'When the antagonist is resolved — defeated, captured, dismantled, permanently driven off, or the player concludes their business through a deal, truce, alliance, payment, or deliberate disengagement — emit [ARC COMPLETE] in that same response. Do not invent a hidden superior or deeper layer to keep the arc alive.'
+      ].join('\\n') : '';
+
+      dynamicTail = liveState + gptArc;
     }`;
 
 const oldInput = `      const input = messages.map(m => ({
@@ -124,7 +142,7 @@ if (s.includes(newInstructions)) {
 }
 
 if (s.includes(newDynamic)) {
-  console.log('GPT prompt experiment arc pacing changes already applied.');
+  console.log('GPT lean dynamic prompt already applied.');
 } else if (s.includes(oldDynamic)) {
   s = s.replace(oldDynamic, newDynamic);
   changed = true;
@@ -152,5 +170,5 @@ if (s.includes(newRequestBits)) {
 
 if (changed) {
   fs.writeFileSync(path, s);
-  console.log('GPT prompt experiment applied: prompt tweaks preserved; explicit-only layered cache enabled.');
+  console.log('GPT prompt experiment applied: separate lean dynamic prompt; explicit-only layered cache enabled.');
 }
