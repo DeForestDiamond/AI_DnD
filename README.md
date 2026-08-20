@@ -4,6 +4,8 @@ A single-player Dungeons & Dragons web application with an AI Dungeon Master, po
 
 Set in the Forgotten Realms (Faerûn).
 
+<!-- Deployment trigger: 2026-08-20 -->
+
 ## Requirements
 
 - An Anthropic API key. Create one at [console.anthropic.com](https://console.anthropic.com) (an account and a small credit balance are required). Your key is entered in the app at the start of play and is kept in your browser only — it is never stored on a server.
