@@ -1,15 +1,15 @@
 name: Run banked coin patch
 
 on:
-  push:
-    paths:
-      - 'scripts/patchBankedCoins.py'
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.event.issue.title == 'RUN BANKED COIN PATCH'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
