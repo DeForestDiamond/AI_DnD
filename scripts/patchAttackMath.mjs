@@ -21,8 +21,6 @@ const newWeapon = `  // Choose the attack ability once, here, for every attack p
 
 c = replaceOnce(c, oldWeapon, newWeapon, 'getMainWeapon ability selection', () => { charChanged = true; });
 
-// performAttack lives in useGame.js, not useCharacter.js. Keep the attack math,
-// prompt display, and both debug paths in the same build-time patch target.
 const oldAttack = `export const performAttack = (weapon, stats, level) => {\n  const pb       = profBonus(level);\n  const atkRoll  = rollDie(20);\n  const atkBonus = weapon.statBonus + pb + (weapon.bonus || 0);\n  const totalAtk = atkRoll + atkBonus;\n  const dmgRoll  = rollDice(weapon.damage);\n  const dmgBonus = weapon.statBonus + (weapon.bonus || 0);`;
 
 const newAttack = `export const performAttack = (weapon, stats, level) => {\n  const profBonusValue = profBonus(level);\n  const atkRoll         = rollDie(20);\n  const statBonus       = weapon.statBonus || 0;\n  const weaponBonus     = weapon.bonus || 0;\n  const statLabel       = (weapon.attackAbility || 'str').toUpperCase();\n  const atkBonus        = statBonus + profBonusValue + weaponBonus;\n  const totalAtk        = atkRoll + atkBonus;\n  const dmgRoll         = rollDice(weapon.damage);\n  const dmgBonus        = statBonus + weaponBonus;`;
@@ -41,13 +39,14 @@ const oldActionLog = "          log?.(`[ATTACK] ${weapon.name}: d20=${result.atk
 const newActionLog = "          log?.(`[ATTACK] ${weapon.name}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} to hit → dmg ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}`);";
 g = replaceOnce(g, oldActionLog, newActionLog, 'player attack debug log', () => { gameChanged = true; });
 
-const oldRollLog = "      log?.(`[ROLL] ${statLabel} with ${label}: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} vs DC${diff} — ${hit?'HIT':'MISS'}`);";
-const newRollLog = "      log?.(`[ROLL] ${statLabel} with ${label}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} vs DC${diff} — ${hit?'HIT':'MISS'}`);";
-g = replaceOnce(g, oldRollLog, newRollLog, 'DM-requested attack debug log', () => { gameChanged = true; });
+// Older main never actually received the attempted unified-attack workflow patch,
+// so the DM-requested [ROLL: attack ...] path still has its own hand-written math.
+// Replace that whole legacy calculation with performAttack() in one exact edit.
+const oldRequested = `      const atkBonus = abilityMod + pb2 + enchant;\n      const d20 = rollDie(20);\n      const total = d20 + atkBonus;\n      const hit = total >= diff;\n      log?.(\`[ROLL] ${'${statLabel}'} with ${'${label}'}: d20=${'${d20}'}+${'${abilityMod}'}+${'${pb2}'}${'${enchant?`+${enchant}`:\'\'}'}=${'${total}'} vs DC${'${diff}'} — ${'${hit?\'HIT\':\'MISS\'}'}\`);\n      return {\n        resultText: \`[ROLL RESULT: attack roll with ${'${label}'} — d20 rolled ${'${d20}'} + ${'${abilityMod}'} ability + ${'${pb2}'} proficiency${'${enchant ? ` + ${enchant} enchantment` : \'\'}'} = ${'${total}'} vs difficulty ${'${diff}'} — ${'${hit ? \'HIT\' : \'MISS\'}'}]\`,\n        rollResult: {\n          label: \`${'${label}'} Attack\`,\n          value: total,\n          dc: diff,\n          crit: d20 === 20,\n          fumble: d20 === 1,\n        },\n      };`;
 
-const oldRollText = "        resultText: `[ROLL RESULT: attack roll with ${label} — d20 rolled ${result.atkRoll} + ${result.atkBonus} attack bonus = ${result.totalAtk} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}${hit ? `; damage ${result.totalDmg}` : ''}]`,";
-const newRollText = "        resultText: `[ROLL RESULT: attack roll with ${label} — d20 ${result.atkRoll} + ${result.statLabel} ${result.statBonus} + proficiency ${result.profBonus}${result.weaponBonus ? ` + weapon ${result.weaponBonus}` : ''} = ${result.totalAtk} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}${hit ? `; damage ${result.totalDmg}` : ''}]`,";
-g = replaceOnce(g, oldRollText, newRollText, 'DM-requested attack result text', () => { gameChanged = true; });
+const newRequested = `      const attackWeapon = weapon || {\n        name: label,\n        damage: '1d1',\n        statBonus: abilityMod,\n        attackAbility: statMod(effAtk.dex) >= statMod(effAtk.str) ? 'dex' : 'str',\n        bonus: enchant,\n        extras: [],\n      };\n      const result = performAttack(attackWeapon, char.stats, char.level);\n      const hit = result.crit || (!result.fumble && result.totalAtk >= diff);\n      log?.(\`[ROLL] ${'${statLabel}'} with ${'${label}'}: d20=${'${result.atkRoll}'} + ${'${result.statLabel}'}(${'${result.statBonus}'}) + prof(${'${result.profBonus}'})${'${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : \'\'}'} = ${'${result.totalAtk}'} vs DC${'${diff}'} — ${'${hit?\'HIT\':\'MISS\'}'}\`);\n      return {\n        resultText: \`[ROLL RESULT: attack roll with ${'${label}'} — d20 ${'${result.atkRoll}'} + ${'${result.statLabel}'} ${'${result.statBonus}'} + proficiency ${'${result.profBonus}'}${'${result.weaponBonus ? ` + weapon ${result.weaponBonus}` : \'\'}'} = ${'${result.totalAtk}'} vs difficulty ${'${diff}'} — ${'${hit ? \'HIT\' : \'MISS\'}'}${'${hit ? `; damage ${result.totalDmg}` : \'\'}'}]\`,\n        rollResult: {\n          label: \`${'${label}'} Attack\`,\n          value: result.totalAtk,\n          dc: diff,\n          dmg: hit ? result.totalDmg : null,\n          crit: result.crit,\n          fumble: result.fumble,\n        },\n      };`;
+
+g = replaceOnce(g, oldRequested, newRequested, 'DM-requested attack calculation', () => { gameChanged = true; });
 
 if (charChanged) fs.writeFileSync(charPath, c);
 if (gameChanged) fs.writeFileSync(gamePath, g);
