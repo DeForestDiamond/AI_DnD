@@ -1,0 +1,134 @@
+from pathlib import Path
+
+
+def replace_once(path, old, new, label):
+    p = Path(path)
+    text = p.read_text()
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f'{label}: expected exactly 1 anchor, found {count}')
+    p.write_text(text.replace(old, new, 1))
+    print(f'patched: {label}')
+
+
+replace_once(
+    'src/constants/progression.js',
+    'export const SAVE_VERSION = 19;',
+    'export const SAVE_VERSION = 20;',
+    'save version',
+)
+
+replace_once(
+    'src/hooks/useCharacter.js',
+    "  // Be tolerant of hand-edited/new saves: normalize the two location lists even\n",
+    "  if (v < 20) {\n"
+    "    // Banked coin is deliberately separate from carried coin. The DM prompt only\n"
+    "    // receives `coins`, so money parked here is player-visible but DM-invisible.\n"
+    "    if (c.bankedCoins === undefined) {\n"
+    "      c.bankedCoins = 0;\n"
+    "      notes.push('Banked coins initialized');\n"
+    "    }\n"
+    "  }\n"
+    "  c.bankedCoins = Math.max(0, Math.floor(Number(c.bankedCoins) || 0));\n"
+    "  // Be tolerant of hand-edited/new saves: normalize the two location lists even\n",
+    'v20 banked coin migration',
+)
+
+replace_once(
+    'src/hooks/useCharacter.js',
+    "  inventory:[], stash:[], coins:1000, environment:'wilderness', defeatedAntagonists:[],",
+    "  inventory:[], stash:[], coins:1000, bankedCoins:0, environment:'wilderness', defeatedAntagonists:[],",
+    'empty character bankedCoins',
+)
+
+anchor = "  const moveToInventory = (itemName, all = false) => {\n    setCharacter(c => {\n      const qty = all ? stackCount(c.stash, itemName) : 1;\n      const taken = takeStack(c.stash, itemName, qty);\n      if (!taken.removed) return c;\n      const nc = { ...c, stash:taken.stacks, inventory:addStack(c.inventory, itemName, taken.removed) };\n      charRef.current = nc;\n      return nc;\n    });\n  };\n"
+addition = anchor + "\n  // Move wealth between carried coin and the private bank. Amounts are copper\n  // integers, matching the rest of the currency system. Banked coin is never\n  // included in the DM prompt.\n  const bankCoins = (amountCp) => {\n    setCharacter(c => {\n      const requested = Math.max(0, Math.floor(Number(amountCp) || 0));\n      const moved = Math.min(c.coins || 0, requested);\n      if (!moved) return c;\n      const nc = { ...c, coins:(c.coins || 0) - moved, bankedCoins:(c.bankedCoins || 0) + moved };\n      charRef.current = nc;\n      return nc;\n    });\n  };\n\n  const withdrawCoins = (amountCp) => {\n    setCharacter(c => {\n      const requested = Math.max(0, Math.floor(Number(amountCp) || 0));\n      const moved = Math.min(c.bankedCoins || 0, requested);\n      if (!moved) return c;\n      const nc = { ...c, coins:(c.coins || 0) + moved, bankedCoins:(c.bankedCoins || 0) - moved };\n      charRef.current = nc;\n      return nc;\n    });\n  };\n"
+replace_once('src/hooks/useCharacter.js', anchor, addition, 'coin transfer helpers')
+
+replace_once(
+    'src/hooks/useCharacter.js',
+    "    moveToStash, moveToInventory,\n",
+    "    moveToStash, moveToInventory, bankCoins, withdrawCoins,\n",
+    'export coin transfer helpers',
+)
+
+replace_once(
+    'src/components/Sidebar.jsx',
+    "import { coinsToString } from '../constants/currency.js';",
+    "import { coinsToString, parseCoinAmount } from '../constants/currency.js';",
+    'sidebar currency import',
+)
+
+replace_once(
+    'src/components/Sidebar.jsx',
+    "export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag,",
+    "export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag,",
+    'sidebar bank props',
+)
+
+replace_once(
+    'src/components/Sidebar.jsx',
+    "  const [stashFilter, setStashFilter] = useState('');\n",
+    "  const [stashFilter, setStashFilter] = useState('');\n  const [bankDraft, setBankDraft] = useState('');\n",
+    'sidebar bank input state',
+)
+
+old_gold = """      {/* Gold */}
+      <div>
+        {sectionLabel('GOLD')}
+        <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13}}>⚜ {coinsToString(character.coins)}</div>
+      </div>
+"""
+new_gold = """      {/* Gold — banked wealth stays out of the DM prompt */}
+      <div>
+        {sectionLabel('GOLD')}
+        <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline'}}>
+          <span style={{fontSize:10,color:colors.textGhost,fontFamily:fonts.display,letterSpacing:1}}>CARRIED</span>
+          <span style={{fontFamily:fonts.display,color:colors.gold,fontSize:13}}>⚜ {coinsToString(character.coins)}</span>
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline',marginTop:2}}>
+          <span style={{fontSize:10,color:colors.textGhost,fontFamily:fonts.display,letterSpacing:1}}>BANKED</span>
+          <span style={{fontFamily:fonts.display,color:colors.textFaint,fontSize:12}}>⚜ {coinsToString(character.bankedCoins || 0)}</span>
+        </div>
+        {(onBankCoins || onWithdrawCoins) && (
+          <div style={{marginTop:5}}>
+            <input
+              value={bankDraft}
+              onChange={e=>setBankDraft(e.target.value)}
+              placeholder="Amount (e.g. 500gp)"
+              inputMode="text"
+              style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.35)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.mono,fontSize:11,padding:'4px 6px',borderRadius:3,outline:'none',marginBottom:4}}
+            />
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:4}}>
+              <button onClick={()=>{ const n=Math.max(0,parseCoinAmount(bankDraft)); if(n){onBankCoins?.(n);setBankDraft('');} }}
+                disabled={Math.max(0,parseCoinAmount(bankDraft)) <= 0 || (character.coins || 0) <= 0}
+                style={{...btn(false),fontSize:9,padding:'3px 2px'}}>↓ BANK</button>
+              <button onClick={()=>{ const n=Math.max(0,parseCoinAmount(bankDraft)); if(n){onWithdrawCoins?.(n);setBankDraft('');} }}
+                disabled={Math.max(0,parseCoinAmount(bankDraft)) <= 0 || (character.bankedCoins || 0) <= 0}
+                style={{...btn(false),fontSize:9,padding:'3px 2px'}}>↑ WITHDRAW</button>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
+              <button onClick={()=>onBankCoins?.(character.coins || 0)} disabled={(character.coins || 0) <= 0}
+                style={{...btn(false),fontSize:8,padding:'2px 2px',color:colors.textGhost}}>BANK ALL</button>
+              <button onClick={()=>onWithdrawCoins?.(character.bankedCoins || 0)} disabled={(character.bankedCoins || 0) <= 0}
+                style={{...btn(false),fontSize:8,padding:'2px 2px',color:colors.textGhost}}>WITHDRAW ALL</button>
+            </div>
+          </div>
+        )}
+      </div>
+"""
+replace_once('src/components/Sidebar.jsx', old_gold, new_gold, 'sidebar gold/banked UI')
+
+replace_once(
+    'src/App.jsx',
+    "    moveToStash, moveToInventory,\n",
+    "    moveToStash, moveToInventory, bankCoins, withdrawCoins,\n",
+    'app hook destructuring',
+)
+
+replace_once(
+    'src/App.jsx',
+    "            onMoveToStash={moveToStash}\n            onMoveToInventory={moveToInventory}\n",
+    "            onMoveToStash={moveToStash}\n            onMoveToInventory={moveToInventory}\n            onBankCoins={bankCoins}\n            onWithdrawCoins={withdrawCoins}\n",
+    'app sidebar bank wiring',
+)
