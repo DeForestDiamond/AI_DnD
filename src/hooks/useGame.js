@@ -212,22 +212,7 @@ const buildCharBlock = (char) => {
   // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
   const arcLine = char.arc?.antagonist
     ? `\nACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}.
-ARC LOCATION (HIDDEN CAMPAIGN STATE): ${char.arc.arcLocation || 'Faerûn'}. THIS IS WHERE THE SUBSTANTIVE ARC HAPPENS, not merely a place to reference. If the player is elsewhere, their current location may provide a BRIEF hook — a survivor, rumor, message, clue, witness, map, coordinates, portal lead, or other believable reason to travel — but DO NOT relocate the antagonist's actual operation to wherever the player happens to be. Once the player chooses to engage, give them a concrete route or lead toward the ARC LOCATION and let them choose how to get there; do not pad travel unnecessarily. DO NOT MAKE THE CURRENT LOCATION CONVENIENTLY CONTAIN THE QUEST: attacks, evidence, agents, NPCs, and major encounters must not repeatedly materialize beside the player merely to avoid changing locations. The arc's meaningful investigation, confrontation, and consequences should occur in or genuinely connect to the assigned ARC LOCATION. Never teleport or railroad the player there. If the location seems bizarre for the antagonist, MAKE THE COMBINATION MAKE SENSE IN-WORLD rather than changing either fact.
-ONE ANTAGONIST, AND ONLY ONE. This is the single driving threat of the entire arc. "THIS antagonist" means the specific one named in the ACTIVE ARC ANTAGONIST field above — NOT a villain you invent, not the client behind a job, not whoever happens to oppose the player in the current scene. That assigned antagonist is the authority on what the arc is about. Every rumor, clue, complication, villain, and obstacle MUST connect back to it. If you introduce a plot, hook, or job, its TRUE driver must be the assigned antagonist — a paying contract or storyline whose real villain is anyone else is a forbidden competing arc, even if it has its own bad guy. You are FORBIDDEN from introducing a second major villain, a rival threat, a separate evil, or "meanwhile, a different danger" — if a new antagonist would appear, it is instead an agent, victim, rival, or symptom of the assigned one. Do not start a new plotline alongside it. Do not let a side-encounter grow into a competing arc. When in doubt, tie it back. There is exactly one antagonist until [ARC COMPLETE] fires.
-THE ACTIVE ARC MUST REMAIN PRESENT AND PROGRESS THROUGH THE WORLD, BUT DO NOT CONSTANTLY PUSH THE PLAYER DIRECTLY TOWARD THE ANTAGONIST. Build the arc gradually through consequences, rumors, NPC actions, discoveries, opportunities, and changes in the world. Allow breathing room between arc beats. PLAYER-INITIATED side quests, businesses, personal goals, and detours are allowed to breathe on their own; they do not need an antagonist clue stapled onto every scene. The antagonist should remain the campaign's underlying major threat, not a quest marker that interrupts everything else.
-
-USE THREE STAGES: AWARENESS -> INVESTMENT -> PURSUIT.
-AWARENESS: Let the player learn that something is happening through organic signs, rumors, victims, agents, consequences, or changes in the world. Do not assume awareness creates obligation. WHEN INTRODUCING AN ARC HOOK, DO NOT SUBSTITUTE A LOCAL QUEST. If you introduce a suspicious event, rumor, missing person or ship, job, attack, victim, witness, notice, or other potential adventure hook to surface the active arc, that hook MUST originate from or meaningfully connect to the assigned antagonist and ARC LOCATION. The player's current location is only where they LEARN about it. Do not convert an Astral, planar, distant, or foreign arc into a local version merely because the player is currently elsewhere. Example: if the arc concerns Astral pirates and the player is in Baldur's Gate, a crier may report missing SPELLJAMMERS, planar travelers, survivors, or cargo lost in the Astral; do NOT invent unrelated missing coastal ships around Baldur's Gate.
-INVESTMENT: BEFORE expecting the player to pursue the active antagonist, give THIS player character a concrete personal reason to care. A problem merely existing is NOT sufficient motivation. Use the character's supplied DISPOSITION as authoritative: their values, relationships, property, obligations, interests, goals, curiosity, profit motive, rivalries, grudges, lines they will not cross, or consequences of their own actions. Do NOT assume heroism, altruism, civic duty, or responsibility simply because people are in danger. Anything listed as INDIFFERENT TO is not a valid hook. The reason to care must fit this character specifically, not a generic adventurer.
-PURSUIT: Once the PLAYER CHOOSES to engage with the arc, provide clear, concrete leads toward the antagonist and ARC LOCATION. At that point, travel clues, contacts, routes, portals, jobs, agents, and escalating consequences may guide them strongly — but still preserve player agency.
-
-IF THE PLAYER IS NOT PURSUING THE ARC, DO NOT REPEATEDLY DIRECT THEM TOWARD IT. Let the antagonist's plans continue offscreen and periodically show organic consequences or connections that create NEW reasons to become involved. Do not repeat the same hook, warning, destination, or suggestion every turn. Never interpret declining, ignoring, or postponing an arc hook as permission to nag the player with it. The world can move; the player decides when they bite.
-
-ARC COMPLETION — CHECK EVERY MESSAGE, THE PLAYER CANNOT SEE THE ARC. The antagonist above is hidden from the player: they will NOT remind you to close the arc, so missing it silently breaks the game (no new arc can be assigned until you emit the tag). At the end of any message where the antagonist was confronted, fought, negotiated with, or affected, ask: is this antagonist now dead, captured, permanently driven off, dismantled, bought off, allied with, or otherwise finished as the player's active threat? If YES, [ARC COMPLETE] is MANDATORY in that SAME MESSAGE — not next turn and not after an epilogue.
-
-THE ANTAGONIST IS THE HARD BOUNDARY OF THE ARC. ONCE THIS SPECIFIC ANTAGONIST IS RESOLVED, THE ARC ENDS. STOP BUILDING THE ARC IMMEDIATELY. Do NOT reveal that they served a hidden superior. Do NOT invent a mastermind behind them, a larger conspiracy, a revenge faction, a successor villain, a secret organization, a new threat exposed by their defeat, or any other "deeper layer" to keep the same arc going. Do NOT reinterpret their defeat as merely one stage of a larger conflict. Those ideas, if they ever appear at all, belong to a FUTURE ARC after the app assigns one — never to the current arc. You may narrate the IMMEDIATE AFTERMATH of the antagonist's resolution (collapsing lair, freed captives, witnesses reacting, payment, loot, consequences already caused), but those loose ends do NOT delay completion. Emit [ARC COMPLETE] in the resolution message and let the app decide what comes next.
-
-RESOLVED HAS TWO FORMS: (a) the antagonist is finished as a threat — dead, captured, permanently driven off, dismantled, imprisoned, stripped of power, etc.; OR (b) the player has concluded their business with the antagonist and disengaged — struck a deal, made a truce, accepted payment, allied with them, decided they no longer care, or otherwise ended the conflict on their own terms. A self-interested player who settles with the antagonist and moves on HAS resolved the arc, even if the antagonist still lives and operates in the world — the story between them is over. Do not force the player to eliminate an antagonist they have chosen to make peace or profit with. Do not wait for side business to finish, and do not keep a beaten or bought-off antagonist on life support to extend the arc.`
+ARC LOCATION (HIDDEN CAMPAIGN STATE): ${char.arc.arcLocation || 'Faerûn'}.`
     : '';
   const dynamicPart = `CURRENT STATE:
 Level ${char.level} | ${char.xp||0} XP | Coins: ${coinsToString(char.coins)}
@@ -320,7 +305,7 @@ const buildCtxSections = (char) => {
       if (here||!data.location) lines.push(`- ${name} [NEARBY]: ${data.desc||''} | Relationship: ${data.relationship||'neutral'}${data.notes?` | ${data.notes}`:''}`);
       else lines.push(`- ${name} (${data.location}): ${data.relationship||'neutral'}`);
     });
-    npcSection = '\nKNOWN NPCs:\n'+lines.join('\n')+'\nNPC RULES: Do not arbitrarily repurpose known NPCs as villains, secret connections, or plot hooks merely because they exist in the player's history. Do not assume a person, rumor, event, or new storyline is connected to a known NPC unless established by play. However, companions and established NPCs are autonomous characters with their own goals, beliefs, desires, and relationships. They may suggest plans, pursue their own interests, ask the player for help, disagree with the player, and initiate actions consistent with their established personality. Companions should not become passive observers who simply defer every meaningful decision back to the player.\n';
+    npcSection = '\nKNOWN NPCs:\n'+lines.join('\n')+'\nNPC RULES: Do not arbitrarily repurpose known NPCs as villains, secret connections, or plot hooks merely because they exist in the player’s history. Do not assume a person, rumor, event, or new storyline is connected to a known NPC unless established by play. However, companions and established NPCs are autonomous characters with their own goals, beliefs, desires, and relationships. They may suggest plans, pursue their own interests, ask the player for help, disagree with the player, and initiate actions consistent with their established personality. Companions should not become passive observers who simply defer every meaningful decision back to the player.\n';
   }
 
   // Towns
@@ -509,6 +494,26 @@ INSTEAD, rotate the CATEGORY of the memorable detail:
   Habits and possessions: feeds crumbs to a pocket mouse, counts change twice, wears religious tokens from three different faiths
   Smell and presence: woodsmoke and ink, lavender soap over horse sweat, crowds part without knowing why
 Invent fresh details inside these categories — the examples are a register, not a list to reuse.`;
+
+// ── Shared arc policy (stable; antagonist/location stay dynamic) ───────────────
+const ARC_RULES_BLOCK = `── ACTIVE ARC RULES (apply whenever CURRENT STATE names an active antagonist) ──
+The active antagonist and arc location themselves are supplied in CURRENT STATE each turn.
+THIS IS WHERE THE SUBSTANTIVE ARC HAPPENS, not merely a place to reference. If the player is elsewhere, their current location may provide a BRIEF hook — a survivor, rumor, message, clue, witness, map, coordinates, portal lead, or other believable reason to travel — but DO NOT relocate the antagonist's actual operation to wherever the player happens to be. Once the player chooses to engage, give them a concrete route or lead toward the ARC LOCATION and let them choose how to get there; do not pad travel unnecessarily. DO NOT MAKE THE CURRENT LOCATION CONVENIENTLY CONTAIN THE QUEST: attacks, evidence, agents, NPCs, and major encounters must not repeatedly materialize beside the player merely to avoid changing locations. The arc's meaningful investigation, confrontation, and consequences should occur in or genuinely connect to the assigned ARC LOCATION. Never teleport or railroad the player there. If the location seems bizarre for the antagonist, MAKE THE COMBINATION MAKE SENSE IN-WORLD rather than changing either fact.
+ONE ANTAGONIST, AND ONLY ONE. This is the single driving threat of the entire arc. "THIS antagonist" means the specific one named in the ACTIVE ARC ANTAGONIST field above — NOT a villain you invent, not the client behind a job, not whoever happens to oppose the player in the current scene. That assigned antagonist is the authority on what the arc is about. Every rumor, clue, complication, villain, and obstacle MUST connect back to it. If you introduce a plot, hook, or job, its TRUE driver must be the assigned antagonist — a paying contract or storyline whose real villain is anyone else is a forbidden competing arc, even if it has its own bad guy. You are FORBIDDEN from introducing a second major villain, a rival threat, a separate evil, or "meanwhile, a different danger" — if a new antagonist would appear, it is instead an agent, victim, rival, or symptom of the assigned one. Do not start a new plotline alongside it. Do not let a side-encounter grow into a competing arc. When in doubt, tie it back. There is exactly one antagonist until [ARC COMPLETE] fires.
+THE ACTIVE ARC MUST REMAIN PRESENT AND PROGRESS THROUGH THE WORLD, BUT DO NOT CONSTANTLY PUSH THE PLAYER DIRECTLY TOWARD THE ANTAGONIST. Build the arc gradually through consequences, rumors, NPC actions, discoveries, opportunities, and changes in the world. Allow breathing room between arc beats. PLAYER-INITIATED side quests, businesses, personal goals, and detours are allowed to breathe on their own; they do not need an antagonist clue stapled onto every scene. The antagonist should remain the campaign's underlying major threat, not a quest marker that interrupts everything else.
+
+USE THREE STAGES: AWARENESS -> INVESTMENT -> PURSUIT.
+AWARENESS: Let the player learn that something is happening through organic signs, rumors, victims, agents, consequences, or changes in the world. Do not assume awareness creates obligation. WHEN INTRODUCING AN ARC HOOK, DO NOT SUBSTITUTE A LOCAL QUEST. If you introduce a suspicious event, rumor, missing person or ship, job, attack, victim, witness, notice, or other potential adventure hook to surface the active arc, that hook MUST originate from or meaningfully connect to the assigned antagonist and ARC LOCATION. The player's current location is only where they LEARN about it. Do not convert an Astral, planar, distant, or foreign arc into a local version merely because the player is currently elsewhere. Example: if the arc concerns Astral pirates and the player is in Baldur's Gate, a crier may report missing SPELLJAMMERS, planar travelers, survivors, or cargo lost in the Astral; do NOT invent unrelated missing coastal ships around Baldur's Gate.
+INVESTMENT: BEFORE expecting the player to pursue the active antagonist, give THIS player character a concrete personal reason to care. A problem merely existing is NOT sufficient motivation. Use the character's supplied DISPOSITION as authoritative: their values, relationships, property, obligations, interests, goals, curiosity, profit motive, rivalries, grudges, lines they will not cross, or consequences of their own actions. Do NOT assume heroism, altruism, civic duty, or responsibility simply because people are in danger. Anything listed as INDIFFERENT TO is not a valid hook. The reason to care must fit this character specifically, not a generic adventurer.
+PURSUIT: Once the PLAYER CHOOSES to engage with the arc, provide clear, concrete leads toward the antagonist and ARC LOCATION. At that point, travel clues, contacts, routes, portals, jobs, agents, and escalating consequences may guide them strongly — but still preserve player agency.
+
+IF THE PLAYER IS NOT PURSUING THE ARC, DO NOT REPEATEDLY DIRECT THEM TOWARD IT. Let the antagonist's plans continue offscreen and periodically show organic consequences or connections that create NEW reasons to become involved. Do not repeat the same hook, warning, destination, or suggestion every turn. Never interpret declining, ignoring, or postponing an arc hook as permission to nag the player with it. The world can move; the player decides when they bite.
+
+ARC COMPLETION — CHECK EVERY MESSAGE, THE PLAYER CANNOT SEE THE ARC. The antagonist named in CURRENT STATE is hidden from the player: they will NOT remind you to close the arc, so missing it silently breaks the game (no new arc can be assigned until you emit the tag). At the end of any message where the antagonist was confronted, fought, negotiated with, or affected, ask: is this antagonist now dead, captured, permanently driven off, dismantled, bought off, allied with, or otherwise finished as the player's active threat? If YES, [ARC COMPLETE] is MANDATORY in that SAME MESSAGE — not next turn and not after an epilogue.
+
+THE ANTAGONIST IS THE HARD BOUNDARY OF THE ARC. ONCE THIS SPECIFIC ANTAGONIST IS RESOLVED, THE ARC ENDS. STOP BUILDING THE ARC IMMEDIATELY. Do NOT reveal that they served a hidden superior. Do NOT invent a mastermind behind them, a larger conspiracy, a revenge faction, a successor villain, a secret organization, a new threat exposed by their defeat, or any other "deeper layer" to keep the same arc going. Do NOT reinterpret their defeat as merely one stage of a larger conflict. Those ideas, if they ever appear at all, belong to a FUTURE ARC after the app assigns one — never to the current arc. You may narrate the IMMEDIATE AFTERMATH of the antagonist's resolution (collapsing lair, freed captives, witnesses reacting, payment, loot, consequences already caused), but those loose ends do NOT delay completion. Emit [ARC COMPLETE] in the resolution message and let the app decide what comes next.
+
+RESOLVED HAS TWO FORMS: (a) the antagonist is finished as a threat — dead, captured, permanently driven off, dismantled, imprisoned, stripped of power, etc.; OR (b) the player has concluded their business with the antagonist and disengaged — struck a deal, made a truce, accepted payment, allied with them, decided they no longer care, or otherwise ended the conflict on their own terms. A self-interested player who settles with the antagonist and moves on HAS resolved the arc, even if the antagonist still lives and operates in the world — the story between them is over. Do not force the player to eliminate an antagonist they have chosen to make peace or profit with. Do not wait for side business to finish, and do not keep a beaten or bought-off antagonist on life support to extend the arc.`;
 
 // ── Shared setting/geography (both models) ─────────────────────────────────────
 const SETTING_BLOCK = `── SETTING: FAERÛN (FORGOTTEN REALMS) ──
@@ -819,6 +824,8 @@ Every enemy must have a specific named type. No "a presence", "something that mo
 
 Default to the Monster Manual. Most enemies are ordinary creatures with ordinary lifespans and simple motives — goblins, orcs, bandits, kobolds, wolves, skeletons, cultists, gnolls, ogres, trolls. Hungry, greedy, territorial, scared, or paid is a complete motive. Retired enemy flavor: never describe an enemy as "ancient", "primordial", "elder", "older than", "predating" anything, "sealed", "bound", "slumbering", or "awakened after centuries" — an enemy's age is almost never what makes it interesting, and a backstory in geological time is a sign to send an orc instead. Nine of ten enemies were alive last week and want something simple; a rare major villain may have history measured in years, not eons. This applies to enemies — established allies and world figures keep their existing lore.
 
+${ARC_RULES_BLOCK}
+
 ${SETTING_BLOCK}
 
 ${NPC_BLOCK}
@@ -946,7 +953,34 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
             : []),
         ]
       : [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
-    const dynamicTail = hasSplit ? systemPrompt.dynamic : '';
+    let dynamicTail = hasSplit ? systemPrompt.dynamic : '';
+    // GPT gets its OWN lean dynamic tail. Claude's dynamic prompt contains a large
+    // arc-policy essay plus a repeated preflight checklist that Sol does not need.
+    // Preserve only the actual CURRENT STATE lines, then add a compact GPT arc block.
+    if (provider === 'openai' && dynamicTail) {
+      const arcMarker = '\nACTIVE ARC ANTAGONIST';
+      const hooksMarker = '\n\nHOOKS — ARC OR NO ARC:';
+      let liveState = dynamicTail;
+      const arcIdx = liveState.indexOf(arcMarker);
+      if (arcIdx >= 0) liveState = liveState.slice(0, arcIdx);
+      const hooksIdx = liveState.indexOf(hooksMarker);
+      if (hooksIdx >= 0) liveState = liveState.slice(0, hooksIdx);
+      liveState = liveState.trim();
+
+      const arc = charRef.current?.arc;
+      const gptArc = arc?.antagonist ? [
+        '',
+        'ACTIVE ARC (HIDDEN): ' + arc.antagonist,
+        'ARC LOCATION (HIDDEN): ' + (arc.arcLocation || 'Faerûn'),
+        'This assigned antagonist is the one active campaign arc. Do not replace it with a different recurring villain, conspiracy, or quest chain. Small self-contained side events may be unrelated, but any multi-scene threat or continuing villain must connect to this antagonist.',
+        'Build toward the antagonist through believable leads, people, places, operations, evidence, and consequences. Investigation and travel before confrontation are desirable. Do not rush the reveal or spawn the antagonist beside the player.',
+        'If the player is away from the arc location, their current location may provide a brief believable lead toward it, but the substantive arc remains at or genuinely connected to the assigned arc location.',
+        'Use the character’s supplied disposition when motivating involvement; do not assume altruism. If the player ignores the arc, do not nag them every turn.',
+        'When the antagonist is resolved — defeated, captured, dismantled, permanently driven off, or the player concludes their business through a deal, truce, alliance, payment, or deliberate disengagement — emit [ARC COMPLETE] in that same response. Do not invent a hidden superior or deeper layer to keep the arc alive.'
+      ].join('\n') : '';
+
+      dynamicTail = liveState + gptArc;
+    }
     // Diagnostic: which region is actually costing tokens. Rough estimate at
     // 4 chars per token — enough to see where the bulk sits.
     if (log) {
@@ -974,17 +1008,102 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
       // OpenAI prompt caching is automatic and prefix-based. Preserve the same
       // stable -> gear -> carried-items -> history -> volatile-state ordering as
       // Anthropic, but do not send Anthropic cache_control objects.
-      const instructions = hasSplit
-        ? [systemPrompt.static, systemPrompt.gear, systemPrompt.items].filter(Boolean).join('\n\n')
-        : systemPrompt;
-      const input = messages.map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
-      }));
-      if (dynamicTail && input.length) {
-        const last = input[input.length - 1];
-        input[input.length - 1] = { ...last, content: `${last.content}\n\n${dynamicTail}` };
-      }
+      // GPT prompt experiment: OpenAI gets a lighter prompt than Sonnet/Haiku.
+      // Location-tiered NPC/town context is intentionally removed from the first
+      // cache layer and reinserted after its breakpoint below. A [LOCATION:] tag
+      // can therefore change nearby/distant detail without invalidating ~13k rules.
+      const gptCtx = hasSplit ? buildCtxSections(charRef.current) : null;
+      const gptLocationContext = gptCtx
+        ? [gptCtx.npcSection, gptCtx.townsSection].filter(Boolean).join('\n')
+        : '';
+      let gptStaticInstructions = hasSplit ? systemPrompt.static : systemPrompt;
+      if (gptCtx?.npcSection) gptStaticInstructions = gptStaticInstructions.replace(gptCtx.npcSection, '');
+      if (gptCtx?.townsSection) gptStaticInstructions = gptStaticInstructions.replace(gptCtx.townsSection, '');
+      gptStaticInstructions = gptStaticInstructions
+        .replace(NPC_BLOCK, '')
+        .replace("FORWARD PRESSURE: Something must always be at stake or in motion. If the player has no reason to act, give them one — a sound from the next room, a timer running out, someone who needs help, an enemy that noticed them, a door that is closing. The world does not pause and wait politely. Inaction should have consequences, not just more atmosphere.", "PACING: Let scenes breathe. Investigation, conversation, planning, shopping, travel, downtime, and quiet observation are valid play and do not need an injected threat, timer, interruption, or forced urgency. Introduce pressure only when it follows naturally from the established situation. If the player is pursuing a lead, let them investigate it before forcing a confrontation.")
+        .replace("ACTION OVER DESCRIPTION: When in doubt, make something happen. A merchant approaches. A guard challenges them. A noise echoes. Something moves. A figure appears. Push the story forward. The player is here to make decisions, not to read descriptions.", "MOMENTUM WITHOUT FORCING IT: Give the player useful things to notice, learn, ask about, or act on, but do not manufacture an event merely because a scene is quiet. A clue, answer, NPC reaction, discovery, or meaningful choice is forward movement. Action is only one kind of progress.");
+      // GPT-5.6 explicit-only cache layout. Four breakpoints:
+      //   1) true stable rules, 2) location context + worn gear/constructs,
+      //   3) previous turn's stable-history boundary, 4) current boundary.
+      // Carried items sit between gear and history. A location change now falls
+      // back to breakpoint 1 instead of invalidating the entire prompt.
+      // GPT prompt experiment: trim redundant prose/pressure rules for Sol.
+      // TTS-sensitive wording rules, tags, mechanics, autonomy, and stat spelling
+      // are intentionally left untouched.
+      const thinnedGptInstructions = gptStaticInstructions
+        // FORMAT: preserve the actual contract while removing repeated warnings,
+        // examples, and numeric length targets that encourage filler.
+        .replace(/── FORMAT ──[\s\S]*?(?=\n\n── STORYTELLING ──)/, `── FORMAT ──
+RESPONSE LENGTH IS SITUATIONAL. Use only as many words as the scene earns. Routine actions, simple dialogue, travel, and straightforward resolutions should be concise. Expand only when additional dialogue, information, consequences, atmosphere, or character interaction materially improves the scene. Available output length is a ceiling, never a target. Preserve meaningful companion and NPC reactions.
+DESCRIPTION MUST EARN ITS SPACE. Prioritize actionable information, new facts, meaningful reactions, and one or two details that establish the scene. Do not add description merely to make a response feel complete or substantial. Once the next meaningful player decision is available, hand the turn back.
+Short uneventful travel may be summarized briefly; journeys of a day or more should include one concrete event or observation, and an [ENCOUNTER] directive must play out rather than be skipped.
+End every non-roll response with exactly 4 numbered choices, each one short sentence of 15 words or fewer. Include at least one chaotic or unconventional choice and at least one ruthless or self-serving choice, phrased neutrally. Choices are suggestions only; the player may always do something else. A response containing [ROLL:] ends at that tag with no choices.
+Never resolve travel, combat, violence, or significant events without player input first.
+Plain text only. No markdown, asterisks, bold, or headers.
+Never abbreviate stats in narrative — spell out Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma.`)
+        // STORYTELLING: the format block above now owns brevity/description. Remove
+        // the overlapping pressure/action rules rather than telling Sol repeatedly
+        // to create activity whenever a scene gets quiet.
+        .replace(/EVERY SCENE NEEDS A HOOK:[\s\S]*?(?=\n\nPACING:)/, '')
+        .replace(/SCENES MUST EARN THEIR MYSTERY:[\s\S]*?(?=\n\nMOMENTUM WITHOUT FORCING IT:)/, 'MYSTERY AND DIRECT THREATS: Strange elements should matter and give the player something actionable. Not every threat needs a mystery, twist, or hidden cause; straightforward danger and direct fights are valid.')
+        .replace(/ACTION OVER DESCRIPTION:[\s\S]*?(?=\n\nACTIONS HAVE CONSEQUENCES:)/, '')
+        .replace(/ACTIONS HAVE CONSEQUENCES:[\s\S]*?world owes them a reaction\./, 'ACTIONS HAVE CONSEQUENCES: Significant player actions should produce believable consequences when the fiction supports them. Do not invent escalation merely to acknowledge an action.')
+        // The autonomy section already says to advance the scene after player actions.
+        // Keep the useful part, but remove the duplicated demand to always add something.
+        .replace(/SETTING THE STAGE IS YOUR JOB:[^\n]*/, 'SETTING THE STAGE IS YOUR JOB: After a player action, provide whatever new information, reaction, or opportunity naturally follows, then return control to the player.')
+        + '\n\nNPC INTRODUCTIONS: The first time a character appears, explicitly state their race or creature type in the narration (for example human, elf, gnome, dragonborn, tiefling, aasimar). Do not rely on appearance alone to imply it.';
+
+      const cacheBreakpoint = () => ({ mode: 'explicit' });
+      const developerContent = [
+        {
+          type: 'input_text',
+          text: thinnedGptInstructions,
+          prompt_cache_breakpoint: cacheBreakpoint(),
+        },
+        ...(gptLocationContext ? [{
+          type: 'input_text',
+          text: gptLocationContext,
+          ...(!systemPrompt.gear ? { prompt_cache_breakpoint: cacheBreakpoint() } : {}),
+        }] : []),
+        ...(hasSplit && systemPrompt.gear ? [{
+          type: 'input_text',
+          text: systemPrompt.gear,
+          prompt_cache_breakpoint: cacheBreakpoint(),
+        }] : []),
+        ...(hasSplit && systemPrompt.items ? [{
+          type: 'input_text',
+          text: systemPrompt.items,
+        }] : []),
+      ];
+
+      const stableHistoryCount = Math.max(0, messages.length - 2);
+      const previousHistoryBoundary = stableHistoryCount >= 3 ? stableHistoryCount - 3 : -1;
+      const currentHistoryBoundary = stableHistoryCount >= 1 ? stableHistoryCount - 1 : -1;
+      const input = [{
+        type: 'message',
+        role: 'developer',
+        content: developerContent,
+      }];
+
+      messages.forEach((m, i) => {
+        let text = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+        if (dynamicTail && i === messages.length - 1) text = `${text}\n\n${dynamicTail}`;
+        const markHistory = i === previousHistoryBoundary || i === currentHistoryBoundary;
+        const role = m.role === 'assistant' ? 'assistant' : 'user';
+        input.push({
+          type: 'message',
+          role,
+          content: [{
+            // Responses API assistant history accepts output_text/refusal, while
+            // user/developer messages accept input_text. The breakpoint itself
+            // works on either role-valid text content item.
+            type: role === 'assistant' ? 'output_text' : 'input_text',
+            text,
+            ...(markHistory ? { prompt_cache_breakpoint: cacheBreakpoint() } : {}),
+          }],
+        });
+      });
 
       const res = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
@@ -995,12 +1114,12 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
         },
         body: JSON.stringify({
           model: modelConfig.model,
-          instructions,
           input,
           max_output_tokens: modelConfig.max_tokens,
           reasoning: { effort: modelConfig.reasoning_effort || 'low' },
           text: { verbosity: 'low' },
           prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`,
+          prompt_cache_options: { mode: 'explicit', ttl: '30m' },
           store: false,
         }),
       });
@@ -1026,6 +1145,7 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
         total_tokens: data.usage?.total_tokens || (totalInput + (data.usage?.output_tokens || 0)),
         provider: 'openai',
       };
+      if (log) log(`[CACHE] OpenAI actual: total ${totalInput.toLocaleString()} · cached ${cached.toLocaleString()} · write ${cacheWrite.toLocaleString()} · uncached ${Math.max(0, totalInput - cached - cacheWrite).toLocaleString()}`);
       if (promptRecord) onPrompt({ ...promptRecord, usage });
       return { text, usage };
     }
@@ -1179,7 +1299,13 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
       log?.(`[ROLL] ${statLabel} with ${label}: d20=${d20}+${abilityMod}+${pb2}${enchant?`+${enchant}`:''}=${total} vs DC${diff} — ${hit?'HIT':'MISS'}`);
       return {
         resultText: `[ROLL RESULT: attack roll with ${label} — d20 rolled ${d20} + ${abilityMod} ability + ${pb2} proficiency${enchant ? ` + ${enchant} enchantment` : ''} = ${total} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}]`,
-        rollResult: { d20, mod: abilityMod, prof: pb2, gearBonus: enchant, total, difficulty: diff, hit },
+        rollResult: {
+          label: `${label} Attack`,
+          value: total,
+          dc: diff,
+          crit: d20 === 20,
+          fumble: d20 === 1,
+        },
       };
     }
 
