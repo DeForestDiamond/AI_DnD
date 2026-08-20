@@ -70,7 +70,7 @@ Every message sends the AI a context payload: the system rules, your character s
 - **Anthropic models only.** The application calls the Anthropic API directly; other providers (OpenAI, etc.) are not supported.
 - **Saves live in your browser.** Clearing site data deletes the autosave. Export a save file periodically; it is the only durable copy.
 - **One story per browser profile.** The autosave slot is single; use save files to maintain multiple campaigns.
-- **The homebrew classes** (Illrigger — MCDM Productions; Blood Hunter — Matt Mercer) are fan-implemented approximations of their published sources, included for personal use.
+- **The homebrew classes** (Illrigger — MCDM Productions; Blood Hunter — Matt Mercer) are fan-implemented approximations of their published sources, included for personal use..
 
 ## Architecture notes (for the curious)
 
