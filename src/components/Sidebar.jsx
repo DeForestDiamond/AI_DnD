@@ -5,7 +5,7 @@ import { SLOTS } from '../constants/items.js';
 import { STAT_NAMES } from '../constants/classes.js';
 import { statMod, modStr, profBonus, calcAC, getMainWeapon, effectiveStats, equippableInSlot, allItems, skillBonuses, effectiveMaxHp, gearHpBonus } from '../hooks/useCharacter.js';
 import { stackInventory, SKILL_ABILITY, SKILL_LIST } from '../hooks/useGame.js';
-import { coinsToString } from '../constants/currency.js';
+import { coinsToString, parseCoinAmount } from '../constants/currency.js';
 import { XP_THRESHOLDS } from '../constants/progression.js';
 import { MULTICLASS_OPTIONS } from '../constants/multiclass.js';
 import { stackCounts, stackCount, stackHas } from '../utils/itemStacks.js';
@@ -1206,11 +1206,12 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
   const db       = allItems(character.items || {});
   const [activeTab, setActiveTab] = useState('character');
   const [levelClassChoice, setLevelClassChoice] = useState(null);
   const [stashFilter, setStashFilter] = useState('');
+  const [bankDraft, setBankDraft] = useState('');
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   // Track WHICH antagonist was revealed, not just that one was: if an arc
   // completes mid-play and rolls a new one, it re-hides itself rather than
@@ -1626,10 +1627,42 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         </CollapsibleSection>
       )}
 
-      {/* Gold */}
+      {/* Gold — banked wealth stays out of the DM prompt */}
       <div>
         {sectionLabel('GOLD')}
-        <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13}}>⚜ {coinsToString(character.coins)}</div>
+        <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline'}}>
+          <span style={{fontSize:10,color:colors.textGhost,fontFamily:fonts.display,letterSpacing:1}}>CARRIED</span>
+          <span style={{fontFamily:fonts.display,color:colors.gold,fontSize:13}}>⚜ {coinsToString(character.coins)}</span>
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline',marginTop:2}}>
+          <span style={{fontSize:10,color:colors.textGhost,fontFamily:fonts.display,letterSpacing:1}}>BANKED</span>
+          <span style={{fontFamily:fonts.display,color:colors.textFaint,fontSize:12}}>⚜ {coinsToString(character.bankedCoins || 0)}</span>
+        </div>
+        {(onBankCoins || onWithdrawCoins) && (
+          <div style={{marginTop:5}}>
+            <input
+              value={bankDraft}
+              onChange={e=>setBankDraft(e.target.value)}
+              placeholder="Amount (e.g. 500gp)"
+              inputMode="text"
+              style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.35)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.mono,fontSize:11,padding:'4px 6px',borderRadius:3,outline:'none',marginBottom:4}}
+            />
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:4}}>
+              <button onClick={()=>{ const n=Math.max(0,parseCoinAmount(bankDraft)); if(n){onBankCoins?.(n);setBankDraft('');} }}
+                disabled={Math.max(0,parseCoinAmount(bankDraft)) <= 0 || (character.coins || 0) <= 0}
+                style={{...btn(false),fontSize:9,padding:'3px 2px'}}>↓ BANK</button>
+              <button onClick={()=>{ const n=Math.max(0,parseCoinAmount(bankDraft)); if(n){onWithdrawCoins?.(n);setBankDraft('');} }}
+                disabled={Math.max(0,parseCoinAmount(bankDraft)) <= 0 || (character.bankedCoins || 0) <= 0}
+                style={{...btn(false),fontSize:9,padding:'3px 2px'}}>↑ WITHDRAW</button>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
+              <button onClick={()=>onBankCoins?.(character.coins || 0)} disabled={(character.coins || 0) <= 0}
+                style={{...btn(false),fontSize:8,padding:'2px 2px',color:colors.textGhost}}>BANK ALL</button>
+              <button onClick={()=>onWithdrawCoins?.(character.bankedCoins || 0)} disabled={(character.bankedCoins || 0) <= 0}
+                style={{...btn(false),fontSize:8,padding:'2px 2px',color:colors.textGhost}}>WITHDRAW ALL</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Equipment slots */}

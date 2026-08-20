@@ -179,7 +179,7 @@ export default function App() {
     selectRace, selectClass, selectDeity, finalizeCharacter,
     applyEffects, spendStatPoint,
     equipToSlot, unequipSlot, equipCompanionItem, unequipCompanionItem,
-    moveToStash, moveToInventory,
+    moveToStash, moveToInventory, bankCoins, withdrawCoins,
     createBag, addToBag, removeFromBag, deleteItem, deleteFromBag, renameItem,
     toggleContextExclusion,
   } = useCharacter(log);
@@ -224,7 +224,14 @@ export default function App() {
     if (needsAbilities) setTimeout(() => setShowAbilitiesModal(true), 500);
   };
 
-  const applyLoadedFull = (char, msgs, summary = '') => {
+  const applyLoadedSettings = (settings) => {
+    if (!settings || typeof settings !== 'object') return;
+    if (settings.selectedModel && MODEL_CONFIGS[settings.selectedModel]) setSelectedModel(settings.selectedModel);
+    if (typeof settings.showRawTags === 'boolean') setShowRawTags(settings.showRawTags);
+  };
+
+  const applyLoadedFull = (char, msgs, summary = '', settings = null) => {
+    applyLoadedSettings(settings);
     resetCraftingPanels();   // any pending proposal refers to the character being replaced
     loadCharacter(char);
     setFullLog(msgs);
@@ -236,7 +243,8 @@ export default function App() {
     setPhase('playing');
   };
 
-  const applyLoadedCharacter = (char) => {
+  const applyLoadedCharacter = (char, settings = null) => {
+    applyLoadedSettings(settings);
     resetCraftingPanels();   // any pending proposal refers to the character being replaced
     loadCharacter(char);
     setFullLog([]); fullLogRef.current = [];
@@ -268,6 +276,7 @@ export default function App() {
     storySummaryRef,
     debugLogRef,
     promptLogRef,
+    getSettings: () => ({ selectedModel, showRawTags }),
     onLoadFull: applyLoadedFull,
     onLoadCharacter: applyLoadedCharacter,
   });
@@ -291,7 +300,7 @@ export default function App() {
       }
     }, 2500);
     return () => clearTimeout(t);
-  }, [character, phase]);
+  }, [character, phase, selectedModel, showRawTags]);
 
   // Browsers only allow a generic confirmation, but it is enough to stop a
   // stray back gesture discarding work that has not been written yet.
@@ -2167,6 +2176,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onClose={isMobile ? ()=>setSidebarOpen(false) : null}
             onMoveToStash={moveToStash}
             onMoveToInventory={moveToInventory}
+            onBankCoins={bankCoins}
+            onWithdrawCoins={withdrawCoins}
             onCreateBag={createBag}
             onAddToBag={addToBag}
             onRemoveFromBag={removeFromBag}

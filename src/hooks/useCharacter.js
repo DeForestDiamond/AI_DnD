@@ -441,6 +441,15 @@ export const migrateCharacter = (char) => {
     delete c.stashedCustomItems;
     notes.push('Inventory upgraded to compact quantity stacks and unified item registry');
   }
+  if (v < 20) {
+    // Banked coin is deliberately separate from carried coin. The DM prompt only
+    // receives `coins`, so money parked here is player-visible but DM-invisible.
+    if (c.bankedCoins === undefined) {
+      c.bankedCoins = 0;
+      notes.push('Banked coins initialized');
+    }
+  }
+  c.bankedCoins = Math.max(0, Math.floor(Number(c.bankedCoins) || 0));
   // Be tolerant of hand-edited/new saves: normalize the two location lists even
   // when the file already claims the current version.
   c.inventory = normalizeStacks(c.inventory);
@@ -459,7 +468,7 @@ export const EMPTY_CHAR = {
   classLevels: {},
   subclasses: {},
   slots:{ ...EMPTY_SLOTS },
-  inventory:[], stash:[], coins:1000, environment:'wilderness', defeatedAntagonists:[],
+  inventory:[], stash:[], coins:1000, bankedCoins:0, environment:'wilderness', defeatedAntagonists:[],
   disposition: { alignment:'', cares:'', indifferent:'', methods:'', lines:'' },
   items:{},
   contextExclusions: { companions:{}, npcs:{}, towns:{} },
@@ -811,6 +820,31 @@ export function useCharacter(log) {
     });
   };
 
+  // Move wealth between carried coin and the private bank. Amounts are copper
+  // integers, matching the rest of the currency system. Banked coin is never
+  // included in the DM prompt.
+  const bankCoins = (amountCp) => {
+    setCharacter(c => {
+      const requested = Math.max(0, Math.floor(Number(amountCp) || 0));
+      const moved = Math.min(c.coins || 0, requested);
+      if (!moved) return c;
+      const nc = { ...c, coins:(c.coins || 0) - moved, bankedCoins:(c.bankedCoins || 0) + moved };
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
+  const withdrawCoins = (amountCp) => {
+    setCharacter(c => {
+      const requested = Math.max(0, Math.floor(Number(amountCp) || 0));
+      const moved = Math.min(c.bankedCoins || 0, requested);
+      if (!moved) return c;
+      const nc = { ...c, coins:(c.coins || 0) + moved, bankedCoins:(c.bankedCoins || 0) - moved };
+      charRef.current = nc;
+      return nc;
+    });
+  };
+
   // Create a named bag from selected inventory items
   // selectedItems: array of item names (may include duplicates for multiple copies)
   const createBag = (bagName, selectedItems) => {
@@ -997,7 +1031,7 @@ export function useCharacter(log) {
     selectRace, selectClass, selectDeity, finalizeCharacter,
     applyEffects, spendStatPoint,
     equipToSlot, unequipSlot, equippableInSlot, equipCompanionItem, unequipCompanionItem,
-    moveToStash, moveToInventory,
+    moveToStash, moveToInventory, bankCoins, withdrawCoins,
     createBag, addToBag, removeFromBag, deleteItem, deleteFromBag, renameItem,
     toggleContextExclusion,
   };
