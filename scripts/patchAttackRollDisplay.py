@@ -15,3 +15,5 @@ elif count == 0 and 'label: `${label} Attack`' in s and 'value: total' in s and 
     print('Attack roll display shape already patched')
 else:
     raise SystemExit(f'Refusing to patch: expected one attack roll result anchor, found {count}')
+
+# trigger workflow
