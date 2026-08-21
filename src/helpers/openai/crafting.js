@@ -1,7 +1,5 @@
 // GPT-specific crafting helper prompt, request path, and output contracts.
-// This file deliberately contains NO inventory mutation logic. It only tells the
-// model what to design, calls OpenAI, and returns the structured result the game
-// already knows how to validate and apply.
+// Provider-specific request handling lives here; inventory mutation remains shared game logic.
 
 export const GPT_CRAFTING_MODEL = 'gpt-5.4-mini';
 
@@ -11,41 +9,27 @@ export const CRAFTING_SLOTS = [
 ];
 
 const materialSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['name', 'count'],
-  properties: {
-    name: { type: 'string' },
-    count: { type: 'integer', minimum: 1 },
-  },
+  type: 'object', additionalProperties: false, required: ['name', 'count'],
+  properties: { name: { type: 'string' }, count: { type: 'integer', minimum: 1 } },
 };
 
 export const singleItemSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['options'],
+  type: 'object', additionalProperties: false, required: ['options'],
   properties: {
     options: {
-      type: 'array',
-      minItems: 2,
-      maxItems: 3,
+      type: 'array', minItems: 2, maxItems: 3,
       items: {
-        type: 'object',
-        additionalProperties: false,
+        type: 'object', additionalProperties: false,
         required: ['name', 'type', 'slot', 'damage', 'ac', 'heavy', 'maxDex', 'bonuses', 'label', 'count', 'consumes', 'reason'],
         properties: {
           name: { type: 'string' },
-          type: { type: 'string', enum: ['weapon', 'armor', 'magic', 'consumable', 'misc'] },
+          type: { type: 'string', enum: ['weapon', 'armor', 'magic', 'consumable', 'construct', 'misc'] },
           slot: { type: ['string', 'null'], enum: [...CRAFTING_SLOTS, null] },
-          damage: { type: ['string', 'null'] },
-          ac: { type: ['number', 'null'] },
-          heavy: { type: ['boolean', 'null'] },
-          maxDex: { type: ['number', 'null'] },
-          bonuses: { type: 'string' },
-          label: { type: 'string' },
+          damage: { type: ['string', 'null'] }, ac: { type: ['number', 'null'] },
+          heavy: { type: ['boolean', 'null'] }, maxDex: { type: ['number', 'null'] },
+          bonuses: { type: 'string' }, label: { type: 'string' },
           count: { type: 'integer', minimum: 1 },
-          consumes: { type: 'array', items: materialSchema },
-          reason: { type: 'string' },
+          consumes: { type: 'array', items: materialSchema }, reason: { type: 'string' },
         },
       },
     },
@@ -53,44 +37,29 @@ export const singleItemSchema = {
 };
 
 export const setSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['options'],
+  type: 'object', additionalProperties: false, required: ['options'],
   properties: {
     options: {
-      type: 'array',
-      minItems: 2,
-      maxItems: 2,
+      type: 'array', minItems: 2, maxItems: 2,
       items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['name', 'pieces', 'count', 'consumes', 'reason'],
+        type: 'object', additionalProperties: false, required: ['name', 'pieces', 'count', 'consumes', 'reason'],
         properties: {
           name: { type: 'string' },
           pieces: {
-            type: 'array',
-            minItems: 3,
-            maxItems: 6,
+            type: 'array', minItems: 3, maxItems: 6,
             items: {
-              type: 'object',
-              additionalProperties: false,
+              type: 'object', additionalProperties: false,
               required: ['name', 'type', 'slot', 'damage', 'ac', 'heavy', 'maxDex', 'bonuses', 'label'],
               properties: {
-                name: { type: 'string' },
-                type: { type: 'string', enum: ['weapon', 'armor', 'magic'] },
+                name: { type: 'string' }, type: { type: 'string', enum: ['weapon', 'armor', 'magic'] },
                 slot: { type: ['string', 'null'], enum: [...CRAFTING_SLOTS, null] },
-                damage: { type: ['string', 'null'] },
-                ac: { type: ['number', 'null'] },
-                heavy: { type: ['boolean', 'null'] },
-                maxDex: { type: ['number', 'null'] },
-                bonuses: { type: 'string' },
-                label: { type: 'string' },
+                damage: { type: ['string', 'null'] }, ac: { type: ['number', 'null'] },
+                heavy: { type: ['boolean', 'null'] }, maxDex: { type: ['number', 'null'] },
+                bonuses: { type: 'string' }, label: { type: 'string' },
               },
             },
           },
-          count: { type: 'integer', minimum: 1 },
-          consumes: { type: 'array', items: materialSchema },
-          reason: { type: 'string' },
+          count: { type: 'integer', minimum: 1 }, consumes: { type: 'array', items: materialSchema }, reason: { type: 'string' },
         },
       },
     },
@@ -98,118 +67,96 @@ export const setSchema = {
 };
 
 export const constructSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['options'],
+  type: 'object', additionalProperties: false, required: ['options'],
   properties: {
     options: {
-      type: 'array',
-      minItems: 2,
-      maxItems: 2,
+      type: 'array', minItems: 2, maxItems: 2,
       items: {
-        type: 'object',
-        additionalProperties: false,
+        type: 'object', additionalProperties: false,
         required: ['name', 'cr', 'race', 'role', 'appearance', 'abilities', 'desc', 'count', 'consumes', 'reason'],
         properties: {
-          name: { type: 'string' },
-          cr: { type: 'number', minimum: 0 },
-          race: { type: 'string' },
-          role: { type: 'string' },
-          appearance: { type: 'string' },
-          abilities: { type: 'string' },
-          desc: { type: 'string' },
-          count: { type: 'integer', minimum: 1 },
-          consumes: { type: 'array', items: materialSchema },
-          reason: { type: 'string' },
+          name: { type: 'string' }, cr: { type: 'number', minimum: 0 }, race: { type: 'string' }, role: { type: 'string' },
+          appearance: { type: 'string' }, abilities: { type: 'string' }, desc: { type: 'string' },
+          count: { type: 'integer', minimum: 1 }, consumes: { type: 'array', items: materialSchema }, reason: { type: 'string' },
         },
       },
     },
   },
 };
 
-const BASE_RULES = `You are the crafting engine for a D&D-style game set in the Forgotten Realms.
-Your job is mechanical design, not narration. Propose useful, distinct craft results from ONLY the supplied materials.
+// These rules intentionally mirror the mature Claude crafter's game semantics.
+// GPT gets its own prompt/request implementation, but not a different crafting game.
+const BASE_RULES = `You are a master crafter in a D&D 5e-style Forgotten Realms game. Design 2-3 DISTINCT plausible results from ONLY the supplied materials. Your job is mechanical design, not narration.
 
-CORE RULES
-- Material quality determines power. Common materials make common gear. Rare monster parts make powerful gear. Legendary remains may make legendary gear or constructs.
-- Character level is a sanity check, not a hard cap: exceptional materials may justify exceptional results.
-- Never invent a material. Every consumes.name must copy a NAME from MATERIALS AVAILABLE exactly as supplied.
-- Never consume more of a material than HAVE.
-- If the player's requested result is impossible, propose the closest plausible alternatives and explain the limitation briefly in reason.
-- Alternatives must differ in function, not merely name.
-- Keep labels terse because they are sent to the DM repeatedly.
+PLAYER INTENT IS AUTHORITATIVE
+- If PLAYER REQUEST is present, satisfy that request whenever the selected materials plausibly allow it. Do not wander into unrelated alternative uses merely because they are possible.
+- Alternatives should be different sensible implementations, scales, or tradeoffs of THE REQUEST.
+- If the request says to add, upgrade, reinforce, modify, reforge, repair, expand, mount, attach, combine with, or otherwise change a selected finished item, that finished item is the BASE ITEM. Consume it and return its upgraded/replacement form.
+- Example principle: selected battleship + selected cannons + request "add more cannons to the battleship" means propose upgraded versions of THAT battleship using cannons. Do not propose standalone cannon carts, unrelated artillery, or recreate the unchanged ship.
+- If there is no specific request, then propose what the materials most naturally support.
 
-ITEM TYPES
-- weapon: wielded weapon. Its damage field contains ALL rolled damage.
-- armor: ONLY the main chest/body armour slot. Its ac field is the armour rating that replaces base armour.
-- magic: every other wearable magical item.
-- consumable: one-use potion, bomb, vial, scroll-like preparation, etc.
-- misc: anything that is not worn, wielded, consumed, or commanded: refined stock, tools, furniture, machinery, art, trade goods, components.
+MATERIAL RULES
+- Power fits materials AND character level. Ordinary parts make ordinary gear; rare/monstrous parts make powerful magical gear; legendary remains may justify legendary results.
+- Only consume materials that make sense, and never more than HAVE.
+- consumes may ONLY contain supplied material NAME values. Copy each name exactly. Never invent a missing component, infer one from a description, or treat words inside a label as inventory.
+- Selected materials are context, not merely a menu of unrelated ingredients. Use the important selected pieces coherently.
+- If the pile cannot make the requested result, propose the closest achievable versions and explain the limitation briefly in reason.
+
+UPGRADING FINISHED ITEMS
+- A finished selected item being modified is consumed and replaced. Preserve its identity/name lineage unless the requested transformation clearly changes what it is.
+- Preserve its TYPE by default. A construct remains construct, weapon remains weapon, armor remains armor, etc., unless the requested transformation genuinely changes category.
+- Never reduce existing mechanics. Every current bonus key is a floor; armour AC stays equal or rises; weapon base/enchantment/extra damage stays equal or rises; meaningful existing abilities remain.
+- An upgrade must actually improve something. Do not merely rename the base, move bonuses around, or recreate it unchanged.
+- Rewrite bloated labels compactly rather than appending more prose.
+
+ITEM TYPE IS STRICT
+- weapon: wielded weapon.
+- armor: ONLY main chest/body armour. Its ac replaces base armour.
+- magic: every other wearable magical item, including shields/foci.
+- consumable: one-use preparations.
+- construct: things the player owns/commands rather than wears or carries: golems, animated/bound entities, WAR MACHINES, VEHICLES, SHIPS, SPELLJAMMERS, mobile fortresses, and similar major machines. Vehicles and ships are construct, NOT misc.
+- misc: non-gear that is not commanded as an entity/vehicle: raw/refined stock, building material, furniture, rope, ordinary tools, art, trade goods, passive machinery/components.
+- Do not use misc as an uncertainty/default bucket. Classify by what the result actually is.
 
 SLOTS
-Use only: mainhand, offhand, armor, face, head, neck, shoulders, cloak, torso, arms, hands, waist, ring, feet.
-A ring's item slot is ALWAYS "ring". Never output ring1 or ring2; those are internal equipment positions handled by the game.
-Main chest armour is type armor / slot armor. All other wearables are type magic.
-A shield or spellcasting focus is type magic / slot offhand.
+Use only mainhand, offhand, armor, face, head, neck, shoulders, cloak, torso, arms, hands, waist, ring, feet. Ring items ALWAYS use ring, never ring1/ring2. Main chest armour is armor/armor; other wearables are magic. Shield/focus is magic/offhand. Constructs and misc have null slot.
 
 MECHANICS
-- bonuses is a compact comma-separated list using ONLY calculable keys: ac, str, dex, con, int, wis, cha, or skill names such as perception, stealth, athletics, persuasion. Example: "ac:2,con:1".
-- Do not invent boolean or textual bonus keys such as fire_immunity:true. Put narrative resistances, immunities, senses, movement, and special powers in label instead.
-- A magic wearable should have a real mechanical benefit when appropriate, not just flavour.
-- Armour protection belongs in armor.ac, NOT in bonuses.ac. Worn non-armour protection uses bonuses ac:N.
-- Weapon damage examples: "1d8", "1d8+2", "1d8+1 plus 1d4 radiant", "2d6 plus 2d6 fire plus 1d6 necrotic". Extra damage written only in label will not be rolled.
-- Do not put damage dice or attack powers on accessories or armour.
-- Fields that do not apply to an item type must be null (or an empty string for bonuses/label), not invented filler.
+- bonuses is comma-separated calculable keys only: ac,str,dex,con,int,wis,cha, or skill names. Example ac:2,con:1.
+- Resistances, immunities, senses, movement and narrative powers go in label, not fake bonus keys.
+- Armour protection uses armor.ac, not bonuses.ac. Non-armour wearable protection may use ac:N.
+- Weapon damage field contains ALL rolled damage: e.g. 1d8+1 plus 1d4 radiant. Damage only mentioned in label is not rolled.
+- Accessories and armour do not get attack damage dice.
+- Fields that do not apply are null, or empty string for bonuses/label.
 
 LABELS
-- Labels are compact notes, not prose. Prefer semicolon-separated fragments. Aim under 25 words for normal items.
-- State what it looks like and what it does. Do not explain action economy, bonus actions, reactions, concentration, per-turn limits, or vague effort/focus costs; the game does not track them.
-- Avoid spell lists and redundant damage numbers.
-
-UPGRADES
-If a selected material is finished equipment, the player may be reforging it. Preserve its identity and never reduce existing mechanical stats.
-- Every existing bonus key is a floor: keep it at the same value or increase it.
-- Armour ac may stay the same or increase, never decrease.
-- Weapon base/enchantment/extra damage may stay the same or increase, never decrease.
-- Preserve meaningful existing abilities, but rewrite bloated labels into concise current-state notes.
-- An upgrade must actually improve something; do not merely move bonuses between pieces.`;
+- Compact persistent notes, generally under 25 words: appearance/material; capabilities; meaningful special properties.
+- No action economy, bonus actions, reactions, concentration, per-turn limits, vague focus/attention costs, spell lists, or redundant damage numbers.
+- For item-mode constructs such as ships/vehicles/war machines, label should begin with CR when a CR is useful, then compactly state form and capabilities. Preserve important existing capabilities when upgrading.
+- Name results for what they are/do, not merely "Enchanted X".`;
 
 const SET_RULES = `MATCHED SET RULES
-- Return exactly 2 alternative sets.
-- Each set has 3-6 pieces with different equipment slots so they can be worn together.
-- At most one piece may be type armor. Other wearables are type magic. A weapon may be included if materials support it.
-- Every piece from legendary materials should itself feel legendary; do not dilute every piece to keep an arbitrary total low.
-- Set piece names must share a coherent lineage or motif. Do not simply name each piece after its raw material.
-- If reforging an existing set, preserve each piece's identity and mechanical floor while improving it.`;
+- Return exactly 2 alternative sets, 3-6 pieces each, with different slots so they can coexist.
+- At most one armor chest piece; other wearables are magic; weapons may be included.
+- Legendary materials should make genuinely legendary pieces; do not arbitrarily dilute every piece.
+- Names share a coherent lineage/motif.
+- Existing finished set pieces are bases: consume and upgrade them, preserving every mechanical floor and meaningful ability.`;
 
-const CONSTRUCT_RULES = `CONSTRUCT RULES
-- Return exactly 2 alternative constructs.
-- A construct is an entity the player owns and commands, not an item or equipment slot.
-- Set CR from the materials: ordinary parts roughly CR 3-8; monstrous parts CR 10-16; legendary remains commonly CR 20+.
-- abilities describes broad capabilities and power themes, not specific spell names, damage dice, or per-day counts.
-- appearance should be 2-3 sentences. desc should be 3-5 sentences covering what it is, how it was made, and how it behaves.
-- Do not invent action costs, focus costs, concentration requirements, or command-action mechanics.`;
+const CONSTRUCT_RULES = `DEDICATED CONSTRUCT MODE
+- Return exactly 2 alternative companion-style constructs. This mode is for entities that become commanded companions, not ordinary inventory vehicles/ships made in ITEM mode.
+- CR: ordinary parts roughly 3-8; monstrous 10-16; legendary remains commonly 20+.
+- abilities gives broad capabilities/power themes, no spell lists, damage dice, or per-day counts.
+- appearance 2-3 sentences; desc 3-5 sentences covering what it is, how made, and behavior.
+- No action/focus/concentration command costs.`;
 
-const BATCH_RULES = (count) => count > 1 ? `BATCH RULES
-The player wants ${count} identical copies of the selected design.
-- Set count to ${count} if the materials support it.
-- consumes is the TOTAL material cost for all copies together.
-- Different copies may draw from different available scrap/material stacks.
-- If the full quantity is impossible, set count to the largest supported number and say why in reason.` : '';
+const BATCH_RULES = count => count > 1 ? `BATCH RULES
+The player wants ${count} identical copies. Set count to ${count} when materials support it; consumes is TOTAL cost across all copies. Mixed material stacks may support different copies. If impossible, use the largest supported count and explain why.` : '';
 
-export function buildGptCraftingPrompt({
-  materialsText,
-  characterLevel,
-  intent = '',
-  asSet = false,
-  asConstruct = false,
-  quantity = 1,
-}) {
+export function buildGptCraftingPrompt({ materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
   const modeRules = asConstruct ? CONSTRUCT_RULES : asSet ? SET_RULES : '';
   const request = intent.trim()
-    ? `PLAYER REQUEST\n${intent.trim()}`
+    ? `PLAYER REQUEST\n${intent.trim()}\n\nIMPORTANT: Treat this as the design target, not a suggestion. Keep every proposal focused on fulfilling it.`
     : 'PLAYER REQUEST\nNo specific design requested. Propose what these materials most naturally support.';
-
   return `${BASE_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${BATCH_RULES(quantity)}${quantity > 1 ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
 }
 
@@ -217,64 +164,32 @@ export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {
   return asConstruct ? constructSchema : asSet ? setSchema : singleItemSchema;
 }
 
-const responseText = (data) => (data?.output || [])
-  .filter(item => item?.type === 'message')
-  .flatMap(item => item.content || [])
-  .filter(part => part?.type === 'output_text')
-  .map(part => part.text || '')
-  .join('')
-  .trim();
+const responseText = data => (data?.output || []).filter(x => x?.type === 'message').flatMap(x => x.content || []).filter(x => x?.type === 'output_text').map(x => x.text || '').join('').trim();
 
-export async function callGptCrafting({
-  apiKey,
-  materialsText,
-  characterLevel,
-  intent = '',
-  asSet = false,
-  asConstruct = false,
-  quantity = 1,
-}) {
+export async function callGptCrafting({ apiKey, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
   if (!apiKey) throw new Error('OpenAI API key required for GPT crafting');
-
   const prompt = buildGptCraftingPrompt({ materialsText, characterLevel, intent, asSet, asConstruct, quantity });
   const schema = craftingSchemaFor({ asSet, asConstruct });
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: GPT_CRAFTING_MODEL,
       input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }] }],
       max_output_tokens: asSet || asConstruct ? 4000 : 3000,
       reasoning: { effort: 'low' },
-      text: {
-        format: {
-          type: 'json_schema',
-          name: asConstruct ? 'craft_construct_options' : asSet ? 'craft_set_options' : 'craft_item_options',
-          strict: true,
-          schema,
-        },
-      },
+      text: { format: { type: 'json_schema', name: asConstruct ? 'craft_construct_options' : asSet ? 'craft_set_options' : 'craft_item_options', strict: true, schema } },
     }),
   });
-
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message || `OpenAI API error ${res.status}`);
-  if (data.status === 'incomplete') {
-    throw new Error(`GPT crafting reply incomplete${data.incomplete_details?.reason ? `: ${data.incomplete_details.reason}` : ''}`);
-  }
-
+  if (data.status === 'incomplete') throw new Error(`GPT crafting reply incomplete${data.incomplete_details?.reason ? `: ${data.incomplete_details.reason}` : ''}`);
   const raw = responseText(data);
   if (!raw) {
     const refusal = (data.output || []).flatMap(x => x?.content || []).find(x => x?.type === 'refusal')?.refusal;
     throw new Error(refusal || 'GPT crafting returned no result');
   }
-
   let parsed;
-  try { parsed = JSON.parse(raw); }
-  catch { throw new Error('GPT crafting returned unreadable structured output'); }
-
+  try { parsed = JSON.parse(raw); } catch { throw new Error('GPT crafting returned unreadable structured output'); }
   return { parsed, usage: data.usage, rawData: data };
 }
