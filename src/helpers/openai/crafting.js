@@ -1,6 +1,7 @@
-// GPT-specific crafting helper prompt and output contracts.
+// GPT-specific crafting helper prompt, request path, and output contracts.
 // This file deliberately contains NO inventory mutation logic. It only tells the
-// model what to design and defines the shape the game expects back.
+// model what to design, calls OpenAI, and returns the structured result the game
+// already knows how to validate and apply.
 
 export const GPT_CRAFTING_MODEL = 'gpt-5.4-mini';
 
@@ -8,6 +9,16 @@ export const CRAFTING_SLOTS = [
   'mainhand', 'offhand', 'armor', 'face', 'head', 'neck', 'shoulders',
   'cloak', 'torso', 'arms', 'hands', 'waist', 'ring', 'feet',
 ];
+
+const materialSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['name', 'count'],
+  properties: {
+    name: { type: 'string' },
+    count: { type: 'integer', minimum: 1 },
+  },
+};
 
 export const singleItemSchema = {
   type: 'object',
@@ -21,7 +32,7 @@ export const singleItemSchema = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['name', 'type', 'count', 'consumes', 'reason'],
+        required: ['name', 'type', 'slot', 'damage', 'ac', 'heavy', 'maxDex', 'bonuses', 'label', 'count', 'consumes', 'reason'],
         properties: {
           name: { type: 'string' },
           type: { type: 'string', enum: ['weapon', 'armor', 'magic', 'consumable', 'misc'] },
@@ -33,18 +44,7 @@ export const singleItemSchema = {
           bonuses: { type: 'string' },
           label: { type: 'string' },
           count: { type: 'integer', minimum: 1 },
-          consumes: {
-            type: 'array',
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              required: ['name', 'count'],
-              properties: {
-                name: { type: 'string' },
-                count: { type: 'integer', minimum: 1 },
-              },
-            },
-          },
+          consumes: { type: 'array', items: materialSchema },
           reason: { type: 'string' },
         },
       },
@@ -74,7 +74,7 @@ export const setSchema = {
             items: {
               type: 'object',
               additionalProperties: false,
-              required: ['name', 'type', 'slot', 'bonuses', 'label'],
+              required: ['name', 'type', 'slot', 'damage', 'ac', 'heavy', 'maxDex', 'bonuses', 'label'],
               properties: {
                 name: { type: 'string' },
                 type: { type: 'string', enum: ['weapon', 'armor', 'magic'] },
@@ -89,18 +89,7 @@ export const setSchema = {
             },
           },
           count: { type: 'integer', minimum: 1 },
-          consumes: {
-            type: 'array',
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              required: ['name', 'count'],
-              properties: {
-                name: { type: 'string' },
-                count: { type: 'integer', minimum: 1 },
-              },
-            },
-          },
+          consumes: { type: 'array', items: materialSchema },
           reason: { type: 'string' },
         },
       },
@@ -130,18 +119,7 @@ export const constructSchema = {
           abilities: { type: 'string' },
           desc: { type: 'string' },
           count: { type: 'integer', minimum: 1 },
-          consumes: {
-            type: 'array',
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              required: ['name', 'count'],
-              properties: {
-                name: { type: 'string' },
-                count: { type: 'integer', minimum: 1 },
-              },
-            },
-          },
+          consumes: { type: 'array', items: materialSchema },
           reason: { type: 'string' },
         },
       },
@@ -181,6 +159,7 @@ MECHANICS
 - Armour protection belongs in armor.ac, NOT in bonuses.ac. Worn non-armour protection uses bonuses ac:N.
 - Weapon damage examples: "1d8", "1d8+2", "1d8+1 plus 1d4 radiant", "2d6 plus 2d6 fire plus 1d6 necrotic". Extra damage written only in label will not be rolled.
 - Do not put damage dice or attack powers on accessories or armour.
+- Fields that do not apply to an item type must be null (or an empty string for bonuses/label), not invented filler.
 
 LABELS
 - Labels are compact notes, not prose. Prefer semicolon-separated fragments. Aim under 25 words for normal items.
@@ -236,4 +215,66 @@ export function buildGptCraftingPrompt({
 
 export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {
   return asConstruct ? constructSchema : asSet ? setSchema : singleItemSchema;
+}
+
+const responseText = (data) => (data?.output || [])
+  .filter(item => item?.type === 'message')
+  .flatMap(item => item.content || [])
+  .filter(part => part?.type === 'output_text')
+  .map(part => part.text || '')
+  .join('')
+  .trim();
+
+export async function callGptCrafting({
+  apiKey,
+  materialsText,
+  characterLevel,
+  intent = '',
+  asSet = false,
+  asConstruct = false,
+  quantity = 1,
+}) {
+  if (!apiKey) throw new Error('OpenAI API key required for GPT crafting');
+
+  const prompt = buildGptCraftingPrompt({ materialsText, characterLevel, intent, asSet, asConstruct, quantity });
+  const schema = craftingSchemaFor({ asSet, asConstruct });
+  const res = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: GPT_CRAFTING_MODEL,
+      input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }] }],
+      max_output_tokens: asSet || asConstruct ? 4000 : 3000,
+      reasoning: { effort: 'low' },
+      text: {
+        format: {
+          type: 'json_schema',
+          name: asConstruct ? 'craft_construct_options' : asSet ? 'craft_set_options' : 'craft_item_options',
+          strict: true,
+          schema,
+        },
+      },
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || `OpenAI API error ${res.status}`);
+  if (data.status === 'incomplete') {
+    throw new Error(`GPT crafting reply incomplete${data.incomplete_details?.reason ? `: ${data.incomplete_details.reason}` : ''}`);
+  }
+
+  const raw = responseText(data);
+  if (!raw) {
+    const refusal = (data.output || []).flatMap(x => x?.content || []).find(x => x?.type === 'refusal')?.refusal;
+    throw new Error(refusal || 'GPT crafting returned no result');
+  }
+
+  let parsed;
+  try { parsed = JSON.parse(raw); }
+  catch { throw new Error('GPT crafting returned unreadable structured output'); }
+
+  return { parsed, usage: data.usage, rawData: data };
 }
