@@ -28,6 +28,17 @@ DISASSEMBLY RECOVERY
 - Never recover MORE material than the object plausibly contains, and never recreate the finished object as salvage.
 - The goal is competent disassembly with believable losses, not meaningfully less of everything no matter what.
 
+INDEPENDENT ACCOUNTING — THIS IS CRITICAL FOR MULTIPLE ITEMS
+- When multiple items are submitted, evaluate EACH submitted item independently first, as though it were the only item being salvaged.
+- Determine that item's complete sensible recovery before considering any other submitted item.
+- Only AFTER every item's independent recovery has been determined may identical recovered materials be consolidated by summing their quantities.
+- NEVER treat the whole submission as one shared salvage budget. Do not rebalance, average, compress, dilute, or reduce one item's recovery because additional items were submitted.
+- Adding another submitted item can only add salvage or leave an existing material total unchanged. It must NEVER cause a material or component already recoverable from another item to decrease.
+- Example: if a battleship alone reasonably yields Adamantine Plating x1800, then a battleship plus another construct must yield AT LEAST Adamantine Plating x1800 before adding any adamantine recovered from the second construct.
+- The same rule applies to reusable systems and explicit equipment counts. If one ship independently yields 120 Siege Cannon Assemblies, adding another item does not reduce those 120 assemblies.
+- Lossiness is calculated independently within each item's own disassembly. There is no additional multi-item loss penalty.
+- Consolidation changes presentation only. It must not change the underlying independently calculated yields.
+
 SCALE MATTERS — THIS IS CRITICAL
 - Scale salvage quantities to the physical size, mass, construction, complexity, and substance of the submitted object. A dagger, wagon, warship, fortress, and 200-foot construct must NOT all yield a handful of quantity-1 materials.
 - Large objects contain large quantities of bulk material. A ship, fortress, giant construct, or similarly massive object may reasonably yield HUNDREDS OR THOUSANDS — and exceptionally massive fortress-scale objects may yield TENS OF THOUSANDS — of useful crafting units of timber, steel, plating, stone, bone, or other structural stock.
