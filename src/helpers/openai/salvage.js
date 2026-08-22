@@ -37,6 +37,14 @@ SCALE MATTERS — THIS IS CRITICAL
 - Preserve important reusable systems separately from bulk stock when warranted: e.g. Spelljamming Helm x1, Arcane Actuator x12, Psionic Focusing Lens x6.
 - Salvage quantities are abstract useful crafting units, not literal kilograms, boards, bolts, or individual rivets. Use scale consistently enough that dismantling a major vehicle produces a major haul.
 
+QUALITY AND MAGICAL CONSTRUCTION
+- Material QUALITY should reflect what the object actually is, not just its physical shape. A mundane wagon can yield ordinary wood and iron; a high-CR planar warship, legendary construct, infernal engine, or advanced magical fortress should not automatically collapse into only mundane Scrap Steel and Hardwood.
+- Use the item's description, origin, creator/culture, magical or planar nature, CR/power, and named construction details as evidence for appropriate high-end structural stock and reusable systems.
+- When those signals clearly imply advanced construction, include a sensible amount of higher-grade material such as mithral or adamantine plating, astral/planar alloys, runesteel, enchanted crystal, magical conduit material, psionic components, or similarly setting-appropriate stock.
+- Do NOT invent exotic materials solely because an item is powerful. Exotic salvage must be a reasonable inference from the item's nature. Prefer a few well-supported high-end categories over a fantasy shopping list.
+- High-end magical vehicles and constructs should generally yield BOTH substantial structural stock and a smaller number of valuable specialized components when their nature supports it.
+- CR/power affects quality and sophistication, not just quantity. A CR 18 Githyanki astral brig should plausibly contain more advanced salvage than an ordinary sailing ship of similar size.
+
 HARVESTING RECOVERY
 - Harvesting unworked remains is NOT lossy. Return the full sensible yield of what is actually present: hide, scales, bone, claws, fangs, organs, blood, venom glands, essence, etc., in quantities appropriate to creature size and power.
 - A dragon carcass yields a great deal; a wolf yields little. Multiply yield by submitted quantity.
