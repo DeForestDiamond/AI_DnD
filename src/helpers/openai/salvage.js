@@ -29,12 +29,13 @@ DISASSEMBLY RECOVERY
 - The goal is competent disassembly with believable losses, not meaningfully less of everything no matter what.
 
 SCALE MATTERS — THIS IS CRITICAL
-- Scale salvage quantities to the physical size, complexity, and substance of the submitted object. A dagger, wagon, warship, fortress, and 200-foot construct must NOT all yield a handful of quantity-1 materials.
-- Large objects contain large quantities of bulk material. A ship, fortress, giant construct, or similarly massive object may reasonably yield HUNDREDS OR THOUSANDS of useful crafting units of timber, steel, plating, stone, bone, or other structural stock.
+- Scale salvage quantities to the physical size, mass, construction, complexity, and substance of the submitted object. A dagger, wagon, warship, fortress, and 200-foot construct must NOT all yield a handful of quantity-1 materials.
+- Large objects contain large quantities of bulk material. A ship, fortress, giant construct, or similarly massive object may reasonably yield HUNDREDS OR THOUSANDS — and exceptionally massive fortress-scale objects may yield TENS OF THOUSANDS — of useful crafting units of timber, steel, plating, stone, bone, or other structural stock.
 - Do not artificially compress quantities merely to keep the result simple. KEEPING THE LIST SHORT MEANS FEWER DISTINCT MATERIAL TYPES, NOT SMALLER QUANTITIES.
 - Every recovered material must have a quantity appropriate to the object. Never default a massive object's structural materials to count 1 merely because exact construction figures are unknown. Make a sensible game-scale estimate.
 - Consolidate repeated bulk material into one large stack: e.g. Scrap Steel x850 rather than many separate steel fittings, plates, beams, bolts, and braces.
 - Preserve important reusable systems separately from bulk stock when warranted: e.g. Spelljamming Helm x1, Arcane Actuator x12, Psionic Focusing Lens x6.
+- Preserve explicit equipment counts where those systems are plausibly recoverable. For example, a ship described as carrying 120 siege cannons can yield up to 120 cannon assemblies/mechanisms rather than an arbitrary small sample, with losses only when the description or dismantling plausibly warrants them.
 - Salvage quantities are abstract useful crafting units, not literal kilograms, boards, bolts, or individual rivets. Use scale consistently enough that dismantling a major vehicle produces a major haul.
 
 QUALITY AND MAGICAL CONSTRUCTION
