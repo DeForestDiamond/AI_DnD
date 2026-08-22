@@ -1,7 +1,7 @@
 // GPT-specific salvage helper. Game-side item removal and recovered-material
 // application remain shared in App.jsx; this file only decides what survives.
 
-export const GPT_SALVAGE_MODEL = 'gpt-5.4-mini';
+export const GPT_SALVAGE_MODEL = 'gpt-5.6-sol';
 
 const salvageSchema = {
   type: 'object', additionalProperties: false, required: ['results'], properties: {
