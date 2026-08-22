@@ -107,7 +107,7 @@ UPGRADING FINISHED ITEMS
 - Preserve its TYPE by default. A construct remains construct, weapon remains weapon, armor remains armor, etc., unless the requested transformation genuinely changes category.
 - Never reduce existing mechanics. Every current bonus key is a floor; armour AC stays equal or rises; weapon base/enchantment/extra damage stays equal or rises; meaningful existing abilities remain.
 - An upgrade must actually improve something. Do not merely rename the base, move bonuses around, or recreate it unchanged.
-- Rewrite bloated labels compactly rather than appending more prose.
+- Preserve all meaningful capabilities and properties from the existing label. You may remove redundancy and tighten wording, but do not omit information merely to make the label shorter. Add new capabilities clearly without repeating existing ones.
 
 ITEM TYPE IS STRICT
 - weapon: wielded weapon.
@@ -130,7 +130,7 @@ MECHANICS
 - Fields that do not apply are null, or empty string for bonuses/label.
 
 LABELS
-- Compact persistent notes, generally under 25 words: appearance/material; capabilities; meaningful special properties.
+- Prefer concise persistent notes, but completeness is more important than brevity. Simple items should have short labels; complex constructs, vehicles, legendary items, and upgraded items may use longer labels when needed to preserve their capabilities.
 - No action economy, bonus actions, reactions, concentration, per-turn limits, vague focus/attention costs, spell lists, or redundant damage numbers.
 - For item-mode constructs such as ships/vehicles/war machines, label should begin with CR when a CR is useful, then compactly state form and capabilities. Preserve important existing capabilities when upgrading.
 - Name results for what they are/do, not merely "Enchanted X".`;
