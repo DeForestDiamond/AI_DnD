@@ -46,7 +46,7 @@ export const setSchema = {
         properties: {
           name: { type: 'string' },
           pieces: {
-            type: 'array', minItems: 3, maxItems: 6,
+            type: 'array', minItems: 3, maxItems: 20,
             items: {
               type: 'object', additionalProperties: false,
               required: ['name', 'type', 'slot', 'damage', 'ac', 'heavy', 'maxDex', 'bonuses', 'label'],
@@ -136,7 +136,9 @@ LABELS
 - Name results for what they are/do, not merely "Enchanted X".`;
 
 const SET_RULES = `MATCHED SET RULES
-- Return exactly 2 alternative sets, 3-6 pieces each, with different slots so they can coexist.
+- By default, return exactly 2 alternative sets with 3-6 pieces each, using different slots so the pieces can coexist.
+- PLAYER-REQUESTED PIECE COUNTS OVERRIDE THE DEFAULT. If the player asks for a specific set size — e.g. "make this a 10-piece set" — make each proposed set that many pieces when the available slots/materials plausibly support it. Do not force a requested 10-piece set back down to 6 pieces just because 3-6 is the normal default.
+- A requested larger set may use up to 20 pieces. If the requested count cannot be supported by available wearable/weapon slots or materials, make the largest coherent set you can and explain the limitation briefly in reason.
 - At most one armor chest piece; other wearables are magic; weapons may be included.
 - Legendary materials should make genuinely legendary pieces; do not arbitrarily dilute every piece.
 - Names share a coherent lineage/motif.
@@ -176,7 +178,7 @@ export async function callGptCrafting({ apiKey, materialsText, characterLevel, i
     body: JSON.stringify({
       model: GPT_CRAFTING_MODEL,
       input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }] }],
-      max_output_tokens: asSet || asConstruct ? 4000 : 3000,
+      max_output_tokens: asSet ? 8000 : asConstruct ? 4000 : 3000,
       reasoning: { effort: 'low' },
       text: { format: { type: 'json_schema', name: asConstruct ? 'craft_construct_options' : asSet ? 'craft_set_options' : 'craft_item_options', strict: true, schema } },
     }),
