@@ -1,7 +1,7 @@
 // GPT-specific crafting helper prompt, request path, and output contracts.
 // Provider-specific request handling lives here; inventory mutation remains shared game logic.
 
-export const GPT_CRAFTING_MODEL = 'gpt-5.4-mini';
+export const GPT_CRAFTING_MODEL = 'gpt-5.6-sol';
 
 export const CRAFTING_SLOTS = [
   'mainhand', 'offhand', 'armor', 'face', 'head', 'neck', 'shoulders',
