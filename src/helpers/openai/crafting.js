@@ -107,7 +107,7 @@ UPGRADING FINISHED ITEMS
 - Preserve its TYPE by default. A construct remains construct, weapon remains weapon, armor remains armor, etc., unless the requested transformation genuinely changes category.
 - Never reduce existing mechanics. Every current bonus key is a floor; armour AC stays equal or rises; weapon base/enchantment/extra damage stays equal or rises; meaningful existing abilities remain.
 - An upgrade must actually improve something. Do not merely rename the base, move bonuses around, or recreate it unchanged.
-- Preserve all meaningful capabilities and properties from the existing label. You may remove redundancy and tighten wording, but do not omit information merely to make the label shorter. Add new capabilities clearly without repeating existing ones.
+- Preserve all meaningful capabilities and properties from the existing label. You may remove redundant prose, ingredient lists, attack-bonus prose, weapon-property boilerplate, and unenforceable mechanics while preserving real capabilities. Add new capabilities clearly without repeating existing ones.
 
 ITEM TYPE IS STRICT
 - weapon: wielded weapon.
@@ -125,13 +125,20 @@ MECHANICS
 - bonuses is comma-separated calculable keys only: ac,str,dex,con,int,wis,cha, or skill names. Example ac:2,con:1.
 - Resistances, immunities, senses, movement and narrative powers go in label, not fake bonus keys.
 - Armour protection uses armor.ac, not bonuses.ac. Non-armour wearable protection may use ac:N.
-- Weapon damage field contains ALL rolled damage: e.g. 1d8+1 plus 1d4 radiant. Damage only mentioned in label is not rolled.
+- WEAPON DAMAGE FORMAT IS STRICTLY NUMERIC DICE/MODIFIERS. Put every rolled damage component in damage, joined with " plus ", but NEVER write damage-type words there. Correct: "1d6+3 plus 2d12". WRONG: "1d6+3 piercing plus 2d12 force". WRONG: "2d8 radiant". The game rolls the numbers; damage types may be described narratively in label only when useful.
+- Do NOT put attack-roll bonuses or standard weapon properties into label. Never begin a label with text such as "+3 to attack rolls", "finesse", "light", "heavy", "versatile", or similar weapon-stat boilerplate. Use the actual structured fields for mechanics the app tracks; omit unsupported boilerplate.
 - Accessories and armour do not get attack damage dice.
 - Fields that do not apply are null, or empty string for bonuses/label.
 
-LABELS
-- Prefer concise persistent notes, but completeness is more important than brevity. Simple items should have short labels; complex constructs, vehicles, legendary items, and upgraded items may use longer labels when needed to preserve their capabilities.
-- No action economy, bonus actions, reactions, concentration, per-turn limits, vague focus/attention costs, spell lists, or redundant damage numbers.
+LABELS — NARRATIVE CAPABILITIES ONLY
+- Labels are persistent narrative guidance for the DM, NOT a second character sheet and NOT a place to invent mechanics the app cannot enforce.
+- Write compact capability notes: what the item is unusually capable of doing, what it ignores/resists/enables, important movement/senses/protection, or other properties the DM can honor directly in narration.
+- Good narrative capability examples: "ignores all resistances", "cannot be disarmed", "cuts magical barriers", "immune to divination", "flies in atmosphere and wildspace", "sees invisible creatures".
+- Do NOT write temporary or turn-based mechanics: no "until next turn", "for 1 round", "on your next attack", "once per turn", reactions, bonus actions, concentration, or similar timing rules.
+- Do NOT write unsupported numeric combat/healing mechanics in labels: no "+15 healing", "+3 to attack rolls", "+10 damage", temporary AC, saving-throw DCs, or other numbers the app does not actually calculate. If a numeric bonus belongs to a supported bonuses key, put it there; otherwise express the capability narratively or omit it.
+- DO NOT LIST THE RECIPE. The consumes field already records what was used. Never spend label space reciting materials, essences, souls, gems, metals, monster parts, or crafting ingredients. A label like "Adamantine, celestial silver, voidglass, platinum..." is a failure unless one of those words describes a capability that matters during play.
+- Do not pad labels with visual prose, lore, construction history, or generic adjectives. Name and appearance can carry flavor; label space is for useful persistent capabilities.
+- Prefer short semicolon-separated fragments. Simple items may need only one or two fragments. Complex legendary items/constructs may be longer only because they genuinely have more distinct capabilities.
 - For item-mode constructs such as ships/vehicles/war machines, label should begin with CR when a CR is useful, then compactly state form and capabilities. Preserve important existing capabilities when upgrading.
 - Name results for what they are/do, not merely "Enchanted X".`;
 
