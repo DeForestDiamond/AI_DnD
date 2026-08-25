@@ -2,10 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { colors, fonts, btn } from '../styles/theme.js';
 
 // USD per million tokens. Cache writes are billed separately from cache reads.
+// OpenAI rates here are the standard short-context API rates used by this app's
+// explicit-cache path. Requests above the long-context threshold have different
+// pricing; normal game turns are far below it.
 const PRICING = {
-  sonnet: { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.30 },
-  haiku:  { input: 1.0, output: 5.0,  cacheWrite: 1.25, cacheRead: 0.10 },
-  gpt:    { input: 5.0, output: 30.0, cacheWrite: 6.25, cacheRead: 0.50 },
+  sonnet:   { input: 3.0, output: 15.0, cacheWrite: 3.75,  cacheRead: 0.30 },
+  haiku:    { input: 1.0, output: 5.0,  cacheWrite: 1.25,  cacheRead: 0.10 },
+  gpt:      { input: 5.0, output: 30.0, cacheWrite: 6.25,  cacheRead: 0.50 },
+  gptTerra: { input: 2.5, output: 15.0, cacheWrite: 3.125, cacheRead: 0.25 },
 };
 
 export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, tokenUsage, selectedModel }) {
