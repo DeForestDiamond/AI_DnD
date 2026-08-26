@@ -43,4 +43,4 @@ jobs:
           git commit -m "Apply attack roll weapon-name hiding directly"
           git push origin HEAD:apply-patches-directly
 
-# migration: attack-roll-name-v1
+# migration: attack-roll-name-v2
