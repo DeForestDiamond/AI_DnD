@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/patchSummaryContinuity.mjs && node scripts/patchDeadItemCleanup.mjs",
+    "predev": "node scripts/patchDeadItemCleanup.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/patchSummaryContinuity.mjs && node scripts/patchDeadItemCleanup.mjs",
+    "prebuild": "node scripts/patchDeadItemCleanup.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

@@ -647,6 +647,9 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           max_tokens: 800,
           system: `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. This is the ONLY record that will survive of these events, so what you keep matters more than how you say it. Facts only, no scene-setting or atmosphere.
 
+
+ARCHIVE COMPRESSION RULE: Target 200-300 words and make this archive substantially smaller than the source summaries. Merge related resolved events and preserve durable outcomes rather than intermediate steps. INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD: unresolved threads and unresolved members of finite sets must remain specific enough to resume correctly, even if that occasionally requires exceeding the target. Do not use that exception for resolved history, flavor, dialogue, combat detail, repeated explanations, or routine loot.
+
 PRESERVE ABOVE ALL — these are what the story is built on:
 - OBLIGATIONS IN BOTH DIRECTIONS: debts owed to the player and by the player, promises made, bargains struck, favours banked, contracts signed, terms agreed. Who owes what to whom, and for what. Never drop these.
 - RELATIONSHIPS AND HOW THEY CHANGED: who became an ally, enemy, employee, lover, rival; who was betrayed, spared, recruited, crossed. Record the change, not just the state.
@@ -742,7 +745,10 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 800,
-          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Write 3-5 sentences.
+          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Use as much compact text as continuity requires; simple linear events should stay short.
+
+
+CORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD. Compression is subordinate to continuity. Never omit, merge, generalize, or tidy away unresolved state merely to reduce length. If the story establishes a finite/enumerated set — opponents and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, or similar — preserve EVERY unresolved member and its associated detail until individually resolved. Open threads must retain who/what/where and their latest known state. Once genuinely resolved, they may be compressed aggressively into the outcome. There is no fixed length target when unresolved state requires more space.
 
 WRITE DOWN FIRST, always, if any occurred:
 - OBLIGATIONS BOTH WAYS: what someone now owes the player, what the player owes someone, promises made, bargains struck, terms agreed, favours banked or called in. These outlive everything else in the log — never omit one.
