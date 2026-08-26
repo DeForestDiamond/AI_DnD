@@ -3,14 +3,13 @@ name: Apply patch directly
 on:
   push:
     branches: [apply-patches-directly]
-    paths:
-      - .github/workflows/apply-patch-directly.yml
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,4 +42,4 @@ jobs:
           git commit -m "Apply attack roll weapon-name hiding directly"
           git push origin HEAD:apply-patches-directly
 
-# migration: attack-roll-name-v2
+# migration: attack-roll-name-v3
