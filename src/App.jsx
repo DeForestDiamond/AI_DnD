@@ -19,6 +19,9 @@ import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx'
 import { SubclassModal } from './components/modals/SubclassModal.jsx';
 import { AdventureStartModal } from './components/modals/StartModal.jsx';
 import { owedSubclasses } from './constants/subclasses.js';
+import { callGptStoryEntry, callGptArchive } from './helpers/openai/history.js';
+import { callGptTownManager } from './helpers/openai/towns.js';
+import { callGptNpcManager } from './helpers/openai/npcs.js';
 import { callGptSalvage } from './helpers/openai/salvage.js';
 import { callGptCrafting } from './helpers/openai/crafting.js';
 
@@ -579,6 +582,23 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
   // Compress oldest entries into a frozen chunk
   const compressEntries = async (entriesToCompress, sessionLabel, key) => {
     log(`[SUMMARY] Compressing ${entriesToCompress.length} entries into archived chunk (${sessionLabel})`);
+    if (selectedModel === 'gpt') {
+      try {
+        const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+        const { text: gptArchiveText, usage: gptArchiveUsage } = await callGptArchive({
+          apiKey: gptKey,
+          entriesText: entriesToCompress.map(e => e.text).join('\n\n'),
+        });
+        const gIn = gptArchiveUsage?.input_tokens || 0;
+        const gOut = gptArchiveUsage?.output_tokens || 0;
+        log(`[HELPER] archive via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+        log(`[SUMMARY] Archived chunk created: ${gptArchiveText.length} chars`);
+        return gptArchiveText;
+      } catch (e) {
+        log('[SUMMARY] GPT compression failed: ' + e.message);
+        return entriesToCompress.map(e => e.text).join('\n\n');
+      }
+    }
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -659,7 +679,24 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       const currentObj = parseSummary(storySummaryRef.current);
 
       // Step 1 — write new entry for recent events
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      let gptStoryEntry = '';
+      let gptStoryUsage = null;
+      if (selectedModel === 'gpt') {
+        const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+        const gptTranscript = historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
+        const gptStory = await callGptStoryEntry({
+          apiKey: gptKey,
+          playerName: charRef.current?.name || 'the adventurer',
+          currentLocation: charRef.current?.currentLocation || 'unknown',
+          transcript: gptTranscript,
+        });
+        gptStoryEntry = gptStory.text;
+        gptStoryUsage = gptStory.usage;
+        const gIn = gptStoryUsage?.input_tokens || 0;
+        const gOut = gptStoryUsage?.output_tokens || 0;
+        log(`[HELPER] story log via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+      }
+      const res = gptStoryEntry ? null : await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -691,10 +728,10 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
         }),
       });
 
-      if (!res.ok) { lastSummarizedAt.current = prevSummarizedAt; return; }
-      const data = await res.json();
-      logUsage('story log entry', data);
-      const newEntry = data.content?.[0]?.text || '';
+      if (!gptStoryEntry && !res.ok) { lastSummarizedAt.current = prevSummarizedAt; return; }
+      const data = gptStoryEntry ? null : await res.json();
+      if (data) logUsage('story log entry', data);
+      const newEntry = gptStoryEntry || data?.content?.[0]?.text || '';
       if (!newEntry) { lastSummarizedAt.current = prevSummarizedAt; return; }
 
       // From here the entry is real. Past this point we NEVER rewind
@@ -790,6 +827,34 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
     }));
 
     log(`[NPC] Extracting ${trimmedName || 'all significant characters'} from messages #${lo}-#${hi} (${apiMsgs.length} msgs)`);
+    if (selectedModel === 'gpt') {
+      const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+      const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
+      const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
+      const { found: gptFound, usage: gptUsage } = await callGptNpcManager({
+        apiKey: gptKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
+      });
+      const gIn = gptUsage?.input_tokens || 0;
+      const gOut = gptUsage?.output_tokens || 0;
+      log(`[HELPER] NPC manager via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+      const names = Object.keys(gptFound || {});
+      if (!names.length) { log('[NPC] Nothing found in range'); return { applied: [] }; }
+      const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions } };
+      const applied = [];
+      for (const [n, e] of Object.entries(gptFound)) {
+        const entry = { location: String(e?.location ?? ''), relationship: String(e?.relationship ?? ''), desc: String(e?.desc ?? '') };
+        const inComp = Object.keys(c.companions).find(k => k.toLowerCase() === n.toLowerCase());
+        const inNpc = Object.keys(c.npcs).find(k => k.toLowerCase() === n.toLowerCase());
+        if (inComp) c.companions[inComp] = { ...c.companions[inComp], ...entry };
+        else if (inNpc && !asCompanion) c.npcs[inNpc] = { ...c.npcs[inNpc], ...entry };
+        else if (inNpc && asCompanion) { c.companions[n] = { ...c.npcs[inNpc], ...entry }; delete c.npcs[inNpc]; }
+        else c[group][n] = entry;
+        applied.push(n);
+      }
+      updateChar(c);
+      log(`[NPC] Saved: ${applied.join(', ')}`);
+      return { applied };
+    }
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -885,6 +950,31 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
 
     const apiMsgs = logArr.slice(lo, hi + 1).map(m => ({ role: m.role === 'dm' ? 'assistant' : 'user', content: m.text }));
     log(`[TOWN] Extracting ${trimmedName || 'all significant locations'} from messages #${lo}-#${hi}`);
+    if (selectedModel === 'gpt') {
+      const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+      const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
+      const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
+      const { found: gptFound, usage: gptUsage } = await callGptTownManager({
+        apiKey: gptKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
+      });
+      const gIn = gptUsage?.input_tokens || 0;
+      const gOut = gptUsage?.output_tokens || 0;
+      log(`[HELPER] town manager via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+      if (!Object.keys(gptFound || {}).length) { log('[TOWN] Nothing found in range'); return { applied: [] }; }
+      const c = { ...charRef.current, towns: { ...charRef.current.towns } };
+      const applied = [];
+      const asDict = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+      for (const [n, e] of Object.entries(gptFound)) {
+        const entry = { desc: String(e?.desc ?? ''), status: String(e?.status ?? ''), notable_locations: asDict(e?.notable_locations), minor_residents: asDict(e?.minor_residents) };
+        const hit = Object.keys(c.towns).find(k => k.toLowerCase() === n.toLowerCase());
+        if (hit) c.towns[hit] = { ...c.towns[hit], ...entry };
+        else c.towns[n] = entry;
+        applied.push(n);
+      }
+      updateChar(c);
+      log(`[TOWN] Saved: ${applied.join(', ')}`);
+      return { applied };
+    }
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
