@@ -19,6 +19,7 @@ import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx'
 import { SubclassModal } from './components/modals/SubclassModal.jsx';
 import { AdventureStartModal } from './components/modals/StartModal.jsx';
 import { owedSubclasses } from './constants/subclasses.js';
+import { callGptCrafting } from './helpers/openai/crafting.js';
 
 function StatBar({ label, value, desc }) {
   return (
@@ -1009,64 +1010,81 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
   Do NOT move a bonus from one piece to another and call it an upgrade, and do NOT reduce or delete anything to pay for an increase elsewhere. If the player asks to focus on one stat, ADD to that stat — do not strip the others to fund it. If the new materials are modest, add modestly, but every piece must end up strictly better than the one consumed. You may add NEW pieces to the set as well if the materials allow and a slot is free.` : '';
 
     log(`[CRAFT] Proposing ${batchN > 1 ? `${batchN}x ` : ''}${asConstruct ? 'CONSTRUCTS' : asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        // A set is several pieces per option, each with name/slot/stats/label —
-        // far more output than single items. Too small a ceiling truncates the
-        // JSON mid-object and it fails to parse.
-        max_tokens: asSet || asConstruct ? 4000 : 3000,
-        system: `You are a master crafter in a D&D 5e game (Forgotten Realms). Given raw materials, propose 2-3 DISTINCT items that could plausibly be made from them — different in function, not just renamed versions of each other.
-
-RULES:
-- Power must fit the materials AND the character's level. Ordinary parts make ordinary gear; rare/monstrous parts make genuinely magical items. Do not hand out legendary power for common scraps.
-- Only consume materials that make sense for that item, and never more than the player has.
-- "consumes" MAY ONLY LIST MATERIALS FROM THE LIST ABOVE. Nothing else exists. Do not add a component because the design would sensibly need one, do not infer a material from another item's description, and do not reuse a name mentioned inside a NOTE — those are descriptions of what an item IS, not things the player holds. If the pile cannot make something, propose something the pile CAN make.
-- In "consumes", the "name" MUST be copied EXACTLY as it appears after NAME: in the material list — no quantity, no description, no parenthetical. Writing "Iron Ingot (dwarven, high carbon)" instead of "Iron Ingot" means the material cannot be found and the craft fails.
-- Every magical item must have a REAL mechanical effect: a +N on weapon damage, or stat:N bonuses, or both. "Enchanted" with no effect is forbidden.
-- Name items for what they do or where they came from — never "Enchanted X".
-- USE TYPE "misc" FOR ANYTHING THAT IS NOT GEAR. Refined stock and ingots, building material, furniture, rope, tools with no bonus, casks, instruments, art, trade goods, machinery, parts, a telescope, a printing press. If the player asks for something that is not worn, wielded, drunk or commanded, it is misc — do NOT force it into a weapon or magic slot to make it fit. Misc items carry a name and a label and nothing else: no slot, no bonuses, no damage.
-- CONSTRUCTS, GOLEMS AND BOUND ENTITIES use type "construct" — a thing the player OWNS AND COMMANDS rather than wears or carries: golems, animated skeletons, bound spirits and elementals, war machines, a wraith sealed in a gem. They take no equipment slot. Give a status ("dormant", "active", or "bound") and put everything else in the label. Their power is narrative, so do not give them stat bonuses; describe what they do instead.
-  THE LABEL MUST OPEN WITH A CHALLENGE RATING — "CR 17. A forty-foot golem of fused bone..." — so the DM knows exactly how powerful it is when it acts. Set the CR from the materials: ordinary parts make a CR 3-8 servant, monstrous parts CR 10-16, legendary remains (ancient dragon, tarrasque, demon lord) CR 20+. Follow the CR with what it is, what it can do, and what commanding it costs.
-- ITEM TYPE IS STRICT. Use type "armor" ONLY for a main chest/body piece (breastplate, chain shirt, plate) — it takes the armor slot and its AC REPLACES the wearer's armour. EVERY other wearable is type "magic" with the matching slot: a cloak is magic/cloak, boots are magic/feet, a helm is magic/head, bracers are magic/arms, a belt is magic/waist, a shirt is magic/torso, gloves are magic/hands, a mask or goggles are magic/face, pauldrons are magic/shoulders, an amulet is magic/neck, a ring is magic/ring. OFFHAND is shared: a shield is magic/offhand with an appropriate ac:N bonus and any other effects; a spellcasting focus is magic/offhand with appropriate bonuses/effects. Giving a cloak type "armor" puts it in the armour slot and throws away the wearer's real armour — never do this.
-- A magic wearable's power lives in its bonuses (ac:N, str:N, dex:N ...). Protective effects that aren't calculable — disadvantage on attacks against you, advantage on saves, resistances — should be represented by a sensible ac:N bonus AND described in the label, so the item does something mechanically as well as narratively.
-- ELEMENTAL AND DIVINE WEAPONS express their extra damage in the damage field as "plus <dice> <type>" — e.g. "1d8+1 plus 1d4 radiant", "2d6 plus 3d10 necrotic", and these stack: "1d6+2 plus 1d4 lightning plus 1d4 thunder". The app rolls these separately and doubles them on a critical hit. Damage described ONLY in the label is never rolled, so a flaming sword whose fire lives in the label is mechanically a plain sword.
-- ONLY these bonus keys are calculated: ac, str, dex, con, int, wis, cha, and skill names (perception, stealth, athletics, persuasion ...). Invented keys like "necrotic_resistance:full" or "fire_immunity:true" do nothing — express resistances, immunities and per-day powers in the LABEL instead.
-- ARMOUR PROTECTION COMES FROM ITS "ac" FIELD, NOT A BONUS. For a type "armor" chest piece, better protection means a HIGHER ac VALUE — masterwork plate is ac 19 or 20, not ac 18 with a separate ac:2. Reserve the bonuses field on armour for STAT bonuses (con:2, str:1). Other worn pieces — helm, cloak, ring, boots — are type "magic" and DO use ac:N in their bonuses, since they have no ac field of their own.
-- LABELS ARE SHORT AND TYPE-APPROPRIATE. Only a weapon's damage field and its "plus" dice are ever rolled by the game — everything in a label is narration. A label stuffed with spell lists and damage numbers costs the player context on EVERY turn for the rest of the campaign and buys nothing mechanical.
-  DO NOT WRITE WHAT IT COSTS TO USE OR COMMAND SOMETHING. The game tracks no actions, bonus actions, reactions, concentration or per-turn limits, so none of that is simulated — and a vague substitute is worse, because it sounds like a rule and is not one. ALL of these are banned: "as a bonus action", "requires an action", "once per turn", "as a reaction", "requires concentration", "requires directed effort", "costs focus", "costs your attention", "demands concentration to control", and every other phrase of that shape. Just omit the sentence. If the thing has a genuine consequence in the WORLD — it can be seen for miles when it wakes, it answers only to a word you set, its binding frays a little each time — write that instead, as a fact about the thing rather than a price the player pays to act.
-  LABELS ARE NOTES, NOT PROSE. This text is fed to the DM on every turn for the rest of the campaign, so it is paid for hundreds of times. Write it telegraphically: fragments separated by semicolons, no full sentences, no connecting clauses, no "the X allowing you to Y" constructions. Keep what it looks like and what it does; cut everything that only makes it read nicely. Aim for under 25 words.
-    BLOATED: "Mithral boots plated with dragon scales and mythallar circuits, the distribution nodes allowing you to anchor yourself to any surface or float weightlessly at will. The soles leave glowing footprints."
-    RIGHT:   "Mithral, dragon scale, glowing footprints; anchor to any surface; float at will."
-    BLOATED: "The three walkers function as nodes of a single strategic consciousness, their cognitive cores creating an overlapping hive intelligence."
-    RIGHT:   "Three walkers, one hive mind; shared senses; coordinate without speech."
-  Then, by type:
-  WEAPON — the damage field carries the numbers. The label gets at most ONE special ability, in a clause. No second and third powers, no per-day spell lists.
-  ARMOUR — defensive, protective and utility effects ONLY: resistances, immunities, endurance, movement, senses. Armour never has offensive abilities and never deals damage.
-  ACCESSORIES (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear, shirts) — utility and passive effects only. NO damage dice at all, and no attack powers.
-  CONSTRUCTS — what it is, and what commanding it costs. The CR at the front tells the DM how hard it hits; do NOT list spells, per-day powers or damage numbers.
-- Charges and per-day effects are narrative text; there is no charge counter.
-- ${levelNote}${constructRules}${setRules}${batchRules}
-Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`,
-        messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
-      }),
-    });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    logUsage('crafting', data);
-    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      // A response cut off by the token ceiling ends mid-object rather than
-      // with a closing brace — say so instead of a generic parse failure.
-      const truncated = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
-      throw new Error(truncated
-        ? 'The forge ran long and the answer was cut off — select fewer materials, or try again'
-        : 'Crafting returned unreadable JSON — try again');
+    if (selectedModel === 'gpt') {
+      const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+      const { parsed: gptParsed, usage: gptUsage } = await callGptCrafting({
+        apiKey: gptKey,
+        materialsText: matList,
+        characterLevel: char.level,
+        intent,
+        asSet,
+        asConstruct,
+        quantity: batchN,
+      });
+      parsed = gptParsed;
+      const gIn = gptUsage?.input_tokens || 0;
+      const gOut = gptUsage?.output_tokens || 0;
+      log(`[HELPER] crafting via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+    } else {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          // A set is several pieces per option, each with name/slot/stats/label —
+          // far more output than single items. Too small a ceiling truncates the
+          // JSON mid-object and it fails to parse.
+          max_tokens: asSet || asConstruct ? 4000 : 3000,
+          system: `You are a master crafter in a D&D 5e game (Forgotten Realms). Given raw materials, propose 2-3 DISTINCT items that could plausibly be made from them — different in function, not just renamed versions of each other.
+
+  RULES:
+  - Power must fit the materials AND the character's level. Ordinary parts make ordinary gear; rare/monstrous parts make genuinely magical items. Do not hand out legendary power for common scraps.
+  - Only consume materials that make sense for that item, and never more than the player has.
+  - "consumes" MAY ONLY LIST MATERIALS FROM THE LIST ABOVE. Nothing else exists. Do not add a component because the design would sensibly need one, do not infer a material from another item's description, and do not reuse a name mentioned inside a NOTE — those are descriptions of what an item IS, not things the player holds. If the pile cannot make something, propose something the pile CAN make.
+  - In "consumes", the "name" MUST be copied EXACTLY as it appears after NAME: in the material list — no quantity, no description, no parenthetical. Writing "Iron Ingot (dwarven, high carbon)" instead of "Iron Ingot" means the material cannot be found and the craft fails.
+  - Every magical item must have a REAL mechanical effect: a +N on weapon damage, or stat:N bonuses, or both. "Enchanted" with no effect is forbidden.
+  - Name items for what they do or where they came from — never "Enchanted X".
+  - USE TYPE "misc" FOR ANYTHING THAT IS NOT GEAR. Refined stock and ingots, building material, furniture, rope, tools with no bonus, casks, instruments, art, trade goods, machinery, parts, a telescope, a printing press. If the player asks for something that is not worn, wielded, drunk or commanded, it is misc — do NOT force it into a weapon or magic slot to make it fit. Misc items carry a name and a label and nothing else: no slot, no bonuses, no damage.
+  - CONSTRUCTS, GOLEMS AND BOUND ENTITIES use type "construct" — a thing the player OWNS AND COMMANDS rather than wears or carries: golems, animated skeletons, bound spirits and elementals, war machines, a wraith sealed in a gem. They take no equipment slot. Give a status ("dormant", "active", or "bound") and put everything else in the label. Their power is narrative, so do not give them stat bonuses; describe what they do instead.
+    THE LABEL MUST OPEN WITH A CHALLENGE RATING — "CR 17. A forty-foot golem of fused bone..." — so the DM knows exactly how powerful it is when it acts. Set the CR from the materials: ordinary parts make a CR 3-8 servant, monstrous parts CR 10-16, legendary remains (ancient dragon, tarrasque, demon lord) CR 20+. Follow the CR with what it is, what it can do, and what commanding it costs.
+  - ITEM TYPE IS STRICT. Use type "armor" ONLY for a main chest/body piece (breastplate, chain shirt, plate) — it takes the armor slot and its AC REPLACES the wearer's armour. EVERY other wearable is type "magic" with the matching slot: a cloak is magic/cloak, boots are magic/feet, a helm is magic/head, bracers are magic/arms, a belt is magic/waist, a shirt is magic/torso, gloves are magic/hands, a mask or goggles are magic/face, pauldrons are magic/shoulders, an amulet is magic/neck, a ring is magic/ring. OFFHAND is shared: a shield is magic/offhand with an appropriate ac:N bonus and any other effects; a spellcasting focus is magic/offhand with appropriate bonuses/effects. Giving a cloak type "armor" puts it in the armour slot and throws away the wearer's real armour — never do this.
+  - A magic wearable's power lives in its bonuses (ac:N, str:N, dex:N ...). Protective effects that aren't calculable — disadvantage on attacks against you, advantage on saves, resistances — should be represented by a sensible ac:N bonus AND described in the label, so the item does something mechanically as well as narratively.
+  - ELEMENTAL AND DIVINE WEAPONS express their extra damage in the damage field as "plus <dice> <type>" — e.g. "1d8+1 plus 1d4 radiant", "2d6 plus 3d10 necrotic", and these stack: "1d6+2 plus 1d4 lightning plus 1d4 thunder". The app rolls these separately and doubles them on a critical hit. Damage described ONLY in the label is never rolled, so a flaming sword whose fire lives in the label is mechanically a plain sword.
+  - ONLY these bonus keys are calculated: ac, str, dex, con, int, wis, cha, and skill names (perception, stealth, athletics, persuasion ...). Invented keys like "necrotic_resistance:full" or "fire_immunity:true" do nothing — express resistances, immunities and per-day powers in the LABEL instead.
+  - ARMOUR PROTECTION COMES FROM ITS "ac" FIELD, NOT A BONUS. For a type "armor" chest piece, better protection means a HIGHER ac VALUE — masterwork plate is ac 19 or 20, not ac 18 with a separate ac:2. Reserve the bonuses field on armour for STAT bonuses (con:2, str:1). Other worn pieces — helm, cloak, ring, boots — are type "magic" and DO use ac:N in their bonuses, since they have no ac field of their own.
+  - LABELS ARE SHORT AND TYPE-APPROPRIATE. Only a weapon's damage field and its "plus" dice are ever rolled by the game — everything in a label is narration. A label stuffed with spell lists and damage numbers costs the player context on EVERY turn for the rest of the campaign and buys nothing mechanical.
+    DO NOT WRITE WHAT IT COSTS TO USE OR COMMAND SOMETHING. The game tracks no actions, bonus actions, reactions, concentration or per-turn limits, so none of that is simulated — and a vague substitute is worse, because it sounds like a rule and is not one. ALL of these are banned: "as a bonus action", "requires an action", "once per turn", "as a reaction", "requires concentration", "requires directed effort", "costs focus", "costs your attention", "demands concentration to control", and every other phrase of that shape. Just omit the sentence. If the thing has a genuine consequence in the WORLD — it can be seen for miles when it wakes, it answers only to a word you set, its binding frays a little each time — write that instead, as a fact about the thing rather than a price the player pays to act.
+    LABELS ARE NOTES, NOT PROSE. This text is fed to the DM on every turn for the rest of the campaign, so it is paid for hundreds of times. Write it telegraphically: fragments separated by semicolons, no full sentences, no connecting clauses, no "the X allowing you to Y" constructions. Keep what it looks like and what it does; cut everything that only makes it read nicely. Aim for under 25 words.
+      BLOATED: "Mithral boots plated with dragon scales and mythallar circuits, the distribution nodes allowing you to anchor yourself to any surface or float weightlessly at will. The soles leave glowing footprints."
+      RIGHT:   "Mithral, dragon scale, glowing footprints; anchor to any surface; float at will."
+      BLOATED: "The three walkers function as nodes of a single strategic consciousness, their cognitive cores creating an overlapping hive intelligence."
+      RIGHT:   "Three walkers, one hive mind; shared senses; coordinate without speech."
+    Then, by type:
+    WEAPON — the damage field carries the numbers. The label gets at most ONE special ability, in a clause. No second and third powers, no per-day spell lists.
+    ARMOUR — defensive, protective and utility effects ONLY: resistances, immunities, endurance, movement, senses. Armour never has offensive abilities and never deals damage.
+    ACCESSORIES (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear, shirts) — utility and passive effects only. NO damage dice at all, and no attack powers.
+    CONSTRUCTS — what it is, and what commanding it costs. The CR at the front tells the DM how hard it hits; do NOT list spells, per-day powers or damage numbers.
+  - Charges and per-day effects are narrative text; there is no charge counter.
+  - ${levelNote}${constructRules}${setRules}${batchRules}
+  Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`,
+          messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
+        }),
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+      const data = await res.json();
+      logUsage('crafting', data);
+      const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        // A response cut off by the token ceiling ends mid-object rather than
+        // with a closing brace — say so instead of a generic parse failure.
+        const truncated = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
+        throw new Error(truncated
+          ? 'The forge ran long and the answer was cut off — select fewer materials, or try again'
+          : 'Crafting returned unreadable JSON — try again');
+      }
     }
     // Bonuses may come back as a string ("ac:2"), an object ({ac:2}) or an
     // array. Normalise to the string form the tag builder and parser expect —
