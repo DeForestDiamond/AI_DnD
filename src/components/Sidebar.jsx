@@ -538,7 +538,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
                 const bits = [];
                 if (d.type) bits.push(d.type);
                 if (d.slot) bits.push(d.slot);
-                if (d.ac !== undefined) bits.push(`AC ${d.ac}`);
+                if (d.ac !== undefined && d.ac !== null && d.ac !== '') bits.push(`AC ${d.ac}`);
                 if (d.damage) bits.push(`${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
                 if (Array.isArray(d.extras)) d.extras.forEach(e => bits.push(`+${e.dice} ${e.type}`));
                 if (d.bonuses && Object.keys(d.bonuses).length) bits.push(Object.entries(d.bonuses).map(([k,v])=>`${k}:${v}`).join(','));
@@ -616,7 +616,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
               <div key={j} style={{borderLeft:`1px solid ${colors.borderDim}`,paddingLeft:6,marginBottom:4}}>
                 <div style={{fontSize:12,color:colors.text}}>{pc.name}</div>
                 <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.4}}>
-                  {pc.type}{pc.slot && pc.slot !== pc.type ? ` · ${pc.slot}` : ''}{pc.ac !== undefined && pc.ac !== '' ? ` · AC ${pc.ac}` : ''}{pc.damage ? ` · ${pc.damage}` : ''}{pc.bonuses ? ` · ${pc.bonuses}` : ''}
+                  {pc.type}{pc.slot && pc.slot !== pc.type ? ` · ${pc.slot}` : ''}{pc.ac !== undefined && pc.ac !== null && pc.ac !== '' ? ` · AC ${pc.ac}` : ''}{pc.damage ? ` · ${pc.damage}` : ''}{pc.bonuses ? ` · ${pc.bonuses}` : ''}
                 </div>
                 {pc.label && <div style={{fontSize:10,color:colors.textDim,lineHeight:1.4}}>{pc.label}</div>}
               </div>
@@ -824,7 +824,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
                 const bits = [];
                 if (d.type) bits.push(d.type);
                 if (d.slot) bits.push(d.slot);
-                if (d.ac !== undefined) bits.push(`AC ${d.ac}`);
+                if (d.ac !== undefined && d.ac !== null && d.ac !== '') bits.push(`AC ${d.ac}`);
                 if (d.damage) bits.push(`${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
                 if (Array.isArray(d.extras)) d.extras.forEach(e => bits.push(`+${e.dice} ${e.type}`));
                 if (d.bonuses && Object.keys(d.bonuses).length) bits.push(Object.entries(d.bonuses).map(([k,v])=>`${k}:${v}`).join(','));
