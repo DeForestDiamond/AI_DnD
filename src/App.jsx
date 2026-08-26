@@ -448,7 +448,7 @@ export default function App() {
       let arcAntagonist;
       let situationSeed = null;
       if (situationMode) {
-        situationSeed = rollSituationAdventure();
+        situationSeed = rollSituationAdventure(charRef.current?.completedAdventures || char?.completedAdventures || []);
         arcAntagonist = null;
         seedPrompt = `[SITUATION ADVENTURE — OPENING]
 TITLE: ${situationSeed.title}
@@ -1669,6 +1669,18 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     log(`[ARC] ${name} removed from the defeated ledger — rollable again`);
   };
 
+  // Remove an Adventure from the completed ledger so it becomes rollable again.
+  // Like defeated foes, this list is history/shuffle control only and is never
+  // sent to the DM.
+  const restoreAdventure = (title) => {
+    const c = charRef.current;
+    updateChar({
+      ...c,
+      completedAdventures: (c.completedAdventures || []).filter(a => (typeof a === 'string' ? a : a?.title) !== title),
+    });
+    log(`[ADVENTURE] ${title} removed from completed ledger — rollable again`);
+  };
+
   // Promote a construct ITEM into a companion record. Only worth doing for
   // actual entities — a spare arcane core is a component and belongs in the
   // inventory. Carries the label across as the description and removes the item.
@@ -1886,10 +1898,15 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
 
       let newChar = applyEffects(effectsText, charRef.current);
       if (/\[ADVENTURE COMPLETE\]/i.test(effectsText) && newChar.adventure) {
-        const finished = newChar.adventure.title || 'Adventure';
+        const completed = newChar.adventure;
+        const finished = completed.title || 'Adventure';
+        const prior = Array.isArray(newChar.completedAdventures) ? newChar.completedAdventures : [];
+        const completedAdventures = prior.some(a => (typeof a === 'string' ? a : a?.title) === finished)
+          ? prior
+          : [...prior, completed];
         const { adventure, ...rest } = newChar;
-        newChar = rest;
-        log(`[ADVENTURE] Complete — ${finished}. No replacement rolled.`);
+        newChar = { ...rest, completedAdventures };
+        log(`[ADVENTURE] Complete — ${finished} added to completed ledger. No replacement rolled.`);
       }
       if (newChar.arc?.antagonist !== charRef.current.arc?.antagonist) {
         log(`[ARC] Arc complete — new antagonist rolled: ${newChar.arc?.antagonist}`);
@@ -2388,8 +2405,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
               log('[ADVENTURE] Cleared by player — no story driver');
             }}
             onRollAdventure={() => {
-              const adventure = rollSituationAdventure();
+              const adventure = rollSituationAdventure(charRef.current.completedAdventures || []);
               const { arc, adventure: oldAdventure, ...rest } = charRef.current;
+              if (!adventure) { log('[ADVENTURE] No rollable Adventures remain — restore one from Completed Adventures'); return; }
               updateChar({ ...rest, adventure });
               log(`[ADVENTURE] Rolled by player — ${adventure.title}`);
             }}
@@ -2421,6 +2439,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onStartNewCampaign={startNewCampaign}
             defeatedAntagonists={character.defeatedAntagonists || []}
             onReviveAntagonist={reviveAntagonist}
+            completedAdventures={character.completedAdventures || []}
+            onRestoreAdventure={restoreAdventure}
             onCycleConstructStatus={cycleConstructStatus}
             onPromoteConstruct={promoteConstructToCompanion}
             onProposeCrafting={proposeCrafting}

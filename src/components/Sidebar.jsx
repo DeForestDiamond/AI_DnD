@@ -1206,7 +1206,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, adventure, onClearAdventure, onRollAdventure, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, adventure, onClearAdventure, onRollAdventure, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, completedAdventures, onRestoreAdventure, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
   const db       = allItems(character.items || {});
   const [activeTab, setActiveTab] = useState('character');
   const [levelClassChoice, setLevelClassChoice] = useState(null);
@@ -1541,6 +1541,25 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             </div>
           )}
         </div>
+      )}
+
+      {onRestoreAdventure && (completedAdventures?.length > 0) && (
+        <CollapsibleSection title="📚 COMPLETED ADVENTURES" count={completedAdventures.length} defaultOpen={false}>
+          <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
+            Adventures you've completed. These stay out of the Adventure shuffle — remove one to let it be rolled again.
+          </div>
+          {completedAdventures.map((entry, i) => {
+            const title = typeof entry === 'string' ? entry : entry?.title || 'Adventure';
+            return (
+              <div key={title + i} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+                <span style={{flex:1,minWidth:0,fontSize:12,color:colors.textDim,lineHeight:1.4}}>{title}</span>
+                <button title="Return this Adventure to the shuffle"
+                  onClick={()=>onRestoreAdventure(title)}
+                  style={{...btn(false),flexShrink:0,fontSize:10,padding:'2px 6px'}}>↺</button>
+              </div>
+            );
+          })}
+        </CollapsibleSection>
       )}
 
       {onReviveAntagonist && (defeatedAntagonists?.length > 0) && (
