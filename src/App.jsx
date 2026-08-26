@@ -19,6 +19,7 @@ import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx'
 import { SubclassModal } from './components/modals/SubclassModal.jsx';
 import { AdventureStartModal } from './components/modals/StartModal.jsx';
 import { owedSubclasses } from './constants/subclasses.js';
+import { rollSituationAdventure } from './constants/adventures.js';
 import { callGptStoryEntry, callGptArchive } from './helpers/openai/history.js';
 import { callGptTownManager } from './helpers/openai/towns.js';
 import { callGptNpcManager } from './helpers/openai/npcs.js';
@@ -437,7 +438,7 @@ export default function App() {
   // Fresh adventures route through a choice: random seed or a player-written opening.
   const beginAdventure = (char) => setAdventureStartChar(char);
 
-  const startAdventure = async (char, openingOverride = null, antagonistOverride = null) => {
+  const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false) => {
     log('startAdventure', { level: char.level, xp: char.xp, hp: char.hp });
     setLoading(true);
     setApiError('');
@@ -445,7 +446,25 @@ export default function App() {
       const modelConfig = MODEL_CONFIGS[selectedModel];
       let seedPrompt;
       let arcAntagonist;
-      if (openingOverride && openingOverride.trim()) {
+      let situationSeed = null;
+      if (situationMode) {
+        situationSeed = rollSituationAdventure();
+        arcAntagonist = null;
+        seedPrompt = `[SITUATION ADVENTURE — OPENING]
+TITLE: ${situationSeed.title}
+PREMISE: ${situationSeed.premise}
+STARTING CONTEXT: ${situationSeed.location}
+TONE: ${situationSeed.tone}
+OPENING STYLE: ${situationSeed.openingStyle}
+
+This Adventure is a persistent BACKGROUND SITUATION, not an opening quest dump and not a predetermined plot. Establish the player naturally in the STARTING CONTEXT first. Let them arrive, look around, eat, drink, shop, travel, socialize, attend an event, or otherwise exist in the location before the Adventure demands attention. The premise may surface immediately only when that is genuinely natural; otherwise let it emerge through ordinary play.
+
+The player's PREVIOUS campaign location is deliberately unavailable for this opening. Do not infer continuity from where the last story ended. Choose a fresh, appropriate actual location for this Adventure based on the premise and STARTING CONTEXT, then establish it with [LOCATION: ...].
+
+Do not invent or reveal a villain, culprit, secret master, solution, final objective, or hidden explanation merely to make the premise feel like a quest. Let NPCs, relationships, complications, mysteries, enemies, discoveries, and goals emerge from what the player actually chooses to investigate or engage with. Combat is optional, not the default form of progress. Social interaction, exploration, negotiation, bargains, travel, humor, ordinary life, and unexpected relationships are first-class play.
+
+Use the STARTING CONTEXT because it was chosen specifically for this premise; do not replace it with the generic random-start location generator. Place it in an appropriate real Faerûn/Feywild/planar location as context requires. PLAYER AGENCY IS ABSOLUTE. Never pre-act for the player. End with exactly 4 numbered choices.`;
+      } else if (openingOverride && openingOverride.trim()) {
         // Player wrote the opening — use their antagonist if given, else roll a hidden one.
         arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level, null, char.defeatedAntagonists);
         seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. PLAYER AGENCY IS ABSOLUTE: do not invent any action, decision, conversation, combat, agreement, relationship, knowledge, or item acquisition for the player beyond what the player's opening explicitly states. Begin before the first unresolved action and let the player make it. Establish why the player is present and what they actually know before introducing mysteries that depend on context. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}\n\nThe character's backstory is background only — do NOT open in their history or build the scene around it unless the player's opening above says to.`;
@@ -479,9 +498,23 @@ End at that natural decision point and ALWAYS close with exactly 4 numbered choi
 
 NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begin after the inciting event has already been acted upon, or open with anything other than the parameters above, you have failed your role as DM.`;
       }
-      // Persist the arc so every later turn's foreshadowing points at the same villain.
-      const charWithArc = { ...char, arc: makeArc(arcAntagonist) };
-      log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
+      // Antagonists and situation Adventures are mutually exclusive story drivers.
+      // The Adventure persists in the save until the DM emits [ADVENTURE COMPLETE]
+      // or the player clears/replaces it from Settings. Completion never auto-rolls another.
+      let charWithArc;
+      if (situationMode) {
+        // A new Adventure is a fresh opening, not a continuation of wherever the
+        // previous campaign happened to end. Remove currentLocation before building
+        // the player/system data so the DM cannot anchor itself to the old scene.
+        // The opening response will establish the new place with [LOCATION: ...].
+        const { arc, adventure, currentLocation, ...rest } = char;
+        charWithArc = { ...rest, currentLocation: '', adventure: situationSeed };
+        log(`[ADVENTURE] Situation start — ${situationSeed.title}; previous location hidden`);
+      } else {
+        const { adventure, ...rest } = char;
+        charWithArc = { ...rest, arc: makeArc(arcAntagonist) };
+        log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
+      }
       const system = selectedModel === 'haiku'
         ? buildSystemPrompt(charWithArc)
         : buildSystemPromptSonnet(charWithArc);
@@ -1759,7 +1792,11 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
 
     const objectiveCtx = objectiveNoteRef.current;
     objectiveNoteRef.current = '';
-    const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx + objectiveCtx;
+    const adv = charRef.current.adventure;
+    const adventureCtx = adv
+      ? `\n\n[ACTIVE ADVENTURE — BACKGROUND SITUATION]\nTITLE: ${adv.title}\nPREMISE: ${adv.premise}\nSTARTING CONTEXT: ${adv.location || ''}\n\nThis is the current story driver, but it is NOT the player's mandatory immediate objective. Introduce or advance it only when organic. It may sit dormant through unrelated conversations, shopping, crafting, travel activities, romance, social scenes, exploration, or player-chosen tangents. NEVER interrupt an active interaction merely to pull the player back to this Adventure. Do not repeatedly remind them it exists. Once the player engages, let their choices determine its pace and shape. Do not force a villain, combat, or predetermined solution.\n\nWhen the situation has ACTUALLY reached a natural resolution, emit [ADVENTURE COMPLETE] exactly once. Do not emit it merely because the player walks away, delays it, or changes subjects.`
+      : '';
+    const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx + objectiveCtx + adventureCtx;
 
     const history = buildApiHistory(historyOverride);
 
@@ -1848,6 +1885,12 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         : finalText;
 
       let newChar = applyEffects(effectsText, charRef.current);
+      if (/\[ADVENTURE COMPLETE\]/i.test(effectsText) && newChar.adventure) {
+        const finished = newChar.adventure.title || 'Adventure';
+        const { adventure, ...rest } = newChar;
+        newChar = rest;
+        log(`[ADVENTURE] Complete — ${finished}. No replacement rolled.`);
+      }
       if (newChar.arc?.antagonist !== charRef.current.arc?.antagonist) {
         log(`[ARC] Arc complete — new antagonist rolled: ${newChar.arc?.antagonist}`);
         // Build a fresh campaign skeleton for the new arc, in the background so
@@ -2246,6 +2289,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
           antagonists={antagonistsForLevel(adventureStartChar.level)}
           defeatedAntagonists={adventureStartChar.defeatedAntagonists || []}
           onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
+          onSituationAdventure={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, null, true); }}
           onManual={(text, antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text, antagonist); }}
           onChooseAntagonist={(antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, antagonist); }}
         />
@@ -2337,6 +2381,18 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             }}
             arcAntagonist={character.arc?.antagonist || null}
             arcLocation={character.arc?.arcLocation || null}
+            adventure={character.adventure || null}
+            onClearAdventure={() => {
+              const { adventure, ...rest } = charRef.current;
+              updateChar(rest);
+              log('[ADVENTURE] Cleared by player — no story driver');
+            }}
+            onRollAdventure={() => {
+              const adventure = rollSituationAdventure();
+              const { arc, adventure: oldAdventure, ...rest } = charRef.current;
+              updateChar({ ...rest, adventure });
+              log(`[ADVENTURE] Rolled by player — ${adventure.title}`);
+            }}
             onClearArc={() => {
               const { arc, ...rest } = charRef.current;
               updateChar(rest);
@@ -2344,12 +2400,14 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             }}
             onRollArc={() => {
               const arc = rollArc(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists);
-              updateChar({ ...charRef.current, arc });
-              log(`[ARC] Rolled by player — new antagonist: ${arc.antagonist} @ ${arc.arcLocation}`);
+              const { adventure, ...rest } = charRef.current;
+              updateChar({ ...rest, arc });
+              log(`[ARC] Rolled by player — new antagonist: ${arc.antagonist} @ ${arc.arcLocation}; Adventure cleared`);
             }}
             onSetArc={(text) => {
-              updateChar({ ...charRef.current, arc: makeArc(text) });
-              log(`[ARC] Custom antagonist set by player: ${text}`);
+              const { adventure, ...rest } = charRef.current;
+              updateChar({ ...rest, arc: makeArc(text) });
+              log(`[ARC] Custom antagonist set by player: ${text}; Adventure cleared`);
             }}
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}

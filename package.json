@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/patchSituationAdventure.mjs && node scripts/patchAdventureSettings.mjs && node scripts/patchCompletedAdventures.mjs && node scripts/patchMoreAdventures.mjs && node scripts/patchCraftingNullAcDisplay.mjs && node scripts/patchGptTerraDm.mjs && node scripts/patchOpenAiHelperModelParity.mjs && node scripts/patchSummaryContinuity.mjs && node scripts/patchDeadItemCleanup.mjs",
+    "predev": "node scripts/patchAdventureSettings.mjs && node scripts/patchCompletedAdventures.mjs && node scripts/patchMoreAdventures.mjs && node scripts/patchCraftingNullAcDisplay.mjs && node scripts/patchGptTerraDm.mjs && node scripts/patchOpenAiHelperModelParity.mjs && node scripts/patchSummaryContinuity.mjs && node scripts/patchDeadItemCleanup.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/patchSituationAdventure.mjs && node scripts/patchAdventureSettings.mjs && node scripts/patchCompletedAdventures.mjs && node scripts/patchMoreAdventures.mjs && node scripts/patchCraftingNullAcDisplay.mjs && node scripts/patchGptTerraDm.mjs && node scripts/patchOpenAiHelperModelParity.mjs && node scripts/patchSummaryContinuity.mjs && node scripts/patchDeadItemCleanup.mjs",
+    "prebuild": "node scripts/patchAdventureSettings.mjs && node scripts/patchCompletedAdventures.mjs && node scripts/patchMoreAdventures.mjs && node scripts/patchCraftingNullAcDisplay.mjs && node scripts/patchGptTerraDm.mjs && node scripts/patchOpenAiHelperModelParity.mjs && node scripts/patchSummaryContinuity.mjs && node scripts/patchDeadItemCleanup.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
