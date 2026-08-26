@@ -16,7 +16,7 @@ const npcSchema = {
 
 const responseText = (data) => (data?.output || []).filter(x => x?.type === 'message').flatMap(x => x.content || []).filter(x => x?.type === 'output_text').map(x => x.text || '').join('').trim();
 
-export async function callGptNpcManager({ apiKey, playerName, transcript, name = '', existing = null, note = '' }) {
+export async function callGptNpcManager({ apiKey, model = GPT_NPC_MODEL, playerName, transcript, name = '', existing = null, note = '' }) {
   if (!apiKey) throw new Error('OpenAI API key required for GPT NPC manager');
   const trimmedName = String(name || '').trim();
   let task;
@@ -33,7 +33,7 @@ export async function callGptNpcManager({ apiKey, playerName, transcript, name =
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: GPT_NPC_MODEL,
+      model,
       reasoning: { effort: 'low' },
       max_output_tokens: 5000,
       input: [

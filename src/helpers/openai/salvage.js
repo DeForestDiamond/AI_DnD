@@ -98,11 +98,11 @@ const stackResults = (results) => {
   };
 };
 
-export async function callGptSalvage({ apiKey, itemsText }) {
+export async function callGptSalvage({ apiKey, model = GPT_SALVAGE_MODEL, itemsText }) {
   if (!apiKey) throw new Error('OpenAI API key required for GPT salvage');
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: GPT_SALVAGE_MODEL, input: [
+    body: JSON.stringify({ model, input: [
       { role: 'developer', content: [{ type: 'input_text', text: SALVAGE_RULES }] },
       { role: 'user', content: [{ type: 'input_text', text: `ITEMS TO SALVAGE:\n${itemsText}` }] },
     ], max_output_tokens: 12000, reasoning: { effort: 'low' }, text: { format: { type: 'json_schema', name: 'salvage_result', strict: true, schema: salvageSchema } } }),

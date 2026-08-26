@@ -615,10 +615,11 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
   // Compress oldest entries into a frozen chunk
   const compressEntries = async (entriesToCompress, sessionLabel, key) => {
     log(`[SUMMARY] Compressing ${entriesToCompress.length} entries into archived chunk (${sessionLabel})`);
-    if (selectedModel === 'gpt') {
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
       try {
         const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
         const { text: gptArchiveText, usage: gptArchiveUsage } = await callGptArchive({
+        model: MODEL_CONFIGS[selectedModel].model,
           apiKey: gptKey,
           entriesText: entriesToCompress.map(e => e.text).join('\n\n'),
         });
@@ -714,10 +715,11 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       // Step 1 — write new entry for recent events
       let gptStoryEntry = '';
       let gptStoryUsage = null;
-      if (selectedModel === 'gpt') {
+      if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
         const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
         const gptTranscript = historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
         const gptStory = await callGptStoryEntry({
+        model: MODEL_CONFIGS[selectedModel].model,
           apiKey: gptKey,
           playerName: charRef.current?.name || 'the adventurer',
           currentLocation: charRef.current?.currentLocation || 'unknown',
@@ -860,11 +862,12 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
     }));
 
     log(`[NPC] Extracting ${trimmedName || 'all significant characters'} from messages #${lo}-#${hi} (${apiMsgs.length} msgs)`);
-    if (selectedModel === 'gpt') {
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
       const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
       const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
       const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
       const { found: gptFound, usage: gptUsage } = await callGptNpcManager({
+        model: MODEL_CONFIGS[selectedModel].model,
         apiKey: gptKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
       });
       const gIn = gptUsage?.input_tokens || 0;
@@ -983,11 +986,12 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
 
     const apiMsgs = logArr.slice(lo, hi + 1).map(m => ({ role: m.role === 'dm' ? 'assistant' : 'user', content: m.text }));
     log(`[TOWN] Extracting ${trimmedName || 'all significant locations'} from messages #${lo}-#${hi}`);
-    if (selectedModel === 'gpt') {
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
       const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
       const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
       const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
       const { found: gptFound, usage: gptUsage } = await callGptTownManager({
+        model: MODEL_CONFIGS[selectedModel].model,
         apiKey: gptKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
       });
       const gIn = gptUsage?.input_tokens || 0;
@@ -1135,9 +1139,10 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
 
     log(`[CRAFT] Proposing ${batchN > 1 ? `${batchN}x ` : ''}${asConstruct ? 'CONSTRUCTS' : asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
     let parsed;
-    if (selectedModel === 'gpt') {
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
       const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
       const { parsed: gptParsed, usage: gptUsage } = await callGptCrafting({
+        model: MODEL_CONFIGS[selectedModel].model,
         apiKey: gptKey,
         materialsText: matList,
         characterLevel: char.level,
@@ -1558,9 +1563,10 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     const shape = `{ "results": [ { "recovers": [{"name":"Material Name","count":2}], "destroyed": ["Item Name"], "note": "one sentence on what survived the process and what was lost" } ] }`;
 
     log(`[SALVAGE] Proposing breakdown of ${items.length} item(s)`);
-    if (selectedModel === 'gpt') {
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
       const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
       const { result: gptResult, usage: gptUsage } = await callGptSalvage({
+        model: MODEL_CONFIGS[selectedModel].model,
         apiKey: gptKey,
         itemsText: itemList,
       });

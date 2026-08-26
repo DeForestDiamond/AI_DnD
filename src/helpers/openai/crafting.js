@@ -178,7 +178,7 @@ export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {
 
 const responseText = data => (data?.output || []).filter(x => x?.type === 'message').flatMap(x => x.content || []).filter(x => x?.type === 'output_text').map(x => x.text || '').join('').trim();
 
-export async function callGptCrafting({ apiKey, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
+export async function callGptCrafting({ apiKey, model = GPT_CRAFTING_MODEL, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
   if (!apiKey) throw new Error('OpenAI API key required for GPT crafting');
   const prompt = buildGptCraftingPrompt({ materialsText, characterLevel, intent, asSet, asConstruct, quantity });
   const schema = craftingSchemaFor({ asSet, asConstruct });
@@ -186,7 +186,7 @@ export async function callGptCrafting({ apiKey, materialsText, characterLevel, i
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: GPT_CRAFTING_MODEL,
+      model,
       input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }] }],
       max_output_tokens: asSet ? 8000 : asConstruct ? 4000 : 3000,
       reasoning: { effort: 'low' },
