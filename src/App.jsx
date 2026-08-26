@@ -19,6 +19,7 @@ import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx'
 import { SubclassModal } from './components/modals/SubclassModal.jsx';
 import { AdventureStartModal } from './components/modals/StartModal.jsx';
 import { owedSubclasses } from './constants/subclasses.js';
+import { callGptSalvage } from './helpers/openai/salvage.js';
 import { callGptCrafting } from './helpers/openai/crafting.js';
 
 function StatBar({ label, value, desc }) {
@@ -1434,6 +1435,18 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     const shape = `{ "results": [ { "recovers": [{"name":"Material Name","count":2}], "destroyed": ["Item Name"], "note": "one sentence on what survived the process and what was lost" } ] }`;
 
     log(`[SALVAGE] Proposing breakdown of ${items.length} item(s)`);
+    if (selectedModel === 'gpt') {
+      const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+      const { result: gptResult, usage: gptUsage } = await callGptSalvage({
+        apiKey: gptKey,
+        itemsText: itemList,
+      });
+      const gIn = gptUsage?.input_tokens || 0;
+      const gOut = gptUsage?.output_tokens || 0;
+      log(`[HELPER] salvage via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+      log(`[SALVAGE] Recovers: ${(gptResult.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
+      return gptResult;
+    }
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
