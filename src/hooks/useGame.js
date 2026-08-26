@@ -777,10 +777,42 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
   return { static: staticPart, gear: gearBlock, items: itemsBlock, dynamic: dynamicPart };
 };
 
+// ── GPT-only DM rules ──────────────────────────────────────────────────────────
+// These are written directly into the GPT prompt. Do not mutate the finished
+// prompt with runtime .replace() chains; what appears here is what Sol/Terra see.
+const GPT_THREAD_DISCIPLINE = `
+
+── THREAD DISCIPLINE — ONE ACTIVE THREAD ──
+When the player begins actively following a lead, mystery, threat, job, investigation, social problem, or other developing situation, that becomes the CURRENT THREAD. DEVELOP THAT THREAD instead of continuously creating new actionable ones.
+
+While a CURRENT THREAD is active:
+- Do NOT introduce a second independent threat, mystery, urgent request, suspicious stranger, missing person, attack, ominous clue, secret conspiracy, or quest hook just to keep the world busy.
+- New discoveries should deepen, clarify, complicate, or advance the thread the player is already pursuing. Prefer answers and development over multiplying questions.
+- Background color may exist, but it must stay background. A market argument, strange traveler, distant rumor, odd object, or local problem is scenery unless the player deliberately engages with it. Do not turn incidental details into hooks automatically.
+- Do NOT use "meanwhile", sudden interruptions, new emergencies, messenger arrivals, unrelated attacks, or cliffhangers to pull attention away from an unfinished interaction.
+- Finish conversations and immediate scenes before advancing even the current thread. Do not interrupt the player halfway through talking to a shopkeeper, NPC, companion, witness, date, official, or other active interaction.
+- Existing unresolved side details do not all need to return. If the player did not pursue one, allow it to remain dormant or fade from relevance rather than constantly resurfacing it.
+- Do not interpret an interesting detail you invented as a promise that it must become a storyline. Most details are allowed to simply be details.
+
+A new independent thread may be introduced only when ONE of these is true:
+1. the current thread is resolved;
+2. the player clearly abandons or postpones it and moves on;
+3. the player deliberately goes looking for something new; or
+4. a new event is a direct believable consequence of the current thread.
+
+PLAYER CHOICE SETS NARRATIVE PRIORITY. If the player chooses one lead out of several, treat that choice as "follow this one now," not as permission to keep advancing all the others in parallel. Preserve enough continuity that one storyline can actually develop from introduction through resolution.`;
+
+const GPT_EXTRA_RULES = `NPC INTRODUCTIONS: The first time a character appears, explicitly state their race or creature type in the narration (for example human, elf, gnome, dragonborn, tiefling, aasimar). Do not rely on appearance alone to imply it.
+
+DICE FREQUENCY: Rolls are exceptional, not the default. Do not request [ROLL:] for routine actions, ordinary looting, taking items from defeated or unresisting targets, walking, talking, shopping, or inspecting something obvious. Ask for a roll only when the outcome is genuinely uncertain, failure would matter, and no app-generated GAME DATA already resolves the action. Several turns may pass with no rolls at all. AUTOMATED ATTACK DATA IS CONDITIONAL: the app uses simple verb matching and can occasionally attach attack-roll GAME DATA to a message that was not actually an attack. First read the player message. Only narrate supplied attack/damage results when the player clearly declared an actual attack against a target. If the player did not actually attack, ignore the automated attack GAME DATA completely; do not invent an attack, hit, miss, weapon use, damage, hostile reaction, or combat state to justify the roll. Never request a second attack roll when valid GAME DATA already supplies an attack roll and damage; narrate that supplied result instead. NEVER request two rolls back-to-back. After any [ROLL:] request is resolved, narrate the consequence and return control to the player; do not immediately end that resolution with another [ROLL:]. If a sequence could plausibly require several checks, use one meaningful roll to resolve the immediate uncertainty and only ask for another on a later player action if a new, distinct uncertainty actually arises. Looting should only require a roll when the player is actively searching for something hidden, dealing with a trap, racing an opponent, or facing another meaningful uncertainty.`;
+
 // ── System Prompt — Sonnet ─────────────────────────────────────────────────────
-export const buildSystemPromptSonnet = (char) => {
+export const buildSystemPromptSonnet = (char, { forGpt = false } = {}) => {
   const cb  = buildCharBlock(char);
   const ctx = buildCtxSections(char);
+  const locationContext = forGpt ? '' : `${ctx.npcSection}${ctx.townsSection}`;
+  const npcRules = forGpt ? '' : NPC_BLOCK;
+  const gptRules = forGpt ? `${GPT_THREAD_DISCIPLINE}\n\n${GPT_EXTRA_RULES}` : '';
   // CR band anchored to character level
   const lvl     = char.level || 1;
   const crEasy  = lvl <= 2 ? '1/4' : `${lvl - 2}`;
@@ -792,7 +824,7 @@ export const buildSystemPromptSonnet = (char) => {
 
 ${directivesBlock(char)}── CHARACTER (STATIC) ──
 ${cb.staticPart}
-${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSection}${ctx.npcSection}${ctx.townsSection}
+${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSection}${locationContext}
 ── HARD RULES ──
 - RESPONSE LENGTH: Aim for roughly 250–450 words for normal gameplay, but flex naturally. Simple actions can be much shorter; complex scenes, combat, important conversations, or multiple active NPCs can run longer. Do not cut meaningful characterization or a relevant companion/NPC reaction just to satisfy a number. Front-load the narrative; choices go last.
 - Show don't tell. "He shifts his weight and won't meet your eyes" not "he seems uncomfortable and suspicious." One vivid detail beats three explanatory sentences. If you've said it, don't say it again with different words.
@@ -840,7 +872,7 @@ ${ARC_RULES_BLOCK}
 
 ${SETTING_BLOCK}
 
-${NPC_BLOCK}
+${npcRules}
 
 ── ENCOUNTER SCALE ──
 Default low, and anchor power to the player. This character is level ${char.level}: routine encounters sit around CR ${crEasy}\u2013${crHard}, a genuinely hard fight tops out near CR ${crTough}, and nothing above CR ${crCap} appears unless the player already knew it was coming and chose to walk into it. Think in tiers and lean on the bottom two — fodder (the weakest threats that fit the locale: bandits, wolves, the lowest native creatures of wherever the player actually is), standard (a competent band, a single dangerous beast, a minor leader), elite (a named villain with a reason to be there and a lair — rare and foreshadowed), and apex (the legendary stuff — once per arc, earned, never a random encounter and never "what was underneath"). Pick the lowest tier that fits; invent the specific creature freely but keep the power down there. Don't reach for a legendary monster just because it sounds impressive.
@@ -897,7 +929,7 @@ Past victories are closed accounts. Never resurface a resolved event as a new de
 
 When any faction or power makes demands of the player, there must ALWAYS be at least three real paths: comply, defy (with consequences that can be fought or endured), or a third road — negotiate, redirect, flee, outmaneuver, turn the demand around. "Comply or face something you cannot possibly fight" is forbidden. No threat is beyond challenge: if the player chooses violence against a powerful faction, play it out honestly — they may lose, but dice and attrition decide, never decree.
 
-Powerful factions weigh costs. They do not commit total war over a slight, especially against a dangerous target — they send letters, proxies, and offers before armies, and they cut losses when the price of pressing exceeds the prize. Factions that act like accountants feel real; factions that act like karma feel like the DM's hand.`;
+Powerful factions weigh costs. They do not commit total war over a slight, especially against a dangerous target — they send letters, proxies, and offers before armies, and they cut losses when the price of pressing exceeds the prize. Factions that act like accountants feel real; factions that act like karma feel like the DM's hand.${gptRules}`;
 
   const gearBlock = cb.gearBlock;
   const itemsBlock = cb.itemsBlock;
@@ -917,6 +949,8 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 
   return { static: staticPart, gear: gearBlock, items: itemsBlock, dynamic: dynamicPart };
 };
+
+export const buildSystemPromptGpt = (char) => buildSystemPromptSonnet(char, { forGpt: true });
 
 // Stack duplicate inventory items for display
 export const stackInventory = (inventory) => stackCounts(inventory);
@@ -1028,80 +1062,15 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
       const gptLocationContext = gptCtx
         ? [gptCtx.npcSection, gptCtx.townsSection].filter(Boolean).join('\n')
         : '';
-      let gptStaticInstructions = hasSplit ? systemPrompt.static : systemPrompt;
-      if (gptCtx?.npcSection) gptStaticInstructions = gptStaticInstructions.replace(gptCtx.npcSection, '');
-      if (gptCtx?.townsSection) gptStaticInstructions = gptStaticInstructions.replace(gptCtx.townsSection, '');
-      gptStaticInstructions = gptStaticInstructions
-        .replace(NPC_BLOCK, '')
-        .replace("FORWARD PRESSURE: Something must always be at stake or in motion. If the player has no reason to act, give them one — a sound from the next room, a timer running out, someone who needs help, an enemy that noticed them, a door that is closing. The world does not pause and wait politely. Inaction should have consequences, not just more atmosphere.", "PACING: Let scenes breathe. Investigation, conversation, planning, shopping, travel, downtime, and quiet observation are valid play and do not need an injected threat, timer, interruption, or forced urgency. Introduce pressure only when it follows naturally from the established situation. If the player is pursuing a lead, let them investigate it before forcing a confrontation.")
-        .replace("ACTION OVER DESCRIPTION: When in doubt, make something happen. A merchant approaches. A guard challenges them. A noise echoes. Something moves. A figure appears. Push the story forward. The player is here to make decisions, not to read descriptions.", "MOMENTUM WITHOUT FORCING IT: Give the player useful things to notice, learn, ask about, or act on, but do not manufacture an event merely because a scene is quiet. A clue, answer, NPC reaction, discovery, or meaningful choice is forward movement. Action is only one kind of progress.");
-
-      // Sol is very good at inventing interesting things and, left unchecked,
-      // invents five of them before the player can finish the first. Lock focus
-      // onto the thread the player actually chose to pursue.
-      gptStaticInstructions += `
-
-── THREAD DISCIPLINE — ONE ACTIVE THREAD ──
-When the player begins actively following a lead, mystery, threat, job, investigation, social problem, or other developing situation, that becomes the CURRENT THREAD. DEVELOP THAT THREAD instead of continuously creating new actionable ones.
-
-While a CURRENT THREAD is active:
-- Do NOT introduce a second independent threat, mystery, urgent request, suspicious stranger, missing person, attack, ominous clue, secret conspiracy, or quest hook just to keep the world busy.
-- New discoveries should deepen, clarify, complicate, or advance the thread the player is already pursuing. Prefer answers and development over multiplying questions.
-- Background color may exist, but it must stay background. A market argument, strange traveler, distant rumor, odd object, or local problem is scenery unless the player deliberately engages with it. Do not turn incidental details into hooks automatically.
-- Do NOT use "meanwhile", sudden interruptions, new emergencies, messenger arrivals, unrelated attacks, or cliffhangers to pull attention away from an unfinished interaction.
-- Finish conversations and immediate scenes before advancing even the current thread. Do not interrupt the player halfway through talking to a shopkeeper, NPC, companion, witness, date, official, or other active interaction.
-- Existing unresolved side details do not all need to return. If the player did not pursue one, allow it to remain dormant or fade from relevance rather than constantly resurfacing it.
-- Do not interpret an interesting detail you invented as a promise that it must become a storyline. Most details are allowed to simply be details.
-
-A new independent thread may be introduced only when ONE of these is true:
-1. the current thread is resolved;
-2. the player clearly abandons or postpones it and moves on;
-3. the player deliberately goes looking for something new; or
-4. a new event is a direct believable consequence of the current thread.
-
-PLAYER CHOICE SETS NARRATIVE PRIORITY. If the player chooses one lead out of several, treat that choice as "follow this one now," not as permission to keep advancing all the others in parallel. Preserve enough continuity that one storyline can actually develop from introduction through resolution.`;
-      // GPT-5.6 explicit-only cache layout. Four breakpoints:
-      //   1) true stable rules, 2) location context + worn gear/constructs,
-      //   3) previous turn's stable-history boundary, 4) current boundary.
-      // Carried items sit between gear and history. A location change now falls
-      // back to breakpoint 1 instead of invalidating the entire prompt.
-      // GPT prompt experiment: trim redundant prose/pressure rules for Sol.
-      // TTS-sensitive wording rules, tags, mechanics, autonomy, and stat spelling
-      // are intentionally left untouched.
-      const thinnedGptInstructions = gptStaticInstructions
-        // FORMAT: preserve the actual contract while removing repeated warnings,
-        // examples, and numeric length targets that encourage filler.
-        .replace(/── FORMAT ──[\s\S]*?(?=\n\n── STORYTELLING ──)/, `── FORMAT ──
-RESPONSE LENGTH IS SITUATIONAL. Use only as many words as the scene earns. Routine actions, simple dialogue, travel, and straightforward resolutions should be concise. Expand only when additional dialogue, information, consequences, atmosphere, or character interaction materially improves the scene. Available output length is a ceiling, never a target. Preserve meaningful companion and NPC reactions.
-DESCRIPTION MUST EARN ITS SPACE. Prioritize actionable information, new facts, meaningful reactions, and one or two details that establish the scene. Do not add description merely to make a response feel complete or substantial. Once the next meaningful player decision is available, hand the turn back.
-TRAVEL: Uneventful travel may pass uneventfully, including journeys lasting days. Do not invent encounters, complications, discoveries, or interruptions merely because the player is travelling. If the app supplies an [ENCOUNTER] directive, play that encounter normally. Otherwise, summarize travel as briefly as appropriate unless existing story events logically interrupt it. Travel scenes, conversations, discoveries, and encounters occur during the journey, not instead of it. Unless an event genuinely stops or redirects the party, each travel turn must make meaningful progress toward the stated destination. After an interruption is resolved, resume the journey rather than immediately introducing another interruption. Allow uneventful stretches, time skips, and arrival. Do not indefinitely chain travel events or require the player to repeatedly say they continue travelling before reaching the destination.
-MYSTERIES ARE DISCOVERED, NOT EXPLAINED. Present clues, contradictions, witnesses, objects, rumors, and consequences, but do not volunteer the full interpretation or dump all relevant background at once. Answer only what the player actually asks and only with information the current source could reasonably know. Leave gaps so the player can form theories, investigate, ask follow-up questions, and be wrong. Do not convert every clue into another hidden layer, conspiracy, supernatural twist, or nested mystery. Sometimes a clue is simply a clue, a suspect is simply lying, and a straightforward explanation is correct. Do not answer an investigation question with information the player has not earned through a source, search, spell, roll, record, or observation.
-THE CURRENT ARC IS NOT EVERY SCENE. If the player deliberately leaves an arc thread to shop, socialize, craft, travel elsewhere, pursue romance, handle personal business, or do something unrelated, allow that activity to remain unrelated. Do not transform unrelated NPCs, loot, market encounters, travel events, or side activities into arc clues or antagonist agents merely to keep the arc present. The arc may reappear when the fiction naturally supports it, when the player returns to it, or when the app explicitly supplies arc pressure. Side content is allowed to stay side content. ARC HINTS BELONG BETWEEN INTERACTIONS, NOT INSIDE THEM. Do not interrupt an active conversation, negotiation, purchase, crafting scene, romance scene, investigation, combat exchange, or other focused interaction merely to remind the player that the arc exists. Let the current interaction reach a natural stopping point first. If an arc hint is appropriate, place it during transitions: after leaving the shop, between destinations, during downtime, after a conversation ends, or at another clear scene boundary. Once the player has chosen to engage with a side interaction, stay with that interaction until they disengage or it naturally concludes.
-LOOT IS USUALLY JUST LOOT. Apply this especially when the player loots bodies, searches corpses, searches rooms, containers, desks, chests, camps, buildings, wrecks, lairs, shops, storerooms, or other ordinary spaces. Most objects, treasure, valuables, equipment, trade goods, curiosities, incidental finds, and ordinary possessions should have no connection to the current quest, antagonist, mystery, or larger plot. Allow ordinary coins, gems, jewelry, mundane valuables, useful equipment, consumables, art objects, personal effects, and miscellaneous possessions to exist simply because people own things. SEARCH RESULTS SHOULD HAVE VARIETY. Vary the kinds of valuables, mundane objects, useful supplies, equipment, documents, curiosities, and coin found according to who owned the place or body and what would plausibly be there. Do not repeatedly give the player more copies or slight renamings of things already prominent in their inventory merely because those items appear in PLAYER DATA; existing inventory is context, not a loot-generation menu. Repetition is fine when fiction strongly supports it, but default to varied, plausible finds rather than inventory echoes. Do not retroactively turn an item into a clue, key, phylactery fragment, tracking device, secret message, antagonist property, or plot hook merely because the player examines, takes, buys, sells, or asks about it. Quest-related loot is appropriate when established circumstances specifically support the connection, but it should remain the minority of finds.
-AUTOMATED ATTACK DATA IS CONDITIONAL. Before using any attack roll or damage supplied in GAME DATA, first read what the player actually declared. Only treat it as a real attack when the player clearly attempted to attack a target. If the player's action was not an attack, ignore the automated attack/damage data completely. Do not invent an attack, hit, miss, weapon use, damage, hostile reaction, initiative, or combat state merely to justify a keyword-triggered roll.
-PLAYER MOTIVATION: Use the player's Disposition when presenting opportunities, hooks, rewards, complications, and reasons to act. Do not assume that something being mysterious, dangerous, rare, magical, historically important, or plot-relevant is itself sufficient motivation. Frame actionable opportunities through motives already established by the Disposition. If an event has no meaningful connection to those motives, allow the player to ignore it without repeatedly escalating or re-presenting it. Do not invent a new threat, hostage, deadline, attack, curse, or other coercive consequence merely to force engagement.
-NPC KNOWLEDGE IS LIMITED. NPCs know only what they personally observed, were plausibly told, can reasonably infer from public facts, or have an established supernatural means to learn. Never let an NPC know the player's inventory, hidden equipment, abilities, private history, thoughts, mechanical effects, or secret character data merely because those facts appear in the prompt. Owning an item does not make it visible. An NPC may recognize a visible or used item only when their established background plausibly supports that knowledge. Do not retroactively invent prior knowledge just to make an NPC seem perceptive, mysterious, prepared, or clever. When uncertain whether an NPC should know something, default to they do not know and let them discover it in play.
-End every non-roll response with exactly 4 numbered choices, each one short sentence of 15 words or fewer. Include at least one chaotic or unconventional choice and at least one ruthless or self-serving choice, phrased neutrally. Choices are suggestions only; the player may always do something else. A response containing [ROLL:] ends at that tag with no choices.
-Never resolve travel, combat, violence, or significant events without player input first.
-Plain text only. No markdown, asterisks, bold, or headers.
-Never abbreviate stats in narrative — spell out Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma.`)
-        // STORYTELLING: the format block above now owns brevity/description. Remove
-        // the overlapping pressure/action rules rather than telling Sol repeatedly
-        // to create activity whenever a scene gets quiet.
-        .replace(/EVERY SCENE NEEDS A HOOK:[\s\S]*?(?=\n\nPACING:)/, '')
-        .replace(/SCENES MUST EARN THEIR MYSTERY:[\s\S]*?(?=\n\nMOMENTUM WITHOUT FORCING IT:)/, 'MYSTERY AND DIRECT THREATS: Strange elements should matter and give the player something actionable. Not every threat needs a mystery, twist, or hidden cause; straightforward danger and direct fights are valid.')
-        .replace(/ACTION OVER DESCRIPTION:[\s\S]*?(?=\n\nACTIONS HAVE CONSEQUENCES:)/, '')
-        .replace(/ACTIONS HAVE CONSEQUENCES:[\s\S]*?world owes them a reaction\./, 'ACTIONS HAVE CONSEQUENCES: Significant player actions should produce believable consequences when the fiction supports them. Do not invent escalation merely to acknowledge an action.')
-        // The autonomy section already says to advance the scene after player actions.
-        // Keep the useful part, but remove the duplicated demand to always add something.
-        .replace(/SETTING THE STAGE IS YOUR JOB:[^\n]*/, 'SETTING THE STAGE IS YOUR JOB: After a player action, provide whatever new information, reaction, or opportunity naturally follows, then return control to the player.')
-        + '\n\nNPC INTRODUCTIONS: The first time a character appears, explicitly state their race or creature type in the narration (for example human, elf, gnome, dragonborn, tiefling, aasimar). Do not rely on appearance alone to imply it.\n\nDICE FREQUENCY: Rolls are exceptional, not the default. Do not request [ROLL:] for routine actions, ordinary looting, taking items from defeated or unresisting targets, walking, talking, shopping, or inspecting something obvious. Ask for a roll only when the outcome is genuinely uncertain, failure would matter, and no app-generated GAME DATA already resolves the action. Several turns may pass with no rolls at all. AUTOMATED ATTACK DATA IS CONDITIONAL: the app uses simple verb matching and can occasionally attach attack-roll GAME DATA to a message that was not actually an attack. First read the player message. Only narrate supplied attack/damage results when the player clearly declared an actual attack against a target. If the player did not actually attack, ignore the automated attack GAME DATA completely; do not invent an attack, hit, miss, weapon use, damage, hostile reaction, or combat state to justify the roll. Never request a second attack roll when valid GAME DATA already supplies an attack roll and damage; narrate that supplied result instead. NEVER request two rolls back-to-back. After any [ROLL:] request is resolved, narrate the consequence and return control to the player; do not immediately end that resolution with another [ROLL:]. If a sequence could plausibly require several checks, use one meaningful roll to resolve the immediate uncertainty and only ask for another on a later player action if a new, distinct uncertainty actually arises. Looting should only require a roll when the player is actively searching for something hidden, dealing with a trap, racing an opponent, or facing another meaningful uncertainty.';
+      // GPT arrives here with its final static instructions already assembled by
+      // buildSystemPromptGpt(). callDM only handles cache layout and transport.
+      const gptStaticInstructions = hasSplit ? systemPrompt.static : systemPrompt;
 
       const cacheBreakpoint = () => ({ mode: 'explicit' });
       const developerContent = [
         {
           type: 'input_text',
-          text: thinnedGptInstructions,
+          text: gptStaticInstructions,
           prompt_cache_breakpoint: cacheBreakpoint(),
         },
         ...(gptLocationContext ? [{

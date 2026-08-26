@@ -6,7 +6,7 @@ import { SLOTS } from './constants/items.js';
 import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable, pruneDeadItemDefinitions } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
-import { useGame, buildSystemPrompt, buildSystemPromptSonnet, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
+import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
 import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
@@ -136,7 +136,9 @@ export default function App() {
       if (!c?.stats?.dex) return;                       // no character in play
       const prompt = selectedModel === 'sonnet'
         ? buildSystemPromptSonnet(c)
-        : buildSystemPrompt(c);
+        : selectedModel === 'haiku'
+        ? buildSystemPrompt(c)
+        : buildSystemPromptGpt(c);
       const data = await pingCache(prompt);
       if (data) logUsage('cache keep-warm', data);
     }, 4 * 60 * 1000);
@@ -517,7 +519,9 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
       }
       const system = selectedModel === 'haiku'
         ? buildSystemPrompt(charWithArc)
-        : buildSystemPromptSonnet(charWithArc);
+        : selectedModel === 'sonnet'
+        ? buildSystemPromptSonnet(charWithArc)
+        : buildSystemPromptGpt(charWithArc);
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
         system,
@@ -1841,7 +1845,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       const modelConfig = MODEL_CONFIGS[selectedModel];
       const system = selectedModel === 'haiku'
         ? buildSystemPrompt(charRef.current)
-        : buildSystemPromptSonnet(charRef.current);
+        : selectedModel === 'sonnet'
+        ? buildSystemPromptSonnet(charRef.current)
+        : buildSystemPromptGpt(charRef.current);
       const { text: dmText, usage: dmUsage } = await callDM(
         [...history, { role:'user', content: outgoing }],
         system,
