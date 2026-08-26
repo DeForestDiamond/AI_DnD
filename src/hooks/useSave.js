@@ -42,7 +42,7 @@ export function parseSaveJSON(raw) {
   }
 }
 
-export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, onLoadFull, onLoadCharacter }) {
+export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, getSettings, onLoadFull, onLoadCharacter }) {
 
   // Inventory and stash are already compact [{name, qty}] stacks in memory.
   // Save the character exactly as it exists; migration handles older compressed
@@ -52,6 +52,7 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
   const buildState = (type) => ({
     _type: type,
     _v: SAVE_VERSION,
+    settings: getSettings?.() || {},
     // Character exports are a clean start: the character and world the player
     // built, with no story arc attached. Full saves keep the arc.
     character: type === 'character'
@@ -91,6 +92,7 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
     try {
       localStorage.setItem('dnd-autosave', JSON.stringify({
         _type: 'fullsave', _v: SAVE_VERSION,
+        settings: getSettings?.() || {},
         character: compressCharForSave({ ...char, _v: SAVE_VERSION }),
         messages: msgs,
         storySummary: storySummaryRef.current || '',
@@ -120,9 +122,9 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
     const { char: migrated, notes } = migrateCharacter(state.character);
     const isFullSave = state._type === 'fullsave' || !!state.messages;
     if (isFullSave) {
-      onLoadFull(migrated, state.messages || [], state.storySummary || '');
+      onLoadFull(migrated, state.messages || [], state.storySummary || '', state.settings);
     } else {
-      onLoadCharacter(migrated);
+      onLoadCharacter(migrated, state.settings);
     }
     return { notes, isFullSave };
   };
