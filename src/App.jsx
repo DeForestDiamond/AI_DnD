@@ -1200,17 +1200,31 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
   // actually holds. Models sometimes echo the descriptive form ("Iron Ingot
   // (dwarven)") or a quantity suffix; match exactly first, then progressively
   // looser, so a formatting slip doesn't fail an otherwise valid craft.
+  // Canonicalise names before comparing model output to held inventory. Models
+  // frequently swap straight and curly apostrophes (Knight's vs Knight’s), and
+  // may vary whitespace/case. Preserve the player's exact held spelling once a
+  // match is found so downstream inventory/stash/bag operations still use the
+  // real item key.
+  const canonicalItemName = (name) => String(name || '')
+    .normalize('NFKC')
+    .replace(/[\u2018\u2019\u02BC\uFF07]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
   const resolveHeldName = (wanted, held) => {
     const w = (wanted || '').trim();
-    const exact = held.find(h => h.toLowerCase() === w.toLowerCase());
+    const exact = held.find(h => canonicalItemName(h) === canonicalItemName(w));
     if (exact) return exact;
     const stripped = w.replace(/\s*\([^)]*\)\s*$/, '').replace(/\s+x\d+$/i, '').trim();
-    const onStripped = held.find(h => h.toLowerCase() === stripped.toLowerCase());
+    const strippedKey = canonicalItemName(stripped);
+    const onStripped = held.find(h => canonicalItemName(h) === strippedKey);
     if (onStripped) return onStripped;
     // longest held name that the requested string begins with (handles a
     // trailing description appended without brackets)
     const prefix = held
-      .filter(h => stripped.toLowerCase().startsWith(h.toLowerCase()))
+      .filter(h => strippedKey.startsWith(canonicalItemName(h)))
       .sort((a, b) => b.length - a.length)[0];
     return prefix || w;
   };
