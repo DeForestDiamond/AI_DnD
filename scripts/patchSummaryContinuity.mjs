@@ -32,27 +32,29 @@ On first reference to a named NPC in this entry, include pronoun and race when e
 
 GROUND TRUTH: player = PLAYER_NAME; END location = CURRENT_LOCATION. Never infer either from the transcript. Begin exactly with [CURRENT_LOCATION]. Plain text only; no markdown or preamble. Use compact prose or semicolon-separated state where useful. There is NO fixed sentence or word target.`;
 
-const archiveDeveloper = `You are compressing older D&D story-log entries into a permanent frozen continuity record. This may become the only surviving record of these events.
+const archiveDeveloper = `You are compressing FOUR already-written D&D story-log summaries into ONE permanent frozen archive entry. The four source summaries will be deleted after this succeeds. Your job is aggressive historical compression without breaking continuity.
 
-CORE RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD.
-Compression is subordinate to continuity. Never omit, merge, generalize, or tidy away unresolved state to hit a length target. There is NO fixed word limit: resolved history should become compact; unresolved state must remain as detailed as necessary.
+TARGET: about 200-300 words. The finished archive should be substantially smaller than the four source summaries combined. Do not preserve four mini-summaries or retell events session by session. Merge related resolved events and record outcomes once.
+
+INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD.
+- RESOLVED HISTORY: compress hard. Keep the durable outcome, not the path taken to reach it.
+- UNRESOLVED STATE: preserve specifically enough for a future DM to continue it correctly. If genuinely necessary, continuity may exceed the target rather than deleting active state.
+- ENUMERATED / FINITE SETS: preserve every still-unresolved member and its associated detail — opponents and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, etc. Resolved members may collapse into outcome-level history.
 
 PRESERVE ABOVE ALL:
-- EVERY OPEN THREAD with who/what/where and latest known state.
-- ENUMERATED / FINITE SETS: preserve every unresolved member and its associated detail — participants and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, etc. A finite list stays intact until its members resolve individually.
-- OBLIGATIONS both directions: debts, promises, bargains, favours, contracts, terms and wagers.
-- Relationship changes and current outcomes.
-- Consequential decisions and witnesses.
-- Deaths/disappearances and responsibility.
-- Quest threads opened, advanced, closed or abandoned; faction standing.
-- Permanent player changes: powers, oaths, curses, transformations, titles, property.
+- unresolved tasks, dangers, mysteries, meetings, leads, negotiations, contests, planned actions, expected arrivals and pending consequences;
+- obligations both directions: debts, promises, bargains, favours, contracts, terms and wagers;
+- relationship changes and the resulting current relationship state;
+- consequential decisions whose effects still matter;
+- deaths/disappearances and responsibility when consequential;
+- quest threads opened, advanced, closed or abandoned; faction standing changes;
+- permanent player changes: powers, oaths, curses, transformations, titles and property;
+- significant named/magical/quest-relevant items only when their continued existence or ownership matters;
+- important locations only when needed for continuity.
 
-RESOLUTION RULE:
-Resolved material may be compressed hard into outcome-level history. Unresolved material must remain explicit enough that a future DM can resume it correctly without access to the original entries. Never discard a pending fact because it has not been mentioned recently.
+DROP ENTIRELY once resolved or nonessential: scene descriptions, atmosphere, dialogue, jokes, combat blow-by-blow, travel detail, routine loot/coin, ordinary supplies, repeated explanations, redundant descriptions, dead-end investigation, and intermediate steps whose outcome is already recorded. Omit retconned events entirely.
 
-Retain significant named/magical/quest-relevant items and important locations/end state. Routine coin/loot, ordinary supplies, scene descriptions, atmosphere, and settled combat detail can be dropped unless they remain part of an unresolved wager, promise, clue, quest, or commitment. Omit retconned events entirely.
-
-On first mention of a named NPC, retain pronoun and race when established. Facts only. Past tense. Plain text only; no markdown or preamble.`;
+Do not repeat the same fact in multiple phrasings. Do not add interpretation or new facts. On first mention of a named NPC, retain pronoun and race only when established by the source. Facts only. Past tense. Plain text only; no headings, bullets, preamble, or markdown.`;
 
 // Replace the two OpenAI history prompts while preserving runtime player/location interpolation.
 history = history.replace(/export async function callGptStoryEntry\([\s\S]*?\n  const developer = `([\s\S]*?)`;\n  return callText\(/, (m) => {
@@ -70,28 +72,54 @@ history = history.replace(/export async function callGptArchive\([\s\S]*?\n  con
   return `${fnHead}  const developer = \`${archiveDeveloper}\`;\n  return callText(`;
 });
 
+// Match Claude's archive ceiling. The archive is a compression product, not a
+// second rolling summary, so it should not have enough room to casually echo all
+// four source entries back nearly verbatim.
+history = history.replace(
+  /return callText\(\{ apiKey, developer, user: `ARCHIVE THESE ENTRIES:\\n\\n\$\{entriesText\}`, maxOutputTokens: \d+ \}\);/,
+  'return callText({ apiKey, developer, user: `ARCHIVE THESE ENTRIES:\\n\\n${entriesText}`, maxOutputTokens: 800 });'
+);
+
 fs.writeFileSync(historyPath, history);
 
-// Claude remains available, so give its rolling summary and archive the same
-// continuity principle. Insert before the existing preserve lists rather than
-// rewriting the whole mature prompt.
-const continuityBlock = `\nCORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD. Compression is subordinate to continuity. Never omit, merge, generalize, or tidy away unresolved state merely to reduce length. If the story establishes a finite/enumerated set — opponents and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, or similar — preserve EVERY unresolved member and its associated detail until individually resolved. Open threads must retain who/what/where and their latest known state. Once genuinely resolved, they may be compressed aggressively into the outcome. There is no fixed length target when unresolved state requires more space.\n`;
+// Claude rolling summaries get the same continuity protection. Archives are
+// intentionally different: they retain the mature 200-300 word compression
+// target while allowing a narrow exception when unresolved state truly needs it.
+const rollingContinuityBlock = `\nCORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD. Compression is subordinate to continuity. Never omit, merge, generalize, or tidy away unresolved state merely to reduce length. If the story establishes a finite/enumerated set — opponents and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, or similar — preserve EVERY unresolved member and its associated detail until individually resolved. Open threads must retain who/what/where and their latest known state. Once genuinely resolved, they may be compressed aggressively into the outcome. There is no fixed length target when unresolved state requires more space.\n`;
+
+const archiveContinuityBlock = `\nARCHIVE COMPRESSION RULE: Target 200-300 words and make this archive substantially smaller than the source summaries. Merge related resolved events and preserve durable outcomes rather than intermediate steps. INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD: unresolved threads and unresolved members of finite sets must remain specific enough to resume correctly, even if that occasionally requires exceeding the target. Do not use that exception for resolved history, flavor, dialogue, combat detail, repeated explanations, or routine loot.\n`;
 
 const archiveAnchor = `PRESERVE ABOVE ALL — these are what the story is built on:`;
-if (!app.includes('CORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES') && app.includes(archiveAnchor)) {
-  app = app.replace(archiveAnchor, `${continuityBlock}\n${archiveAnchor}`);
-  changed = true;
-}
-const entryAnchor = `WRITE DOWN FIRST, always, if any occurred:`;
-if (app.includes(entryAnchor) && (app.match(/CORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES/g) || []).length < 2) {
-  app = app.replace(entryAnchor, `${continuityBlock}\n${entryAnchor}`);
+// Repair the earlier version of this patch if it already inserted the broad
+// no-limit continuity block into the archive prompt.
+app = app.replace(
+  /\nCORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES[\s\S]*?There is no fixed length target when unresolved state requires more space\.\n\nPRESERVE ABOVE ALL — these are what the story is built on:/,
+  `${archiveContinuityBlock}\n${archiveAnchor}`
+);
+if (!app.includes('ARCHIVE COMPRESSION RULE: Target 200-300 words') && app.includes(archiveAnchor)) {
+  app = app.replace(archiveAnchor, `${archiveContinuityBlock}\n${archiveAnchor}`);
   changed = true;
 }
 
-// Remove hard output-size language from the Claude archive/entry prompts; the API
-// token ceiling remains a safety ceiling, not a compression target.
-app = app.replace('into a permanent frozen reference of 200-300 words.', 'into a permanent frozen continuity reference.');
+const entryAnchor = `WRITE DOWN FIRST, always, if any occurred:`;
+if (!app.includes('CORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES') && app.includes(entryAnchor)) {
+  app = app.replace(entryAnchor, `${rollingContinuityBlock}\n${entryAnchor}`);
+  changed = true;
+} else if (app.includes(entryAnchor)) {
+  // If the archive repair consumed the only occurrence, ensure the rolling entry
+  // still receives its broader continuity rule.
+  const entryPos = app.indexOf(entryAnchor);
+  const beforeEntry = app.slice(Math.max(0, entryPos - 1800), entryPos);
+  if (!beforeEntry.includes('CORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES')) {
+    app = app.replace(entryAnchor, `${rollingContinuityBlock}\n${entryAnchor}`);
+    changed = true;
+  }
+}
+
+// Repair an earlier deployment of this patch that removed the mature archive
+// size target. Rolling summaries remain flexible; archive compression does not.
+app = app.replace('into a permanent frozen continuity reference.', 'into a permanent frozen reference of 200-300 words.');
 app = app.replace('Write 3-5 sentences.', 'Use as much compact text as continuity requires; simple linear events should stay short.');
 
 fs.writeFileSync(appPath, app);
-console.log(changed ? 'Summary continuity rules applied.' : 'Summary continuity rules already applied.');
+console.log(changed ? 'Summary continuity rules applied; archives remain aggressively compressed.' : 'Summary continuity rules already applied; archives remain aggressively compressed.');
