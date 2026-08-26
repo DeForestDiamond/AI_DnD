@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 24
       - name: Apply patch to real source
-        run: node scripts/patchAttackMath.mjs
+        run: node scripts/patchAttackRollWeaponName.mjs
       - name: Retire patch from build hooks
         run: |
           node --input-type=module <<'NODE'
@@ -29,8 +29,8 @@ jobs:
           const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
           for (const key of ['predev', 'prebuild']) {
             pkg.scripts[key] = pkg.scripts[key]
-              .replace('node scripts/patchAttackMath.mjs && ', '')
-              .replace(' && node scripts/patchAttackMath.mjs', '');
+              .replace('node scripts/patchAttackRollWeaponName.mjs && ', '')
+              .replace(' && node scripts/patchAttackRollWeaponName.mjs', '');
           }
           fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
           NODE
@@ -38,9 +38,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/hooks/useCharacter.js src/hooks/useGame.js package.json
+          git add src/hooks/useGame.js package.json
           git diff --cached --quiet && exit 0
-          git commit -m "Apply attack math directly"
+          git commit -m "Apply attack roll weapon-name hiding directly"
           git push origin HEAD:apply-patches-directly
 
-# migration: attack-math-v1
+# migration: attack-roll-name-v1
