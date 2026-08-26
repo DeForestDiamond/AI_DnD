@@ -1338,9 +1338,9 @@ Never abbreviate stats in narrative — spell out Strength, Dexterity, Constitut
       const hit = result.crit || (!result.fumble && result.totalAtk >= diff);
       log?.(`[ROLL] ${statLabel} with ${label}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} vs DC${diff} — ${hit?'HIT':'MISS'}`);
       return {
-        resultText: `[ROLL RESULT: attack roll with ${label} — d20 ${result.atkRoll} + ${result.statLabel} ${result.statBonus} + proficiency ${result.profBonus}${result.weaponBonus ? ` + weapon ${result.weaponBonus}` : ''} = ${result.totalAtk} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}${hit ? `; damage ${result.totalDmg}` : ''}]`,
+        resultText: `[ROLL RESULT: attack roll — d20 ${result.atkRoll} + ${result.statLabel} ${result.statBonus} + proficiency ${result.profBonus}${result.weaponBonus ? ` + equipment ${result.weaponBonus}` : ''} = ${result.totalAtk} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}${hit ? `; damage ${result.totalDmg}` : ''}]`,
         rollResult: {
-          label: `${label} Attack`,
+          label: 'Attack',
           value: result.totalAtk,
           dc: diff,
           dmg: hit ? result.totalDmg : null,
