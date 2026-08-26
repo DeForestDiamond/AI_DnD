@@ -1086,7 +1086,7 @@ Never abbreviate stats in narrative — spell out Strength, Dexterity, Constitut
         // The autonomy section already says to advance the scene after player actions.
         // Keep the useful part, but remove the duplicated demand to always add something.
         .replace(/SETTING THE STAGE IS YOUR JOB:[^\n]*/, 'SETTING THE STAGE IS YOUR JOB: After a player action, provide whatever new information, reaction, or opportunity naturally follows, then return control to the player.')
-        + '\n\nNPC INTRODUCTIONS: The first time a character appears, explicitly state their race or creature type in the narration (for example human, elf, gnome, dragonborn, tiefling, aasimar). Do not rely on appearance alone to imply it.';
+        + '\n\nNPC INTRODUCTIONS: The first time a character appears, explicitly state their race or creature type in the narration (for example human, elf, gnome, dragonborn, tiefling, aasimar). Do not rely on appearance alone to imply it.\n\nDICE FREQUENCY: Rolls are exceptional, not the default. Do not request [ROLL:] for routine actions, ordinary looting, taking items from defeated or unresisting targets, walking, talking, shopping, or inspecting something obvious. Ask for a roll only when the outcome is genuinely uncertain, failure would matter, and no app-generated GAME DATA already resolves the action. Several turns may pass with no rolls at all. AUTOMATED ATTACK DATA IS CONDITIONAL: the app uses simple verb matching and can occasionally attach attack-roll GAME DATA to a message that was not actually an attack. First read the player message. Only narrate supplied attack/damage results when the player clearly declared an actual attack against a target. If the player did not actually attack, ignore the automated attack GAME DATA completely; do not invent an attack, hit, miss, weapon use, damage, hostile reaction, or combat state to justify the roll. Never request a second attack roll when valid GAME DATA already supplies an attack roll and damage; narrate that supplied result instead. NEVER request two rolls back-to-back. After any [ROLL:] request is resolved, narrate the consequence and return control to the player; do not immediately end that resolution with another [ROLL:]. If a sequence could plausibly require several checks, use one meaningful roll to resolve the immediate uncertainty and only ask for another on a later player action if a new, distinct uncertainty actually arises. Looting should only require a roll when the player is actively searching for something hidden, dealing with a trap, racing an opponent, or facing another meaningful uncertainty.';
 
       const cacheBreakpoint = () => ({ mode: 'explicit' });
       const developerContent = [
@@ -1241,9 +1241,9 @@ Never abbreviate stats in narrative — spell out Strength, Dexterity, Constitut
 
     // Attack detection — only explicit combat actions
     // Excluded: "cut" (cut a deal, cut through), "kill" (too ambiguous in dialogue/planning)
-    const attackWords = /\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge)\b/i;
+    const attackWords = /\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge|shoot|fire|loose)\b/i;
     // Don't trigger if the attack word is inside quotes (player is speaking dialogue, not acting)
-    const insideQuotes = /["'「][^"'「」]*\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge)\b[^"'「」]*["'」]/i;
+    const insideQuotes = /["'「][^"'「」]*\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge|shoot|fire|loose)\b[^"'「」]*["'」]/i;
     if (attackWords.test(userMsg) && !insideQuotes.test(userMsg) && !/\b(don't|dont|not|no|avoid|retreat|run|flee|hide|sneak)\b/i.test(userMsg)) {
       const weapon = getMainWeapon(char.slots, char.stats, char.items || {});
       if (!weapon) log?.('[ATTACK] Attack word detected but no weapon equipped in mainhand — no roll made');
