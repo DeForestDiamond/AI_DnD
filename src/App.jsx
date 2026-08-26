@@ -1657,7 +1657,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       // Check if DM requested a skill roll — intercept and roll it
       const { resultText, rollResult: skillRoll } = interceptRollRequest(dmText, charRef.current, log);
       let finalText = dmText;
-      let finalRoll = actionRoll || skillRoll || null;
+      // Player-initiated attacks belong on the final DM response. A DM-requested
+      // roll belongs on the setup message that actually requested it.
+      let finalRoll = actionRoll || null;
       let rollSetupText = '';
 
       // If DM requested a roll, send the result back for narration
@@ -1668,7 +1670,11 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         const setupText = dmText.replace(/\[ROLL:[^\]]*\]/gi, '').trim();
         if (setupText) {
           rollSetupText = setupText;
-          addMessage({ role:'dm', text: setupText, id: Date.now() - 1, roll: null });
+          addMessage({ role:'dm', text: setupText, id: Date.now() - 1, roll: skillRoll || null });
+        } else if (skillRoll) {
+          // Bare [ROLL:] requests have no visible setup message, so keep the
+          // result on the follow-up narration rather than dropping it.
+          finalRoll = skillRoll;
         }
         const { text: followUp, usage: followUpUsage } = await callDM(
           [...history,
