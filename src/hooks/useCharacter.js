@@ -97,6 +97,22 @@ export const itemExistsAnywhere = (c, name, overrides = {}) => {
   return false;
 };
 
+// Remove item definitions that are no longer referenced anywhere the character
+// owns them. Definitions are shared metadata, so leaving dead entries behind
+// bloats saves and makes old crafted/salvaged items linger forever.
+export const pruneDeadItemDefinitions = (c) => {
+  if (!c?.items || typeof c.items !== 'object') return c;
+  const items = { ...c.items };
+  let changed = false;
+  for (const name of Object.keys(items)) {
+    if (!itemExistsAnywhere({ ...c, items }, name)) {
+      delete items[name];
+      changed = true;
+    }
+  }
+  return changed ? { ...c, items } : c;
+};
+
 export const ABILITY_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
 export const effectiveStats = (baseStats, slots, customItems) => {
@@ -462,6 +478,10 @@ export const migrateCharacter = (char) => {
   c.inventory = normalizeStacks(c.inventory);
   c.stash = normalizeStacks(c.stash);
   if (!c.items || typeof c.items !== 'object') c.items = {};
+  // Older saves may already contain orphaned definitions from crafting,
+  // salvaging, or deletes that removed the last owned copy. Clean them once on
+  // load as well as preventing new orphans below.
+  c = pruneDeadItemDefinitions(c);
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };

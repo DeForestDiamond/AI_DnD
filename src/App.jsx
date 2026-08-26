@@ -3,7 +3,7 @@ import { animations, colors, fonts, btn, panel, cardStyle } from './styles/theme
 import { CLASSES, RACES, STAT_NAMES, STAT_DESC } from './constants/classes.js';
 import { DEITIES } from './constants/deities.js';
 import { SLOTS } from './constants/items.js';
-import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable } from './hooks/useCharacter.js';
+import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable, pruneDeadItemDefinitions } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
 import { useGame, buildSystemPrompt, buildSystemPromptSonnet, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
@@ -1417,7 +1417,10 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
         items[t.bag] = { ...bag, contents };
         next = { ...next, items };
       }
-      return next;
+      // [REMOVE:] can only see inventory at parse time. Stash/bag consumption
+      // happens here afterwards, so prune definitions only after every source
+      // has actually been updated.
+      return pruneDeadItemDefinitions(next);
     };
     return { removeTags, apply, bagTakes };
   };
