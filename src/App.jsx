@@ -129,7 +129,7 @@ export default function App() {
   const armCacheTimer = () => {
     if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current);
     // OpenAI caching is automatic; Anthropic's explicit keep-warm ping does not apply.
-    if (selectedModel === 'gpt') return;
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') return;
     cacheTimerRef.current = setTimeout(async () => {
       cacheTimerRef.current = null;
       const c = charRef.current;
@@ -168,7 +168,7 @@ export default function App() {
   const [deityModalClass, setDeityModalClass] = useState(null);
   const [showSubclassModal, setShowSubclassModal] = useState(false);
   const [subclassQueue, setSubclassQueue] = useState([]);
-  const [selectedModel, setSelectedModel] = useState('sonnet'); // 'sonnet', 'haiku', or 'gpt'
+  const [selectedModel, setSelectedModel] = useState('sonnet'); // sonnet, haiku, gpt (Sol), terra
   const [storySummary, setStorySummary] = useState('');
   const [tokenUsage, setTokenUsage]     = useState(null);
   const storySummaryRef = useRef('');
@@ -2387,7 +2387,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onRenameItem={renameItem}
             onDeleteFromBag={deleteFromBag}
             selectedModel={selectedModel}
-            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : 'sonnet')}
+            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : m === 'gpt' ? 'terra' : 'sonnet')}
             pacing={character.pacing || 'normal'}
             environment={character.environment || 'wilderness'}
             onChangeEnvironment={(env)=>updateChar({ ...charRef.current, environment: env })}

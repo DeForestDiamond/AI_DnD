@@ -134,8 +134,16 @@ export const MODEL_CONFIGS = {
     model: 'gpt-5.6-sol',
     max_tokens: 2048,
     reasoning_effort: 'low',
-    label: 'GPT',
+    label: 'GPT Sol',
     emoji: '🧠',
+  },
+  terra: {
+    provider: 'openai',
+    model: 'gpt-5.6-terra',
+    max_tokens: 2048,
+    reasoning_effort: 'low',
+    label: 'GPT Terra',
+    emoji: '🌍',
   },
 };
 
