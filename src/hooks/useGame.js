@@ -1023,6 +1023,31 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
         .replace(NPC_BLOCK, '')
         .replace("FORWARD PRESSURE: Something must always be at stake or in motion. If the player has no reason to act, give them one — a sound from the next room, a timer running out, someone who needs help, an enemy that noticed them, a door that is closing. The world does not pause and wait politely. Inaction should have consequences, not just more atmosphere.", "PACING: Let scenes breathe. Investigation, conversation, planning, shopping, travel, downtime, and quiet observation are valid play and do not need an injected threat, timer, interruption, or forced urgency. Introduce pressure only when it follows naturally from the established situation. If the player is pursuing a lead, let them investigate it before forcing a confrontation.")
         .replace("ACTION OVER DESCRIPTION: When in doubt, make something happen. A merchant approaches. A guard challenges them. A noise echoes. Something moves. A figure appears. Push the story forward. The player is here to make decisions, not to read descriptions.", "MOMENTUM WITHOUT FORCING IT: Give the player useful things to notice, learn, ask about, or act on, but do not manufacture an event merely because a scene is quiet. A clue, answer, NPC reaction, discovery, or meaningful choice is forward movement. Action is only one kind of progress.");
+
+      // Sol is very good at inventing interesting things and, left unchecked,
+      // invents five of them before the player can finish the first. Lock focus
+      // onto the thread the player actually chose to pursue.
+      gptStaticInstructions += `
+
+── THREAD DISCIPLINE — ONE ACTIVE THREAD ──
+When the player begins actively following a lead, mystery, threat, job, investigation, social problem, or other developing situation, that becomes the CURRENT THREAD. DEVELOP THAT THREAD instead of continuously creating new actionable ones.
+
+While a CURRENT THREAD is active:
+- Do NOT introduce a second independent threat, mystery, urgent request, suspicious stranger, missing person, attack, ominous clue, secret conspiracy, or quest hook just to keep the world busy.
+- New discoveries should deepen, clarify, complicate, or advance the thread the player is already pursuing. Prefer answers and development over multiplying questions.
+- Background color may exist, but it must stay background. A market argument, strange traveler, distant rumor, odd object, or local problem is scenery unless the player deliberately engages with it. Do not turn incidental details into hooks automatically.
+- Do NOT use "meanwhile", sudden interruptions, new emergencies, messenger arrivals, unrelated attacks, or cliffhangers to pull attention away from an unfinished interaction.
+- Finish conversations and immediate scenes before advancing even the current thread. Do not interrupt the player halfway through talking to a shopkeeper, NPC, companion, witness, date, official, or other active interaction.
+- Existing unresolved side details do not all need to return. If the player did not pursue one, allow it to remain dormant or fade from relevance rather than constantly resurfacing it.
+- Do not interpret an interesting detail you invented as a promise that it must become a storyline. Most details are allowed to simply be details.
+
+A new independent thread may be introduced only when ONE of these is true:
+1. the current thread is resolved;
+2. the player clearly abandons or postpones it and moves on;
+3. the player deliberately goes looking for something new; or
+4. a new event is a direct believable consequence of the current thread.
+
+PLAYER CHOICE SETS NARRATIVE PRIORITY. If the player chooses one lead out of several, treat that choice as "follow this one now," not as permission to keep advancing all the others in parallel. Preserve enough continuity that one storyline can actually develop from introduction through resolution.`;
       // GPT-5.6 explicit-only cache layout. Four breakpoints:
       //   1) true stable rules, 2) location context + worn gear/constructs,
       //   3) previous turn's stable-history boundary, 4) current boundary.
