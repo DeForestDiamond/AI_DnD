@@ -4,13 +4,17 @@ import { cleanDisplayText } from '../hooks/useGame.js';
 function DiceRollDisplay({ roll }) {
   if (!roll) return null;
   const hit = roll.dc == null || roll.value >= roll.dc;
+  // Attack rolls can be auto-triggered by lightweight keyword matching. Never
+  // expose the equipped weapon name in the visible roll card; the player's prose
+  // remains authoritative about what kind of attack they actually attempted.
+  const displayLabel = roll.dmg != null ? 'Attack' : roll.label;
   return (
     <div style={{marginTop:6,display:'flex',flexWrap:'wrap',gap:6}}>
       {roll.value != null && (
         <div style={{display:'inline-flex',alignItems:'center',gap:6,background:'#1e1508',border:`1px solid ${colors.gold}`,borderRadius:6,padding:'4px 10px'}}>
           <span style={{fontSize:14}}>🎲</span>
           <span style={{fontFamily:fonts.display,color:colors.gold,fontSize:11}}>
-            {roll.label}: <strong style={{color:roll.fumble?colors.red:roll.crit?'#ffd700':hit?colors.green:colors.red}}>
+            {displayLabel}: <strong style={{color:roll.fumble?colors.red:roll.crit?'#ffd700':hit?colors.green:colors.red}}>
               {roll.fumble?'FUMBLE!':roll.crit?`CRIT! (${roll.value})`:roll.value}
             </strong>
             {roll.dc != null && <span style={{color:colors.textFaint,fontSize:10}}> (need {roll.dc})</span>}

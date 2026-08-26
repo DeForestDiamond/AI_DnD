@@ -97,6 +97,22 @@ export const itemExistsAnywhere = (c, name, overrides = {}) => {
   return false;
 };
 
+// Remove item definitions that are no longer referenced anywhere the character
+// owns them. Definitions are shared metadata, so leaving dead entries behind
+// bloats saves and makes old crafted/salvaged items linger forever.
+export const pruneDeadItemDefinitions = (c) => {
+  if (!c?.items || typeof c.items !== 'object') return c;
+  const items = { ...c.items };
+  let changed = false;
+  for (const name of Object.keys(items)) {
+    if (!itemExistsAnywhere({ ...c, items }, name)) {
+      delete items[name];
+      changed = true;
+    }
+  }
+  return changed ? { ...c, items } : c;
+};
+
 export const ABILITY_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
 export const effectiveStats = (baseStats, slots, customItems) => {
@@ -168,15 +184,22 @@ export const getMainWeapon = (slots, stats, customItems) => {
   if (!name) return null;
   const w = db[name];
   if (!w || w.type !== 'weapon') return null;
-  // Arcane Pistol uses INT, finesse weapons use best of STR/DEX, others use STR
-  let statBonus;
+  // Choose the attack ability once, here, for every attack path.
+  // Ranged weapons use Dexterity; finesse melee weapons use the better of
+  // Strength/Dexterity; ordinary melee weapons use Strength. Explicit INT-based
+  // arcane weapons keep their special rule.
+  let attackAbility;
   if (w.label?.includes('INT-based') || name === 'Arcane Pistol') {
-    statBonus = statMod(effStats.int);
+    attackAbility = 'int';
+  } else if (w.range === 'ranged') {
+    attackAbility = 'dex';
+  } else if (w.finesse && statMod(effStats.dex) >= statMod(effStats.str)) {
+    attackAbility = 'dex';
   } else {
-    const useDex = w.finesse && statMod(effStats.dex) >= statMod(effStats.str);
-    statBonus = useDex ? statMod(effStats.dex) : statMod(effStats.str);
+    attackAbility = 'str';
   }
-  return { name, ...w, statBonus };
+  const statBonus = statMod(effStats[attackAbility]);
+  return { name, ...w, statBonus, attackAbility };
 };
 
 export const equippableInSlot = (char, slotId) => {
@@ -455,6 +478,10 @@ export const migrateCharacter = (char) => {
   c.inventory = normalizeStacks(c.inventory);
   c.stash = normalizeStacks(c.stash);
   if (!c.items || typeof c.items !== 'object') c.items = {};
+  // Older saves may already contain orphaned definitions from crafting,
+  // salvaging, or deletes that removed the last owned copy. Clean them once on
+  // load as well as preventing new orphans below.
+  c = pruneDeadItemDefinitions(c);
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };

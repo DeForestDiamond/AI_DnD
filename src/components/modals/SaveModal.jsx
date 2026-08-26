@@ -42,9 +42,9 @@ export function SaveModal({ onClose, generateFullSave, generateCharExport, loadF
       const state = loadAutoSave();
       if (!state) { setMsg('No autosave found.'); return; }
       if (state._type === 'fullsave' || state.messages) {
-        onLoadFull(state.character, state.messages || [], state.storySummary || '');
+        onLoadFull(state.character, state.messages || [], state.storySummary || '', state.settings);
       } else {
-        onLoadCharacter(state.character);
+        onLoadCharacter(state.character, state.settings);
       }
       setMsg('✓ Autosave restored!');
       setTimeout(onClose, 1200);

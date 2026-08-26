@@ -125,7 +125,10 @@ MECHANICS
 - bonuses is comma-separated calculable keys only: ac,str,dex,con,int,wis,cha, or skill names. Example ac:2,con:1.
 - Resistances, immunities, senses, movement and narrative powers go in label, not fake bonus keys.
 - Armour protection uses armor.ac, not bonuses.ac. Non-armour wearable protection may use ac:N.
-- WEAPON DAMAGE FORMAT IS STRICTLY NUMERIC DICE/MODIFIERS. Put every rolled damage component in damage, joined with " plus ", but NEVER write damage-type words there. Correct: "1d6+3 plus 2d12". WRONG: "1d6+3 piercing plus 2d12 force". WRONG: "2d8 radiant". The game rolls the numbers; damage types may be described narratively in label only when useful.
+- WEAPON DAMAGE HAS ONE CANONICAL FORMAT. Before returning ANY weapon, normalize its damage field to: ONE untyped base dice expression with its modifier, followed by ZERO OR MORE typed bonus expressions, with EACH damage type appearing AT MOST ONCE. Canonical example: "7d8+14 plus 10d10 radiant plus 4d6 fire plus 3d6 cold". The base damage MUST be one dice size only: never "2d10+4d6+1d8+14"; convert mixed base dice to the closest single expression with approximately the same average, e.g. "7d8+14". NEVER put a damage type on the base expression: "7d8+14 piercing" is wrong. EVERY bonus expression MUST have a type: "plus 10d10" is wrong. COLLAPSE all bonus dice of the same type into one closest equivalent expression: "plus 10d10 radiant plus 6d6 radiant" is WRONG and must become one radiant group; "plus 1d4 force plus 1d6 force" is WRONG and should become approximately "plus 1d10 force". Preserve approximate average damage rather than exact dice distribution. When upgrading an existing weapon, first normalize all of its old base and bonus damage, then add the upgrade, then normalize again. FINAL SELF-CHECK: if the base contains more than one d-expression, or any damage type word appears more than once in the damage field, the answer is invalid and MUST be rewritten before output.
+- BASE DAMAGE MUST ALSO BE CONSOLIDATED into ONE untyped dice group plus its modifier. Never return mixed base dice such as "2d10+4d6+1d8+14". Convert them to the closest practical single dice expression with approximately the same average damage, e.g. "7d8+14".
+- The final weapon damage format should therefore be: ONE consolidated untyped base dice group + modifier, followed by at most ONE consolidated dice group for EACH extra damage type. Example: "7d8+14 plus 10d10 radiant".
+- Prefer dice expressions the game dice engine can parse cleanly. Do not use bullets, middle dots, comma-separated damage expressions, nested arithmetic, or multiple different dice sizes inside the base damage group.
 - Do NOT put attack-roll bonuses or standard weapon properties into label. Never begin a label with text such as "+3 to attack rolls", "finesse", "light", "heavy", "versatile", or similar weapon-stat boilerplate. Use the actual structured fields for mechanics the app tracks; omit unsupported boilerplate.
 - Accessories and armour do not get attack damage dice.
 - Fields that do not apply are null, or empty string for bonuses/label.
@@ -175,7 +178,7 @@ export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {
 
 const responseText = data => (data?.output || []).filter(x => x?.type === 'message').flatMap(x => x.content || []).filter(x => x?.type === 'output_text').map(x => x.text || '').join('').trim();
 
-export async function callGptCrafting({ apiKey, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
+export async function callGptCrafting({ apiKey, model = GPT_CRAFTING_MODEL, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
   if (!apiKey) throw new Error('OpenAI API key required for GPT crafting');
   const prompt = buildGptCraftingPrompt({ materialsText, characterLevel, intent, asSet, asConstruct, quantity });
   const schema = craftingSchemaFor({ asSet, asConstruct });
@@ -183,7 +186,7 @@ export async function callGptCrafting({ apiKey, materialsText, characterLevel, i
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: GPT_CRAFTING_MODEL,
+      model,
       input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }] }],
       max_output_tokens: asSet ? 8000 : asConstruct ? 4000 : 3000,
       reasoning: { effort: 'low' },

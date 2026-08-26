@@ -3,10 +3,10 @@ import { animations, colors, fonts, btn, panel, cardStyle } from './styles/theme
 import { CLASSES, RACES, STAT_NAMES, STAT_DESC } from './constants/classes.js';
 import { DEITIES } from './constants/deities.js';
 import { SLOTS } from './constants/items.js';
-import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable } from './hooks/useCharacter.js';
+import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable, pruneDeadItemDefinitions } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
-import { useGame, buildSystemPrompt, buildSystemPromptSonnet, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
+import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
 import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
@@ -19,6 +19,12 @@ import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx'
 import { SubclassModal } from './components/modals/SubclassModal.jsx';
 import { AdventureStartModal } from './components/modals/StartModal.jsx';
 import { owedSubclasses } from './constants/subclasses.js';
+import { rollSituationAdventure } from './constants/adventures.js';
+import { callGptStoryEntry, callGptArchive } from './helpers/openai/history.js';
+import { callGptTownManager } from './helpers/openai/towns.js';
+import { callGptNpcManager } from './helpers/openai/npcs.js';
+import { callGptSalvage } from './helpers/openai/salvage.js';
+import { callGptCrafting } from './helpers/openai/crafting.js';
 
 function StatBar({ label, value, desc }) {
   return (
@@ -123,14 +129,16 @@ export default function App() {
   const armCacheTimer = () => {
     if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current);
     // OpenAI caching is automatic; Anthropic's explicit keep-warm ping does not apply.
-    if (selectedModel === 'gpt') return;
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') return;
     cacheTimerRef.current = setTimeout(async () => {
       cacheTimerRef.current = null;
       const c = charRef.current;
       if (!c?.stats?.dex) return;                       // no character in play
       const prompt = selectedModel === 'sonnet'
         ? buildSystemPromptSonnet(c)
-        : buildSystemPrompt(c);
+        : selectedModel === 'haiku'
+        ? buildSystemPrompt(c)
+        : buildSystemPromptGpt(c);
       const data = await pingCache(prompt);
       if (data) logUsage('cache keep-warm', data);
     }, 4 * 60 * 1000);
@@ -162,7 +170,7 @@ export default function App() {
   const [deityModalClass, setDeityModalClass] = useState(null);
   const [showSubclassModal, setShowSubclassModal] = useState(false);
   const [subclassQueue, setSubclassQueue] = useState([]);
-  const [selectedModel, setSelectedModel] = useState('sonnet'); // 'sonnet', 'haiku', or 'gpt'
+  const [selectedModel, setSelectedModel] = useState('sonnet'); // sonnet, haiku, gpt (Sol), terra
   const [storySummary, setStorySummary] = useState('');
   const [tokenUsage, setTokenUsage]     = useState(null);
   const storySummaryRef = useRef('');
@@ -432,7 +440,7 @@ export default function App() {
   // Fresh adventures route through a choice: random seed or a player-written opening.
   const beginAdventure = (char) => setAdventureStartChar(char);
 
-  const startAdventure = async (char, openingOverride = null, antagonistOverride = null) => {
+  const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false) => {
     log('startAdventure', { level: char.level, xp: char.xp, hp: char.hp });
     setLoading(true);
     setApiError('');
@@ -440,7 +448,25 @@ export default function App() {
       const modelConfig = MODEL_CONFIGS[selectedModel];
       let seedPrompt;
       let arcAntagonist;
-      if (openingOverride && openingOverride.trim()) {
+      let situationSeed = null;
+      if (situationMode) {
+        situationSeed = rollSituationAdventure(charRef.current?.completedAdventures || char?.completedAdventures || []);
+        arcAntagonist = null;
+        seedPrompt = `[SITUATION ADVENTURE — OPENING]
+TITLE: ${situationSeed.title}
+PREMISE: ${situationSeed.premise}
+STARTING CONTEXT: ${situationSeed.location}
+TONE: ${situationSeed.tone}
+OPENING STYLE: ${situationSeed.openingStyle}
+
+This Adventure is a persistent BACKGROUND SITUATION, not an opening quest dump and not a predetermined plot. Establish the player naturally in the STARTING CONTEXT first. Let them arrive, look around, eat, drink, shop, travel, socialize, attend an event, or otherwise exist in the location before the Adventure demands attention. The premise may surface immediately only when that is genuinely natural; otherwise let it emerge through ordinary play.
+
+The player's PREVIOUS campaign location is deliberately unavailable for this opening. Do not infer continuity from where the last story ended. Choose a fresh, appropriate actual location for this Adventure based on the premise and STARTING CONTEXT, then establish it with [LOCATION: ...].
+
+Do not invent or reveal a villain, culprit, secret master, solution, final objective, or hidden explanation merely to make the premise feel like a quest. Let NPCs, relationships, complications, mysteries, enemies, discoveries, and goals emerge from what the player actually chooses to investigate or engage with. Combat is optional, not the default form of progress. Social interaction, exploration, negotiation, bargains, travel, humor, ordinary life, and unexpected relationships are first-class play.
+
+Use the STARTING CONTEXT because it was chosen specifically for this premise; do not replace it with the generic random-start location generator. Place it in an appropriate real Faerûn/Feywild/planar location as context requires. PLAYER AGENCY IS ABSOLUTE. Never pre-act for the player. End with exactly 4 numbered choices.`;
+      } else if (openingOverride && openingOverride.trim()) {
         // Player wrote the opening — use their antagonist if given, else roll a hidden one.
         arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level, null, char.defeatedAntagonists);
         seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. PLAYER AGENCY IS ABSOLUTE: do not invent any action, decision, conversation, combat, agreement, relationship, knowledge, or item acquisition for the player beyond what the player's opening explicitly states. Begin before the first unresolved action and let the player make it. Establish why the player is present and what they actually know before introducing mysteries that depend on context. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}\n\nThe character's backstory is background only — do NOT open in their history or build the scene around it unless the player's opening above says to.`;
@@ -474,12 +500,28 @@ End at that natural decision point and ALWAYS close with exactly 4 numbered choi
 
 NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begin after the inciting event has already been acted upon, or open with anything other than the parameters above, you have failed your role as DM.`;
       }
-      // Persist the arc so every later turn's foreshadowing points at the same villain.
-      const charWithArc = { ...char, arc: makeArc(arcAntagonist) };
-      log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
+      // Antagonists and situation Adventures are mutually exclusive story drivers.
+      // The Adventure persists in the save until the DM emits [ADVENTURE COMPLETE]
+      // or the player clears/replaces it from Settings. Completion never auto-rolls another.
+      let charWithArc;
+      if (situationMode) {
+        // A new Adventure is a fresh opening, not a continuation of wherever the
+        // previous campaign happened to end. Remove currentLocation before building
+        // the player/system data so the DM cannot anchor itself to the old scene.
+        // The opening response will establish the new place with [LOCATION: ...].
+        const { arc, adventure, currentLocation, ...rest } = char;
+        charWithArc = { ...rest, currentLocation: '', adventure: situationSeed };
+        log(`[ADVENTURE] Situation start — ${situationSeed.title}; previous location hidden`);
+      } else {
+        const { adventure, ...rest } = char;
+        charWithArc = { ...rest, arc: makeArc(arcAntagonist) };
+        log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
+      }
       const system = selectedModel === 'haiku'
         ? buildSystemPrompt(charWithArc)
-        : buildSystemPromptSonnet(charWithArc);
+        : selectedModel === 'sonnet'
+        ? buildSystemPromptSonnet(charWithArc)
+        : buildSystemPromptGpt(charWithArc);
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
         system,
@@ -577,6 +619,24 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
   // Compress oldest entries into a frozen chunk
   const compressEntries = async (entriesToCompress, sessionLabel, key) => {
     log(`[SUMMARY] Compressing ${entriesToCompress.length} entries into archived chunk (${sessionLabel})`);
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
+      try {
+        const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+        const { text: gptArchiveText, usage: gptArchiveUsage } = await callGptArchive({
+        model: MODEL_CONFIGS[selectedModel].model,
+          apiKey: gptKey,
+          entriesText: entriesToCompress.map(e => e.text).join('\n\n'),
+        });
+        const gIn = gptArchiveUsage?.input_tokens || 0;
+        const gOut = gptArchiveUsage?.output_tokens || 0;
+        log(`[HELPER] archive via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+        log(`[SUMMARY] Archived chunk created: ${gptArchiveText.length} chars`);
+        return gptArchiveText;
+      } catch (e) {
+        log('[SUMMARY] GPT compression failed: ' + e.message);
+        return entriesToCompress.map(e => e.text).join('\n\n');
+      }
+    }
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -590,6 +650,9 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           model: 'claude-sonnet-4-5',
           max_tokens: 800,
           system: `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. This is the ONLY record that will survive of these events, so what you keep matters more than how you say it. Facts only, no scene-setting or atmosphere.
+
+
+ARCHIVE COMPRESSION RULE: Target 200-300 words and make this archive substantially smaller than the source summaries. Merge related resolved events and preserve durable outcomes rather than intermediate steps. INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD: unresolved threads and unresolved members of finite sets must remain specific enough to resume correctly, even if that occasionally requires exceeding the target. Do not use that exception for resolved history, flavor, dialogue, combat detail, repeated explanations, or routine loot.
 
 PRESERVE ABOVE ALL — these are what the story is built on:
 - OBLIGATIONS IN BOTH DIRECTIONS: debts owed to the player and by the player, promises made, bargains struck, favours banked, contracts signed, terms agreed. Who owes what to whom, and for what. Never drop these.
@@ -657,7 +720,25 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
       const currentObj = parseSummary(storySummaryRef.current);
 
       // Step 1 — write new entry for recent events
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      let gptStoryEntry = '';
+      let gptStoryUsage = null;
+      if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
+        const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+        const gptTranscript = historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
+        const gptStory = await callGptStoryEntry({
+        model: MODEL_CONFIGS[selectedModel].model,
+          apiKey: gptKey,
+          playerName: charRef.current?.name || 'the adventurer',
+          currentLocation: charRef.current?.currentLocation || 'unknown',
+          transcript: gptTranscript,
+        });
+        gptStoryEntry = gptStory.text;
+        gptStoryUsage = gptStory.usage;
+        const gIn = gptStoryUsage?.input_tokens || 0;
+        const gOut = gptStoryUsage?.output_tokens || 0;
+        log(`[HELPER] story log via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+      }
+      const res = gptStoryEntry ? null : await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -668,7 +749,10 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 800,
-          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Write 3-5 sentences.
+          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Use as much compact text as continuity requires; simple linear events should stay short.
+
+
+CORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD. Compression is subordinate to continuity. Never omit, merge, generalize, or tidy away unresolved state merely to reduce length. If the story establishes a finite/enumerated set — opponents and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, or similar — preserve EVERY unresolved member and its associated detail until individually resolved. Open threads must retain who/what/where and their latest known state. Once genuinely resolved, they may be compressed aggressively into the outcome. There is no fixed length target when unresolved state requires more space.
 
 WRITE DOWN FIRST, always, if any occurred:
 - OBLIGATIONS BOTH WAYS: what someone now owes the player, what the player owes someone, promises made, bargains struck, terms agreed, favours banked or called in. These outlive everything else in the log — never omit one.
@@ -689,10 +773,10 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
         }),
       });
 
-      if (!res.ok) { lastSummarizedAt.current = prevSummarizedAt; return; }
-      const data = await res.json();
-      logUsage('story log entry', data);
-      const newEntry = data.content?.[0]?.text || '';
+      if (!gptStoryEntry && !res.ok) { lastSummarizedAt.current = prevSummarizedAt; return; }
+      const data = gptStoryEntry ? null : await res.json();
+      if (data) logUsage('story log entry', data);
+      const newEntry = gptStoryEntry || data?.content?.[0]?.text || '';
       if (!newEntry) { lastSummarizedAt.current = prevSummarizedAt; return; }
 
       // From here the entry is real. Past this point we NEVER rewind
@@ -788,6 +872,35 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
     }));
 
     log(`[NPC] Extracting ${trimmedName || 'all significant characters'} from messages #${lo}-#${hi} (${apiMsgs.length} msgs)`);
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
+      const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+      const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
+      const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
+      const { found: gptFound, usage: gptUsage } = await callGptNpcManager({
+        model: MODEL_CONFIGS[selectedModel].model,
+        apiKey: gptKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
+      });
+      const gIn = gptUsage?.input_tokens || 0;
+      const gOut = gptUsage?.output_tokens || 0;
+      log(`[HELPER] NPC manager via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+      const names = Object.keys(gptFound || {});
+      if (!names.length) { log('[NPC] Nothing found in range'); return { applied: [] }; }
+      const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions } };
+      const applied = [];
+      for (const [n, e] of Object.entries(gptFound)) {
+        const entry = { location: String(e?.location ?? ''), relationship: String(e?.relationship ?? ''), desc: String(e?.desc ?? '') };
+        const inComp = Object.keys(c.companions).find(k => k.toLowerCase() === n.toLowerCase());
+        const inNpc = Object.keys(c.npcs).find(k => k.toLowerCase() === n.toLowerCase());
+        if (inComp) c.companions[inComp] = { ...c.companions[inComp], ...entry };
+        else if (inNpc && !asCompanion) c.npcs[inNpc] = { ...c.npcs[inNpc], ...entry };
+        else if (inNpc && asCompanion) { c.companions[n] = { ...c.npcs[inNpc], ...entry }; delete c.npcs[inNpc]; }
+        else c[group][n] = entry;
+        applied.push(n);
+      }
+      updateChar(c);
+      log(`[NPC] Saved: ${applied.join(', ')}`);
+      return { applied };
+    }
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -883,6 +996,32 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
 
     const apiMsgs = logArr.slice(lo, hi + 1).map(m => ({ role: m.role === 'dm' ? 'assistant' : 'user', content: m.text }));
     log(`[TOWN] Extracting ${trimmedName || 'all significant locations'} from messages #${lo}-#${hi}`);
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
+      const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+      const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
+      const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
+      const { found: gptFound, usage: gptUsage } = await callGptTownManager({
+        model: MODEL_CONFIGS[selectedModel].model,
+        apiKey: gptKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
+      });
+      const gIn = gptUsage?.input_tokens || 0;
+      const gOut = gptUsage?.output_tokens || 0;
+      log(`[HELPER] town manager via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+      if (!Object.keys(gptFound || {}).length) { log('[TOWN] Nothing found in range'); return { applied: [] }; }
+      const c = { ...charRef.current, towns: { ...charRef.current.towns } };
+      const applied = [];
+      const asDict = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+      for (const [n, e] of Object.entries(gptFound)) {
+        const entry = { desc: String(e?.desc ?? ''), status: String(e?.status ?? ''), notable_locations: asDict(e?.notable_locations), minor_residents: asDict(e?.minor_residents) };
+        const hit = Object.keys(c.towns).find(k => k.toLowerCase() === n.toLowerCase());
+        if (hit) c.towns[hit] = { ...c.towns[hit], ...entry };
+        else c.towns[n] = entry;
+        applied.push(n);
+      }
+      updateChar(c);
+      log(`[TOWN] Saved: ${applied.join(', ')}`);
+      return { applied };
+    }
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -1009,64 +1148,82 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
   Do NOT move a bonus from one piece to another and call it an upgrade, and do NOT reduce or delete anything to pay for an increase elsewhere. If the player asks to focus on one stat, ADD to that stat — do not strip the others to fund it. If the new materials are modest, add modestly, but every piece must end up strictly better than the one consumed. You may add NEW pieces to the set as well if the materials allow and a slot is free.` : '';
 
     log(`[CRAFT] Proposing ${batchN > 1 ? `${batchN}x ` : ''}${asConstruct ? 'CONSTRUCTS' : asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        // A set is several pieces per option, each with name/slot/stats/label —
-        // far more output than single items. Too small a ceiling truncates the
-        // JSON mid-object and it fails to parse.
-        max_tokens: asSet || asConstruct ? 4000 : 3000,
-        system: `You are a master crafter in a D&D 5e game (Forgotten Realms). Given raw materials, propose 2-3 DISTINCT items that could plausibly be made from them — different in function, not just renamed versions of each other.
-
-RULES:
-- Power must fit the materials AND the character's level. Ordinary parts make ordinary gear; rare/monstrous parts make genuinely magical items. Do not hand out legendary power for common scraps.
-- Only consume materials that make sense for that item, and never more than the player has.
-- "consumes" MAY ONLY LIST MATERIALS FROM THE LIST ABOVE. Nothing else exists. Do not add a component because the design would sensibly need one, do not infer a material from another item's description, and do not reuse a name mentioned inside a NOTE — those are descriptions of what an item IS, not things the player holds. If the pile cannot make something, propose something the pile CAN make.
-- In "consumes", the "name" MUST be copied EXACTLY as it appears after NAME: in the material list — no quantity, no description, no parenthetical. Writing "Iron Ingot (dwarven, high carbon)" instead of "Iron Ingot" means the material cannot be found and the craft fails.
-- Every magical item must have a REAL mechanical effect: a +N on weapon damage, or stat:N bonuses, or both. "Enchanted" with no effect is forbidden.
-- Name items for what they do or where they came from — never "Enchanted X".
-- USE TYPE "misc" FOR ANYTHING THAT IS NOT GEAR. Refined stock and ingots, building material, furniture, rope, tools with no bonus, casks, instruments, art, trade goods, machinery, parts, a telescope, a printing press. If the player asks for something that is not worn, wielded, drunk or commanded, it is misc — do NOT force it into a weapon or magic slot to make it fit. Misc items carry a name and a label and nothing else: no slot, no bonuses, no damage.
-- CONSTRUCTS, GOLEMS AND BOUND ENTITIES use type "construct" — a thing the player OWNS AND COMMANDS rather than wears or carries: golems, animated skeletons, bound spirits and elementals, war machines, a wraith sealed in a gem. They take no equipment slot. Give a status ("dormant", "active", or "bound") and put everything else in the label. Their power is narrative, so do not give them stat bonuses; describe what they do instead.
-  THE LABEL MUST OPEN WITH A CHALLENGE RATING — "CR 17. A forty-foot golem of fused bone..." — so the DM knows exactly how powerful it is when it acts. Set the CR from the materials: ordinary parts make a CR 3-8 servant, monstrous parts CR 10-16, legendary remains (ancient dragon, tarrasque, demon lord) CR 20+. Follow the CR with what it is, what it can do, and what commanding it costs.
-- ITEM TYPE IS STRICT. Use type "armor" ONLY for a main chest/body piece (breastplate, chain shirt, plate) — it takes the armor slot and its AC REPLACES the wearer's armour. EVERY other wearable is type "magic" with the matching slot: a cloak is magic/cloak, boots are magic/feet, a helm is magic/head, bracers are magic/arms, a belt is magic/waist, a shirt is magic/torso, gloves are magic/hands, a mask or goggles are magic/face, pauldrons are magic/shoulders, an amulet is magic/neck, a ring is magic/ring. OFFHAND is shared: a shield is magic/offhand with an appropriate ac:N bonus and any other effects; a spellcasting focus is magic/offhand with appropriate bonuses/effects. Giving a cloak type "armor" puts it in the armour slot and throws away the wearer's real armour — never do this.
-- A magic wearable's power lives in its bonuses (ac:N, str:N, dex:N ...). Protective effects that aren't calculable — disadvantage on attacks against you, advantage on saves, resistances — should be represented by a sensible ac:N bonus AND described in the label, so the item does something mechanically as well as narratively.
-- ELEMENTAL AND DIVINE WEAPONS express their extra damage in the damage field as "plus <dice> <type>" — e.g. "1d8+1 plus 1d4 radiant", "2d6 plus 3d10 necrotic", and these stack: "1d6+2 plus 1d4 lightning plus 1d4 thunder". The app rolls these separately and doubles them on a critical hit. Damage described ONLY in the label is never rolled, so a flaming sword whose fire lives in the label is mechanically a plain sword.
-- ONLY these bonus keys are calculated: ac, str, dex, con, int, wis, cha, and skill names (perception, stealth, athletics, persuasion ...). Invented keys like "necrotic_resistance:full" or "fire_immunity:true" do nothing — express resistances, immunities and per-day powers in the LABEL instead.
-- ARMOUR PROTECTION COMES FROM ITS "ac" FIELD, NOT A BONUS. For a type "armor" chest piece, better protection means a HIGHER ac VALUE — masterwork plate is ac 19 or 20, not ac 18 with a separate ac:2. Reserve the bonuses field on armour for STAT bonuses (con:2, str:1). Other worn pieces — helm, cloak, ring, boots — are type "magic" and DO use ac:N in their bonuses, since they have no ac field of their own.
-- LABELS ARE SHORT AND TYPE-APPROPRIATE. Only a weapon's damage field and its "plus" dice are ever rolled by the game — everything in a label is narration. A label stuffed with spell lists and damage numbers costs the player context on EVERY turn for the rest of the campaign and buys nothing mechanical.
-  DO NOT WRITE WHAT IT COSTS TO USE OR COMMAND SOMETHING. The game tracks no actions, bonus actions, reactions, concentration or per-turn limits, so none of that is simulated — and a vague substitute is worse, because it sounds like a rule and is not one. ALL of these are banned: "as a bonus action", "requires an action", "once per turn", "as a reaction", "requires concentration", "requires directed effort", "costs focus", "costs your attention", "demands concentration to control", and every other phrase of that shape. Just omit the sentence. If the thing has a genuine consequence in the WORLD — it can be seen for miles when it wakes, it answers only to a word you set, its binding frays a little each time — write that instead, as a fact about the thing rather than a price the player pays to act.
-  LABELS ARE NOTES, NOT PROSE. This text is fed to the DM on every turn for the rest of the campaign, so it is paid for hundreds of times. Write it telegraphically: fragments separated by semicolons, no full sentences, no connecting clauses, no "the X allowing you to Y" constructions. Keep what it looks like and what it does; cut everything that only makes it read nicely. Aim for under 25 words.
-    BLOATED: "Mithral boots plated with dragon scales and mythallar circuits, the distribution nodes allowing you to anchor yourself to any surface or float weightlessly at will. The soles leave glowing footprints."
-    RIGHT:   "Mithral, dragon scale, glowing footprints; anchor to any surface; float at will."
-    BLOATED: "The three walkers function as nodes of a single strategic consciousness, their cognitive cores creating an overlapping hive intelligence."
-    RIGHT:   "Three walkers, one hive mind; shared senses; coordinate without speech."
-  Then, by type:
-  WEAPON — the damage field carries the numbers. The label gets at most ONE special ability, in a clause. No second and third powers, no per-day spell lists.
-  ARMOUR — defensive, protective and utility effects ONLY: resistances, immunities, endurance, movement, senses. Armour never has offensive abilities and never deals damage.
-  ACCESSORIES (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear, shirts) — utility and passive effects only. NO damage dice at all, and no attack powers.
-  CONSTRUCTS — what it is, and what commanding it costs. The CR at the front tells the DM how hard it hits; do NOT list spells, per-day powers or damage numbers.
-- Charges and per-day effects are narrative text; there is no charge counter.
-- ${levelNote}${constructRules}${setRules}${batchRules}
-Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`,
-        messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
-      }),
-    });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    logUsage('crafting', data);
-    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      // A response cut off by the token ceiling ends mid-object rather than
-      // with a closing brace — say so instead of a generic parse failure.
-      const truncated = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
-      throw new Error(truncated
-        ? 'The forge ran long and the answer was cut off — select fewer materials, or try again'
-        : 'Crafting returned unreadable JSON — try again');
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
+      const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+      const { parsed: gptParsed, usage: gptUsage } = await callGptCrafting({
+        model: MODEL_CONFIGS[selectedModel].model,
+        apiKey: gptKey,
+        materialsText: matList,
+        characterLevel: char.level,
+        intent,
+        asSet,
+        asConstruct,
+        quantity: batchN,
+      });
+      parsed = gptParsed;
+      const gIn = gptUsage?.input_tokens || 0;
+      const gOut = gptUsage?.output_tokens || 0;
+      log(`[HELPER] crafting via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+    } else {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          // A set is several pieces per option, each with name/slot/stats/label —
+          // far more output than single items. Too small a ceiling truncates the
+          // JSON mid-object and it fails to parse.
+          max_tokens: asSet || asConstruct ? 4000 : 3000,
+          system: `You are a master crafter in a D&D 5e game (Forgotten Realms). Given raw materials, propose 2-3 DISTINCT items that could plausibly be made from them — different in function, not just renamed versions of each other.
+
+  RULES:
+  - Power must fit the materials AND the character's level. Ordinary parts make ordinary gear; rare/monstrous parts make genuinely magical items. Do not hand out legendary power for common scraps.
+  - Only consume materials that make sense for that item, and never more than the player has.
+  - "consumes" MAY ONLY LIST MATERIALS FROM THE LIST ABOVE. Nothing else exists. Do not add a component because the design would sensibly need one, do not infer a material from another item's description, and do not reuse a name mentioned inside a NOTE — those are descriptions of what an item IS, not things the player holds. If the pile cannot make something, propose something the pile CAN make.
+  - In "consumes", the "name" MUST be copied EXACTLY as it appears after NAME: in the material list — no quantity, no description, no parenthetical. Writing "Iron Ingot (dwarven, high carbon)" instead of "Iron Ingot" means the material cannot be found and the craft fails.
+  - Every magical item must have a REAL mechanical effect: a +N on weapon damage, or stat:N bonuses, or both. "Enchanted" with no effect is forbidden.
+  - Name items for what they do or where they came from — never "Enchanted X".
+  - USE TYPE "misc" FOR ANYTHING THAT IS NOT GEAR. Refined stock and ingots, building material, furniture, rope, tools with no bonus, casks, instruments, art, trade goods, machinery, parts, a telescope, a printing press. If the player asks for something that is not worn, wielded, drunk or commanded, it is misc — do NOT force it into a weapon or magic slot to make it fit. Misc items carry a name and a label and nothing else: no slot, no bonuses, no damage.
+  - CONSTRUCTS, GOLEMS AND BOUND ENTITIES use type "construct" — a thing the player OWNS AND COMMANDS rather than wears or carries: golems, animated skeletons, bound spirits and elementals, war machines, a wraith sealed in a gem. They take no equipment slot. Give a status ("dormant", "active", or "bound") and put everything else in the label. Their power is narrative, so do not give them stat bonuses; describe what they do instead.
+    THE LABEL MUST OPEN WITH A CHALLENGE RATING — "CR 17. A forty-foot golem of fused bone..." — so the DM knows exactly how powerful it is when it acts. Set the CR from the materials: ordinary parts make a CR 3-8 servant, monstrous parts CR 10-16, legendary remains (ancient dragon, tarrasque, demon lord) CR 20+. Follow the CR with what it is, what it can do, and what commanding it costs.
+  - ITEM TYPE IS STRICT. Use type "armor" ONLY for a main chest/body piece (breastplate, chain shirt, plate) — it takes the armor slot and its AC REPLACES the wearer's armour. EVERY other wearable is type "magic" with the matching slot: a cloak is magic/cloak, boots are magic/feet, a helm is magic/head, bracers are magic/arms, a belt is magic/waist, a shirt is magic/torso, gloves are magic/hands, a mask or goggles are magic/face, pauldrons are magic/shoulders, an amulet is magic/neck, a ring is magic/ring. OFFHAND is shared: a shield is magic/offhand with an appropriate ac:N bonus and any other effects; a spellcasting focus is magic/offhand with appropriate bonuses/effects. Giving a cloak type "armor" puts it in the armour slot and throws away the wearer's real armour — never do this.
+  - A magic wearable's power lives in its bonuses (ac:N, str:N, dex:N ...). Protective effects that aren't calculable — disadvantage on attacks against you, advantage on saves, resistances — should be represented by a sensible ac:N bonus AND described in the label, so the item does something mechanically as well as narratively.
+  - ELEMENTAL AND DIVINE WEAPONS express their extra damage in the damage field as "plus <dice> <type>" — e.g. "1d8+1 plus 1d4 radiant", "2d6 plus 3d10 necrotic", and these stack: "1d6+2 plus 1d4 lightning plus 1d4 thunder". The app rolls these separately and doubles them on a critical hit. Damage described ONLY in the label is never rolled, so a flaming sword whose fire lives in the label is mechanically a plain sword.
+  - ONLY these bonus keys are calculated: ac, str, dex, con, int, wis, cha, and skill names (perception, stealth, athletics, persuasion ...). Invented keys like "necrotic_resistance:full" or "fire_immunity:true" do nothing — express resistances, immunities and per-day powers in the LABEL instead.
+  - ARMOUR PROTECTION COMES FROM ITS "ac" FIELD, NOT A BONUS. For a type "armor" chest piece, better protection means a HIGHER ac VALUE — masterwork plate is ac 19 or 20, not ac 18 with a separate ac:2. Reserve the bonuses field on armour for STAT bonuses (con:2, str:1). Other worn pieces — helm, cloak, ring, boots — are type "magic" and DO use ac:N in their bonuses, since they have no ac field of their own.
+  - LABELS ARE SHORT AND TYPE-APPROPRIATE. Only a weapon's damage field and its "plus" dice are ever rolled by the game — everything in a label is narration. A label stuffed with spell lists and damage numbers costs the player context on EVERY turn for the rest of the campaign and buys nothing mechanical.
+    DO NOT WRITE WHAT IT COSTS TO USE OR COMMAND SOMETHING. The game tracks no actions, bonus actions, reactions, concentration or per-turn limits, so none of that is simulated — and a vague substitute is worse, because it sounds like a rule and is not one. ALL of these are banned: "as a bonus action", "requires an action", "once per turn", "as a reaction", "requires concentration", "requires directed effort", "costs focus", "costs your attention", "demands concentration to control", and every other phrase of that shape. Just omit the sentence. If the thing has a genuine consequence in the WORLD — it can be seen for miles when it wakes, it answers only to a word you set, its binding frays a little each time — write that instead, as a fact about the thing rather than a price the player pays to act.
+    LABELS ARE NOTES, NOT PROSE. This text is fed to the DM on every turn for the rest of the campaign, so it is paid for hundreds of times. Write it telegraphically: fragments separated by semicolons, no full sentences, no connecting clauses, no "the X allowing you to Y" constructions. Keep what it looks like and what it does; cut everything that only makes it read nicely. Aim for under 25 words.
+      BLOATED: "Mithral boots plated with dragon scales and mythallar circuits, the distribution nodes allowing you to anchor yourself to any surface or float weightlessly at will. The soles leave glowing footprints."
+      RIGHT:   "Mithral, dragon scale, glowing footprints; anchor to any surface; float at will."
+      BLOATED: "The three walkers function as nodes of a single strategic consciousness, their cognitive cores creating an overlapping hive intelligence."
+      RIGHT:   "Three walkers, one hive mind; shared senses; coordinate without speech."
+    Then, by type:
+    WEAPON — the damage field carries the numbers. The label gets at most ONE special ability, in a clause. No second and third powers, no per-day spell lists.
+    ARMOUR — defensive, protective and utility effects ONLY: resistances, immunities, endurance, movement, senses. Armour never has offensive abilities and never deals damage.
+    ACCESSORIES (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear, shirts) — utility and passive effects only. NO damage dice at all, and no attack powers.
+    CONSTRUCTS — what it is, and what commanding it costs. The CR at the front tells the DM how hard it hits; do NOT list spells, per-day powers or damage numbers.
+  - Charges and per-day effects are narrative text; there is no charge counter.
+  - ${levelNote}${constructRules}${setRules}${batchRules}
+  Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`,
+          messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
+        }),
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+      const data = await res.json();
+      logUsage('crafting', data);
+      const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        // A response cut off by the token ceiling ends mid-object rather than
+        // with a closing brace — say so instead of a generic parse failure.
+        const truncated = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
+        throw new Error(truncated
+          ? 'The forge ran long and the answer was cut off — select fewer materials, or try again'
+          : 'Crafting returned unreadable JSON — try again');
+      }
     }
     // Bonuses may come back as a string ("ac:2"), an object ({ac:2}) or an
     // array. Normalise to the string form the tag builder and parser expect —
@@ -1200,17 +1357,31 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
   // actually holds. Models sometimes echo the descriptive form ("Iron Ingot
   // (dwarven)") or a quantity suffix; match exactly first, then progressively
   // looser, so a formatting slip doesn't fail an otherwise valid craft.
+  // Canonicalise names before comparing model output to held inventory. Models
+  // frequently swap straight and curly apostrophes (Knight's vs Knight’s), and
+  // may vary whitespace/case. Preserve the player's exact held spelling once a
+  // match is found so downstream inventory/stash/bag operations still use the
+  // real item key.
+  const canonicalItemName = (name) => String(name || '')
+    .normalize('NFKC')
+    .replace(/[\u2018\u2019\u02BC\uFF07]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
   const resolveHeldName = (wanted, held) => {
     const w = (wanted || '').trim();
-    const exact = held.find(h => h.toLowerCase() === w.toLowerCase());
+    const exact = held.find(h => canonicalItemName(h) === canonicalItemName(w));
     if (exact) return exact;
     const stripped = w.replace(/\s*\([^)]*\)\s*$/, '').replace(/\s+x\d+$/i, '').trim();
-    const onStripped = held.find(h => h.toLowerCase() === stripped.toLowerCase());
+    const strippedKey = canonicalItemName(stripped);
+    const onStripped = held.find(h => canonicalItemName(h) === strippedKey);
     if (onStripped) return onStripped;
     // longest held name that the requested string begins with (handles a
     // trailing description appended without brackets)
     const prefix = held
-      .filter(h => stripped.toLowerCase().startsWith(h.toLowerCase()))
+      .filter(h => strippedKey.startsWith(canonicalItemName(h)))
       .sort((a, b) => b.length - a.length)[0];
     return prefix || w;
   };
@@ -1250,7 +1421,10 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
         items[t.bag] = { ...bag, contents };
         next = { ...next, items };
       }
-      return next;
+      // [REMOVE:] can only see inventory at parse time. Stash/bag consumption
+      // happens here afterwards, so prune definitions only after every source
+      // has actually been updated.
+      return pruneDeadItemDefinitions(next);
     };
     return { removeTags, apply, bagTakes };
   };
@@ -1402,6 +1576,19 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     const shape = `{ "results": [ { "recovers": [{"name":"Material Name","count":2}], "destroyed": ["Item Name"], "note": "one sentence on what survived the process and what was lost" } ] }`;
 
     log(`[SALVAGE] Proposing breakdown of ${items.length} item(s)`);
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
+      const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+      const { result: gptResult, usage: gptUsage } = await callGptSalvage({
+        model: MODEL_CONFIGS[selectedModel].model,
+        apiKey: gptKey,
+        itemsText: itemList,
+      });
+      const gIn = gptUsage?.input_tokens || 0;
+      const gOut = gptUsage?.output_tokens || 0;
+      log(`[HELPER] salvage via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
+      log(`[SALVAGE] Recovers: ${(gptResult.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
+      return gptResult;
+    }
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -1499,6 +1686,18 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
     const c = charRef.current;
     updateChar({ ...c, defeatedAntagonists: (c.defeatedAntagonists || []).filter(d => d !== name) });
     log(`[ARC] ${name} removed from the defeated ledger — rollable again`);
+  };
+
+  // Remove an Adventure from the completed ledger so it becomes rollable again.
+  // Like defeated foes, this list is history/shuffle control only and is never
+  // sent to the DM.
+  const restoreAdventure = (title) => {
+    const c = charRef.current;
+    updateChar({
+      ...c,
+      completedAdventures: (c.completedAdventures || []).filter(a => (typeof a === 'string' ? a : a?.title) !== title),
+    });
+    log(`[ADVENTURE] ${title} removed from completed ledger — rollable again`);
   };
 
   // Promote a construct ITEM into a companion record. Only worth doing for
@@ -1624,7 +1823,11 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
 
     const objectiveCtx = objectiveNoteRef.current;
     objectiveNoteRef.current = '';
-    const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx + objectiveCtx;
+    const adv = charRef.current.adventure;
+    const adventureCtx = adv
+      ? `\n\n[ACTIVE ADVENTURE — BACKGROUND SITUATION]\nTITLE: ${adv.title}\nPREMISE: ${adv.premise}\nSTARTING CONTEXT: ${adv.location || ''}\n\nThis is the current story driver, but it is NOT the player's mandatory immediate objective. Introduce or advance it only when organic. It may sit dormant through unrelated conversations, shopping, crafting, travel activities, romance, social scenes, exploration, or player-chosen tangents. NEVER interrupt an active interaction merely to pull the player back to this Adventure. Do not repeatedly remind them it exists. Once the player engages, let their choices determine its pace and shape. Do not force a villain, combat, or predetermined solution.\n\nWhen the situation has ACTUALLY reached a natural resolution, emit [ADVENTURE COMPLETE] exactly once. Do not emit it merely because the player walks away, delays it, or changes subjects.`
+      : '';
+    const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx + objectiveCtx + adventureCtx;
 
     const history = buildApiHistory(historyOverride);
 
@@ -1642,7 +1845,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       const modelConfig = MODEL_CONFIGS[selectedModel];
       const system = selectedModel === 'haiku'
         ? buildSystemPrompt(charRef.current)
-        : buildSystemPromptSonnet(charRef.current);
+        : selectedModel === 'sonnet'
+        ? buildSystemPromptSonnet(charRef.current)
+        : buildSystemPromptGpt(charRef.current);
       const { text: dmText, usage: dmUsage } = await callDM(
         [...history, { role:'user', content: outgoing }],
         system,
@@ -1657,7 +1862,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       // Check if DM requested a skill roll — intercept and roll it
       const { resultText, rollResult: skillRoll } = interceptRollRequest(dmText, charRef.current, log);
       let finalText = dmText;
-      let finalRoll = actionRoll || skillRoll || null;
+      // Player-initiated attacks belong on the final DM response. A DM-requested
+      // roll belongs on the setup message that actually requested it.
+      let finalRoll = actionRoll || null;
       let rollSetupText = '';
 
       // If DM requested a roll, send the result back for narration
@@ -1668,7 +1875,11 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         const setupText = dmText.replace(/\[ROLL:[^\]]*\]/gi, '').trim();
         if (setupText) {
           rollSetupText = setupText;
-          addMessage({ role:'dm', text: setupText, id: Date.now() - 1, roll: null });
+          addMessage({ role:'dm', text: setupText, id: Date.now() - 1, roll: skillRoll || null });
+        } else if (skillRoll) {
+          // Bare [ROLL:] requests have no visible setup message, so keep the
+          // result on the follow-up narration rather than dropping it.
+          finalRoll = skillRoll;
         }
         const { text: followUp, usage: followUpUsage } = await callDM(
           [...history,
@@ -1707,6 +1918,17 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         : finalText;
 
       let newChar = applyEffects(effectsText, charRef.current);
+      if (/\[ADVENTURE COMPLETE\]/i.test(effectsText) && newChar.adventure) {
+        const completed = newChar.adventure;
+        const finished = completed.title || 'Adventure';
+        const prior = Array.isArray(newChar.completedAdventures) ? newChar.completedAdventures : [];
+        const completedAdventures = prior.some(a => (typeof a === 'string' ? a : a?.title) === finished)
+          ? prior
+          : [...prior, completed];
+        const { adventure, ...rest } = newChar;
+        newChar = { ...rest, completedAdventures };
+        log(`[ADVENTURE] Complete — ${finished} added to completed ledger. No replacement rolled.`);
+      }
       if (newChar.arc?.antagonist !== charRef.current.arc?.antagonist) {
         log(`[ARC] Arc complete — new antagonist rolled: ${newChar.arc?.antagonist}`);
         // Build a fresh campaign skeleton for the new arc, in the background so
@@ -2105,6 +2327,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
           antagonists={antagonistsForLevel(adventureStartChar.level)}
           defeatedAntagonists={adventureStartChar.defeatedAntagonists || []}
           onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
+          onSituationAdventure={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, null, true); }}
           onManual={(text, antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text, antagonist); }}
           onChooseAntagonist={(antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, antagonist); }}
         />
@@ -2185,7 +2408,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onRenameItem={renameItem}
             onDeleteFromBag={deleteFromBag}
             selectedModel={selectedModel}
-            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : 'sonnet')}
+            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : m === 'gpt' ? 'terra' : 'sonnet')}
             pacing={character.pacing || 'normal'}
             environment={character.environment || 'wilderness'}
             onChangeEnvironment={(env)=>updateChar({ ...charRef.current, environment: env })}
@@ -2196,6 +2419,19 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             }}
             arcAntagonist={character.arc?.antagonist || null}
             arcLocation={character.arc?.arcLocation || null}
+            adventure={character.adventure || null}
+            onClearAdventure={() => {
+              const { adventure, ...rest } = charRef.current;
+              updateChar(rest);
+              log('[ADVENTURE] Cleared by player — no story driver');
+            }}
+            onRollAdventure={() => {
+              const adventure = rollSituationAdventure(charRef.current.completedAdventures || []);
+              const { arc, adventure: oldAdventure, ...rest } = charRef.current;
+              if (!adventure) { log('[ADVENTURE] No rollable Adventures remain — restore one from Completed Adventures'); return; }
+              updateChar({ ...rest, adventure });
+              log(`[ADVENTURE] Rolled by player — ${adventure.title}`);
+            }}
             onClearArc={() => {
               const { arc, ...rest } = charRef.current;
               updateChar(rest);
@@ -2203,12 +2439,14 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             }}
             onRollArc={() => {
               const arc = rollArc(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists);
-              updateChar({ ...charRef.current, arc });
-              log(`[ARC] Rolled by player — new antagonist: ${arc.antagonist} @ ${arc.arcLocation}`);
+              const { adventure, ...rest } = charRef.current;
+              updateChar({ ...rest, arc });
+              log(`[ARC] Rolled by player — new antagonist: ${arc.antagonist} @ ${arc.arcLocation}; Adventure cleared`);
             }}
             onSetArc={(text) => {
-              updateChar({ ...charRef.current, arc: makeArc(text) });
-              log(`[ARC] Custom antagonist set by player: ${text}`);
+              const { adventure, ...rest } = charRef.current;
+              updateChar({ ...rest, arc: makeArc(text) });
+              log(`[ARC] Custom antagonist set by player: ${text}; Adventure cleared`);
             }}
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
@@ -2222,6 +2460,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onStartNewCampaign={startNewCampaign}
             defeatedAntagonists={character.defeatedAntagonists || []}
             onReviveAntagonist={reviveAntagonist}
+            completedAdventures={character.completedAdventures || []}
+            onRestoreAdventure={restoreAdventure}
             onCycleConstructStatus={cycleConstructStatus}
             onPromoteConstruct={promoteConstructToCompanion}
             onProposeCrafting={proposeCrafting}

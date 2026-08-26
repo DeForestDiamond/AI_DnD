@@ -538,7 +538,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
                 const bits = [];
                 if (d.type) bits.push(d.type);
                 if (d.slot) bits.push(d.slot);
-                if (d.ac !== undefined) bits.push(`AC ${d.ac}`);
+                if (d.ac !== undefined && d.ac !== null && d.ac !== '') bits.push(`AC ${d.ac}`);
                 if (d.damage) bits.push(`${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
                 if (Array.isArray(d.extras)) d.extras.forEach(e => bits.push(`+${e.dice} ${e.type}`));
                 if (d.bonuses && Object.keys(d.bonuses).length) bits.push(Object.entries(d.bonuses).map(([k,v])=>`${k}:${v}`).join(','));
@@ -616,7 +616,7 @@ function CraftingPanel({ character, db, onProposeCrafting, onExecuteCrafting }) 
               <div key={j} style={{borderLeft:`1px solid ${colors.borderDim}`,paddingLeft:6,marginBottom:4}}>
                 <div style={{fontSize:12,color:colors.text}}>{pc.name}</div>
                 <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.4}}>
-                  {pc.type}{pc.slot && pc.slot !== pc.type ? ` · ${pc.slot}` : ''}{pc.ac !== undefined && pc.ac !== '' ? ` · AC ${pc.ac}` : ''}{pc.damage ? ` · ${pc.damage}` : ''}{pc.bonuses ? ` · ${pc.bonuses}` : ''}
+                  {pc.type}{pc.slot && pc.slot !== pc.type ? ` · ${pc.slot}` : ''}{pc.ac !== undefined && pc.ac !== null && pc.ac !== '' ? ` · AC ${pc.ac}` : ''}{pc.damage ? ` · ${pc.damage}` : ''}{pc.bonuses ? ` · ${pc.bonuses}` : ''}
                 </div>
                 {pc.label && <div style={{fontSize:10,color:colors.textDim,lineHeight:1.4}}>{pc.label}</div>}
               </div>
@@ -824,7 +824,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
                 const bits = [];
                 if (d.type) bits.push(d.type);
                 if (d.slot) bits.push(d.slot);
-                if (d.ac !== undefined) bits.push(`AC ${d.ac}`);
+                if (d.ac !== undefined && d.ac !== null && d.ac !== '') bits.push(`AC ${d.ac}`);
                 if (d.damage) bits.push(`${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
                 if (Array.isArray(d.extras)) d.extras.forEach(e => bits.push(`+${e.dice} ${e.type}`));
                 if (d.bonuses && Object.keys(d.bonuses).length) bits.push(Object.entries(d.bonuses).map(([k,v])=>`${k}:${v}`).join(','));
@@ -1206,7 +1206,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, adventure, onClearAdventure, onRollAdventure, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, completedAdventures, onRestoreAdventure, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
   const db       = allItems(character.items || {});
   const [activeTab, setActiveTab] = useState('character');
   const [levelClassChoice, setLevelClassChoice] = useState(null);
@@ -1452,8 +1452,8 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {activeTab==='settings' && <>
       {/* Model toggle */}
       {onToggleModel && (
-        <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:selectedModel==='gpt'?'#7aa7ff':colors.border}}>
-          {selectedModel==='sonnet' ? '✨ DM: Sonnet' : selectedModel==='haiku' ? '⚡ DM: Haiku' : '🧠 DM: GPT'}
+        <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:(selectedModel==='gpt'||selectedModel==='terra')?'#7aa7ff':colors.border}}>
+          {selectedModel==='sonnet' ? '✨ DM: Sonnet' : selectedModel==='haiku' ? '⚡ DM: Haiku' : selectedModel==='gpt' ? '🧠 DM: GPT Sol' : '🌍 DM: GPT Terra'}
         </button>
       )}
 
@@ -1472,6 +1472,29 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:13,padding:'7px 8px',borderRadius:4,outline:'none',marginTop:6,cursor:'pointer'}}>
           {ENVIRONMENTS.map(env => <option key={env.id} value={env.id}>📍 {env.label}</option>)}
         </select>
+      )}
+
+      {/* Situation Adventure — mutually exclusive with antagonist arcs */}
+      {onRollAdventure && (
+        <div style={{marginTop:6,padding:'7px 9px',background:'rgba(0,0,0,0.25)',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>ADVENTURE</div>
+          <div style={{fontSize:12,color:adventure?colors.textDim:colors.textFaint,fontStyle:'italic',marginBottom:6,lineHeight:1.35}}>
+            {adventure ? adventure.title : (arcAntagonist ? 'Inactive — antagonist arc is the current story driver.' : 'Open — no Adventure is active.')}
+          </div>
+          {adventure?.premise && (
+            <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.4,marginBottom:6}}>{adventure.premise}</div>
+          )}
+          {adventure?.location && (
+            <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.35,marginBottom:6}}>📍 {adventure.location}</div>
+          )}
+          <div style={{display:'flex',gap:6}}>
+            <button onClick={onRollAdventure} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>🎭 {adventure?'Reroll':'Roll Adventure'}</button>
+            {adventure && <button onClick={onClearAdventure} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✕ Clear</button>}
+          </div>
+          <div style={{fontSize:9,color:colors.textDead,lineHeight:1.35,marginTop:5}}>
+            Rolling an Adventure clears any antagonist. [ADVENTURE COMPLETE] clears it without rolling a replacement.
+          </div>
+        </div>
       )}
 
       {/* Story arc — the hidden antagonist all foreshadowing builds toward */}
@@ -1518,6 +1541,25 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             </div>
           )}
         </div>
+      )}
+
+      {onRestoreAdventure && (completedAdventures?.length > 0) && (
+        <CollapsibleSection title="📚 COMPLETED ADVENTURES" count={completedAdventures.length} defaultOpen={false}>
+          <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
+            Adventures you've completed. These stay out of the Adventure shuffle — remove one to let it be rolled again.
+          </div>
+          {completedAdventures.map((entry, i) => {
+            const title = typeof entry === 'string' ? entry : entry?.title || 'Adventure';
+            return (
+              <div key={title + i} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
+                <span style={{flex:1,minWidth:0,fontSize:12,color:colors.textDim,lineHeight:1.4}}>{title}</span>
+                <button title="Return this Adventure to the shuffle"
+                  onClick={()=>onRestoreAdventure(title)}
+                  style={{...btn(false),flexShrink:0,fontSize:10,padding:'2px 6px'}}>↺</button>
+              </div>
+            );
+          })}
+        </CollapsibleSection>
       )}
 
       {onReviveAntagonist && (defeatedAntagonists?.length > 0) && (
