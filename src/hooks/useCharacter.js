@@ -168,15 +168,22 @@ export const getMainWeapon = (slots, stats, customItems) => {
   if (!name) return null;
   const w = db[name];
   if (!w || w.type !== 'weapon') return null;
-  // Arcane Pistol uses INT, finesse weapons use best of STR/DEX, others use STR
-  let statBonus;
+  // Choose the attack ability once, here, for every attack path.
+  // Ranged weapons use Dexterity; finesse melee weapons use the better of
+  // Strength/Dexterity; ordinary melee weapons use Strength. Explicit INT-based
+  // arcane weapons keep their special rule.
+  let attackAbility;
   if (w.label?.includes('INT-based') || name === 'Arcane Pistol') {
-    statBonus = statMod(effStats.int);
+    attackAbility = 'int';
+  } else if (w.range === 'ranged') {
+    attackAbility = 'dex';
+  } else if (w.finesse && statMod(effStats.dex) >= statMod(effStats.str)) {
+    attackAbility = 'dex';
   } else {
-    const useDex = w.finesse && statMod(effStats.dex) >= statMod(effStats.str);
-    statBonus = useDex ? statMod(effStats.dex) : statMod(effStats.str);
+    attackAbility = 'str';
   }
-  return { name, ...w, statBonus };
+  const statBonus = statMod(effStats[attackAbility]);
+  return { name, ...w, statBonus, attackAbility };
 };
 
 export const equippableInSlot = (char, slotId) => {

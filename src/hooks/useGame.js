@@ -90,12 +90,15 @@ export const performSkillCheck = (statValue, difficulty, addProfBonus = false, l
 };
 
 export const performAttack = (weapon, stats, level) => {
-  const pb       = profBonus(level);
-  const atkRoll  = rollDie(20);
-  const atkBonus = weapon.statBonus + pb + (weapon.bonus || 0);
-  const totalAtk = atkRoll + atkBonus;
-  const dmgRoll  = rollDice(weapon.damage);
-  const dmgBonus = weapon.statBonus + (weapon.bonus || 0);
+  const profBonusValue = profBonus(level);
+  const atkRoll         = rollDie(20);
+  const statBonus       = weapon.statBonus || 0;
+  const weaponBonus     = weapon.bonus || 0;
+  const statLabel       = (weapon.attackAbility || 'str').toUpperCase();
+  const atkBonus        = statBonus + profBonusValue + weaponBonus;
+  const totalAtk        = atkRoll + atkBonus;
+  const dmgRoll         = rollDice(weapon.damage);
+  const dmgBonus        = statBonus + weaponBonus;
   const crit     = atkRoll === 20;
   const fumble   = atkRoll === 1;
   // Extra damage dice of another type (1d4 radiant, 2d6 fire...). Rolled
@@ -107,7 +110,7 @@ export const performAttack = (weapon, stats, level) => {
   });
   const extraTotal = extras.reduce((sum, e) => sum + e.roll, 0);
   const totalDmg = Math.max(1, dmgRoll + dmgBonus + extraTotal);
-  return { atkRoll, atkBonus, totalAtk, dmgRoll, dmgBonus, extras, extraTotal, totalDmg, crit, fumble };
+  return { atkRoll, atkBonus, totalAtk, statBonus, statLabel, profBonus: profBonusValue, weaponBonus, dmgRoll, dmgBonus, extras, extraTotal, totalDmg, crit, fumble };
 };
 
 // ── Model configs ──────────────────────────────────────────────────────────────
@@ -149,7 +152,7 @@ const buildCharBlock = (char) => {
   const classDesc   = Object.entries(classLevels).map(([c,l]) => `${c} ${l}`).join(' / ');
   const db          = allItems(char.items || {});
   const equippedList = Object.entries(char.slots).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join(', ') || 'nothing';
-  const weaponLine  = weapon ? `${weapon.name} (${weapon.damage}${weapon.bonus?`+${weapon.bonus}`:''}${(weapon.extras||[]).map(e=>` plus ${e.dice} ${e.type}`).join('')}, Attack bonus +${weapon.statBonus+pb+(weapon.bonus||0)}, ${weapon.finesse?'finesse/Dexterity':'Strength'}${weapon.label?', '+weapon.label:''})` : 'Unarmed (1 damage)';
+  const weaponLine  = weapon ? `${weapon.name} (${weapon.damage}${weapon.bonus?`+${weapon.bonus}`:''}${(weapon.extras||[]).map(e=>` plus ${e.dice} ${e.type}`).join('')}, Attack bonus +${weapon.statBonus+pb+(weapon.bonus||0)}, ${(weapon.attackAbility || 'str').toUpperCase()}${weapon.finesse && weapon.range !== 'ranged' ? '/finesse' : ''}${weapon.label?', '+weapon.label:''})` : 'Unarmed (1 damage)';
   const sneakLine   = char.sneakAttackDice ? `\n- SNEAK ATTACK: ${char.sneakAttackDice} extra damage when attacking with advantage or from hiding` : '';
   const offhandData = char.slots.offhand ? db[char.slots.offhand] : null;
   const focusLine   = offhandData?.type==='focus' ? `\n- HOLY FOCUS: ${char.slots.offhand} equipped (${offhandData.label})` : '';
@@ -1271,7 +1274,7 @@ Never abbreviate stats in narrative — spell out Strength, Dexterity, Constitut
         } else {
           result.totalDmg += sneakDmg;
           const extraDesc2 = result.extras?.length ? result.extras.map(e => `+${e.roll} ${e.type} (${e.dice})`).join('') : '';
-          log?.(`[ATTACK] ${weapon.name}: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit → dmg ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}`);
+          log?.(`[ATTACK] ${weapon.name}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} to hit → dmg ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}`);
           context += `\n\n[GAME DATA — ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
         }
         rollResult = {
@@ -1323,19 +1326,26 @@ Never abbreviate stats in narrative — spell out Strength, Dexterity, Constitut
         label = held ? `${held} (no stats on file)` : 'unarmed';
         if (held) log?.(`[ROLL] WARNING: "${held}" is equipped but has no entry in the character item registry — attack resolved from raw STR/DEX. Re-issue or re-craft the item to restore its stats.`);
       }
-      const atkBonus = abilityMod + pb2 + enchant;
-      const d20 = rollDie(20);
-      const total = d20 + atkBonus;
-      const hit = total >= diff;
-      log?.(`[ROLL] ${statLabel} with ${label}: d20=${d20}+${abilityMod}+${pb2}${enchant?`+${enchant}`:''}=${total} vs DC${diff} — ${hit?'HIT':'MISS'}`);
+      const attackWeapon = weapon || {
+        name: label,
+        damage: '1d1',
+        statBonus: abilityMod,
+        attackAbility: statMod(effAtk.dex) >= statMod(effAtk.str) ? 'dex' : 'str',
+        bonus: enchant,
+        extras: [],
+      };
+      const result = performAttack(attackWeapon, char.stats, char.level);
+      const hit = result.crit || (!result.fumble && result.totalAtk >= diff);
+      log?.(`[ROLL] ${statLabel} with ${label}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} vs DC${diff} — ${hit?'HIT':'MISS'}`);
       return {
-        resultText: `[ROLL RESULT: attack roll with ${label} — d20 rolled ${d20} + ${abilityMod} ability + ${pb2} proficiency${enchant ? ` + ${enchant} enchantment` : ''} = ${total} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}]`,
+        resultText: `[ROLL RESULT: attack roll with ${label} — d20 ${result.atkRoll} + ${result.statLabel} ${result.statBonus} + proficiency ${result.profBonus}${result.weaponBonus ? ` + weapon ${result.weaponBonus}` : ''} = ${result.totalAtk} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}${hit ? `; damage ${result.totalDmg}` : ''}]`,
         rollResult: {
           label: `${label} Attack`,
-          value: total,
+          value: result.totalAtk,
           dc: diff,
-          crit: d20 === 20,
-          fumble: d20 === 1,
+          dmg: hit ? result.totalDmg : null,
+          crit: result.crit,
+          fumble: result.fumble,
         },
       };
     }
