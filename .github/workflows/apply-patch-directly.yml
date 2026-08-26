@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 24
       - name: Apply patch to real source
-        run: node scripts/patchMoreAdventures.mjs
+        run: node scripts/patchCraftingNullAcDisplay.mjs
       - name: Retire patch from build hooks
         run: |
           node --input-type=module <<'NODE'
@@ -28,8 +28,8 @@ jobs:
           const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
           for (const key of ['predev', 'prebuild']) {
             pkg.scripts[key] = pkg.scripts[key]
-              .replace('node scripts/patchMoreAdventures.mjs && ', '')
-              .replace(' && node scripts/patchMoreAdventures.mjs', '');
+              .replace('node scripts/patchCraftingNullAcDisplay.mjs && ', '')
+              .replace(' && node scripts/patchCraftingNullAcDisplay.mjs', '');
           }
           fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
           NODE
@@ -39,7 +39,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --quiet && exit 0
-          git commit -m "Apply expanded adventures directly"
+          git commit -m "Apply crafting null AC display directly"
           git push origin HEAD:apply-patches-directly
 
-# migration: more-adventures-v1
+# migration: crafting-null-ac-v1
