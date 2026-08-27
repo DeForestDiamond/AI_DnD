@@ -27,8 +27,10 @@ async function callText({ apiKey, model = GPT_HISTORY_MODEL, developer, user, ma
   return { text, usage: data.usage, rawData: data };
 }
 
-export async function callGptStoryEntry({ apiKey, model = GPT_HISTORY_MODEL, playerName, currentLocation, transcript }) {
+export async function callGptStoryEntry({ apiKey, model = GPT_HISTORY_MODEL, playerName, currentLocation, priorSummary = '', transcript, followingTranscript = '' }) {
   const developer = `You are a D&D campaign state scribe writing an APPEND-ONLY story log. Write ONLY the new entry for the supplied recent events. Do not rewrite, recap, or reference older history.
+
+The user input is divided into three explicitly labelled blocks. ONLY "MESSAGES TO BE SUMMARIZED" is the target material. "PRIOR SUMMARY FOR REFERENCE" and "EVENTS AFTER SUMMARY CHUNK" are CONTEXT ONLY: use them to understand continuity, identities, stakes, promises, wagers, unresolved threads, and cause/effect across the chunk boundaries. Do not summarize events from either context block as though they occurred inside the target block. If context is necessary to understand an event in the target block, preserve the relationship or consequence without inventing or importing outside events.
 
 CORE RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD.
 Compression is subordinate to continuity. The entry may be longer when the campaign contains more unresolved state. Never omit, merge, generalize, or tidy away an unresolved thread merely to save words.
@@ -53,7 +55,8 @@ Do not preserve combat blow-by-blow once its outcome is settled. Do preserve pen
 On first reference to a named NPC in this entry, include pronoun and race when established. Never invent either when unknown.
 
 GROUND TRUTH: player = ${playerName}; END location = ${currentLocation}. Never infer either from the transcript. Begin exactly with [${currentLocation}]. Plain text only; no markdown or preamble. Use compact prose or semicolon-separated state where useful. There is NO fixed sentence or word target.`;
-  return callText({ apiKey, model, developer, user: `RECENT TRANSCRIPT:\n${transcript}\n\nWrite only the new story-log entry.`, maxOutputTokens: 1200 });
+  const user = `PRIOR SUMMARY FOR REFERENCE:\n${priorSummary || '(none — this is the first summary entry)'}\n\n---\nMESSAGES TO BE SUMMARIZED:\n${transcript}\n\n---\nEVENTS AFTER SUMMARY CHUNK:\n${followingTranscript || '(none available)'}\n\nWrite only the new story-log entry for MESSAGES TO BE SUMMARIZED.`;
+  return callText({ apiKey, model, developer, user, maxOutputTokens: 1200 });
 }
 
 export async function callGptArchive({ apiKey, model = GPT_HISTORY_MODEL, entriesText }) {
