@@ -648,7 +648,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
-          max_tokens: 800,
+          max_tokens: 2000,
           system: `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. This is the ONLY record that will survive of these events, so what you keep matters more than how you say it. Facts only, no scene-setting or atmosphere.
 
 
@@ -710,9 +710,15 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
     const prevCovered = Math.max(0, prevSummarizedAt - KEEP_RECENT);
     const toSummarize = allMessages.slice(prevCovered, allMessages.length - KEEP_RECENT);
     if (toSummarize.length === 0) { lastSummarizedAt.current = prevSummarizedAt; return; }
+    // Live summaries are working memory: give the scribe the full target messages.
+    // Truncating each message destroyed exactly the location/motivation details the summary must preserve.
     const historyForSummary = toSummarize.map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
-      content: m.text.substring(0, 600),
+      content: m.text,
+    }));
+    const followingForSummary = allMessages.slice(allMessages.length - KEEP_RECENT).map(m => ({
+      role: m.role === 'dm' ? 'assistant' : 'user',
+      content: m.text,
     }));
 
     try {
@@ -730,7 +736,9 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
           apiKey: gptKey,
           playerName: charRef.current?.name || 'the adventurer',
           currentLocation: charRef.current?.currentLocation || 'unknown',
+          priorSummary: storySummaryRef.current || '',
           transcript: gptTranscript,
+          followingTranscript: followingForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n'),
         });
         gptStoryEntry = gptStory.text;
         gptStoryUsage = gptStory.usage;
@@ -749,8 +757,13 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 800,
-          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Use as much compact text as continuity requires; simple linear events should stay short.
+          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log.
 
+The user input has three labelled blocks. ONLY MESSAGES TO BE SUMMARIZED is target material. PRIOR SUMMARY FOR REFERENCE and EVENTS AFTER SUMMARY CHUNK are context only. Use them to understand continuity, identities, stakes, promises, wagers, unresolved threads, and cause/effect across chunk boundaries; never summarize their events as though they occurred in the target block.
+
+LENGTH: Aim for roughly 400 words for a normal entry. Dense, multi-threaded chunks may use up to about 800 words. Do not pad simple events, but never delete continuity-critical detail merely to stay short. Completeness and future usability beat compression in the live summary layer.
+
+PRESERVE CONCRETE STATE AND CAUSALITY. Keep where important people, vessels, objects, and groups physically are; why characters are present or acting; who asked, told, sent, hired, or paid whom to do something; and causal links between setup and later action. A mundane-seeming detail stays if removing it would make a later location, action, conversation, motivation, or consequence appear unexplained.
 
 CORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD. Compression is subordinate to continuity. Never omit, merge, generalize, or tidy away unresolved state merely to reduce length. If the story establishes a finite/enumerated set — opponents and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, or similar — preserve EVERY unresolved member and its associated detail until individually resolved. Open threads must retain who/what/where and their latest known state. Once genuinely resolved, they may be compressed aggressively into the outcome. There is no fixed length target when unresolved state requires more space.
 
@@ -767,8 +780,7 @@ DO NOT RECORD: routine loot and coin. Finding a purse of gold in a hoard is nois
 
 NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren (he, human), Vashaera (she, tiefling), Kess (they, kenku). Future entries rely on this; without it a human turns into a kenku three sessions later. GROUND TRUTH (authoritative — never contradict): the player character is ${charRef.current?.name || 'the adventurer'}; their current location at the END of this section is ${charRef.current?.currentLocation || 'unknown'}. Refer to the player by that exact name, and treat that location as where they are now — do NOT infer the player's name or current location from place names mentioned in the log text. Begin the entry with the current location in brackets, e.g. [${charRef.current?.currentLocation || 'Location'}]. Plain text only. No bullet points. No preamble. Just the new log entry.`,
           messages: [
-            ...historyForSummary,
-            { role: 'user', content: 'Write only the new log entry now.' },
+            { role: 'user', content: `PRIOR SUMMARY FOR REFERENCE:\n${storySummaryRef.current || '(none — this is the first summary entry)'}\n\n---\nMESSAGES TO BE SUMMARIZED:\n${historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n')}\n\n---\nEVENTS AFTER SUMMARY CHUNK:\n${followingForSummary.length ? followingForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n') : '(none available)'}\n\nWrite only the new story-log entry for MESSAGES TO BE SUMMARIZED.` },
           ],
         }),
       });
