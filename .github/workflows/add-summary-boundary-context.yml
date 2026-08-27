@@ -1,0 +1,100 @@
+name: Apply summary boundary context
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/add-summary-boundary-context.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Add prior and following context to summaries
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/App.jsx')
+          s = p.read_text()
+
+          old = """    const historyForSummary = toSummarize.map(m => ({
+      role: m.role === 'dm' ? 'assistant' : 'user',
+      content: m.text.substring(0, 600),
+    }));
+"""
+          new = """    const historyForSummary = toSummarize.map(m => ({
+      role: m.role === 'dm' ? 'assistant' : 'user',
+      content: m.text.substring(0, 600),
+    }));
+    // Boundary context is reference-only: it lets the scribe understand what
+    // led into this chunk and what immediately follows without summarizing
+    // those events into the new entry.
+    const followingForSummary = allMessages.slice(allMessages.length - KEEP_RECENT).map(m => ({
+      role: m.role === 'dm' ? 'assistant' : 'user',
+      content: m.text.substring(0, 600),
+    }));
+"""
+          if s.count(old) != 1:
+              raise SystemExit(f'expected historyForSummary target once, found {s.count(old)}')
+          s = s.replace(old, new)
+
+          old2 = """        const gptTranscript = historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\\n\\n');
+        const gptStory = await callGptStoryEntry({
+        model: MODEL_CONFIGS[selectedModel].model,
+          apiKey: gptKey,
+          playerName: charRef.current?.name || 'the adventurer',
+          currentLocation: charRef.current?.currentLocation || 'unknown',
+          transcript: gptTranscript,
+        });
+"""
+          new2 = """        const gptTranscript = historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\\n\\n');
+        const gptFollowingTranscript = followingForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\\n\\n');
+        const priorSummaryForReference = currentObj.entries.at(-1)?.text || currentObj.chunks.at(-1)?.text || '';
+        const gptStory = await callGptStoryEntry({
+          model: MODEL_CONFIGS[selectedModel].model,
+          apiKey: gptKey,
+          playerName: charRef.current?.name || 'the adventurer',
+          currentLocation: charRef.current?.currentLocation || 'unknown',
+          priorSummary: priorSummaryForReference,
+          transcript: gptTranscript,
+          followingTranscript: gptFollowingTranscript,
+        });
+"""
+          if s.count(old2) != 1:
+              raise SystemExit(f'expected GPT summary target once, found {s.count(old2)}')
+          s = s.replace(old2, new2)
+
+          old3 = """          messages: [
+            ...historyForSummary,
+            { role: 'user', content: 'Write only the new log entry now.' },
+          ],
+"""
+          new3 = """          messages: [
+            { role: 'user', content: `PRIOR SUMMARY FOR REFERENCE:\\n${currentObj.entries.at(-1)?.text || currentObj.chunks.at(-1)?.text || '(none — this is the first summary entry)'}\\n\\n---\\nMESSAGES TO BE SUMMARIZED:\\n${historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\\n\\n')}\\n\\n---\\nEVENTS AFTER SUMMARY CHUNK:\\n${followingForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\\n\\n') || '(none available)'}\\n\\nWrite only the new log entry for MESSAGES TO BE SUMMARIZED.` },
+          ],
+"""
+          if s.count(old3) != 1:
+              raise SystemExit(f'expected Claude summary target once, found {s.count(old3)}')
+          s = s.replace(old3, new3)
+
+          marker = "You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log. Use as much compact text as continuity requires; simple linear events should stay short."
+          replacement = marker + "\\n\\nThe user input is divided into three explicitly labelled blocks. ONLY MESSAGES TO BE SUMMARIZED is target material. PRIOR SUMMARY FOR REFERENCE and EVENTS AFTER SUMMARY CHUNK are context only: use them to understand continuity, identities, stakes, promises, wagers, unresolved threads, and cause/effect across boundaries. Do not summarize context-only events as though they occurred inside the target block."
+          if s.count(marker) != 1:
+              raise SystemExit(f'expected Claude instruction marker once, found {s.count(marker)}')
+          s = s.replace(marker, replacement)
+
+          p.write_text(s)
+          PY
+      - name: Commit source change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.jsx
+          git commit -m "Give summaries boundary context"
+          git push
