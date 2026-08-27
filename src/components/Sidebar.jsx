@@ -17,10 +17,17 @@ import { stackCounts, stackCount, stackHas } from '../utils/itemStacks.js';
 // present. Order matters: specific rules before broad ones.
 const categorizeItem = (name, data) => {
   const n = name.toLowerCase();
-  // 1. Explicit type wins (but magic falls through to name checks for better sorting)
+  const slot = (data?.slot || '').toLowerCase();
+  const heldSlots = new Set(['mainhand', 'offhand']);
+  const wornSlots = new Set(['armor', 'face', 'head', 'neck', 'shoulders', 'cloak', 'torso', 'arms', 'hands', 'waist', 'ring', 'ring1', 'ring2', 'feet']);
+
+  // Equipment categories trust structured item data, not English words in names.
+  // Held equipment (weapons, shields, foci, wands, etc.) lives together.
+  if (heldSlots.has(slot)) return 'weapons';
+  if (wornSlots.has(slot)) return 'worn';
   if (data?.type === 'construct') return 'constructs';
-  if (data?.type === 'weapon') return 'weapons';
-  if (data?.type === 'armor' || data?.type === 'shield') return 'worn';
+  if (data?.type === 'weapon' || data?.type === 'shield' || data?.type === 'focus') return 'weapons';
+  if (data?.type === 'armor') return 'worn';
   if (data?.type === 'bag') return 'gear';
   if (data?.type === 'consumable' || data?.type === 'potion') return 'consumables';
 
@@ -33,12 +40,11 @@ const categorizeItem = (name, data) => {
   if (/\bmaps?\b|\bcharts?\b|wayfinder/.test(n)) return 'documents';
   // Keys, seals, tokens, credentials
   if (/\b(key|keys|seal|seals|sigil|token|insignia|badge|pass|writ|stamp|stamps|signet|emblem|crest|brand)\b/.test(n)) return 'keys';
-  // Weapons — THE BIG MISS in the old version (no name fallback existed)
-  if (/\b(sword|longsword|shortsword|greatsword|broadsword|scimitar|rapier|sabre|saber|katana|falchion|dagger|daggers|knife|knives|dirk|kukri|stiletto|axe|handaxe|greataxe|hatchet|mace|maul|hammer|warhammer|flail|morningstar|club|quarterstaff|staff|spear|lance|pike|halberd|glaive|trident|javelin|bow|longbow|shortbow|crossbow|sling|whip|rod|scythe|sickle|cleaver|blade|pistol|musket|rifle|firearm|hilt)\b/.test(n)) return 'weapons';
   // Ammunition
   if (/\b(arrows?|bolts?|bullets?|darts?|quiver|ammunition|shot)\b/.test(n) && !/silk|wool|cloth|linen|fabric|velvet/.test(n)) return 'ammo';
-  // Worn: armor, shields, jewelry, clothing — anything you put on
-  if (/\b(armor|armour|mail|chainmail|plate|breastplate|cuirass|brigandine|shield|buckler|helm|helmet|coif|circlet|crown|tiara|diadem|bracer|bracers|vambrace|gauntlet|gauntlets|glove|gloves|greave|greaves|boot|boots|sabaton|pauldron|mantle|cloak|cape|robe|robes|vestment|vestments|dress|outfit|tunic|shirt|vest|jerkin|garb|attire|uniform|belt|girdle|sash|ring|rings|necklace|amulet|pendant|choker|torc|brooch|earring|bracelet|locket|collar|mask|goggles|spectacles|lenses)\b/.test(n)) return 'worn';
+  // Worn-name fallback is only for clothing/jewelry that often predates structured slots.
+  // Armor words are intentionally excluded: actual armor must be tagged/typed or slotted.
+  if (/\b(helm|helmet|coif|circlet|crown|tiara|diadem|bracer|bracers|vambrace|gauntlet|gauntlets|glove|gloves|greave|greaves|boot|boots|sabaton|pauldron|mantle|cloak|cape|robe|robes|vestment|vestments|dress|outfit|tunic|shirt|vest|jerkin|garb|attire|uniform|belt|girdle|sash|ring|rings|necklace|amulet|pendant|choker|torc|brooch|earring|bracelet|locket|collar|mask|goggles|spectacles|lenses)\b/.test(n)) return 'worn';
   // Consumables — potions, vials of liquid, oils, bombs, food
   if (/\b(potion|elixir|draught|tincture|philter|antitoxin|antidote|salve|ointment|poison|venom vial|bomb|flask|incense|candle|candles|ration|rations|food|bread|cheese|wine|ale|meat|biscuit)\b|healing|alchemist'?s|holy water|smoke ?bomb|\bvials?\b|\boils?\b|booze|flashpowder|concentrate|\bsalt\b|sedative|suppression/.test(n)) return 'consumables';
   // Reagents, monster parts, crafting materials
