@@ -136,6 +136,14 @@ const ADVENTURES = [
 const tones = ['lighthearted and social','warm with room for real stakes','comedic with grounded consequences','adventurous and curious','low-key intrigue','lively and character-driven','strange but welcoming'];
 const openingStyles = ['open on dialogue with a stranger','begin during an ordinary social interaction','begin as the player arrives and can freely look around','begin with a small public event already unfolding around the player','begin during food, drink, shopping, travel, or another grounded activity'];
 
+export function prepareSituationAdventure(adventureOrTitle) {
+  const a = typeof adventureOrTitle === 'string'
+    ? ADVENTURES.find(x => x.title === adventureOrTitle)
+    : adventureOrTitle;
+  if (!a) return null;
+  return { ...a, location: pick(a.locations), tone: pick(tones), openingStyle: pick(openingStyles) };
+}
+
 export function rollSituationAdventure(completedAdventures = []) {
   // completedAdventures may contain full Adventure records (current saves) or
   // title strings (defensive support for older/imported saves). Completed titles
@@ -148,7 +156,7 @@ export function rollSituationAdventure(completedAdventures = []) {
   const available = ADVENTURES.filter(a => !completedTitles.has(a.title));
   if (!available.length) return null;
   const a = pick(available);
-  return { ...a, location: pick(a.locations), tone: pick(tones), openingStyle: pick(openingStyles) };
+  return prepareSituationAdventure(a);
 }
 
 export { ADVENTURES };

@@ -19,7 +19,7 @@ import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx'
 import { SubclassModal } from './components/modals/SubclassModal.jsx';
 import { AdventureStartModal } from './components/modals/StartModal.jsx';
 import { owedSubclasses } from './constants/subclasses.js';
-import { rollSituationAdventure } from './constants/adventures.js';
+import { ADVENTURES, rollSituationAdventure, prepareSituationAdventure } from './constants/adventures.js';
 import { callGptStoryEntry, callGptArchive } from './helpers/openai/history.js';
 import { callGptTownManager } from './helpers/openai/towns.js';
 import { callGptNpcManager } from './helpers/openai/npcs.js';
@@ -440,7 +440,7 @@ export default function App() {
   // Fresh adventures route through a choice: random seed or a player-written opening.
   const beginAdventure = (char) => setAdventureStartChar(char);
 
-  const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false) => {
+  const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false, situationOverride = null) => {
     log('startAdventure', { level: char.level, xp: char.xp, hp: char.hp });
     setLoading(true);
     setApiError('');
@@ -450,7 +450,7 @@ export default function App() {
       let arcAntagonist;
       let situationSeed = null;
       if (situationMode) {
-        situationSeed = rollSituationAdventure(charRef.current?.completedAdventures || char?.completedAdventures || []);
+        situationSeed = situationOverride || rollSituationAdventure(char.completedAdventures || []);
         arcAntagonist = null;
         seedPrompt = `[SITUATION ADVENTURE — OPENING]
 TITLE: ${situationSeed.title}
@@ -2340,6 +2340,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
           defeatedAntagonists={adventureStartChar.defeatedAntagonists || []}
           onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
           onSituationAdventure={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, null, true); }}
+          onChooseAdventure={(title) => { const c = adventureStartChar; const chosen = prepareSituationAdventure(title); if (!chosen) return; setAdventureStartChar(null); startAdventure(c, null, null, true, chosen); }}
+          adventures={ADVENTURES}
+          completedAdventures={adventureStartChar?.completedAdventures || []}
           onManual={(text, antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text, antagonist); }}
           onChooseAntagonist={(antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, antagonist); }}
         />

@@ -3,17 +3,24 @@ import { colors, fonts, btn } from '../../styles/theme.js';
 
 // Fresh-campaign chooser. Situation Adventure is deliberately separate from the
 // classic random/antagonist generator: its premise owns the starting context.
-export function AdventureStartModal({ onRandom, onSituationAdventure, onManual, onChooseAntagonist, antagonists = [], defeatedAntagonists = [] }) {
+export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAdventure, onManual, onChooseAntagonist, antagonists = [], defeatedAntagonists = [], adventures = [], completedAdventures = [] }) {
   const [mode, setMode] = useState(null);
   const [text, setText] = useState('');
   const [antagonist, setAntagonist] = useState('');
   const [search, setSearch] = useState('');
   const [showDefeated, setShowDefeated] = useState(false);
+  const [adventureSearch, setAdventureSearch] = useState('');
+  const [showCompletedAdventures, setShowCompletedAdventures] = useState(false);
 
   const defeated = new Set((defeatedAntagonists || []).map(x => String(x).toLowerCase()));
   const visibleAntagonists = antagonists
     .filter(a => showDefeated || !defeated.has(a.toLowerCase()))
     .filter(a => !search.trim() || a.toLowerCase().includes(search.trim().toLowerCase()));
+
+  const completedTitles = new Set((completedAdventures || []).map(a => typeof a === 'string' ? a : a?.title).filter(Boolean));
+  const visibleAdventures = (adventures || [])
+    .filter(a => showCompletedAdventures || !completedTitles.has(a.title))
+    .filter(a => !adventureSearch.trim() || a.title.toLowerCase().includes(adventureSearch.trim().toLowerCase()));
 
   const card = { background:colors.bg,border:`1px solid ${colors.border}`,borderRadius:6,padding:16,cursor:'pointer',transition:'all 0.15s',textAlign:'left' };
   const hoverOn = e => { e.currentTarget.style.borderColor=colors.gold; e.currentTarget.style.background=colors.bgDark; };
@@ -33,6 +40,10 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onManual, 
               <div style={{fontSize:28,marginBottom:6}}>🎭</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Adventure</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Start from a social or exploratory situation with no predetermined villain or solution. Let the story emerge through play.</div>
             </div>
+            <div onClick={()=>setMode('adventure')} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
+              <div style={{fontSize:28,marginBottom:6}}>📜</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Choose Adventure</div>
+              <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Pick a situation premise yourself. Its location, tone, and opening style are still rolled fresh.</div>
+            </div>
             <div onClick={()=>setMode('antagonist')} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
               <div style={{fontSize:28,marginBottom:6}}>👑</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Choose Antagonist</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Pick the arc foe yourself, then roll a fresh opening built around them.</div>
@@ -51,6 +62,16 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onManual, 
             <input value={antagonist} onChange={e=>setAntagonist(e.target.value)} placeholder={'e.g. a smuggling ring run out of the Saltmere docks'}
               style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:12}} />
             <div style={{display:'flex',gap:10}}><button style={{...btn(false),flex:'0 0 auto'}} onClick={()=>setMode(null)}>← Back</button><button style={{...btn(true),flex:1,opacity:text.trim()?1:0.4}} disabled={!text.trim()} onClick={()=>text.trim()&&onManual(text.trim(), antagonist.trim() || null)}>Begin Here →</button></div>
+          </div>
+        ) : mode === 'adventure' ? (
+          <div>
+            <div style={{fontSize:12,color:colors.textGhost,marginBottom:10,lineHeight:1.5}}>Choose the situation for this Adventure. The premise is fixed, but its compatible starting location, tone, and opening style are rolled fresh.</div>
+            <input value={adventureSearch} onChange={e=>setAdventureSearch(e.target.value)} autoFocus placeholder="Search adventures..." style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:10}} />
+            <label style={{display:'flex',alignItems:'center',gap:8,fontSize:11,color:colors.textFaint,marginBottom:10,cursor:'pointer'}}><input type="checkbox" checked={showCompletedAdventures} onChange={e=>setShowCompletedAdventures(e.target.checked)} />Show completed adventures ({completedTitles.size})</label>
+            <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,maxHeight:'52vh',overflowY:'auto',marginBottom:12}}>
+              {visibleAdventures.length ? visibleAdventures.map(a => { const wasCompleted=completedTitles.has(a.title); return <div key={a.title} onClick={()=>onChooseAdventure(a.title)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',color:wasCompleted?colors.textGhost:colors.textDim,opacity:wasCompleted?0.65:1}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}><div style={{fontSize:12,lineHeight:1.4}}>{wasCompleted&&<span style={{marginRight:6}}>✓</span>}{a.title}{wasCompleted&&<span style={{fontSize:9,marginLeft:8,color:colors.textGhost}}>COMPLETED</span>}</div><div style={{fontSize:10,color:colors.textGhost,lineHeight:1.45,marginTop:4}}>{a.premise}</div></div>; }) : <div style={{padding:18,textAlign:'center',fontSize:11,color:colors.textGhost}}>No adventures match this filter.</div>}
+            </div>
+            <button style={{...btn(false),width:'100%'}} onClick={()=>setMode(null)}>← Back</button>
           </div>
         ) : (
           <div>
