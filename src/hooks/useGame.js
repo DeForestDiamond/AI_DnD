@@ -800,7 +800,14 @@ A new independent thread may be introduced only when ONE of these is true:
 3. the player deliberately goes looking for something new; or
 4. a new event is a direct believable consequence of the current thread.
 
-PLAYER CHOICE SETS NARRATIVE PRIORITY. If the player chooses one lead out of several, treat that choice as "follow this one now," not as permission to keep advancing all the others in parallel. Preserve enough continuity that one storyline can actually develop from introduction through resolution.`;
+PLAYER CHOICE SETS NARRATIVE PRIORITY. If the player chooses one lead out of several, treat that choice as "follow this one now," not as permission to keep advancing all the others in parallel. Preserve enough continuity that one storyline can actually develop from introduction through resolution.
+
+── PROGRESSIVE RESOLUTION — DO NOT STALL ──
+Do not repeat the same obstacle, clue pattern, travel beat, or investigation structure indefinitely. Each recurrence must materially narrow the problem, escalate the situation, reveal something genuinely new, or produce a confrontation. After a few meaningful steps, unresolved objectives MUST move toward payoff rather than generating another equivalent delay.
+
+SEARCHES, HUNTS & PURSUITS: For searches, hunts, chases, missing-person investigations, and similar pursuit arcs, NEVER create an endless chain of “they were here, then went to X.” After roughly 2–4 substantive leads, the trail should converge on the target, the target's captor or location, a decisive obstacle, or a major revelation that fundamentally changes the objective. Do not treat the player's continued pursuit as permission to extend the chain.
+
+ANTI-STALL: If the player has correctly pursued the same goal through several scenes and nothing fundamentally new is being learned, resolve or transform the situation. Repetition is not difficulty.`;
 
 const GPT_EXTRA_RULES = `NPC INTRODUCTIONS: The first time a character appears, explicitly state their race or creature type in the narration (for example human, elf, gnome, dragonborn, tiefling, aasimar). Do not rely on appearance alone to imply it.
 
@@ -878,6 +885,14 @@ ${npcRules}
 Default low, and anchor power to the player. This character is level ${char.level}: routine encounters sit around CR ${crEasy}\u2013${crHard}, a genuinely hard fight tops out near CR ${crTough}, and nothing above CR ${crCap} appears unless the player already knew it was coming and chose to walk into it. Think in tiers and lean on the bottom two — fodder (the weakest threats that fit the locale: bandits, wolves, the lowest native creatures of wherever the player actually is), standard (a competent band, a single dangerous beast, a minor leader), elite (a named villain with a reason to be there and a lair — rare and foreshadowed), and apex (the legendary stuff — once per arc, earned, never a random encounter and never "what was underneath"). Pick the lowest tier that fits; invent the specific creature freely but keep the power down there. Don't reach for a legendary monster just because it sounds impressive.
 
 ── FORWARD MOTION ──
+
+── PROGRESSIVE RESOLUTION — DO NOT STALL ──
+Do not repeat the same obstacle, clue pattern, travel beat, or investigation structure indefinitely. Each recurrence must materially narrow the problem, escalate the situation, reveal something genuinely new, or produce a confrontation. After a few meaningful steps, unresolved objectives MUST move toward payoff rather than generating another equivalent delay.
+
+SEARCHES, HUNTS & PURSUITS: For searches, hunts, chases, missing-person investigations, and similar pursuit arcs, NEVER create an endless chain of “they were here, then went to X.” After roughly 2–4 substantive leads, the trail should converge on the target, the target's captor or location, a decisive obstacle, or a major revelation that fundamentally changes the objective. Do not treat the player's continued pursuit as permission to extend the chain.
+
+ANTI-STALL: If the player has correctly pursued the same goal through several scenes and nothing fundamentally new is being learned, resolve or transform the situation. Repetition is not difficulty.
+
 Action tempo: you cannot have more than two dialogue or investigation scenes in a row without something happening. A threat appears, someone attacks, a deadline arrives, a door breaks down. Something must force movement.
 
 Scene resolution: every scene has a natural endpoint. When the player has learned what there is to learn and an NPC has said what they have to say — end it and move on. Do not keep conversations alive past their purpose.
