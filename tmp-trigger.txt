@@ -1,1 +1,1 @@
-retry inventory consolidation
+run corrected inventory consolidation
