@@ -25,6 +25,7 @@ import { callGptTownManager } from './helpers/openai/towns.js';
 import { callGptNpcManager } from './helpers/openai/npcs.js';
 import { callGptSalvage } from './helpers/openai/salvage.js';
 import { callGptCrafting } from './helpers/openai/crafting.js';
+import { callGptConsolidate, CONSOLIDATE_RULES } from './helpers/openai/consolidate.js';
 
 function StatBar({ label, value, desc }) {
   return (
@@ -1564,6 +1565,68 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
     return isSet ? `${option.name} — ${option.pieces.map(pc => pc.name).join(', ')}` : option.name;
   };
 
+  // ── Inventory consolidation: intentionally erase distinctions between stacks ─
+  const proposeConsolidation = async ({ items }) => {
+    if (!items?.length) throw new Error('Select at least two stacks');
+    const selected = new Map(items.map(x => [x.name, Math.max(1, Number(x.count) || 1)]));
+    const itemsText = items.map(x => `${x.name} x${x.count}`).join('\n');
+    let rawGroups = [];
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
+      const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+      const out = await callGptConsolidate({ model: MODEL_CONFIGS[selectedModel].model, apiKey: gptKey, itemsText });
+      rawGroups = out.groups || [];
+      const u = out.usage || {};
+      log(`[HELPER] smart grouping via GPT ${(u.input_tokens || 0).toLocaleString()} in / ${(u.output_tokens || 0).toLocaleString()} out`);
+    } else {
+      const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:5000, system:CONSOLIDATE_RULES,
+          messages:[{role:'user',content:`SELECTED STACKS:\n${itemsText}\n\nReturn ONLY JSON: {"groups":[{"name":"Adamantine","items":[{"name":"Adamantine Ingot","count":4},{"name":"Adamantine Stock","count":8}],"reason":"same underlying material"}]}`}]}),
+      });
+      if(!res.ok) throw new Error(`API error ${res.status}`);
+      const data=await res.json(); logUsage('smart grouping',data);
+      const raw=(data.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
+      try { rawGroups=JSON.parse(raw).groups||[]; } catch { throw new Error('Smart grouping returned unreadable JSON'); }
+    }
+
+    const used = new Set();
+    const groups = [];
+    for (const g of rawGroups) {
+      const members=[];
+      for (const it of g.items || []) {
+        const exact=[...selected.keys()].find(n=>canonicalItemName(n)===canonicalItemName(it.name));
+        if(!exact || used.has(exact)) continue;
+        const count=Math.min(selected.get(exact),Math.max(1,Number(it.count)||1));
+        members.push({name:exact,count}); used.add(exact);
+      }
+      if(members.length>=2 && String(g.name||'').trim()) groups.push({name:String(g.name).trim(),items:members,reason:String(g.reason||'').trim()});
+      else members.forEach(x=>used.delete(x.name));
+    }
+    log(`[CONSOLIDATE] Smart grouping proposed ${groups.length} group(s)`);
+    return groups;
+  };
+
+  const executeConsolidation = ({ items, name, destination='stash' }) => {
+    const c=charRef.current;
+    const finalName=String(name||'').trim();
+    if(!finalName) throw new Error('Result name required');
+    if(!items?.length) throw new Error('Nothing selected');
+    const src=materialSources(c);
+    const heldNames=Object.keys(src);
+    const consumes=items.map(it=>({ name:resolveHeldName(it.name,heldNames), count:Math.max(1,Number(it.count)||1) }));
+    for(const it of consumes){const have=totalHeld(src[it.name]);if(have<it.count)throw new Error(`Not enough ${it.name} — need ${it.count}, have ${have}`);}
+    const total=consumes.reduce((n,x)=>n+x.count,0);
+    const {removeTags,apply}=consumeMaterials(c,consumes);
+    let next=apply(applyEffects(removeTags,c));
+    if(destination==='inventory') next={...next,inventory:addStack(next.inventory,finalName,total)};
+    else next={...next,stash:addStack(next.stash,finalName,total)};
+    updateChar(next);
+    log(`[CONSOLIDATE] ${consumes.map(x=>`${x.name} x${x.count}`).join(', ')} -> ${finalName} x${total} (${destination})`);
+    return `${finalName} ×${total.toLocaleString()} → ${destination}`;
+  };
+
   // ── Salvage: break an item down into materials ────────────────────────────
   // The inverse of crafting, same two-phase shape. Recovery is deliberately
   // LOSSY — you never get back everything that went in, so craft->salvage->craft
@@ -2480,6 +2543,8 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             onCycleConstructStatus={cycleConstructStatus}
             onPromoteConstruct={promoteConstructToCompanion}
             onProposeCrafting={proposeCrafting}
+            onProposeConsolidation={proposeConsolidation}
+            onExecuteConsolidation={executeConsolidation}
             onProposeDismantle={proposeDismantle}
             onExecuteDismantle={executeDismantle}
             onExecuteCrafting={executeCrafting}
