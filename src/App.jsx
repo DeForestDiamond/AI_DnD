@@ -1722,7 +1722,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
 
   // Consume the submitted items (inventory first, then stash) and add whatever
   // was recovered. Mirrors executeCrafting's split-source handling.
-  const executeDismantle = (result, submitted) => {
+  const executeDismantle = (result, submitted, destination = 'inventory') => {
     const c = charRef.current;
     const src = materialSources(c);
     for (const it of submitted) {
@@ -1735,8 +1735,18 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
       .join('');
     const { removeTags, apply } = consumeMaterials(c, submitted);
     let next = apply(applyEffects(addTags + removeTags, c));
+    if (destination === 'stash') {
+      for (const recovered of result.recovers || []) {
+        const count = Math.max(1, Number(recovered.count) || 1);
+        next = {
+          ...next,
+          inventory: takeStack(next.inventory, recovered.name, count),
+          stash: addStack(next.stash, recovered.name, count),
+        };
+      }
+    }
     updateChar(next);
-    log(`[SALVAGE] Broke down ${submitted.map(i => `${i.name} x${i.count}`).join(', ')}`);
+    log(`[SALVAGE] Broke down ${submitted.map(i => `${i.name} x${i.count}`).join(', ')}; recovery -> ${destination}`);
     return (result.recovers || []).map(r => `${r.name} x${r.count || 1}`).join(', ') || 'nothing';
   };
 

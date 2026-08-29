@@ -346,7 +346,7 @@ export const resetCraftingPanels = () => {
   Object.assign(consolidateStore, { selected:{}, filter:'', draft:{}, groups:null, status:'' });
   saveSel({}, {}, {});
 };
-const salvageStore = { selected: persistedSel.salvage || {}, result:null, status:'', filter:'', source:'both', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
+const salvageStore = { selected: persistedSel.salvage || {}, result:null, status:'', filter:'', source:'both', destination:'inventory', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
 
 // Bind a store key to component state, writing through on every change.
 const useStored = (store, key) => {
@@ -819,6 +819,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
   const [filter, setFilter]     = useStored(salvageStore, 'filter');
   const [showAll, setShowAll]   = useStored(salvageStore, 'showAll');
   const [source, setSource]     = useStored(salvageStore, 'source');   // inventory | stash | both
+  const [destination, setDestination] = useStored(salvageStore, 'destination'); // recovered materials
 
   const invCount = stackCounts(character.inventory);
   const stashCount = stackCounts(character.stash);
@@ -888,7 +889,7 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
   };
   const confirm = () => {
     try {
-      const got = onExecuteDismantle(result, submitted());
+      const got = onExecuteDismantle(result, submitted(), destination);
       setStatus(`✓ Recovered ${got}`);
       // Clear the search too: a filter matching the item just consumed would
       // leave the list looking empty until the panel is closed and reopened.
@@ -933,6 +934,29 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
         </label>
       )}
 
+      <div style={{display:'flex',gap:4,marginBottom:6,alignItems:'center'}}>
+        <span style={{fontSize:10,color:colors.textGhost,flexShrink:0}}>RESULT TO</span>
+        {[['inventory','🎒 Inventory'],['stash','📦 Stash']].map(([id,label]) => (
+          <button key={id} onClick={()=>setDestination(id)}
+            style={{...btn(false),flex:1,fontSize:9,padding:'3px 2px',borderColor:destination===id?colors.gold:colors.borderDim,color:destination===id?colors.gold:colors.textFaint}}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {candidates.length > 0 && (
+        <button onClick={()=>{
+          const allOn = candidates.every(([nm]) => liveSelected[nm] !== undefined);
+          setSelected(prev => {
+            const next = { ...prev };
+            candidates.forEach(([nm,max]) => { if (allOn) delete next[nm]; else next[nm] = max; });
+            return next;
+          });
+        }} style={{...btn(false),width:'100%',fontSize:10,padding:'4px 0',marginBottom:6}}>
+          {candidates.every(([nm]) => liveSelected[nm] !== undefined) ? '☐ CLEAR ALL VISIBLE' : '☑ SELECT ALL VISIBLE'}
+        </button>
+      )}
+
       <div style={{maxHeight:340,overflowY:'auto',border:`1px solid ${colors.borderFaint}`,borderRadius:4,padding:4,marginBottom:6}}>
         {candidates.length === 0 && <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',padding:'4px 2px'}}>Nothing to break down.</div>}
         {(() => {
@@ -956,7 +980,20 @@ function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle })
                   <span style={{fontFamily:fonts.display,fontSize:10,color:picked?colors.gold:colors.textGhost,letterSpacing:1}}>
                     {meta.label}{picked ? ` · ${picked} selected` : ''}
                   </span>
-                  <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length} {closed ? '▼' : '▲'}</span>
+                  <span style={{display:'flex',alignItems:'center',gap:5}}>
+                    <button onClick={e=>{
+                      e.stopPropagation();
+                      const allOn = rows.every(([nm]) => liveSelected[nm] !== undefined);
+                      setSelected(prev => {
+                        const next = { ...prev };
+                        rows.forEach(([nm,max]) => { if (allOn) delete next[nm]; else next[nm] = max; });
+                        return next;
+                      });
+                    }} style={{...btn(false),fontSize:8,padding:'1px 5px',lineHeight:1.3}}>
+                      {picked === rows.length ? 'CLEAR' : 'ALL'}
+                    </button>
+                    <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length} {closed ? '▼' : '▲'}</span>
+                  </span>
                 </div>
                 {!closed && rows.map(([nm, max, src]) => {
           const on = liveSelected[nm] !== undefined;
