@@ -11,10 +11,9 @@ import { MULTICLASS_OPTIONS } from '../constants/multiclass.js';
 import { stackCounts, stackCount, stackHas } from '../utils/itemStacks.js';
 
 // ── Inventory categorization ───────────────────────────────────────────────────
-// Item categorisation. Tuned against ~1,600 real item names across five
-// characters' saves — most inventory entries are bare strings with no type
-// data, so this is name-based inference with the declared type winning when
-// present. Order matters: specific rules before broad ones.
+// Item categorisation. Equipment categories are determined only by structured
+// item type/slot data; name-based inference is reserved for non-equipment
+// inventory such as materials, documents, consumables, tools, and valuables.
 const categorizeItem = (name, data) => {
   const n = name.toLowerCase();
   const slot = (data?.slot || '').toLowerCase();
@@ -42,9 +41,6 @@ const categorizeItem = (name, data) => {
   if (/\b(key|keys|seal|seals|sigil|token|insignia|badge|pass|writ|stamp|stamps|signet|emblem|crest|brand)\b/.test(n)) return 'keys';
   // Ammunition
   if (/\b(arrows?|bolts?|bullets?|darts?|quiver|ammunition|shot)\b/.test(n) && !/silk|wool|cloth|linen|fabric|velvet/.test(n)) return 'ammo';
-  // Worn-name fallback is only for clothing/jewelry that often predates structured slots.
-  // Armor words are intentionally excluded: actual armor must be tagged/typed or slotted.
-  if (/\b(helm|helmet|coif|circlet|crown|tiara|diadem|bracer|bracers|vambrace|gauntlet|gauntlets|glove|gloves|greave|greaves|boot|boots|sabaton|pauldron|mantle|cloak|cape|robe|robes|vestment|vestments|dress|outfit|tunic|shirt|vest|jerkin|garb|attire|uniform|belt|girdle|sash|ring|rings|necklace|amulet|pendant|choker|torc|brooch|earring|bracelet|locket|collar|mask|goggles|spectacles|lenses)\b/.test(n)) return 'worn';
   // Consumables — potions, vials of liquid, oils, bombs, food
   if (/\b(potion|elixir|draught|tincture|philter|antitoxin|antidote|salve|ointment|poison|venom vial|bomb|flask|incense|candle|candles|ration|rations|food|bread|cheese|wine|ale|meat|biscuit)\b|healing|alchemist'?s|holy water|smoke ?bomb|\bvials?\b|\boils?\b|booze|flashpowder|concentrate|\bsalt\b|sedative|suppression/.test(n)) return 'consumables';
   // Reagents, monster parts, crafting materials
