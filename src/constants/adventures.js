@@ -207,6 +207,16 @@ const ADVENTURES = [
       'a snowy road in a perfectly ordinary but extremely distant part of Toril',
     ],
   },
+  {
+    title: 'The Tentacle Problem',
+    premise: 'A respectable community has developed a deeply embarrassing problem: enormous extraplanar tentacles periodically emerge from portals, drains, wells, alleys, cellars, harbor water, or other increasingly inconvenient places and behave in ways witnesses insist are best described as obscene. Local officials desperately want the situation contained without becoming the subject of regional gossip. Do not predetermine what the tentacles belong to, whether they are all connected to the same creature, or whether the behavior is intentional; keep the humor suggestive and absurd rather than sexually explicit.',
+    locations: ['a respectable coastal town whose council has begun issuing emergency tentacle ordinances','a harbor district where dockworkers refuse to discuss what happened to the customs shed','a market square currently closed for what officials are calling an extraplanar infrastructure incident','a seaside inn where several witnesses are giving mutually incompatible descriptions of the same tentacle','a town hall meeting where the mayor visibly regrets allowing public comment'],
+  },
+  {
+    title: 'Three Gnomes in a Trench Coat',
+    premise: 'The player is minding their own business when an unusually lumpy figure in a long trench coat approaches with unmistakable purpose. The coat opens, revealing three gnomes standing on one another’s shoulders. Without explanation, the middle gnome punches the player in the crotch. The coat snaps shut and the trio attempts an immediate, extremely unconvincing escape. Do not require the player to pursue them and do not predetermine why they did it; if ignored, three gnomes may simply have committed an inexplicable drive-by crotch punching and vanished into local history.',
+    locations: ['a crowded city street with plenty of witnesses and absolutely no useful explanation','a tavern common room where the lumpy stranger has been staring at the player for several minutes','a busy market aisle that becomes an obstacle course during the getaway','a festival street where the trench coat almost blends in until it very much does not','a quiet roadside inn where the gnomes have nowhere sensible to run and try anyway'],
+  },
 ];
 
 const tones = ['lighthearted and social','warm with room for real stakes','comedic with grounded consequences','adventurous and curious','low-key intrigue','lively and character-driven','strange but welcoming'];
