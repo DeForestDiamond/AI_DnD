@@ -131,6 +131,82 @@ const ADVENTURES = [
     premise: 'An unusual familiar or animal companion appears with evidence that it has voluntarily left its previous owner and has chosen to follow the player for now. The situation is about why it left, whether anyone has the right to make it return, and what relationship—if any—the player chooses to have with it. Never predetermine that the player keeps it.',
     locations: ['a city market where an unusual creature quietly joins the player','a roadside inn where a familiar arrives carrying a written notice','a mage district where an unattended familiar begins following the player','a spelljammer dock crowded enough for a small creature to appear unnoticed','a public garden where a strange animal deliberately chooses the player’s company'],
   },
+  {
+    title: "The Dead God's Wake",
+    premise: 'The player begins aboard a damaged spelljammer drifting through the Astral Sea beside the petrified corpse of a dead god. Repairs, survivors, salvage, rival interests, and the impossible knocking now coming from somewhere inside the divine corpse create the opening situation. Do not predetermine what is causing the knocking.',
+    locations: ['a crippled spelljammer drifting beside a dead god in the Astral Sea','an Astral Sea debris field caught around the corpse of a forgotten deity','the exposed deck of a damaged vessel slowly orbiting a petrified divine hand','a makeshift survivor camp assembled on the hull of a wrecked spelljammer beside a dead god'],
+  },
+  {
+    title: 'Shipbreaker',
+    premise: 'The player begins among the weightless wreckage of two spelljammers that have catastrophically collided in the Astral Sea. Survivors from both crews blame one another, a githyanki patrol is approaching, and the actual cause of the collision is not yet known.',
+    locations: ['a weightless field of shattered spelljammer wreckage in the Astral Sea','the broken deck of one of two entangled astral vessels','a drifting cargo cluster between two ruined spelljammers','a surviving air pocket inside a wreck rotating slowly through the Astral Sea'],
+  },
+  {
+    title: 'The Stolen Morning',
+    premise: 'The player begins in the Feywild where dawn has failed to arrive. A nearby community remembers yesterday but nobody can clearly account for the missing night, and claims that someone stole the sunrise are spreading. Do not decide in advance whether the sunrise was literally stolen, why dawn has stopped, or who is responsible.',
+    locations: ['a Feywild village trapped beneath a sky that refuses to brighten','an eladrin settlement where every clock insists dawn should have happened hours ago','a glowing Feywild forest caught in an unnaturally prolonged predawn','a roadside fey inn whose guests have watched the same horizon for hours'],
+  },
+  {
+    title: 'The Hunt Without End',
+    premise: 'The adventure opens already in motion: the player is being hunted through the Feywild by riders whose faces become impossible to remember whenever they leave sight. The player does not begin knowing why they are prey, whether the hunters are justified, or what will end the pursuit.',
+    locations: ['a moonlit Feywild forest during a supernatural chase','a shifting hedge maze with distant hunting horns behind the player','a silver-grass Feywild plain crossed by impossible hoofprints','a glowing woodland road that keeps changing while unseen riders close in'],
+  },
+  {
+    title: 'Infernal Processing',
+    premise: 'The player begins in Dis, standing in a bureaucratic queue with a numbered brass token and no satisfactory explanation for why they are there. When their number is called, the infernal clerk examines the paperwork and discovers that according to the records the player is not supposed to exist. The clerks are not automatically hostile; treat Hell as a functioning society with laws, interests, and opportunities rather than a mandatory combat encounter.',
+    locations: ['an infernal processing hall in Dis packed with petitioners and brass-numbered queues','a bureaucratic annex beneath the iron towers of Dis','a crowded records office where devils process arrivals from across the planes','a smoky waiting chamber outside an infernal civil-service counter'],
+  },
+  {
+    title: 'Deserter',
+    premise: 'The player begins attached to an infernal military force on an active Blood War front in Avernus when an order, disaster, opportunity, or revelation makes remaining with the unit immediately questionable. The player may obey, desert, sabotage, negotiate, defect, steal transport, or invent another solution; do not force a moral interpretation or a particular side of the Blood War.',
+    locations: ['an infernal field camp on an active Avernian front','the crew compartment of a war machine minutes before deployment','a trench line overlooking a Blood War battlefield','a mobile infernal column crossing the wastes of Avernus'],
+  },
+  {
+    title: 'The Empty Fortress',
+    premise: 'The player begins inside an infernal fortress whose entire population appears to have vanished in the middle of ordinary activity. Meals are still hot, weapons and documents lie unattended, one abandoned prisoner was left partway through interrogation, and the gates are locked from the inside. Do not predetermine what happened.',
+    locations: ['an abandoned infernal fortress in Avernus with its gates locked from within','a silent fortress in Dis where every post was deserted at once','an empty Hellish keep with fresh meals still sitting on tables','a fortified infernal waystation whose occupants vanished minutes ago'],
+  },
+  {
+    title: 'The Town That Forgot It Died',
+    premise: 'The player begins in a seemingly ordinary Shadowfell settlement whose residents work, argue, eat, trade, and sleep as though nothing is wrong. Evidence gradually suggests the entire town died long ago, but the residents themselves do not know or accept that fact. Do not decide in advance why the town persists or what should be done about it.',
+    locations: ['a gray but busy Shadowfell town whose residents behave entirely normally','a roadside settlement beneath a permanently overcast Shadowfell sky','a walled Shadowfell market town with strangely old records','a quiet village where every gravestone bears a familiar local name'],
+  },
+  {
+    title: 'City of Brass Job',
+    premise: 'The player begins in the City of Brass already owing a meaningful debt to someone with the standing to collect it. The debt can be settled by obtaining one difficult object, favor, signature, person, or piece of information. Several other interested parties want the same thing for unrelated reasons. Do not predetermine the correct way to pay, escape, renegotiate, or exploit the debt.',
+    locations: ['a crowded bazaar in the City of Brass','an efreeti creditor’s office overlooking the City of Brass','a smoke-filled café where debts and favors are quietly traded','a brass-plated market district under the impossible heat of the Plane of Fire'],
+  },
+  {
+    title: 'No Surface',
+    premise: 'The player begins submerged on the Elemental Plane of Water. Their immediate problem is survival and orientation: there is no meaningful surface above them, and safety depends on finding air, magic, shelter, inhabitants, transport, or another solution appropriate to their abilities. Do not assume the player is helpless if their species, equipment, spells, or inventory already solve the breathing problem.',
+    locations: ['the open endless ocean of the Elemental Plane of Water','a drifting reef settlement far from any stable portal','the dark water outside an enormous air-filled coral structure','a current carrying debris and travelers through the Plane of Water'],
+  },
+  {
+    title: 'Make Something',
+    premise: 'The player begins on a tiny island of stable reality surrounded by the raw chaos of Limbo. Thoughts, discipline, instinct, and magic can reshape nearby matter. Something else in the area is also shaping reality and appears substantially better at it. Do not predetermine whether that presence is hostile, intelligent, aware of the player, or even a creature.',
+    locations: ['a tiny island of stable stone suspended in the chaos of Limbo','a fragment of landscape being continuously rewritten by Limbo','a pocket of breathable stable reality surrounded by elemental chaos','a half-formed structure whose architecture changes whenever the player looks away'],
+  },
+  {
+    title: 'Three Years Late',
+    premise: 'The player enters Sigil through an ordinary-looking doorway or portal that immediately closes behind them. Someone waiting nearby recognizes them—or believes they do—and says they are three years late. The stranger’s expectation is genuine, but what they expected, why the timing is wrong, and whether they have the right person must emerge through play.',
+    locations: ['a crowded street in Sigil beside a portal that has just closed','a rain-slick alley in the City of Doors','a market ward in Sigil where someone has clearly been waiting a very long time','a quiet doorway between two Sigil buildings that no longer leads where it did a moment ago'],
+  },
+  {
+    title: 'Wrong Door',
+    premise: 'The player is doing something utterly mundane—usually entering a tavern room, storeroom, washroom, rented chamber, shop, or other ordinary doorway—when stepping through places them somewhere wildly unexpected. The door closes or vanishes and there is no immediately obvious route back. The destination may be another plane or simply an absurdly distant place on the same world. Define the problem, not the solution: do not prescribe how the player returns, and treat any plausible solution they devise as valid with appropriate consequences.',
+    locations: [
+      'the purple-dust plains of the Shaar overlooking Brightstar Lake, effectively the opposite side of Faerûn from Waterdeep',
+      'a blasted plain in Avernus with no portal or doorway visible behind the player',
+      'a luminous Feywild forest beneath unfamiliar stars',
+      'the Astral Sea on a drifting fragment of stone with a spelljammer visible far away',
+      'a crowded street in Sigil where nobody finds the sudden arrival especially remarkable',
+      'the edge of the City of Brass under a sky full of flame',
+      'a silent ridge in the Shadowfell overlooking a distant settlement',
+      'an isolated Underdark cavern containing absolutely no tavern door',
+      'a windswept island hundreds of miles from the player’s previous location',
+      'a snowy road in a perfectly ordinary but extremely distant part of Toril',
+    ],
+  },
 ];
 
 const tones = ['lighthearted and social','warm with room for real stakes','comedic with grounded consequences','adventurous and curious','low-key intrigue','lively and character-driven','strange but welcoming'];
