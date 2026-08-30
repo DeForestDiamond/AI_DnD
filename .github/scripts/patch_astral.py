@@ -68,8 +68,8 @@ social = r'''
     "a spelljammer customs cutter hails the player for a routine inspection that becomes socially awkward when the crew notices something unusual about the ship",
   ],'''
 replace_once(
-    "    \"the forest ahead is nighttime while the forest behind remains in full daylight, divided by a perfectly straight line\",\n  ],\n};\n\nconst WEIRD_BY_ENV",
-    "    \"the forest ahead is nighttime while the forest behind remains in full daylight, divided by a perfectly straight line\",\n  ],\n" + social + "\n};\n\nconst WEIRD_BY_ENV",
+    "    \"a mortal traveler who has clearly been in the Feywild too long asks what year it is before asking for directions\",\n  ],\n};\n\nconst WEIRD_BY_ENV",
+    "    \"a mortal traveler who has clearly been in the Feywild too long asks what year it is before asking for directions\",\n  ],\n" + social + "\n};\n\nconst WEIRD_BY_ENV",
     'social table',
 )
 
