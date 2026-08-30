@@ -150,6 +150,7 @@ const SET_RULES = `MATCHED SET RULES
 - By default, return exactly 2 alternative sets with 3-6 pieces each, using different slots so the pieces can coexist.
 - PLAYER-REQUESTED PIECE COUNTS OVERRIDE THE DEFAULT. If the player asks for a specific set size — e.g. "make this a 10-piece set" — make each proposed set that many pieces when the available slots/materials plausibly support it. Do not force a requested 10-piece set back down to 6 pieces just because 3-6 is the normal default.
 - A requested larger set may use up to 20 pieces. If the requested count cannot be supported by available wearable/weapon slots or materials, make the largest coherent set you can and explain the limitation briefly in reason.
+- SET count means the number of COMPLETE SETS being crafted, never the number of pieces. Normally return count:1. A 9-piece set is pieces.length = 9 and count = 1, NOT count = 9. Only use count greater than 1 if the PLAYER REQUEST explicitly asks for multiple complete identical sets.
 - At most one armor chest piece; other wearables are magic; weapons may be included.
 - Legendary materials should make genuinely legendary pieces; do not arbitrarily dilute every piece.
 - Names share a coherent lineage/motif.
@@ -167,10 +168,11 @@ The player wants ${count} identical copies. Set count to ${count} when materials
 
 export function buildGptCraftingPrompt({ materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
   const modeRules = asConstruct ? CONSTRUCT_RULES : asSet ? SET_RULES : '';
+  const batchRules = asSet ? '' : BATCH_RULES(quantity);
   const request = intent.trim()
     ? `PLAYER REQUEST\n${intent.trim()}\n\nIMPORTANT: Treat this as the design target, not a suggestion. Keep every proposal focused on fulfilling it.`
     : 'PLAYER REQUEST\nNo specific design requested. Propose what these materials most naturally support.';
-  return `${BASE_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${BATCH_RULES(quantity)}${quantity > 1 ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
+  return `${BASE_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${batchRules}${batchRules ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
 }
 
 export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {
