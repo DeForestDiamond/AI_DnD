@@ -1,0 +1,55 @@
+name: Remove equipment name fallback
+on:
+  push:
+    branches: [inventory-consolidation]
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: inventory-consolidation
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Remove worn-name equipment fallback
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/Sidebar.jsx')
+          s = p.read_text()
+          old_header = """// Item categorisation. Tuned against ~1,600 real item names across five
+          // characters' saves — most inventory entries are bare strings with no type
+          // data, so this is name-based inference with the declared type winning when
+          // present. Order matters: specific rules before broad ones.
+          """
+          new_header = """// Item categorisation. Equipment categories are determined only by structured
+          // item type/slot data; name-based inference is reserved for non-equipment
+          // inventory such as materials, documents, consumables, tools, and valuables.
+          """
+          s = s.replace(old_header, new_header)
+          start = s.find('  // Worn-name fallback is only for clothing/jewelry')
+          end_marker = "return 'worn';\n"
+          if start < 0:
+              raise SystemExit('worn-name fallback not found')
+          end = s.find(end_marker, start)
+          if end < 0:
+              raise SystemExit('worn-name fallback end not found')
+          end += len(end_marker)
+          s = s[:start] + s[end:]
+          p.write_text(s)
+          PY
+      - run: npm ci
+      - run: npm run build
+      - name: Commit direct source change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/Sidebar.jsx
+          git diff --cached --quiet && exit 0
+          git commit -m "Use structured data only for equipment sorting"
+          git push origin HEAD:inventory-consolidation

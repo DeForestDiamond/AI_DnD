@@ -105,7 +105,7 @@ export async function callGptSalvage({ apiKey, model = GPT_SALVAGE_MODEL, itemsT
     body: JSON.stringify({ model, input: [
       { role: 'developer', content: [{ type: 'input_text', text: SALVAGE_RULES }] },
       { role: 'user', content: [{ type: 'input_text', text: `ITEMS TO SALVAGE:\n${itemsText}` }] },
-    ], max_output_tokens: 12000, reasoning: { effort: 'low' }, text: { format: { type: 'json_schema', name: 'salvage_result', strict: true, schema: salvageSchema } } }),
+    ], max_output_tokens: 24000, reasoning: { effort: 'low' }, text: { format: { type: 'json_schema', name: 'salvage_result', strict: true, schema: salvageSchema } } }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message || `OpenAI API error ${res.status}`);

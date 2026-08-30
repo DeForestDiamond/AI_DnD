@@ -107,7 +107,7 @@ UPGRADING FINISHED ITEMS
 - Preserve its TYPE by default. A construct remains construct, weapon remains weapon, armor remains armor, etc., unless the requested transformation genuinely changes category.
 - Never reduce existing mechanics. Every current bonus key is a floor; armour AC stays equal or rises; weapon base/enchantment/extra damage stays equal or rises; meaningful existing abilities remain.
 - An upgrade must actually improve something. Do not merely rename the base, move bonuses around, or recreate it unchanged.
-- Preserve all meaningful capabilities and properties from the existing label. You may remove redundant prose, ingredient lists, attack-bonus prose, weapon-property boilerplate, and unenforceable mechanics while preserving real capabilities. Add new capabilities clearly without repeating existing ones.
+- Preserve all meaningful capabilities, properties, and material composition from the existing label. You may trim only genuinely redundant wording, attack-bonus prose, weapon-property boilerplate, and unenforceable mechanics. Do NOT delete what the item is physically made from, because salvage later relies on that provenance. Add new capabilities and newly incorporated materials clearly without erasing existing ones.
 
 ITEM TYPE IS STRICT
 - weapon: wielded weapon.
@@ -139,9 +139,10 @@ LABELS — NARRATIVE CAPABILITIES ONLY
 - Good narrative capability examples: "ignores all resistances", "cannot be disarmed", "cuts magical barriers", "immune to divination", "flies in atmosphere and wildspace", "sees invisible creatures".
 - Do NOT write temporary or turn-based mechanics: no "until next turn", "for 1 round", "on your next attack", "once per turn", reactions, bonus actions, concentration, or similar timing rules.
 - Do NOT write unsupported numeric combat/healing mechanics in labels: no "+15 healing", "+3 to attack rolls", "+10 damage", temporary AC, saving-throw DCs, or other numbers the app does not actually calculate. If a numeric bonus belongs to a supported bonuses key, put it there; otherwise express the capability narratively or omit it.
-- DO NOT LIST THE RECIPE. The consumes field already records what was used. Never spend label space reciting materials, essences, souls, gems, metals, monster parts, or crafting ingredients. A label like "Adamantine, celestial silver, voidglass, platinum..." is a failure unless one of those words describes a capability that matters during play.
-- Do not pad labels with visual prose, lore, construction history, or generic adjectives. Name and appearance can carry flavor; label space is for useful persistent capabilities.
-- Prefer short semicolon-separated fragments. Simple items may need only one or two fragments. Complex legendary items/constructs may be longer only because they genuinely have more distinct capabilities.
+- PRESERVE MATERIAL PROVENANCE. The label should state the item's meaningful physical/material composition when it matters for later salvage: major metals, woods, hides, scales, gems/crystals, planar substances, monster materials, cores, and other substantial recoverable construction. Do not list every consumed ingredient or tiny expendable reagent; record what the finished object is actually made from.
+- When upgrading an existing item, preserve its prior material composition and add newly incorporated substantial materials. Never silently remove a material merely to shorten the label unless the player explicitly replaces/removes it in the craft.
+- Do not pad labels with useless visual prose, generic adjectives, or construction history, but keep concise lore/context when it materially explains a persistent capability or unusual construction.
+- Labels should be concise but complete, not aggressively compressed. Prefer readable semicolon-separated clauses. Simple items may be short; complex legendary items, constructs, ships, and heavily upgraded gear may use several sentences or a longer label when needed to preserve distinct capabilities AND material composition.
 - For item-mode constructs such as ships/vehicles/war machines, label should begin with CR when a CR is useful, then compactly state form and capabilities. Preserve important existing capabilities when upgrading.
 - Name results for what they are/do, not merely "Enchanted X".`;
 
