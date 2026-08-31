@@ -2172,19 +2172,19 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
             style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.mono,fontSize:12,padding:'9px 10px',borderRadius:4,outline:'none'}}
           />
           <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.5}}>
-            Your key stays in your browser only. Get one at console.anthropic.com. Using Haiku model for low cost.
+            Your keys stay in your browser only. Enter either provider key to begin; the selected model will use its matching provider.
           </div>
         </div>
 
         <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
-          <button style={{...btn(true),fontSize:14,padding:'12px 28px',opacity:apiKey?1:0.4}} disabled={!apiKey} onClick={()=>setPhase('create-race')}>
+          <button style={{...btn(true),fontSize:14,padding:'12px 28px',opacity:(apiKey || openAiApiKey)?1:0.4}} disabled={!apiKey && !openAiApiKey} onClick={()=>setPhase('create-race')}>
             BEGIN YOUR LEGEND
           </button>
-          <button style={{...btn(false),fontSize:12,padding:'12px 18px',opacity:apiKey?1:0.4}} disabled={!apiKey} onClick={()=>{setShowSave(true);}}>
+          <button style={{...btn(false),fontSize:12,padding:'12px 18px',opacity:(apiKey || openAiApiKey)?1:0.4}} disabled={!apiKey && !openAiApiKey} onClick={()=>{setShowSave(true);}}>
             📂 Load / Import
           </button>
         </div>
-        {!apiKey && <div style={{fontSize:11,color:colors.textGhost,marginTop:12}}>Enter your API key above to begin</div>}
+        {!apiKey && !openAiApiKey && <div style={{fontSize:11,color:colors.textGhost,marginTop:12}}>Enter an Anthropic or OpenAI API key above to begin</div>}
       </div>
     </div>
   );
