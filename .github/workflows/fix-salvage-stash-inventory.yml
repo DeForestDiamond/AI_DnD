@@ -21,7 +21,8 @@ jobs:
         with:
           node-version: 20
       - run: python .github/scripts/fix_salvage_stash_inventory.py
-      - run: node --check src/App.jsx
+      - run: npm ci
+      - run: npm run build
       - name: Verify salvage destination assignment
         run: |
           python - <<'PY'
