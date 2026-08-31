@@ -1,0 +1,26 @@
+name: Soften time and travel progression
+on:
+  push:
+    branches: [astral-encounters]
+    paths: ['.github/workflows/soften-time-travel-rule.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: astral-encounters
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: python .github/scripts/soften_time_travel_rule.py
+      - run: node --check src/hooks/useGame.js
+      - run: rm -f .github/scripts/soften_time_travel_rule.py .github/workflows/soften-time-travel-rule.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/hooks/useGame.js .github/scripts/soften_time_travel_rule.py .github/workflows/soften-time-travel-rule.yml
+          git commit -m 'Let time and travel progress naturally'
+          git push origin HEAD:astral-encounters
