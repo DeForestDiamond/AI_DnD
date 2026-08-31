@@ -1740,7 +1740,7 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         const count = Math.max(1, Number(recovered.count) || 1);
         next = {
           ...next,
-          inventory: takeStack(next.inventory, recovered.name, count),
+          inventory: takeStack(next.inventory, recovered.name, count).stacks,
           stash: addStack(next.stash, recovered.name, count),
         };
       }
