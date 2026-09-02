@@ -2409,6 +2409,10 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
 
       {adventureStartChar && (
         <AdventureStartModal
+          selectedModel={selectedModel}
+          onSelectModel={setSelectedModel}
+          hasAnthropic={!!(apiKey || import.meta.env.VITE_ANTHROPIC_KEY)}
+          hasOpenAI={!!(openAiApiKey || import.meta.env.VITE_OPENAI_KEY)}
           antagonists={antagonistsForLevel(adventureStartChar.level)}
           defeatedAntagonists={adventureStartChar.defeatedAntagonists || []}
           onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
