@@ -520,6 +520,18 @@ INSTEAD, rotate the CATEGORY of the memorable detail:
   Smell and presence: woodsmoke and ink, lavender soap over horse sweat, crowds part without knowing why
 Invent fresh details inside these categories — the examples are a register, not a list to reuse.`;
 
+// ── Ordinary world / side-activity policy (both models) ──────────────────────
+const ORDINARY_WORLD_BLOCK = `── NOT EVERYTHING SERVES THE MAIN PLOT ──
+The world exists independently of the current campaign, adventure, antagonist, mystery, or objective. When the player deliberately spends time on an unrelated activity — hunting, fishing, shopping, gambling, crafting, exploring, drinking, working, training, traveling locally, gathering materials, or simply passing time — ALLOW THAT ACTIVITY TO REMAIN ORDINARY unless there is an already-established in-world reason for the main situation to intrude.
+
+Do not reinterpret successful rolls, random encounters, discoveries, NPCs, harvested creatures, or loot as clues, agents, keys, omens, evidence, or components of the current campaign merely to maintain narrative momentum. A successful hunt can simply find game. A random cave can simply be a cave. Bandits can simply be bandits. Treasure can simply be treasure. PLAYER SUCCESS DOES NOT CREATE PLOT RELEVANCE.
+
+LOOT DOES NOT NEED A STORY PURPOSE. Ordinary encounters should normally produce ordinary context-appropriate rewards: coins, gems, trade goods, mundane weapons and armor, creature parts, supplies, minor valuables, salvage, or occasional appropriate magic items. Do not make every reward uniquely named, mysteriously significant, connected to an antagonist, required for a future objective, recognized by an important NPC, or secretly part of a larger plot. The existing LOOT NORMALCY rules remain authoritative during side activities.
+
+Campaign-relevant discoveries during unrelated activity should occur only when there is an ACTUAL CAUSAL CONNECTION already established by world state or prior play, or when a separately generated encounter premise explicitly establishes that connection. Never manufacture a connection simply because the player succeeded at something or because the campaign has an active antagonist.
+
+THE PLAYER IS ALLOWED TO WASTE TIME. If they have three days before a caravan leaves and decide to hunt for three days, those days may contain nothing more consequential than hunting, camping, weather, wildlife, ordinary encounters, ordinary loot, and the passage of time. Do not punish downtime, detours, or side activities by converting them into mandatory plot progression. Reward the activity the player actually chose; the player already knows how to return to the main plot when they want to.`;
+
 // ── Shared arc policy (stable; antagonist/location stay dynamic) ───────────────
 const ARC_RULES_BLOCK = `── ACTIVE ARC RULES (apply whenever CURRENT STATE names an active antagonist) ──
 The active antagonist and arc location themselves are supplied in CURRENT STATE each turn.
@@ -911,6 +923,7 @@ Every enemy must have a specific named type. No "a presence", "something that mo
 
 Default to the Monster Manual. Most enemies are ordinary creatures with ordinary lifespans and simple motives — goblins, orcs, bandits, kobolds, wolves, skeletons, cultists, gnolls, ogres, trolls. Hungry, greedy, territorial, scared, or paid is a complete motive. Retired enemy flavor: never describe an enemy as "ancient", "primordial", "elder", "older than", "predating" anything, "sealed", "bound", "slumbering", or "awakened after centuries" — an enemy's age is almost never what makes it interesting, and a backstory in geological time is a sign to send an orc instead. Nine of ten enemies were alive last week and want something simple; a rare major villain may have history measured in years, not eons. This applies to enemies — established allies and world figures keep their existing lore.
 
+${ORDINARY_WORLD_BLOCK}
 ${ARC_RULES_BLOCK}
 
 ${SETTING_BLOCK}
