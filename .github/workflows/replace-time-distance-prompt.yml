@@ -18,35 +18,25 @@ jobs:
         with:
           node-version: 20
       - name: Replace time and distance prompt
-        env:
-          NEW_BLOCK_B64: 4pSA4pSAIFRJTUUgJiBESVNUQU5DRSDigJTilIDilIAKVaW1lIHBhc3NlcyBuYXR1cmFsbHkgYXMgYSBjb25zZXF1ZW5jZSBvZiBhY3Rpb25zLiBLZWVwIHRoZSBjdXJyZW50IHRpbWUgb2YgZGF5IGNvbnNpc3RlbnQgYW5kIGxldCBpdCBwcm9ncmVzcyBhcyBzY2VuZXMgdW5mb2xkLiBEbyBub3QgZnJlZXplIHRpbWUgYWNyb3NzIHJlcGVhdGVkIGFjdGl2aXR5LCBidXQgZG8gbm90IHJ1c2ggdGhyb3VnaCB0aGUgZGF5IGVpdGhlci4K
         run: |
           python - <<'PY'
           from pathlib import Path
-          import base64
           p = Path('src/hooks/useGame.js')
           s = p.read_text()
           start = s.index('── TIME & DISTANCE — THE WORLD MUST MOVE ──')
           end = s.index('── INFORMATION MUST BE EARNED ──', start)
           old = s[start:end]
           assert old.count('TIME AND DISTANCE MUST ADVANCE.') == 1
-          new = '''── TIME & DISTANCE ──
-          Time passes naturally as a consequence of actions. Keep the current time of day consistent and let it progress as scenes unfold. Do not freeze time across repeated activity, but do not rush through the day either.
-
-          Match pacing to the player's action. Immediate actions and conversations usually move time only slightly. Longer activities such as travel, hunting, crafting, searching, or waiting can move time by a meaningful amount.
-
-          When the player chooses to continue an uneventful ongoing activity — continuing watch, continuing travel, waiting, working, or similar — it is appropriate to compress the uneventful stretch and advance to a later part of the day or the next meaningful event. Do not repeatedly resolve an uneventful activity in tiny increments.
-
-          Do not skip an entire day in a single response unless the player explicitly chose an activity that reasonably occupies the entire day or asked to continue until a specific later time. Ordinarily, allow several meaningful scenes or activities within a day.
-
-          Mention the approximate time of day naturally when establishing scenes or after meaningful time has passed so temporal continuity remains visible. Treat previously established temporal descriptions as continuity facts; do not silently reset to an earlier time of day.
-
-          Travel should likewise make believable progress without rushing the player to the destination. Encounters interrupt travel but do not erase progress already made. Preserve established distances, durations, departure times, and expected arrivals when they exist.
-
-          Do not fast-forward through an unresolved scene the player is actively participating in, skip decisions, or invent delays merely to consume time. The goal is natural pacing: zoom in while something meaningful is happening and zoom out across uneventful continuation.
-
-          '''
-          new = new.replace('\n          ', '\n').replace('── TIME & DISTANCE ──\n          ', '── TIME & DISTANCE ──\n')
+          new = (
+              '── TIME & DISTANCE ──\n'
+              'Time passes naturally as a consequence of actions. Keep the current time of day consistent and let it progress as scenes unfold. Do not freeze time across repeated activity, but do not rush through the day either.\n\n'
+              "Match pacing to the player's action. Immediate actions and conversations usually move time only slightly. Longer activities such as travel, hunting, crafting, searching, or waiting can move time by a meaningful amount.\n\n"
+              'When the player chooses to continue an uneventful ongoing activity — continuing watch, continuing travel, waiting, working, or similar — it is appropriate to compress the uneventful stretch and advance to a later part of the day or the next meaningful event. Do not repeatedly resolve an uneventful activity in tiny increments.\n\n'
+              'Do not skip an entire day in a single response unless the player explicitly chose an activity that reasonably occupies the entire day or asked to continue until a specific later time. Ordinarily, allow several meaningful scenes or activities within a day.\n\n'
+              'Mention the approximate time of day naturally when establishing scenes or after meaningful time has passed so temporal continuity remains visible. Treat previously established temporal descriptions as continuity facts; do not silently reset to an earlier time of day.\n\n'
+              'Travel should likewise make believable progress without rushing the player to the destination. Encounters interrupt travel but do not erase progress already made. Preserve established distances, durations, departure times, and expected arrivals when they exist.\n\n'
+              'Do not fast-forward through an unresolved scene the player is actively participating in, skip decisions, or invent delays merely to consume time. The goal is natural pacing: zoom in while something meaningful is happening and zoom out across uneventful continuation.\n\n'
+          )
           s = s[:start] + new + s[end:]
           p.write_text(s)
           assert 'TIME AND DISTANCE MUST ADVANCE.' not in s
