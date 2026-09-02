@@ -1,8 +1,10 @@
 name: Replace time distance pacing prompt
-on:
+'on':
   push:
-    branches: [time-distance-grounding]
-    paths: [.github/workflows/replace-time-distance-prompt.yml]
+    branches:
+      - time-distance-grounding
+    paths:
+      - .github/workflows/replace-time-distance-prompt.yml
 permissions:
   contents: write
 jobs:
