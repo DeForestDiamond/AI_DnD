@@ -1,0 +1,57 @@
+name: Replace time distance pacing prompt v3
+on:
+  push:
+    branches:
+      - time-distance-grounding
+    paths:
+      - .github/workflows/replace-time-distance-prompt-v3.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: time-distance-grounding
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Replace time and distance prompt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/hooks/useGame.js')
+          s = p.read_text()
+          start = s.index('── TIME & DISTANCE — THE WORLD MUST MOVE ──')
+          end = s.index('── INFORMATION MUST BE EARNED ──', start)
+          old = s[start:end]
+          assert old.count('TIME AND DISTANCE MUST ADVANCE.') == 1
+          new = (
+              '── TIME & DISTANCE ──\n'
+              'Time passes naturally as a consequence of actions. Keep the current time of day consistent and let it progress as scenes unfold. Do not freeze time across repeated activity, but do not rush through the day either.\n\n'
+              "Match pacing to the player's action. Immediate actions and conversations usually move time only slightly. Longer activities such as travel, hunting, crafting, searching, or waiting can move time by a meaningful amount.\n\n"
+              'When the player chooses to continue an uneventful ongoing activity — continuing watch, continuing travel, waiting, working, or similar — it is appropriate to compress the uneventful stretch and advance to a later part of the day or the next meaningful event. Do not repeatedly resolve an uneventful activity in tiny increments.\n\n'
+              'Do not skip an entire day in a single response unless the player explicitly chose an activity that reasonably occupies the entire day or asked to continue until a specific later time. Ordinarily, allow several meaningful scenes or activities within a day.\n\n'
+              'Mention the approximate time of day naturally when establishing scenes or after meaningful time has passed so temporal continuity remains visible. Treat previously established temporal descriptions as continuity facts; do not silently reset to an earlier time of day.\n\n'
+              'Travel should likewise make believable progress without rushing the player to the destination. Encounters interrupt travel but do not erase progress already made. Preserve established distances, durations, departure times, and expected arrivals when they exist.\n\n'
+              'Do not fast-forward through an unresolved scene the player is actively participating in, skip decisions, or invent delays merely to consume time. The goal is natural pacing: zoom in while something meaningful is happening and zoom out across uneventful continuation.\n\n'
+          )
+          s = s[:start] + new + s[end:]
+          p.write_text(s)
+          assert 'TIME AND DISTANCE MUST ADVANCE.' not in s
+          assert 'Do not skip an entire day in a single response' in s
+          PY
+          node --check src/hooks/useGame.js
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+      - name: Commit source change
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/hooks/useGame.js
+          git diff --cached --check
+          git commit -m "Balance time and distance pacing"
+          git push origin HEAD:time-distance-grounding
