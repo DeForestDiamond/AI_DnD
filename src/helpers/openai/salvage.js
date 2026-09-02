@@ -45,6 +45,16 @@ SCALE MATTERS — THIS IS CRITICAL
 - Preserve explicit equipment counts where those systems are plausibly recoverable. A ship described as carrying 120 siege cannons can yield up to 120 cannon assemblies/mechanisms.
 - Salvage quantities are abstract useful crafting units, not literal kilograms, boards, bolts, or individual rivets.
 
+BULK MATERIALS ARE THE DEFAULT — CONTROL VOCABULARY, NOT QUANTITY
+- Most ordinary mechanical parts are NOT separate salvage categories. Hinges, gears, rails, brackets, chains, valves, bearings, housings, doors, locks, pulleys, rollers, switches, couplings, manifolds, winches, mundane mechanisms, structural fittings, and similar hardware normally become the appropriate generic bulk material.
+- Do not preserve a component merely because it could technically be reused. A reusable mundane valve is still brass, copper, iron, steel, or other appropriate stock unless its precision or special nature carries meaningful independent crafting value.
+- SPECIALIZED COMPONENTS MUST CLEAR A HIGH BAR. Preserve a component separately only when reducing it to bulk stock would discard meaningful magical, planar, precision, technological, or otherwise exceptional value established or strongly supported by the source.
+- Good separate components include things such as Arcane Actuator, Route-Sensing Mechanism, Magnetic Crane Core, Hellfire Engine Core, Spelljamming Helm, or a calibrated magical lens array when supported by the source.
+- Ordinary Door Mechanism, Hinge Assembly, Chain Boom Mechanism, Rail Switch Mechanism, Lock Mechanism, Pulley Mechanism, Conveyor Mechanism, mundane Valve Assembly, and similar ordinary machinery should normally become bulk stock instead of separate inventory entries.
+- THE NUMBER OF RECOVERED MATERIAL CATEGORIES SHOULD GROW MUCH MORE SLOWLY THAN THE NUMBER OF SALVAGED SOURCE ITEMS. A huge batch of related industrial infrastructure should usually produce enormous quantities of a relatively small shared vocabulary, not one new component name for every source.
+- Do NOT reduce physical yield in order to achieve that smaller vocabulary. Fifty infernal foundry objects may contribute thousands of units to the same Scrap Black Iron, Scrap Copper, Black-Ice Alloy, Ceramic, or other shared stacks. Consolidate names aggressively while conserving plausible physical quantity independently.
+- The test for a recovered name is: could this exact generic material/component name plausibly come from salvaging several DIFFERENT items? If not, rename or fold it into the underlying bulk stock unless it clears the specialized-component high bar.
+
 QUALITY AND MAGICAL CONSTRUCTION
 - Material QUALITY should reflect what the object actually is, not just its physical shape. A mundane wagon can yield ordinary wood and iron; a high-CR planar warship, legendary construct, infernal engine, or advanced magical fortress should not automatically collapse into only mundane Scrap Steel and Hardwood.
 - Use the item's description, origin, creator/culture, magical or planar nature, CR/power, and named construction details as evidence for appropriate high-end structural stock and reusable systems.
@@ -65,7 +75,7 @@ MATERIAL NAMING
 - RIGHT: Scrap Iron, Scrap Steel, Arcane Actuator, Mithral Plating.
 - A genuinely distinctive material keeps its identity: Red Dragon Scale, Demon Lord Essence, Mithral Wire, Tarrasque Bone.
 - Do not mine descriptive item names for fictional parts. Triple-Locked does not mean three recoverable locks.
-- Ordinary construction usually becomes raw material, not intact working subassemblies. Preserve named components only when genuinely precision, magical, mechanical, or independently reusable.
+- Ordinary construction usually becomes raw material, not intact working subassemblies. Preserve named components only when genuinely precision, magical, mechanical, or independently reusable AND they clear the specialized-component high bar above.
 - Do NOT merge biologically different creature materials into generic monster parts.
 
 OUTPUT
