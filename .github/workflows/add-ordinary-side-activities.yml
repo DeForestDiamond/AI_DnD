@@ -41,7 +41,7 @@ jobs:
           s = s.replace(anchor, block + anchor)
           needle = '${ARC_RULES_BLOCK}'
           count = s.count(needle)
-          assert count >= 2, f'expected ARC_RULES_BLOCK in both model prompts, found {count}'
+          assert count >= 1, f'expected ARC_RULES_BLOCK in shared prompt, found {count}'
           s = s.replace(needle, '${ORDINARY_WORLD_BLOCK}\n${ARC_RULES_BLOCK}')
           p.write_text(s)
           PY
@@ -51,7 +51,7 @@ jobs:
         run: |
           grep -q 'NOT EVERYTHING SERVES THE MAIN PLOT' src/hooks/useGame.js
           grep -q 'THE PLAYER IS ALLOWED TO WASTE TIME' src/hooks/useGame.js
-          test "$(grep -o '\${ORDINARY_WORLD_BLOCK}' src/hooks/useGame.js | wc -l)" -ge 2
+          test "$(grep -o '\${ORDINARY_WORLD_BLOCK}' src/hooks/useGame.js | wc -l)" -ge 1
       - name: Commit source and remove temporary workflow
         run: |
           rm .github/workflows/add-ordinary-side-activities.yml
