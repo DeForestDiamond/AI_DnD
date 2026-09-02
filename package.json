@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/patchTimeDistancePacing.mjs",
+    "predev": "node scripts/patchTimeDistancePacing.mjs && node scripts/patchDeclaredCombatSequence.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/patchTimeDistancePacing.mjs",
+    "prebuild": "node scripts/patchTimeDistancePacing.mjs && node scripts/patchDeclaredCombatSequence.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
