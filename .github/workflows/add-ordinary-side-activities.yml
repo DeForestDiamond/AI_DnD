@@ -1,4 +1,5 @@
 name: Add ordinary side activity prompt rules
+# One-shot prompt patch; removes itself after successful build.
 on:
   push:
     branches: [main]
