@@ -1,12 +1,13 @@
 name: Add ordinary side activity prompt rules
 on:
-  push:
-    branches: [ordinary-side-activities]
-    paths: ['.github/workflows/add-ordinary-side-activities.yml']
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
 permissions:
   contents: write
 jobs:
   patch:
+    if: github.head_ref == 'ordinary-side-activities'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +39,6 @@ jobs:
 
           '''
           s = s.replace(anchor, block + anchor)
-          # Inject beside the shared stable prompt blocks for both providers.
           needle = '${ARC_RULES_BLOCK}'
           count = s.count(needle)
           assert count >= 2, f'expected ARC_RULES_BLOCK in both model prompts, found {count}'
