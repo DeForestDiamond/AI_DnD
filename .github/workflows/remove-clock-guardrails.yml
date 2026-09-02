@@ -1,0 +1,56 @@
+name: Remove clock guardrails
+on:
+  push:
+    branches: [time-distance-grounding]
+    paths: [.github/workflows/remove-clock-guardrails.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: time-distance-grounding
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Remove conflicting clock guardrails
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/hooks/useGame.js')
+          s = p.read_text()
+          blocks = [
+          '''── THE PLAYER OWNS THE MAP AND THE CLOCK ──\nNEVER choose a destination, departure, route change, or major time skip for the player. Do not end an active scene merely because time could pass. But once the player chooses to travel, wait, work, rest, explore, or perform other time-consuming activity, let reasonable time and distance pass as part of resolving that choice. Preserve meaningful decision points and stop when the player needs to choose what happens next.\n\n''',
+          '''THE PLAYER OWNS THE MAP AND THE CLOCK. Never move the player to a new location they did not choose to go to, and never advance time — no "later that evening", no "the next morning", no "hours pass" — unless the player said to. Never fast-forward, time-skip, or summarize travel; travel is played out, and a scene ends when the PLAYER moves on, not when you decide it's over. Present the scene, then stop and let the player decide what to pursue. When in doubt whether to advance: don't — end your message and wait.\n\n''',
+          '''4. You did NOT move them or advance time — same place, same moment, unless the player moved.\n'''
+          ]
+          expected = [1, 1, 2]
+          for block, count in zip(blocks, expected):
+              actual = s.count(block)
+              assert actual == count, f'Expected {count} occurrence(s), found {actual}: {block.splitlines()[0]}'
+              s = s.replace(block, '')
+          p.write_text(s)
+          assert 'THE PLAYER OWNS THE MAP AND THE CLOCK' not in s
+          assert 'You did NOT move them or advance time' not in s
+          PY
+          node --check src/hooks/useGame.js
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+      - name: Commit source change
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/hooks/useGame.js
+          git diff --cached --check
+          git commit -m "Remove conflicting clock guardrails"
+          git push origin HEAD:time-distance-grounding
+      - name: Remove temporary workflow
+        run: |
+          git rm .github/workflows/remove-clock-guardrails.yml
+          git commit -m "Remove temporary clock cleanup workflow"
+          git push origin HEAD:time-distance-grounding
+# trigger
