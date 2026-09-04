@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/patchTimeDistancePacing.mjs && node scripts/patchDeclaredCombatSequence.mjs && node scripts/patchNarrativeFocus.mjs",
+    "predev": "node scripts/patchTimeDistancePacing.mjs && node scripts/patchDeclaredCombatSequence.mjs && node scripts/patchNarrativeFocus.mjs && node scripts/patchLootDestination.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/patchTimeDistancePacing.mjs && node scripts/patchDeclaredCombatSequence.mjs && node scripts/patchNarrativeFocus.mjs",
+    "prebuild": "node scripts/patchTimeDistancePacing.mjs && node scripts/patchDeclaredCombatSequence.mjs && node scripts/patchNarrativeFocus.mjs && node scripts/patchLootDestination.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
