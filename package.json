@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "predev": "",
+    "predev": "node scripts/patchNarrativeFocus.mjs",
     "dev": "vite",
-    "prebuild": "",
+    "prebuild": "node scripts/patchNarrativeFocus.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
