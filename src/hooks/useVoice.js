@@ -20,22 +20,20 @@ const applyPronunciations = (text, custom = {}) => {
     if (!word || !say) continue;
     out = out.replace(new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), say);
   }
-  // A leading double consonant makes the engine spell the first letter out.
-  // "Sseth'karix" -> "Seth'karix", "Ffolk" -> "Folk".
   out = out.replace(/\b([bcdfgklmnprstvz])\1(?=[a-z])/gi, '$1');
   return out;
 };
 
 const cleanForSpeech = (text, custom) => applyPronunciations(text, custom)
-  .replace(/\[[^\]]+\]/g, '')           // remove all game tags
-  .replace(/[*_]/g, '')                 // strip markdown emphasis so TTS doesn't say "asterisk"
-  .replace(/\d+\.\s/g, '')             // remove numbered list markers
-  .replace(/\bCR\s*(\d+)/gi, 'challenge rating $1')  // CR 30 → challenge rating 30 (else "county route")
+  .replace(/\[[^\]]+\]/g, '')
+  .replace(/[*_]/g, '')
+  .replace(/\d+\.\s/g, '')
+  .replace(/\bCR\s*(\d+)/gi, 'challenge rating $1')
   .replace(/\bCR\b/g, 'challenge rating')
-  .replace(/\bDC\b/g, 'difficulty')    // DC → difficulty
-  .replace(/\bAC\b/g, 'armor class')   // AC → armor class
-  .replace(/\bHP\b/g, 'hit points')    // HP → hit points
-  .replace(/\bXP\b/g, 'experience')    // XP → experience
+  .replace(/\bDC\b/g, 'difficulty')
+  .replace(/\bAC\b/g, 'armor class')
+  .replace(/\bHP\b/g, 'hit points')
+  .replace(/\bXP\b/g, 'experience')
   .replace(/\bSTR\b/g, 'strength')
   .replace(/\bDEX\b/g, 'dexterity')
   .replace(/\bCON\b/g, 'constitution')
@@ -44,7 +42,6 @@ const cleanForSpeech = (text, custom) => applyPronunciations(text, custom)
   .replace(/\bCHA\b/g, 'charisma')
   .trim();
 
-// Split text into speakable chunks at sentence boundaries
 const splitIntoChunks = (text, maxLength = 200) => {
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
   const chunks = [];
@@ -53,9 +50,7 @@ const splitIntoChunks = (text, maxLength = 200) => {
     if ((current + sentence).length > maxLength && current) {
       chunks.push(current.trim());
       current = sentence;
-    } else {
-      current += sentence;
-    }
+    } else current += sentence;
   }
   if (current.trim()) chunks.push(current.trim());
   return chunks.length > 0 ? chunks : [text];
@@ -74,14 +69,19 @@ export function useVoice() {
   const voiceSupported = 'speechSynthesis' in window;
   const sttSupported   = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 
-  // Persisted voice preferences (voice name + speaking rate). Falls back to the
-  // old name-hunt when nothing is chosen, so existing behavior is unchanged.
+  // Device-local preferences remain a convenience fallback, while save files can
+  // now restore rate/pitch for the character/campaign on load.
   const [voiceName, setVoiceNameState] = useState(() => localStorage.getItem('dnd-tts-voice') || '');
-  const [rate, setRateState] = useState(() => parseFloat(localStorage.getItem('dnd-tts-rate')) || 0.88);
-  // User pronunciation overrides, "word: how to say it" per line, persisted.
+  const [rate, setRateState] = useState(() => {
+    const saved = parseFloat(localStorage.getItem('dnd-tts-rate'));
+    return Number.isFinite(saved) ? saved : 1;
+  });
   const [pronounce, setPronounceState] = useState(() => localStorage.getItem('dnd-tts-pronounce') || '');
   const pronounceRef = useRef(pronounce);
-  const [pitch, setPitchState] = useState(() => parseFloat(localStorage.getItem('dnd-tts-pitch')) || 0.85);
+  const [pitch, setPitchState] = useState(() => {
+    const saved = parseFloat(localStorage.getItem('dnd-tts-pitch'));
+    return Number.isFinite(saved) ? saved : 1;
+  });
   const [availableVoices, setAvailableVoices] = useState([]);
   const voiceNameRef = useRef(voiceName);
   const rateRef = useRef(rate);
@@ -91,7 +91,6 @@ export function useVoice() {
   useEffect(() => { pronounceRef.current = pronounce; }, [pronounce]);
   useEffect(() => { pitchRef.current = pitch; }, [pitch]);
 
-  // The voice list populates asynchronously; refresh on the change event.
   useEffect(() => {
     if (!('speechSynthesis' in window)) return;
     const load = () => setAvailableVoices(window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en')));
@@ -103,7 +102,6 @@ export function useVoice() {
   const setVoiceName = (name) => { setVoiceNameState(name); localStorage.setItem('dnd-tts-voice', name); };
   const setRate = (r) => { setRateState(r); localStorage.setItem('dnd-tts-rate', String(r)); };
   const setPronounce = (t) => { setPronounceState(t); localStorage.setItem('dnd-tts-pronounce', t); };
-  // "Sseth'karix: Seth ka rix" per line -> { "sseth'karix": "Seth ka rix" }
   const parsePronounce = (text) => {
     const out = {};
     (text || '').split('\n').forEach(line => {
@@ -118,16 +116,20 @@ export function useVoice() {
   };
   const setPitch = (v) => { setPitchState(v); localStorage.setItem('dnd-tts-pitch', String(v)); };
 
+  // Save-load path uses the same setters so restored values immediately update
+  // refs, UI state, and the device fallback.
+  const applySavedSettings = ({ rate: savedRate, pitch: savedPitch } = {}) => {
+    if (Number.isFinite(Number(savedRate))) setRate(Number(savedRate));
+    if (Number.isFinite(Number(savedPitch))) setPitch(Number(savedPitch));
+  };
+
   const getPreferredVoice = () => {
     const voices = window.speechSynthesis.getVoices();
-    // 1. explicit saved choice wins — match by unique voiceURI first (Android
-    // variants often share one display name), fall back to name for old prefs
     if (voiceNameRef.current) {
       const chosen = voices.find(v => v.voiceURI === voiceNameRef.current)
                   || voices.find(v => v.name === voiceNameRef.current);
       if (chosen) return chosen;
     }
-    // 2. fall back to the old name-hunt for a decent default
     return voices.find(v =>
       v.name.includes('Daniel') || v.name.includes('David') ||
       v.name.includes('Alex')   || v.name.includes('Google UK')
@@ -139,9 +141,7 @@ export function useVoice() {
     if (voice) utt.voice = voice;
     utt.rate = rateRef.current; utt.pitch = pitchRef.current; utt.volume = 1;
     utt.onstart = () => setIsSpeaking(true);
-    utt.onend   = () => {
-      if (isLast) setIsSpeaking(false);
-    };
+    utt.onend   = () => { if (isLast) setIsSpeaking(false); };
     utt.onerror = () => setIsSpeaking(false);
     window.speechSynthesis.speak(utt);
   }, []);
@@ -153,10 +153,7 @@ export function useVoice() {
     if (!clean) return;
     const chunks = splitIntoChunks(clean);
     const voice  = getPreferredVoice();
-    // Queue all chunks — browser queues utterances automatically
-    chunks.forEach((chunk, i) => {
-      speakChunk(chunk, i === chunks.length - 1, voice);
-    });
+    chunks.forEach((chunk, i) => speakChunk(chunk, i === chunks.length - 1, voice));
   }, [voiceSupported, speakChunk]);
 
   const stopSpeaking = () => {
@@ -187,6 +184,7 @@ export function useVoice() {
     isSpeaking, isListening,
     voiceSupported, sttSupported,
     voiceName, setVoiceName, rate, setRate, pitch, setPitch, pronounce, setPronounce, availableVoices,
+    applySavedSettings,
     previewVoice: () => { window.speechSynthesis.cancel(); speakChunk('The road stretches on beneath a darkening sky.', true, getPreferredVoice()); },
     speak, stopSpeaking,
     startListening, stopListening,
