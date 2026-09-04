@@ -6,7 +6,7 @@ import { SLOTS } from './constants/items.js';
 import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable, pruneDeadItemDefinitions } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
-import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
+import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, buildSystemPromptSol, buildSystemPromptTerra, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
 import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
@@ -139,7 +139,9 @@ export default function App() {
         ? buildSystemPromptSonnet(c)
         : selectedModel === 'haiku'
         ? buildSystemPrompt(c)
-        : buildSystemPromptGpt(c);
+        : selectedModel === 'terra'
+        ? buildSystemPromptTerra(c)
+        : buildSystemPromptSol(c);
       const data = await pingCache(prompt);
       if (data) logUsage('cache keep-warm', data);
     }, 4 * 60 * 1000);
@@ -522,7 +524,9 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         ? buildSystemPrompt(charWithArc)
         : selectedModel === 'sonnet'
         ? buildSystemPromptSonnet(charWithArc)
-        : buildSystemPromptGpt(charWithArc);
+        : selectedModel === 'terra'
+        ? buildSystemPromptTerra(charWithArc)
+        : buildSystemPromptSol(charWithArc);
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
         system,
@@ -1932,7 +1936,9 @@ Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences
         ? buildSystemPrompt(charRef.current)
         : selectedModel === 'sonnet'
         ? buildSystemPromptSonnet(charRef.current)
-        : buildSystemPromptGpt(charRef.current);
+        : selectedModel === 'terra'
+        ? buildSystemPromptTerra(charRef.current)
+        : buildSystemPromptSol(charRef.current);
       const { text: dmText, usage: dmUsage } = await callDM(
         [...history, { role:'user', content: outgoing }],
         system,
