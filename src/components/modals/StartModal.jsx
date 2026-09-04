@@ -3,7 +3,7 @@ import { colors, fonts, btn } from '../../styles/theme.js';
 
 // Fresh-campaign chooser. Situation Adventure is deliberately separate from the
 // classic random/antagonist generator: its premise owns the starting context.
-export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAdventure, onManual, onChooseAntagonist, antagonists = [], defeatedAntagonists = [], adventures = [], completedAdventures = [] }) {
+export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAdventure, onManual, onChooseAntagonist, selectedModel = 'sonnet', onSelectModel, hasAnthropic = false, hasOpenAI = false, antagonists = [], defeatedAntagonists = [], adventures = [], completedAdventures = [] }) {
   const [mode, setMode] = useState(null);
   const [text, setText] = useState('');
   const [antagonist, setAntagonist] = useState('');
@@ -22,6 +22,13 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
     .filter(a => showCompletedAdventures || !completedTitles.has(a.title))
     .filter(a => !adventureSearch.trim() || a.title.toLowerCase().includes(adventureSearch.trim().toLowerCase()));
 
+  const dmOptions = [
+    { id:'sonnet', label:'✨ Sonnet', provider:'Anthropic', enabled:hasAnthropic },
+    { id:'haiku', label:'⚡ Haiku', provider:'Anthropic', enabled:hasAnthropic },
+    { id:'gpt', label:'🧠 GPT Sol', provider:'OpenAI', enabled:hasOpenAI },
+    { id:'terra', label:'🌍 GPT Terra', provider:'OpenAI', enabled:hasOpenAI },
+  ];
+
   const card = { background:colors.bg,border:`1px solid ${colors.border}`,borderRadius:6,padding:16,cursor:'pointer',transition:'all 0.15s',textAlign:'left' };
   const hoverOn = e => { e.currentTarget.style.borderColor=colors.gold; e.currentTarget.style.background=colors.bgDark; };
   const hoverOff = e => { e.currentTarget.style.borderColor=colors.border; e.currentTarget.style.background=colors.bg; };
@@ -32,6 +39,13 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
         <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:16,marginBottom:16,textAlign:'center'}}>🎲 How should this adventure begin?</div>
         {mode === null ? (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:6,padding:12}}>
+              <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:11,marginBottom:8}}>Choose Dungeon Master</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8}}>
+                {dmOptions.map(dm => <button key={dm.id} disabled={!dm.enabled} onClick={()=>dm.enabled&&onSelectModel?.(dm.id)} style={{...btn(selectedModel===dm.id),padding:'8px 6px',fontSize:11,opacity:dm.enabled?1:0.35,cursor:dm.enabled?'pointer':'not-allowed'}} title={dm.enabled?dm.provider:`${dm.provider} API key required`}>{dm.label}</button>)}
+              </div>
+              <div style={{fontSize:10,color:colors.textGhost,marginTop:7,lineHeight:1.4}}>Select the DM before the opening request is sent. Models without an available API key are disabled.</div>
+            </div>
             <div onClick={onRandom} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
               <div style={{fontSize:28,marginBottom:6}}>🎲</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Random Start</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Roll a fresh setting, scene, hook, and antagonist scaled to your level.</div>
