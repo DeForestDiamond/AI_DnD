@@ -1,4 +1,4 @@
-import { buildSystemPromptSonnet } from './sonnet.js';
+import { buildSystemPromptSonnet } from './solPrompt.js';
 
-// Independent Sol entry point; starts with the current GPT prompt unchanged.
+// Sol owns an independent snapshot of the GPT-tuned prompt.
 export const buildSystemPromptSol = (char) => buildSystemPromptSonnet(char, { forGpt: true });
