@@ -1,4 +1,4 @@
-import { buildSystemPromptSonnet } from './sonnet.js';
+import { buildSystemPromptSonnet } from './terraPrompt.js';
 
-// Independent Terra entry point; starts with the current GPT prompt unchanged.
+// Terra owns an independent snapshot of the GPT-tuned prompt.
 export const buildSystemPromptTerra = (char) => buildSystemPromptSonnet(char, { forGpt: true });
