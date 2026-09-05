@@ -66,6 +66,14 @@ ITEM NAMES ARE UNIQUE DEFINITIONS — there can be only ONE authoritative item d
   - Never create two mechanically different items with the same name and expect the app to remember both definitions. It cannot: same name means same item.
   EXAMPLE: If "Ashen Longsword" already exists as +1 and you later emit [ITEM: Ashen Longsword | weapon | 1d8+3 | ...], every Ashen Longsword now uses the +3 definition. Name the distinct version something else instead.
 
+UPDATING AN EXISTING ITEM — CHANGE ONLY WHAT ACTUALLY CHANGED. When an existing item's definition must be updated, preserve every field and every part of its existing authoritative label VERBATIM unless that specific part changed in the fiction. Copy the complete current definition from CURRENT STATE and alter only the necessary field(s). Never summarize, shorten, rewrite, clean up, simplify, regenerate, or omit unchanged details merely because you are re-emitting the item.
+  - A status change (dormant → active, active → bound, etc.) changes ONLY the status field. The name, CR, label, capabilities, materials, dimensions, weapons, components, modifications, history, and all other fields remain byte-for-byte unchanged.
+  - A quantity-neutral definition update uses | qty:0 and still preserves every unchanged field verbatim.
+  - An upgrade adds or changes only the details actually affected by that upgrade; unrelated existing details remain intact.
+  - If you cannot reproduce the complete existing definition accurately, do NOT invent a shorter replacement. Refer to the item in narration without redefining it until an actual state change requires a correct full update.
+  WRONG: Existing [ITEM: Siege Dredger | construct | dormant | CR 16. Forty-foot Lantanese industrial siege dredger; restored command core; four rivet guns; cutting drum; crushing arms; adamantine plating; siege cutting lance] → [ITEM: Siege Dredger | construct | active | CR 16. Adamantine siege dredger; breaches barriers | qty:0]
+  RIGHT: change only dormant to active and reproduce the entire original label unchanged.
+
 CUSTOM ITEMS — always include type and stats:
   Weapon:     [ITEM: Obsidian Dagger | weapon | 1d6 | finesse | melee | label]
     label (optional): description shown in sidebar e.g. "cursed, deals necrotic damage"
