@@ -25,7 +25,13 @@ import { callGptTownManager } from './helpers/openai/towns.js';
 import { callGptNpcManager } from './helpers/openai/npcs.js';
 import { callGptSalvage } from './helpers/openai/salvage.js';
 import { callGptCrafting } from './helpers/openai/crafting.js';
-import { callGptConsolidate, CONSOLIDATE_RULES } from './helpers/openai/consolidate.js';
+import { callGptConsolidate } from './helpers/openai/consolidate.js';
+import { callAnthropicStoryEntry, callAnthropicArchive } from './helpers/anthropic/history.js';
+import { callAnthropicTownManager } from './helpers/anthropic/towns.js';
+import { callAnthropicNpcManager } from './helpers/anthropic/npcs.js';
+import { callAnthropicSalvage } from './helpers/anthropic/salvage.js';
+import { callAnthropicCrafting } from './helpers/anthropic/crafting.js';
+import { callAnthropicConsolidate } from './helpers/anthropic/consolidate.js';
 
 function StatBar({ label, value, desc }) {
   return (
@@ -643,56 +649,12 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
       }
     }
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': key,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
-          max_tokens: 2000,
-          system: `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. This is the ONLY record that will survive of these events, so what you keep matters more than how you say it. Facts only, no scene-setting or atmosphere.
-
-
-ARCHIVE COMPRESSION RULE: Target 200-300 words and make this archive substantially smaller than the source summaries. Merge related resolved events and preserve durable outcomes rather than intermediate steps. INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD: unresolved threads and unresolved members of finite sets must remain specific enough to resume correctly, even if that occasionally requires exceeding the target. Do not use that exception for resolved history, flavor, dialogue, combat detail, repeated explanations, or routine loot.
-
-PRESERVE ABOVE ALL — these are what the story is built on:
-- OBLIGATIONS IN BOTH DIRECTIONS: debts owed to the player and by the player, promises made, bargains struck, favours banked, contracts signed, terms agreed. Who owes what to whom, and for what. Never drop these.
-- RELATIONSHIPS AND HOW THEY CHANGED: who became an ally, enemy, employee, lover, rival; who was betrayed, spared, recruited, crossed. Record the change, not just the state.
-- CONSEQUENTIAL DECISIONS and what followed from them, including who witnessed them and who will remember.
-- DEATHS, disappearances, and who was responsible.
-- QUEST THREADS opened, advanced, closed or abandoned; FACTION standing changes.
-- PERMANENT CHANGES to the player: powers gained, oaths taken, curses, transformations, property or titles acquired.
-
-NAMED PEOPLE: on first mention of any named NPC, give their pronoun AND race — "Harren (he, human)", "Vashaera (she, tiefling)", "Kess (they, kenku)". This is how future entries keep them consistent; without it a human becomes a kenku three sessions later.
-
-RECORD BRIEFLY: significant items — named, magical, or quest-relevant — and only those. Locations visited and where the player ended up.
-
-DROP ENTIRELY: routine loot and coin (a purse of gold from a bandit, ordinary supplies — the app tracks money and inventory itself), scene descriptions, dialogue, atmosphere, combat blow-by-blow, investigation detail that led nowhere, conversation that changed nothing.
-
-RETCON RULE: if any events were walked back or declared not to have happened, omit them entirely.
-
-Plain text only. No headers. No bullet points. Past tense. Output only the archive text.`,
-          messages: [
-            { role: 'user', content: `Archive these campaign log entries:\n\n${entriesToCompress.map(e => e.text).join('\n\n')}` },
-          ],
-        }),
+      const { text, usage } = await callAnthropicArchive({
+        apiKey: key, entriesText: entriesToCompress.map(e => e.text).join('\n\n'),
       });
-      if (res.ok) {
-        const data = await res.json();
-        logUsage('archive summary', data);
-        const text = data.content?.[0]?.text || '';
-        if (text) {
-          log(`[SUMMARY] Archived chunk created: ${text.length} chars`);
-          return text;
-        }
-      }
-    } catch (e) {
-      log('[SUMMARY] Compression failed: ' + e.message);
-    }
+      if (usage) logUsage('archive summary', { usage });
+      if (text) { log(`[SUMMARY] Archived chunk created: ${text.length} chars`); return text; }
+    } catch (e) { log('[SUMMARY] Compression failed: ' + e.message); }
     // Fallback: join entries as-is
     return entriesToCompress.map(e => e.text).join('\n\n');
   };
@@ -751,49 +713,19 @@ Plain text only. No headers. No bullet points. Past tense. Output only the archi
         const gOut = gptStoryUsage?.output_tokens || 0;
         log(`[HELPER] story log via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
       }
-      const res = gptStoryEntry ? null : await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': key,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
-          max_tokens: 800,
-          system: `You are a D&D session scribe writing an APPEND-ONLY story log. Write ONLY the new entry for recent events — do NOT rewrite or reference anything already in the log.
-
-The user input has three labelled blocks. ONLY MESSAGES TO BE SUMMARIZED is target material. PRIOR SUMMARY FOR REFERENCE and EVENTS AFTER SUMMARY CHUNK are context only. Use them to understand continuity, identities, stakes, promises, wagers, unresolved threads, and cause/effect across chunk boundaries; never summarize their events as though they occurred in the target block.
-
-LENGTH: Aim for roughly 400 words for a normal entry. Dense, multi-threaded chunks may use up to about 800 words. Do not pad simple events, but never delete continuity-critical detail merely to stay short. Completeness and future usability beat compression in the live summary layer.
-
-PRESERVE CONCRETE STATE AND CAUSALITY. Keep where important people, vessels, objects, and groups physically are; why characters are present or acting; who asked, told, sent, hired, or paid whom to do something; and causal links between setup and later action. A mundane-seeming detail stays if removing it would make a later location, action, conversation, motivation, or consequence appear unexplained.
-
-CORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD. Compression is subordinate to continuity. Never omit, merge, generalize, or tidy away unresolved state merely to reduce length. If the story establishes a finite/enumerated set — opponents and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, or similar — preserve EVERY unresolved member and its associated detail until individually resolved. Open threads must retain who/what/where and their latest known state. Once genuinely resolved, they may be compressed aggressively into the outcome. There is no fixed length target when unresolved state requires more space.
-
-WRITE DOWN FIRST, always, if any occurred:
-- OBLIGATIONS BOTH WAYS: what someone now owes the player, what the player owes someone, promises made, bargains struck, terms agreed, favours banked or called in. These outlive everything else in the log — never omit one.
-- RELATIONSHIP CHANGES with named people: who warmed, cooled, allied, betrayed, was hired, was spared, was crossed. Record the CHANGE, not a description of the person.
-- Decisions with consequences, and who saw them made.
-- Deaths and who caused them; quest threads opened or closed; faction standing shifts.
-- Permanent changes to the player: oaths, curses, powers, titles, property.
-
-THEN, briefly: significant items only — named, magical or quest-relevant — and where the player ended up.
-
-DO NOT RECORD: routine loot and coin. Finding a purse of gold in a hoard is noise; the app tracks money and inventory itself. Ordinary supplies, ammunition and common gear are likewise not story. Skip conversation that changed nothing, investigation that led nowhere, and combat blow-by-blow — the outcome is enough.
-
-NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren (he, human), Vashaera (she, tiefling), Kess (they, kenku). Future entries rely on this; without it a human turns into a kenku three sessions later. GROUND TRUTH (authoritative — never contradict): the player character is ${charRef.current?.name || 'the adventurer'}; their current location at the END of this section is ${charRef.current?.currentLocation || 'unknown'}. Refer to the player by that exact name, and treat that location as where they are now — do NOT infer the player's name or current location from place names mentioned in the log text. Begin the entry with the current location in brackets, e.g. [${charRef.current?.currentLocation || 'Location'}]. Plain text only. No bullet points. No preamble. Just the new log entry.`,
-          messages: [
-            { role: 'user', content: `PRIOR SUMMARY FOR REFERENCE:\n${storySummaryRef.current || '(none — this is the first summary entry)'}\n\n---\nMESSAGES TO BE SUMMARIZED:\n${historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n')}\n\n---\nEVENTS AFTER SUMMARY CHUNK:\n${followingForSummary.length ? followingForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n') : '(none available)'}\n\nWrite only the new story-log entry for MESSAGES TO BE SUMMARIZED.` },
-          ],
-        }),
-      });
-
-      if (!gptStoryEntry && !res.ok) { lastSummarizedAt.current = prevSummarizedAt; return; }
-      const data = gptStoryEntry ? null : await res.json();
-      if (data) logUsage('story log entry', data);
-      const newEntry = gptStoryEntry || data?.content?.[0]?.text || '';
+      let anthropicStory = null;
+      if (!gptStoryEntry) {
+        anthropicStory = await callAnthropicStoryEntry({
+          apiKey: key,
+          playerName: charRef.current?.name || 'the adventurer',
+          currentLocation: charRef.current?.currentLocation || 'unknown',
+          priorSummary: storySummaryRef.current || '',
+          transcript: historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n'),
+          followingTranscript: followingForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n'),
+        });
+        if (anthropicStory.usage) logUsage('story log entry', { usage: anthropicStory.usage });
+      }
+      const newEntry = gptStoryEntry || anthropicStory?.text || '';
       if (!newEntry) { lastSummarizedAt.current = prevSummarizedAt; return; }
 
       // From here the entry is real. Past this point we NEVER rewind
@@ -865,24 +797,6 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
       ? Object.entries({ ...char.npcs, ...char.companions }).find(([n]) => n.toLowerCase() === trimmedName.toLowerCase())
       : null;
 
-    const shape = '{ "npcs": { "Character Name": { "location": "Town or Town - District, or empty string", "relationship": "their relationship to ' + playerName + ' in a short phrase", "desc": "2-4 vivid sentences: appearance, personality, role, notable facts — include their gender pronoun on first mention" } } }';
-    let task;
-    if (trimmedName && existing) {
-      task = `UPDATE the existing record for "${existing[0]}". The record below is ESTABLISHED TRUTH — treat it exactly as if it had appeared in the messages. Start from it, keep everything in it, and change only what these messages actually change.
-
-The messages do NOT need to re-describe this character. They only need to show what happened. A range covering a single event is enough — read it for: how their relationship to ${playerName} changed, significant events they took part in, where they are now, obligations or promises between them, and any new facts. Fold those into the existing text and preserve the rest where nothing contradicts it.
-
-NEVER return an empty result for an update. If the messages genuinely add nothing about this character, return the existing record unchanged.${note ? `
-
-THE PLAYER SAYS THIS IS WHAT CHANGED — treat it as true and make sure the updated record reflects it: "${note}"` : ''}
-
-EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
-    } else if (trimmedName) {
-      task = `Extract a record for ONLY the character named "${trimmedName}". If they do not appear in these messages, return { "npcs": {} }.`;
-    } else {
-      task = `Extract every SIGNIFICANT named character: recurring people, anyone with a name and a role in events. SKIP: ${playerName} (the player), unnamed extras, and one-line walk-ons like a merchant who appears once to sell something. When in doubt about significance, include them — the player chooses what to keep.`;
-    }
-
     const apiMsgs = logArr.slice(lo, hi + 1).map(m => ({
       role: m.role === 'dm' ? 'assistant' : 'user',
       content: m.text,
@@ -918,38 +832,11 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
       log(`[NPC] Saved: ${applied.join(', ')}`);
       return { applied };
     }
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 4000,
-        system: `You extract character records from D&D session transcripts. The player character is ${playerName} — never create a record for them. Base every record on what these messages establish PLUS, when updating, the existing record supplied in the task — that record is established truth, not invention, and must be preserved. Do not invent anything beyond those two sources. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
-        messages: [
-          ...apiMsgs,
-          { role: 'user', content: task + '\n\nRespond with ONLY the JSON now.' },
-        ],
-      }),
+    const { found, usage: anthropicUsage } = await callAnthropicNpcManager({
+      apiKey: key, playerName, messages: apiMsgs, name: trimmedName,
+      existing: existing ? { [existing[0]]: existing[1] } : null, note,
     });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    logUsage('NPC extraction', data);
-    const rawText = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
-    let parsed;
-    try {
-      parsed = JSON.parse(rawText);
-    } catch {
-      const cut = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(rawText);
-      throw new Error(cut
-        ? 'The reply was cut off before it finished — narrow the message range and try again'
-        : 'Extraction returned unreadable JSON — try again or narrow the range');
-    }
-    const found = parsed.npcs || {};
+    if (anthropicUsage) logUsage('NPC extraction', { usage: anthropicUsage });
     const names = Object.keys(found);
     if (!names.length) { log('[NPC] Nothing found in range'); return { applied: [] }; }
 
@@ -993,24 +880,6 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
       ? Object.entries(char.towns || {}).find(([n]) => n.toLowerCase() === trimmedName.toLowerCase())
       : null;
 
-    const shape = '{ "towns": { "Town Name": { "desc": "1-3 sentences: what this place is, its character and atmosphere", "status": "current state relative to ' + playerName + ' (e.g. established base, hostile, just passing through)", "notable_locations": { "Place Name": "one-line description" }, "minor_residents": { "Person Name": "one-line description with pronoun" } } } }';
-    let task;
-    if (trimmedName && existing) {
-      task = `UPDATE the existing record for "${existing[0]}". The record below is ESTABLISHED TRUTH — treat it as if it had appeared in the messages. Start from it, keep everything in it, and change only what these messages change.
-
-The messages do NOT need to re-describe the place. Read them for what is NEW: locations discovered, residents met, how the place changed, the player's standing there. ADD new notable_locations and minor_residents alongside the existing ones rather than replacing them.
-
-NEVER return an empty result for an update. If the messages add nothing, return the existing record unchanged.${note ? `
-
-THE PLAYER SAYS THIS IS WHAT CHANGED — treat it as true and reflect it: "${note}"` : ''}
-
-EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
-    } else if (trimmedName) {
-      task = `Extract a record for ONLY the settlement/location named "${trimmedName}". If it does not appear in these messages, return { "towns": {} }.`;
-    } else {
-      task = `Extract every SIGNIFICANT settlement or major location: towns, cities, and named places where events happened or that the player will likely return to. SKIP one-line pass-throughs. When in doubt, include it — the player chooses what to keep.`;
-    }
-
     const apiMsgs = logArr.slice(lo, hi + 1).map(m => ({ role: m.role === 'dm' ? 'assistant' : 'user', content: m.text }));
     log(`[TOWN] Extracting ${trimmedName || 'all significant locations'} from messages #${lo}-#${hi}`);
     if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
@@ -1039,30 +908,11 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
       log(`[TOWN] Saved: ${applied.join(', ')}`);
       return { applied };
     }
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 4000,
-        system: `You extract settlement/location records from D&D session transcripts. Base every record on what these messages establish PLUS, when updating, the existing record supplied in the task — that record is established truth and must be preserved. notable_locations and minor_residents are name-keyed objects, not arrays. Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
-        messages: [...apiMsgs, { role: 'user', content: task + '\n\nRespond with ONLY the JSON now.' }],
-      }),
+    const { found, usage: anthropicUsage } = await callAnthropicTownManager({
+      apiKey: key, playerName, messages: apiMsgs, name: trimmedName,
+      existing: existing ? { [existing[0]]: existing[1] } : null, note,
     });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    logUsage('town extraction', data);
-    const rawText = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
-    let parsed;
-    try {
-      parsed = JSON.parse(rawText);
-    } catch {
-      const cut = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(rawText);
-      throw new Error(cut
-        ? 'The reply was cut off before it finished — narrow the message range and try again'
-        : 'Extraction returned unreadable JSON — try again or narrow the range');
-    }
-    const found = parsed.towns || {};
+    if (anthropicUsage) logUsage('town extraction', { usage: anthropicUsage });
     if (!Object.keys(found).length) { log('[TOWN] Nothing found in range'); return { applied: [] }; }
 
     const c = { ...charRef.current, towns: { ...charRef.current.towns } };
@@ -1115,55 +965,7 @@ EXISTING RECORD: ${JSON.stringify({ [existing[0]]: existing[1] })}`;
       return `NAME: ${m.name} | HAVE: ${m.count}${bits.length ? ` | ${bits.join(' | ')}` : ''}`;
     };
     const matList = materials.map(describeMat).join('\n');
-    const levelNote = `The character is level ${char.level}.`;
-    const wantNote = intent?.trim()
-      ? `The player specifically wants: "${intent.trim()}". Honour this if the materials plausibly allow it; if they do not, say why in the reason field and propose the closest achievable thing.`
-      : 'The player has no specific request — propose what these materials most naturally become.';
-
-    const setShape = `{ "options": [ { "name": "Set Name", "pieces": [ { "name": "Piece Name", "type": "weapon|armor|magic", "slot": "the slot this piece occupies", "damage": "weapons only", "heavy": "armor only", "maxDex": "armor only", "bonuses": "stat:N pairs or empty", "label": "what this piece does" } ], "count": "how many identical copies this makes — 1 unless the player asked for more", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on the set and why these materials make it" } ] }`;
-    const shape = `{ "options": [ { "name": "Item Name", "type": "weapon|armor|magic|consumable|construct|misc — armor ONLY for a main chest piece, every other wearable is magic, construct for golems and bound entities, misc for anything that is not gear at all", "status": "construct only — dormant, active, or bound", "slot": "one of: mainhand offhand armor face head neck shoulders cloak torso arms hands waist ring feet — omit for weapon/consumable", "damage": "weapons only — base dice, optional +N enchantment, and optional extra damage dice of another type: 1d8, 1d8+2, or 1d8+1 plus 1d4 radiant, or 2d6 plus 2d6 fire", "heavy": "armor only — true if it is heavy armour that ignores the wearer's Dexterity, false otherwise", "maxDex": "armor only — a number if the armour caps the Dexterity bonus (medium armour is usually 2), otherwise null", "bonuses": "stat:N pairs like ac:1 or str:2 or perception:3, or empty string", "label": "what it does, in plain words", "count": "how many identical copies this makes — 1 unless the player asked for more", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
-
-    // A construct is an ENTITY, not gear — it becomes a companion record with the
-    // room to be described properly, rather than a label crammed into an item.
-    const constructShape = `{ "options": [ { "name": "Construct Name", "cr": "challenge rating as a number", "race": "what it is, e.g. bone colossus, infernal war-construct", "role": "what it is for, e.g. siege engine, bodyguard, hunter", "appearance": "2-3 sentences on how it looks and moves", "abilities": "the kinds of power it wields — schools of magic, damage types, broad capabilities. NO specific spell names, NO damage dice, NO per-day counts", "desc": "3-5 sentences: what it is, how it was made, how it behaves, and what commanding it costs", "count": "how many identical copies this makes — 1 unless the player asked for more", "consumes": [{"name":"Material Name","count":2}], "reason": "one sentence on why these materials make this" } ] }`;
-    const constructRules = asConstruct ? `
-
-FORGING A CONSTRUCT: propose 2 alternative constructs — golems, war machines, animated dead, bound spirits. These are ENTITIES the player owns and commands, not equipment, so describe them properly:
-- CR scales to the materials: ordinary parts CR 3-8, monstrous parts CR 10-16, legendary remains (ancient dragon, tarrasque, demon lord, archfiend) CR 20+.
-- ABILITIES field: name the KINDS of power — "necrotic and shadow magic", "siege-scale physical force", "fear effects and command over lesser undead". Do NOT name specific spells, do NOT give damage dice, do NOT list per-day counts. The CR tells the DM how hard it hits; the rest is played, not tabulated.
-- DESC field: this is the one place to be generous. What it is, how it was made, how it behaves, what it costs to command, and what it does when its bindings weaken. Do NOT write what commanding it requires or costs — not "as a bonus action", not "requires directed effort", not "costs focus" or "costs your attention". None of it is tracked, and a vague cost is worse than none because it reads as a rule. Write consequences in the world instead: what waking it announces, what it answers to, what happens as its binding weakens.
-- Give it a real name, not a description-as-name.` : '';
-
-    // A batch is DESIGNED by the model rather than multiplied by us: the player
-    // may not hold N times each material, but a pile of mixed scrap can still
-    // yield N things if the crafter allocates across it sensibly.
     const batchN = Math.max(1, Math.min(MAX_CRAFT_BATCH, parseInt(qty, 10) || 1));
-    const batchRules = batchN > 1 ? `
-
-MAKING SEVERAL — THIS OVERRIDES NOTHING ABOVE, IT ADDS TO IT. The player wants ${batchN} COPIES of whatever you propose. Still propose the usual 2-3 alternatives; each one is a design, and each design is made ${batchN} times.
-Set "count": ${batchN} on EVERY option, and make its "consumes" cover all ${batchN} copies of that option together. A construct proposal means ${batchN} identical constructs, not one.
-- They will NOT necessarily have ${batchN} times each material. Draw across the whole pile: different scrap for different copies is fine, and ${batchN} blades might come from assorted metal rather than ${batchN} identical ingots.
-- If the materials cannot stretch to ${batchN}, propose the largest number they DO support, set "count" to that, and say so in the reason.
-- Every copy is identical: one name, one description, one set of stats.` : '';
-
-    const setRules = asSet ? `
-
-CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. Give every piece a proper label of 3-4 sentences — what it looks like, what it does, and what it was made from — the same care you would give a single crafted item. A set is a showpiece; describe it like one. Each set is a group of pieces that clearly belong together — shared material, shared motif, a shared name. Rules specific to sets:
-- Use a DIFFERENT slot for each piece so the whole set can be worn at once. At most ONE piece may be the main chest armour (type "armor"); every other worn piece is type "magic" with its own slot. A weapon may be included if the materials suit it.
-- Typical sets run 3-6 pieces: armour + head + hands + feet, or cloak + torso + arms + waist.
-- POWER: judge each piece the way you would judge a single item made from a fair share of these materials, and give it that much. A set forged from tarrasque hide and demon lord remains must be LEGENDARY IN EVERY PIECE — real stat bonuses, meaningful AC, resistances, regeneration, named effects in the labels. Do NOT water pieces down to keep some total low; that produces a legendary set no better than one of drake hide, which is the opposite of the point. Ordinary materials still make ordinary gear — the scaling comes from what went in, exactly as it does for a single item.
-- A set consumes proportionally more material than one item. Do not propose a six-piece set from three bones.
-- NAMING: every piece name must clearly belong to the set. Derive each from the set's name or motif — for a set called "Apocalypse Plate": "Apocalypse Helm", "Apocalypse Gauntlets", "Greaves of the Apocalypse". Do NOT name pieces after the material they came from ("Tarrasque Breastplate", "Demogorgon Helm") — that reads as a pile of loot, not a matched set. The materials belong in the label, not the name.
-- UPGRADING AN EXISTING SET: if the selection includes FINISHED EQUIPMENT (weapons, armour, worn magic items) rather than raw parts, those are pieces the player already owns and wants improved. Consume them and return their upgraded versions — keep each piece's identity and name lineage (an "Apocalypse Helm" becomes "Apocalypse Helm Reforged" or similar).
-  Rewrite each upgraded piece's label from scratch to the current standard — 2-3 sentences, type-appropriate. Do not carry an old sprawling label across and add to it.
-  AN UPGRADE MUST BE A REAL INCREASE, NOT A REARRANGEMENT. Each existing piece is listed above with its CURRENT BONUSES and, for armour, its ARMOUR RATING. Those numbers are a FLOOR:
-    • every stat key present on the old piece must appear on the upgraded piece at an EQUAL OR HIGHER value — never drop a key, never lower a number
-    • armour keeps or raises its ac value
-    • weapons keep or raise their damage dice, enchantment and extra damage dice
-    • everything the label promised still works, plus whatever the new materials add
-  BUT REWRITE THE LABEL FROM SCRATCH to the current standard — 2-3 sentences, type-appropriate. Do NOT carry the old label across and append to it. Old items often have sprawling labels full of spell lists and damage numbers; an upgrade is the moment to condense that into what the item now IS and DOES. The mechanical floor above is about the STATS, not the prose: keep the numbers, discard the wordcount.
-  Do NOT move a bonus from one piece to another and call it an upgrade, and do NOT reduce or delete anything to pay for an increase elsewhere. If the player asks to focus on one stat, ADD to that stat — do not strip the others to fund it. If the new materials are modest, add modestly, but every piece must end up strictly better than the one consumed. You may add NEW pieces to the set as well if the materials allow and a slot is free.` : '';
-
     log(`[CRAFT] Proposing ${batchN > 1 ? `${batchN}x ` : ''}${asConstruct ? 'CONSTRUCTS' : asSet ? 'matched SETS' : 'items'} from ${materials.length} material stacks`);
     let parsed;
     if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
@@ -1183,64 +985,12 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative SETS of 3-5 pieces each. G
       const gOut = gptUsage?.output_tokens || 0;
       log(`[HELPER] crafting via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
     } else {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
-          // A set is several pieces per option, each with name/slot/stats/label —
-          // far more output than single items. Too small a ceiling truncates the
-          // JSON mid-object and it fails to parse.
-          max_tokens: asSet || asConstruct ? 4000 : 3000,
-          system: `You are a master crafter in a D&D 5e game (Forgotten Realms). Given raw materials, propose 2-3 DISTINCT items that could plausibly be made from them — different in function, not just renamed versions of each other.
-
-  RULES:
-  - Power must fit the materials AND the character's level. Ordinary parts make ordinary gear; rare/monstrous parts make genuinely magical items. Do not hand out legendary power for common scraps.
-  - Only consume materials that make sense for that item, and never more than the player has.
-  - "consumes" MAY ONLY LIST MATERIALS FROM THE LIST ABOVE. Nothing else exists. Do not add a component because the design would sensibly need one, do not infer a material from another item's description, and do not reuse a name mentioned inside a NOTE — those are descriptions of what an item IS, not things the player holds. If the pile cannot make something, propose something the pile CAN make.
-  - In "consumes", the "name" MUST be copied EXACTLY as it appears after NAME: in the material list — no quantity, no description, no parenthetical. Writing "Iron Ingot (dwarven, high carbon)" instead of "Iron Ingot" means the material cannot be found and the craft fails.
-  - Every magical item must have a REAL mechanical effect: a +N on weapon damage, or stat:N bonuses, or both. "Enchanted" with no effect is forbidden.
-  - Name items for what they do or where they came from — never "Enchanted X".
-  - USE TYPE "misc" FOR ANYTHING THAT IS NOT GEAR. Refined stock and ingots, building material, furniture, rope, tools with no bonus, casks, instruments, art, trade goods, machinery, parts, a telescope, a printing press. If the player asks for something that is not worn, wielded, drunk or commanded, it is misc — do NOT force it into a weapon or magic slot to make it fit. Misc items carry a name and a label and nothing else: no slot, no bonuses, no damage.
-  - CONSTRUCTS, GOLEMS AND BOUND ENTITIES use type "construct" — a thing the player OWNS AND COMMANDS rather than wears or carries: golems, animated skeletons, bound spirits and elementals, war machines, a wraith sealed in a gem. They take no equipment slot. Give a status ("dormant", "active", or "bound") and put everything else in the label. Their power is narrative, so do not give them stat bonuses; describe what they do instead.
-    THE LABEL MUST OPEN WITH A CHALLENGE RATING — "CR 17. A forty-foot golem of fused bone..." — so the DM knows exactly how powerful it is when it acts. Set the CR from the materials: ordinary parts make a CR 3-8 servant, monstrous parts CR 10-16, legendary remains (ancient dragon, tarrasque, demon lord) CR 20+. Follow the CR with what it is, what it can do, and what commanding it costs.
-  - ITEM TYPE IS STRICT. Use type "armor" ONLY for a main chest/body piece (breastplate, chain shirt, plate) — it takes the armor slot and its AC REPLACES the wearer's armour. EVERY other wearable is type "magic" with the matching slot: a cloak is magic/cloak, boots are magic/feet, a helm is magic/head, bracers are magic/arms, a belt is magic/waist, a shirt is magic/torso, gloves are magic/hands, a mask or goggles are magic/face, pauldrons are magic/shoulders, an amulet is magic/neck, a ring is magic/ring. OFFHAND is shared: a shield is magic/offhand with an appropriate ac:N bonus and any other effects; a spellcasting focus is magic/offhand with appropriate bonuses/effects. Giving a cloak type "armor" puts it in the armour slot and throws away the wearer's real armour — never do this.
-  - A magic wearable's power lives in its bonuses (ac:N, str:N, dex:N ...). Protective effects that aren't calculable — disadvantage on attacks against you, advantage on saves, resistances — should be represented by a sensible ac:N bonus AND described in the label, so the item does something mechanically as well as narratively.
-  - ELEMENTAL AND DIVINE WEAPONS express their extra damage in the damage field as "plus <dice> <type>" — e.g. "1d8+1 plus 1d4 radiant", "2d6 plus 3d10 necrotic", and these stack: "1d6+2 plus 1d4 lightning plus 1d4 thunder". The app rolls these separately and doubles them on a critical hit. Damage described ONLY in the label is never rolled, so a flaming sword whose fire lives in the label is mechanically a plain sword.
-  - ONLY these bonus keys are calculated: ac, str, dex, con, int, wis, cha, and skill names (perception, stealth, athletics, persuasion ...). Invented keys like "necrotic_resistance:full" or "fire_immunity:true" do nothing — express resistances, immunities and per-day powers in the LABEL instead.
-  - ARMOUR PROTECTION COMES FROM ITS "ac" FIELD, NOT A BONUS. For a type "armor" chest piece, better protection means a HIGHER ac VALUE — masterwork plate is ac 19 or 20, not ac 18 with a separate ac:2. Reserve the bonuses field on armour for STAT bonuses (con:2, str:1). Other worn pieces — helm, cloak, ring, boots — are type "magic" and DO use ac:N in their bonuses, since they have no ac field of their own.
-  - LABELS ARE SHORT AND TYPE-APPROPRIATE. Only a weapon's damage field and its "plus" dice are ever rolled by the game — everything in a label is narration. A label stuffed with spell lists and damage numbers costs the player context on EVERY turn for the rest of the campaign and buys nothing mechanical.
-    DO NOT WRITE WHAT IT COSTS TO USE OR COMMAND SOMETHING. The game tracks no actions, bonus actions, reactions, concentration or per-turn limits, so none of that is simulated — and a vague substitute is worse, because it sounds like a rule and is not one. ALL of these are banned: "as a bonus action", "requires an action", "once per turn", "as a reaction", "requires concentration", "requires directed effort", "costs focus", "costs your attention", "demands concentration to control", and every other phrase of that shape. Just omit the sentence. If the thing has a genuine consequence in the WORLD — it can be seen for miles when it wakes, it answers only to a word you set, its binding frays a little each time — write that instead, as a fact about the thing rather than a price the player pays to act.
-    LABELS ARE NOTES, NOT PROSE. This text is fed to the DM on every turn for the rest of the campaign, so it is paid for hundreds of times. Write it telegraphically: fragments separated by semicolons, no full sentences, no connecting clauses, no "the X allowing you to Y" constructions. Keep what it looks like and what it does; cut everything that only makes it read nicely. Aim for under 25 words.
-      BLOATED: "Mithral boots plated with dragon scales and mythallar circuits, the distribution nodes allowing you to anchor yourself to any surface or float weightlessly at will. The soles leave glowing footprints."
-      RIGHT:   "Mithral, dragon scale, glowing footprints; anchor to any surface; float at will."
-      BLOATED: "The three walkers function as nodes of a single strategic consciousness, their cognitive cores creating an overlapping hive intelligence."
-      RIGHT:   "Three walkers, one hive mind; shared senses; coordinate without speech."
-    Then, by type:
-    WEAPON — the damage field carries the numbers. The label gets at most ONE special ability, in a clause. No second and third powers, no per-day spell lists.
-    ARMOUR — defensive, protective and utility effects ONLY: resistances, immunities, endurance, movement, senses. Armour never has offensive abilities and never deals damage.
-    ACCESSORIES (rings, cloaks, belts, boots, gloves, bracers, amulets, headwear, shirts) — utility and passive effects only. NO damage dice at all, and no attack powers.
-    CONSTRUCTS — what it is, and what commanding it costs. The CR at the front tells the DM how hard it hits; do NOT list spells, per-day powers or damage numbers.
-  - Charges and per-day effects are narrative text; there is no charge counter.
-  - ${levelNote}${constructRules}${setRules}${batchRules}
-  Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`,
-          messages: [{ role: 'user', content: `MATERIALS AVAILABLE:\n${matList}\n\n${wantNote}\n\nRespond with ONLY the JSON now.` }],
-        }),
+      const { parsed: anthropicParsed, usage: anthropicUsage } = await callAnthropicCrafting({
+        apiKey: key, materialsText: matList, characterLevel: char.level, intent,
+        asSet, asConstruct, quantity: batchN,
       });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const data = await res.json();
-      logUsage('crafting', data);
-      const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        // A response cut off by the token ceiling ends mid-object rather than
-        // with a closing brace — say so instead of a generic parse failure.
-        const truncated = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
-        throw new Error(truncated
-          ? 'The forge ran long and the answer was cut off — select fewer materials, or try again'
-          : 'Crafting returned unreadable JSON — try again');
-      }
+      parsed = anthropicParsed;
+      if (anthropicUsage) logUsage('crafting', { usage: anthropicUsage });
     }
     // Bonuses may come back as a string ("ac:2"), an object ({ac:2}) or an
     // array. Normalise to the string form the tag builder and parser expect —
@@ -1583,16 +1333,9 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
       log(`[HELPER] smart grouping via GPT ${(u.input_tokens || 0).toLocaleString()} in / ${(u.output_tokens || 0).toLocaleString()} out`);
     } else {
       const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:5000, system:CONSOLIDATE_RULES,
-          messages:[{role:'user',content:`SELECTED STACKS:\n${itemsText}\n\nReturn ONLY JSON: {"groups":[{"name":"Adamantine","items":[{"name":"Adamantine Ingot","count":4},{"name":"Adamantine Stock","count":8}],"reason":"same underlying material"}]}`}]}),
-      });
-      if(!res.ok) throw new Error(`API error ${res.status}`);
-      const data=await res.json(); logUsage('smart grouping',data);
-      const raw=(data.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
-      try { rawGroups=JSON.parse(raw).groups||[]; } catch { throw new Error('Smart grouping returned unreadable JSON'); }
+      const out = await callAnthropicConsolidate({ apiKey: key, itemsText });
+      rawGroups = out.groups || [];
+      if (out.usage) logUsage('smart grouping', { usage: out.usage });
     }
 
     const used = new Set();
@@ -1652,8 +1395,6 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
       return `${it.name}${it.count > 1 ? ` x${it.count}` : ''}${bits.length ? ` — ${bits.join('; ')}` : ''}`;
     }).join('\n');
 
-    const shape = `{ "results": [ { "recovers": [{"name":"Material Name","count":2}], "destroyed": ["Item Name"], "note": "one sentence on what survived the process and what was lost" } ] }`;
-
     log(`[SALVAGE] Proposing breakdown of ${items.length} item(s)`);
     if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
       const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
@@ -1668,58 +1409,8 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
       log(`[SALVAGE] Recovers: ${(gptResult.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
       return gptResult;
     }
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        // A multi-corpse harvest returns many distinct materials; too small a
-        // ceiling truncates the list and silently costs the player materials.
-        // Generous by design: a batch harvest returns the full yield of every
-        // creature submitted, and output is billed only when actually generated.
-        max_tokens: 12000,
-        system: `You are a salvager in a D&D 5e game (Forgotten Realms). Given finished items, determine what raw materials are recovered by breaking them down.
-
-RULES:
-- TWO DIFFERENT JOBS, decide which this is:
-  (a) BREAKING DOWN SOMETHING MADE — a forged weapon, worked armour, a construct, an enchanted item. Recovery is LOSSY: the making is undone and some of it is ruined. Recover meaningfully less than went in, and never more than the item plausibly contains.
-  (b) HARVESTING A BODY — a corpse, carcass, cadaver, severed part, or any unworked remains. This is NOT lossy: nothing was invested to be destroyed, the material is simply there to be taken. Return the FULL sensible yield of what such a creature actually contains — hide, scales, bone, claws, fangs, organs, blood, venom glands, essence — in quantities that match its size and power. A dragon carcass yields a great deal; a wolf yields a little.
-  A body that has been WORKED into something (a bone golem, a skull carved into a focus) is case (a) again — the construction is what gets ruined.
-- Recover the item's actual substance: a steel blade yields steel, a drake-hide cloak yields hide and maybe scales, a wand yields its focus crystal and rare wood. Magical items may yield a residue or spent component alongside the physical parts.
-- Some things are NOT worth salvaging or cannot be: state that in the note and return an empty recovers array rather than inventing materials.
-- NAME MATERIALS BY WHAT THEY ARE, NEVER BY WHAT THEY CAME FROM. This is the most important rule here. A recovered material must be a GENERIC STOCK NAME that will stack with the same material recovered from anything else — otherwise every salvage adds unique clutter to the inventory and nothing accumulates into a usable quantity.
-  WRONG: "Iron Spear Head", "Wooden Spear Shaft"        RIGHT: "Scrap Iron", "Wooden Haft"
-  WRONG: "Sword Blade", "Sword Hilt", "Sword Pommel"    RIGHT: "Scrap Steel" (one entry, not three)
-  WRONG: "Hexapod Leg Actuator"                          RIGHT: "Arcane Actuator"
-  WRONG: "Runewarden Cuirass Plating"                    RIGHT: "Mithral Plating"
-  The test: could this exact name come out of salvaging a DIFFERENT item? If not, rename it until it could.
-- CONSOLIDATE ACROSS THE WHOLE SUBMISSION. Do not give each submitted item its own material. Everything made of the same stuff collapses into ONE entry with the quantities summed, no matter what it used to be. Iron rims, iron axles, iron bosses, iron banding, iron spikes, iron rods and iron plate are all just SCRAP IRON — one line, not seven. The same for steel, mithral, wood, leather.
-- NEVER USE "<thing> STOCK" OR A COMPONENT NAME. "Iron Spearhead Stock", "Steel Caliper Stock", "Mithral Weapon Mount", "Steel Bolt Head", "Wooden Bolt Shaft", "Arcanite Core Housings" all name the thing it came from. Say what the material IS: Scrap Iron, Scrap Steel, Mithral Stock, Wood.
-- DO NOT MINE THE ITEM'S NAME FOR PARTS. Descriptive words tell you what a thing is LIKE, not what it separates into. A "Dwarven Strongbox - Triple-Locked" does not yield three locks — it yields iron and maybe one lock mechanism. "Iron-Rimmed", "Reinforced", "Masterwork", "Bladed", "Runed" and the like describe quality or construction, not a parts list to be counted off.
-- SALVAGE YIELDS RAW MATERIAL, NOT WORKING PARTS. Breaking something down destroys its construction: a chest becomes scrap iron and fittings, not intact locks you could refit. The exception is genuinely precision or arcane components — an arcane core, an actuator, a focusing lens — which survive being extracted and are worth naming.
-- KEEP THE LIST SHORT. Even a hundred submitted items should come back as roughly TEN TO FIFTEEN material types with large quantities — not one type per item. A long list means you have not consolidated. Distinct materials that genuinely differ (mithral vs steel, ruby vs sapphire, arcanite vs crystal) stay separate; variations of the same material do not.
-- A genuinely distinctive MATERIAL still keeps its name — "Red Dragon Scale", "Demon Lord Essence", "Mithral Wire" are material types, not parts of a particular item, and they stack correctly across salvages.
-- Return exactly ONE result object, but it must cover EVERY submitted item in full. Harvest each creature or item for ITS OWN parts and list them SEPARATELY — a drake and a troll and an owlbear yield drake scale, troll hide and owlbear claws as distinct entries, never a merged pool of "monster parts". Submitting five corpses must produce roughly five times the materials of submitting one; do not compress a large haul into a short list. There is no cap on how many entries the recovers array may hold — length it to match what was actually submitted.
-- Multiply quantities by how many of each item were submitted: three drake carcasses yield three drakes' worth.
-Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${shape}`,
-        messages: [{ role: 'user', content: `ITEMS TO BREAK DOWN:\n${itemList}\n\nRespond with ONLY the JSON now.` }],
-      }),
-    });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    logUsage('salvage', data);
-    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      const cut = data.stop_reason === 'max_tokens' || !/[}\]]\s*$/.test(raw);
-      throw new Error(cut
-        ? 'The reply was cut off before it finished — select fewer items and try again'
-        : 'Salvage returned unreadable JSON — try again');
-    }
-    const result = (parsed.results || [])[0];
-    if (!result) throw new Error('Nothing could be recovered');
+    const { result, usage: anthropicUsage } = await callAnthropicSalvage({ apiKey: key, itemsText: itemList });
+    if (anthropicUsage) logUsage('salvage', { usage: anthropicUsage });
     log(`[SALVAGE] Recovers: ${(result.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
     return result;
   };
