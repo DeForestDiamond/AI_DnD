@@ -554,7 +554,7 @@ export function useCharacter(log) {
   };
 
   // Apply all DM game effect tags to character
-  const applyEffects = (text, currentChar, skipLevelUp = false) => {
+  const applyEffects = (text, currentChar, skipLevelUp = false, itemDestination = 'inventory') => {
     let c = { ...currentChar, items:{ ...(currentChar.items||{}) }, inventory:normalizeStacks(currentChar.inventory), stash:normalizeStacks(currentChar.stash), slots:{ ...(currentChar.slots||EMPTY_SLOTS) } };
 
     // Coins — [GOLD:] and [COIN:]/[COINS:] both accepted; bare numbers are gp,
@@ -623,7 +623,10 @@ export function useCharacter(log) {
       if (grant < totalQty) {
         log?.(`[ITEM] WARNING: "${name}" asked for ${totalQty.toLocaleString()} — capped at ${MAX_GRANT.toLocaleString()}. ${(totalQty-grant).toLocaleString()} were NOT added.`);
       }
-      if (grant > 0) c.inventory = addStack(c.inventory, name, grant);
+      if (grant > 0) {
+        const destination = itemDestination === 'stash' ? 'stash' : 'inventory';
+        c[destination] = addStack(c[destination], name, grant);
+      }
     });
 
     // Items removed -- case-insensitive, supports qty tag.

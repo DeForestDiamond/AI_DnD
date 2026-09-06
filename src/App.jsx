@@ -32,6 +32,7 @@ import { callAnthropicNpcManager } from './helpers/anthropic/npcs.js';
 import { callAnthropicSalvage } from './helpers/anthropic/salvage.js';
 import { callAnthropicCrafting } from './helpers/anthropic/crafting.js';
 import { callAnthropicConsolidate } from './helpers/anthropic/consolidate.js';
+import { armAnthropicCacheKeepWarm, cancelAnthropicCacheKeepWarm } from './helpers/anthropic/cache.js';
 
 function StatBar({ label, value, desc }) {
   return (
@@ -127,32 +128,15 @@ export default function App() {
     promptLogRef.current = { blocks, turns };
   };
   const sideCostRef = useRef({ calls: 0, cost: 0 });   // running total for non-DM calls
-  const cacheTimerRef = useRef(null);   // one-shot cache keep-warm
-
-  // The prompt cache expires 5 minutes after its last use, and rebuilding it
-  // costs ~12x what a read does. Four minutes after a turn, refresh it ONCE —
-  // that buys another five minutes for a twelfth of the price. Fired once only:
-  // continuous pinging costs more than a single rebuild past ~50 minutes idle.
-  const armCacheTimer = () => {
-    if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current);
-    // OpenAI caching is automatic; Anthropic's explicit keep-warm ping does not apply.
-    if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') return;
-    cacheTimerRef.current = setTimeout(async () => {
-      cacheTimerRef.current = null;
-      const c = charRef.current;
-      if (!c?.stats?.dex) return;                       // no character in play
-      const prompt = selectedModel === 'sonnet'
-        ? buildSystemPromptSonnet(c)
-        : selectedModel === 'haiku'
-        ? buildSystemPrompt(c)
-        : selectedModel === 'terra'
-        ? buildSystemPromptTerra(c)
-        : buildSystemPromptSol(c);
-      const data = await pingCache(prompt);
-      if (data) logUsage('cache keep-warm', data);
-    }, 4 * 60 * 1000);
-  };
-  useEffect(() => () => { if (cacheTimerRef.current) clearTimeout(cacheTimerRef.current); }, []);
+  const cacheTimerRef = useRef(null);   // one-shot Anthropic cache keep-warm
+  const armCacheTimer = () => armAnthropicCacheKeepWarm({
+    timerRef: cacheTimerRef,
+    selectedModel,
+    charRef,
+    pingCache,
+    onUsage: data => logUsage('cache keep-warm', data),
+  });
+  useEffect(() => () => cancelAnthropicCacheKeepWarm(cacheTimerRef), []);
 
   // Every helper call (crafting, salvage, extraction, summaries, objectives) is
   // a separate billed request that never appeared in the token bar. Log each
@@ -245,6 +229,7 @@ export default function App() {
     if (!settings || typeof settings !== 'object') return;
     if (settings.selectedModel && MODEL_CONFIGS[settings.selectedModel]) setSelectedModel(settings.selectedModel);
     if (typeof settings.showRawTags === 'boolean') setShowRawTags(settings.showRawTags);
+    voice.applySavedSettings?.({ rate: settings.ttsRate, pitch: settings.ttsPitch });
   };
 
   const applyLoadedFull = (char, msgs, summary = '', settings = null) => {
@@ -293,7 +278,7 @@ export default function App() {
     storySummaryRef,
     debugLogRef,
     promptLogRef,
-    getSettings: () => ({ selectedModel, showRawTags }),
+    getSettings: () => ({ selectedModel, showRawTags, ttsRate: voice.rate, ttsPitch: voice.pitch }),
     onLoadFull: applyLoadedFull,
     onLoadCharacter: applyLoadedCharacter,
   });
@@ -317,7 +302,7 @@ export default function App() {
       }
     }, 2500);
     return () => clearTimeout(t);
-  }, [character, phase, selectedModel, showRawTags]);
+  }, [character, phase, selectedModel, showRawTags, voice.rate, voice.pitch]);
 
   // Browsers only allow a generic confirmation, but it is enough to stop a
   // stray back gesture discarding work that has not been written yet.
@@ -542,7 +527,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
       );
       if (usage) setTokenUsage(usage);
       armCacheTimer();
-      const newChar = applyEffects(text, charWithArc);
+      const newChar = applyEffects(text, charWithArc, false, charWithArc.lootDestination === 'stash' ? 'stash' : 'inventory');
       log('applyEffects after startAdventure', { xpBefore: char.xp, xpAfter: newChar.xp, levelBefore: char.level, levelAfter: newChar.level });
       updateChar(newChar);
       const firstMsg = { role:'dm', text, id:Date.now(), roll:null };
@@ -1699,7 +1684,7 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
         ? `${dmText.replace(/\[ROLL:[^\]]*\]/gi, '')}\n${finalText}`
         : finalText;
 
-      let newChar = applyEffects(effectsText, charRef.current);
+      let newChar = applyEffects(effectsText, charRef.current, false, charRef.current.lootDestination === 'stash' ? 'stash' : 'inventory');
       if (/\[ADVENTURE COMPLETE\]/i.test(effectsText) && newChar.adventure) {
         const completed = newChar.adventure;
         const finished = completed.title || 'Adventure';
@@ -2199,6 +2184,12 @@ Respond with ONLY valid JSON, no prose, no markdown fences: { "goal": "...", "ob
             selectedModel={selectedModel}
             onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : m === 'gpt' ? 'terra' : 'sonnet')}
             pacing={character.pacing || 'normal'}
+            lootDestination={character.lootDestination || 'inventory'}
+            onToggleLootDestination={() => {
+              const next = (charRef.current.lootDestination || 'inventory') === 'inventory' ? 'stash' : 'inventory';
+              updateChar({ ...charRef.current, lootDestination: next });
+              log(`[LOOT] DM loot destination set to ${next}`);
+            }}
             environment={character.environment || 'wilderness'}
             onChangeEnvironment={(env)=>updateChar({ ...charRef.current, environment: env })}
             onTogglePacing={() => {

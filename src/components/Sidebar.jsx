@@ -1404,7 +1404,7 @@ function CompanionSlots({ companion, name, db, character, onSlotClick, onUnequip
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, adventure, onClearAdventure, onRollAdventure, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, completedAdventures, onRestoreAdventure, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeConsolidation, onExecuteConsolidation, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, lootDestination, onToggleLootDestination, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, adventure, onClearAdventure, onRollAdventure, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, completedAdventures, onRestoreAdventure, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeConsolidation, onExecuteConsolidation, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
   const db       = allItems(character.items || {});
   const [activeTab, setActiveTab] = useState('character');
   const [levelClassChoice, setLevelClassChoice] = useState(null);
@@ -2048,6 +2048,22 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         <TownManager character={character} onExtractTown={onExtractTown} onSaveNPC={onSaveNPC} onDeleteNPC={onDeleteNPC} />
       )}
 
+      {/* DM loot destination — affects only [ITEM:] rewards from gameplay. Crafting/salvage keep their own destinations. */}
+      {onToggleLootDestination && (
+        <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:6}}>
+          <div style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:2,marginBottom:5}}>LOOT DESTINATION</div>
+          <div style={{display:'flex',gap:4}}>
+            {['inventory','stash'].map(dest => (
+              <button key={dest} onClick={() => dest !== (lootDestination || 'inventory') && onToggleLootDestination()}
+                style={{...btn(dest === (lootDestination || 'inventory')),flex:1,fontSize:11,padding:'5px 0'}}>
+                {dest === 'inventory' ? '🎒 Inventory' : '📦 Stash'}
+              </button>
+            ))}
+          </div>
+          <div style={{fontSize:9,color:colors.textDead,marginTop:5,lineHeight:1.35}}>New loot granted by the DM goes here. Crafted and salvaged items keep their existing destination controls.</div>
+        </div>
+      )}
+
       {/* Raw tag visibility (moved from the header) */}
       {onToggleRawTags && (
         <button onClick={onToggleRawTags} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,borderColor:showRawTags?colors.gold:colors.border}}>
@@ -2167,6 +2183,14 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
         if (items.length === 0) return null;
         return (
           <CollapsibleSection key={cat} title={meta.label} count={items.length} defaultOpen={false}>
+            {onMoveToStash && !bagMode && (
+              <button
+                onClick={() => items.forEach(({ name }) => onMoveToStash(name, true))}
+                title={`Move every item in ${meta.label} to stash`}
+                style={{...btn(false),width:'100%',fontSize:9,padding:'3px 0',marginBottom:5}}>
+                📦 MOVE ALL ${meta.label.replace(/^[^ ]+\s*/, '').toUpperCase()} TO STASH
+              </button>
+            )}
             {items.map(({ name, count }) => {
               // Resolve from both stores: an item held in inventory AND stash may
               // have its definition in either one.
@@ -2370,11 +2394,15 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                 const rows = groups[cat];
                 if (!rows?.length) return null;
                 return (
-                  <div key={cat}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'4px 0 2px',marginTop:2}}>
-                      <span style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:1}}>{meta.label}</span>
-                      <span style={{fontFamily:fonts.mono,fontSize:10,color:colors.textDead}}>{rows.length}</span>
-                    </div>
+                  <CollapsibleSection key={cat + (q ? ':search' : '')} title={meta.label} count={rows.length} defaultOpen={!!q}>
+                    {onMoveToInventory && (
+                      <button
+                        onClick={() => rows.forEach(([name]) => onMoveToInventory(name, true))}
+                        title={`Return every visible item in ${meta.label} to inventory`}
+                        style={{...btn(false),width:'100%',fontSize:9,padding:'3px 0',marginBottom:5}}>
+                        ↑ MOVE ALL ${meta.label.replace(/^[^ ]+\s*/, '').toUpperCase()} TO INVENTORY
+                      </button>
+                    )}
                     {rows.map(([name, count]) => {
               const data = stashData(name);
               const fullLabel = data?.label || '';
@@ -2401,7 +2429,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                 </div>
               );
                     })}
-                  </div>
+                  </CollapsibleSection>
                 );
               });
             })()}
