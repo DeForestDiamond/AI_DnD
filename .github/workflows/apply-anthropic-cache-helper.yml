@@ -1,0 +1,36 @@
+name: Apply Anthropic cache helper refactor
+
+on:
+  push:
+    branches: [gpt-prompt-split]
+    paths:
+      - '.github/workflows/apply-anthropic-cache-helper.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gpt-prompt-split
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Move cache timer wiring out of App
+        run: node scripts/patchAnthropicCacheHelper.mjs
+      - name: Verify build
+        run: npm install && npm run build
+      - name: Remove migration files and commit
+        run: |
+          rm scripts/patchAnthropicCacheHelper.mjs
+          rm .github/workflows/apply-anthropic-cache-helper.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Move Anthropic cache keep-warm out of App"
+          git push origin HEAD:gpt-prompt-split
