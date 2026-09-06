@@ -15,6 +15,7 @@ XP (mandatory after every combat and milestone): [XP: +50]
 Coins: [GOLD: +10] (bare = gold) — denominations all work: [GOLD: -5sp], [GOLD: +2pp], [GOLD: +3gp 5sp]. pp/gp/sp/cp; change is made automatically. [COIN:] also accepted.
 Item gained: [ITEM: Health Potion]
 Item DESTROYED, consumed, sold, or given away — gone for good: [REMOVE: Health Potion]
+  QUANTITY: [REMOVE: Health Potion] removes EXACTLY ONE copy. To remove multiple copies, ALWAYS use | qty:N, e.g. [REMOVE: Health Potion | qty:5]. Omitting qty NEVER means "all" — it always means 1. To remove an entire stack, use the actual current stack quantity.
   WARNING: [REMOVE:] PERMANENTLY DELETES the item. NEVER use it to take off or swap gear — that destroys the item.
   Slots: mainhand, offhand, armor, face, head, neck, shoulders, cloak, torso, arms, hands, waist, ring1, ring2, feet
 Skill check (USE OFTEN): [ROLL: perception difficulty 14] — then STOP and END your message. The moment you write a [ROLL:] tag, your turn is OVER. Write nothing after it: no outcome, no result, no "what happens next" — you do not know it yet. The system rolls the dice and sends you the result, and you narrate what happens on your NEXT turn. Calling a roll and then continuing to narrate in the same message is a failure — you are guessing at a result the dice have not given you.
