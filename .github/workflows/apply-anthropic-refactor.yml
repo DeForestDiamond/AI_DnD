@@ -1,0 +1,43 @@
+name: Apply Anthropic helper refactor
+
+on:
+  push:
+    branches: [gpt-prompt-split]
+    paths:
+      - 'scripts/anthropic-refactor.patch.*'
+      - '.github/workflows/apply-anthropic-refactor.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gpt-prompt-split
+          fetch-depth: 0
+      - name: Apply source refactor
+        run: |
+          cat scripts/anthropic-refactor.patch.00 scripts/anthropic-refactor.patch.01 scripts/anthropic-refactor.patch.02 > /tmp/anthropic-refactor.patch
+          git apply --check /tmp/anthropic-refactor.patch
+          git apply /tmp/anthropic-refactor.patch
+          rm scripts/anthropic-refactor.patch.00 scripts/anthropic-refactor.patch.01 scripts/anthropic-refactor.patch.02
+          rm .github/workflows/apply-anthropic-refactor.yml
+      - name: Verify helper layout and syntax
+        run: |
+          node --check src/helpers/anthropic/history.js
+          node --check src/helpers/anthropic/npcs.js
+          node --check src/helpers/anthropic/towns.js
+          node --check src/helpers/anthropic/crafting.js
+          node --check src/helpers/anthropic/consolidate.js
+          node --check src/helpers/anthropic/salvage.js
+          test "$(grep -c "api.anthropic.com/v1/messages" src/App.jsx)" -eq 1
+      - name: Commit refactored App
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Move Anthropic helpers out of App"
+          git push origin HEAD:gpt-prompt-split
