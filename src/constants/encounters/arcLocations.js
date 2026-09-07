@@ -42,7 +42,7 @@ export const FAERUN_LOCATION_POOLS = {
     'The Underdark beneath Anauroch','The Underdark beneath the Dalelands','The Underdark beneath Thay','The Underdark beneath the Old Empires'
   ],
 };
-const FIXED_ARC_LOCATIONS = new Map([
+export const FIXED_ARC_LOCATIONS = new Map([
   ['Xanathar, the beholder crime lord of Waterdeep','Waterdeep'],
   ['Manshoon, the Zhentarim founder — and his clones','Waterdeep'],
   ['Claugiyliamatar, "Old Gnawbone", the green dragon of Kryptgarden Forest','Kryptgarden Forest'],
@@ -69,7 +69,7 @@ const FIXED_ARC_LOCATIONS = new Map([
   ["a demon lord's vanguard testing a way through",'Abyss'],
   ['a darklord extending their domain past its borders','Domains of Dread'],
 ]);
-const locationPoolFor = (antagonist) => {
+export const locationPoolFor = (antagonist) => {
   const a=String(antagonist||'').toLowerCase();
   if (/pirate|smuggl|kraken|coast|sail|ship|press gang/.test(a)) return 'coastal';
   if (/thieves|official|merchant|sheriff|moneylender|crime|counterfeit|protection racket|town|city|infiltration/.test(a)) return 'urban';
@@ -78,9 +78,27 @@ const locationPoolFor = (antagonist) => {
   if (/wolf|owlbear|boar|spider|harpy|dragon|giant|roc|wyvern|bulette|hydra|behir|remorhaz|worg|gorgon|chimera/.test(a)) return 'wilderness';
   return 'general';
 };
-export const resolveArcLocation = (antagonist) => {
+export const fixedArcLocationFor = (antagonist) => FIXED_ARC_LOCATIONS.get(antagonist) || null;
+
+export const ARC_LOCATION_CHOICES = [...new Set([
+  ...FAERUN_LOCATION_POOLS.general,
+  'Feywild','Shadowfell','Astral Plane','Nine Hells','Avernus','Cania, the Eighth Hell','Nessus, the Ninth Hell',
+  'Abyss','Hades, the Gray Waste','Gehenna','Carceri','Mechanus','Limbo','Outlands','Mount Celestia','Arborea','Ysgard',
+  'Elemental Plane of Fire','Elemental Plane of Water','Elemental Plane of Air','Elemental Plane of Earth','Ethereal Plane',
+  'Negative Plane','Domains of Dread','Far Realm','Demiplane'
+])].sort((a,b)=>a.localeCompare(b));
+
+export const arcLocationOptionsFor = (antagonist) => {
+  const fixed = fixedArcLocationFor(antagonist);
+  if (fixed) return [fixed];
+  const sensible = FAERUN_LOCATION_POOLS[locationPoolFor(antagonist)] || FAERUN_LOCATION_POOLS.general;
+  return [...new Set([...sensible, ...ARC_LOCATION_CHOICES])];
+};
+
+export const resolveArcLocation = (antagonist, override = null) => {
   if (!antagonist) return null;
   const fixed=FIXED_ARC_LOCATIONS.get(antagonist); if (fixed) return fixed;
+  if (override && String(override).trim()) return String(override).trim();
   const a=String(antagonist).toLowerCase();
   if (/archfey|fey court|wild hunt/.test(a)) return 'Feywild';
   if (/night hag|gray waste/.test(a)) return 'Hades, the Gray Waste';
@@ -113,7 +131,7 @@ export const resolveArcLocation = (antagonist) => {
   // 5% chaos roll: occasionally a weird location wins and the DM explains why.
   return pick(Math.random() < 0.05 ? FAERUN_LOCATION_POOLS.general : sensible);
 };
-export const makeArc = (antagonist) => ({ antagonist, arcLocation: resolveArcLocation(antagonist) });
+export const makeArc = (antagonist, arcLocationOverride = null) => ({ antagonist, arcLocation: resolveArcLocation(antagonist, arcLocationOverride) });
 export const rollArc = (level, exclude = null, defeated = []) => {
   const antagonist=rollAntagonist(level, exclude, defeated);
   return makeArc(antagonist);

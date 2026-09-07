@@ -285,7 +285,7 @@ export default function App() {
   // Fresh adventures route through a choice: random seed or a player-written opening.
   const beginAdventure = (char) => setAdventureStartChar(char);
 
-  const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false, situationOverride = null) => {
+  const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false, situationOverride = null, arcLocationOverride = null) => {
     log('startAdventure', { level: char.level, xp: char.xp, hp: char.hp });
     setLoading(true);
     setApiError('');
@@ -359,7 +359,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         log(`[ADVENTURE] Situation start — ${situationSeed.title}; previous location hidden`);
       } else {
         const { adventure, ...rest } = char;
-        charWithArc = { ...rest, arc: makeArc(arcAntagonist) };
+        charWithArc = { ...rest, arc: makeArc(arcAntagonist, arcLocationOverride) };
         log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
       }
       const system = selectedModel === 'haiku'
@@ -1099,7 +1099,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           adventures={ADVENTURES}
           completedAdventures={adventureStartChar?.completedAdventures || []}
           onManual={(text, antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text, antagonist); }}
-          onChooseAntagonist={(antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, antagonist); }}
+          onChooseAntagonist={(antagonist, arcLocation) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, antagonist, false, null, arcLocation); }}
         />
       )}
 
