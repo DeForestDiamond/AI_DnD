@@ -1,0 +1,45 @@
+name: Fix useCharacter extracted imports
+on:
+  push:
+    branches: [gpt-prompt-split]
+    paths: ['.github/workflows/fix-use-character-imports.yml']
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gpt-prompt-split
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Restore extracted dependencies
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/hooks/character/useCharacter.js')
+          s=p.read_text()
+          s=s.replace("import { calcMaxHp, applyRaceBonus } from './stats.js';", "import { calcMaxHp, applyRaceBonus, statMod, levelUpsAvailable } from './stats.js';")
+          s=s.replace("import { allItems, effectiveMaxHp, reconcileHp, pruneDeadItemDefinitions } from './items.js';", "import { allItems, effectiveMaxHp, reconcileHp, pruneDeadItemDefinitions, itemExistsAnywhere, equippableInSlot } from './items.js';")
+          s=s.replace("import { EMPTY_CHAR } from './defaults.js';", "import { EMPTY_CHAR, emptyCompanionSlots } from './defaults.js';\nimport { HP_PER_LEVEL } from '../../constants/progression.js';")
+          p.write_text(s)
+          PY
+      - name: Check extracted helper references
+        run: |
+          grep -q "statMod, levelUpsAvailable" src/hooks/character/useCharacter.js
+          grep -q "itemExistsAnywhere, equippableInSlot" src/hooks/character/useCharacter.js
+          grep -q "EMPTY_CHAR, emptyCompanionSlots" src/hooks/character/useCharacter.js
+          grep -q "HP_PER_LEVEL" src/hooks/character/useCharacter.js
+      - name: Install dependencies
+        run: npm install
+      - name: Production build
+        run: npm run build
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/hooks/character/useCharacter.js
+          git commit -m 'Fix useCharacter extracted helper imports'
+          git push
