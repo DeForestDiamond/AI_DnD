@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SLOTS, EMPTY_SLOTS, parseDMItem } from '../../constants/items.js';
+import { ITEM_DB, SLOTS, EMPTY_SLOTS, parseDMItem } from '../../constants/items.js';
 import { STARTING_GEAR } from '../../constants/classes.js';
 import { parseCoinAmount } from '../../constants/currency.js';
 import { rollArc } from '../../constants/encounters.js';
