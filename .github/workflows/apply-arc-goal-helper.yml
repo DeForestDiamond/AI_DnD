@@ -1,0 +1,32 @@
+name: Apply arc goal helper refactor
+
+on:
+  push:
+    branches: [gpt-prompt-split]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gpt-prompt-split
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Move arc goal helper wiring
+        run: node scripts/moveArcGoalHelper.mjs
+      - name: Remove migration files
+        run: rm -f scripts/moveArcGoalHelper.mjs .github/workflows/apply-arc-goal-helper.yml
+      - name: Commit applied source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Move arc goal generation into adventure helper"
+          git push origin HEAD:gpt-prompt-split
