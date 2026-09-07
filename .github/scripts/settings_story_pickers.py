@@ -1,0 +1,87 @@
+from pathlib import Path
+
+p=Path('src/components/Sidebar.jsx'); s=p.read_text()
+old="import { PACING, ENVIRONMENTS } from '../constants/encounters.js';"
+if "arcLocationOptionsFor" not in s:
+    if old not in s: raise SystemExit('Sidebar encounter import missing')
+    s=s.replace(old, old+"\nimport { fixedArcLocationFor, arcLocationOptionsFor } from '../constants/encounters/arcLocations.js';",1)
+old_sig="onRollArc, onSetArc, adventure, onClearAdventure, onRollAdventure,"
+new_sig="onRollArc, onSetArc, onSetArcLocation, antagonistOptions=[], adventure, onClearAdventure, onRollAdventure, onSetAdventure, adventureOptions=[],"
+if new_sig not in s:
+    if old_sig not in s: raise SystemExit('Sidebar props marker missing')
+    s=s.replace(old_sig,new_sig,1)
+m="  const [arcCustomText, setArcCustomText] = useState('');"
+if "storyAntagonistPick" not in s:
+    if m not in s: raise SystemExit('Sidebar state marker missing')
+    s=s.replace(m,m+"\n  const [storyAntagonistPick, setStoryAntagonistPick] = useState('');\n  const [storyAdventurePick, setStoryAdventurePick] = useState('');",1)
+adv="          <div style={{display:'flex',gap:6}}>\n            <button onClick={onRollAdventure}"
+if "Choose Adventure…" not in s:
+    if adv not in s: raise SystemExit('Adventure UI marker missing')
+    block="""          <div style={{display:'flex',gap:6,marginBottom:6}}>
+            <select value={storyAdventurePick} onChange={e=>setStoryAdventurePick(e.target.value)} style={{flex:1,minWidth:0,background:colors.bgDark,border:`1px solid ${colors.borderDim}`,color:colors.textDim,fontSize:10,padding:'4px 5px',borderRadius:3}}>
+              <option value="">Choose Adventure…</option>
+              {(adventureOptions||[]).map(a => <option key={a.title} value={a.title}>{a.title}</option>)}
+            </select>
+            <button disabled={!storyAdventurePick} onClick={()=>{ if(storyAdventurePick){ onSetAdventure?.(storyAdventurePick); setStoryAdventurePick(''); } }} style={{...btn(false),fontSize:10,padding:'4px 7px',opacity:storyAdventurePick?1:0.4}}>Set</button>
+          </div>
+"""
+    s=s.replace(adv,block+adv,1)
+arc="      {onClearArc && (\n        <div style={{marginTop:6,padding:'7px 9px',background:'rgba(0,0,0,0.25)',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>"
+if "Choose Antagonist…" not in s:
+    if arc not in s: raise SystemExit('Arc UI marker missing')
+    block=arc+"""
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>ANTAGONIST ARC</div>
+          <div style={{display:'flex',gap:6,marginBottom:6}}>
+            <select value={storyAntagonistPick} onChange={e=>setStoryAntagonistPick(e.target.value)} style={{flex:1,minWidth:0,background:colors.bgDark,border:`1px solid ${colors.borderDim}`,color:colors.textDim,fontSize:10,padding:'4px 5px',borderRadius:3}}>
+              <option value="">Choose Antagonist…</option>
+              {(antagonistOptions||[]).map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <button disabled={!storyAntagonistPick} onClick={()=>{ if(storyAntagonistPick){ onSetArc?.(storyAntagonistPick); setStoryAntagonistPick(''); } }} style={{...btn(false),fontSize:10,padding:'4px 7px',opacity:storyAntagonistPick?1:0.4}}>Set</button>
+          </div>
+          {arcAntagonist && (() => {
+            const fixed = fixedArcLocationFor(arcAntagonist);
+            const locations = arcLocationOptionsFor(arcAntagonist);
+            return <div style={{marginBottom:6}}>
+              <div style={{fontSize:9,color:colors.textGhost,marginBottom:3}}>ANTAGONIST LOCATION</div>
+              {fixed ? <div style={{fontSize:10,color:colors.textFaint,padding:'4px 5px',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>📍 {fixed} <span style={{color:colors.textDead}}>(fixed)</span></div> : <select value={arcLocation || ''} onChange={e=>e.target.value && onSetArcLocation?.(e.target.value)} style={{width:'100%',background:colors.bgDark,border:`1px solid ${colors.borderDim}`,color:colors.textDim,fontSize:10,padding:'4px 5px',borderRadius:3}}><option value="">Choose location…</option>{locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}</select>}
+            </div>;
+          })()}
+"""
+    s=s.replace(arc,block,1)
+p.write_text(s)
+
+p=Path('src/App.jsx'); s=p.read_text()
+m="            arcLocation={character.arc?.arcLocation || null}\n            adventure={character.adventure || null}"
+if "antagonistOptions={antagonistsForLevel(character.level)}" not in s:
+    if m not in s: raise SystemExit('App Sidebar marker missing')
+    s=s.replace(m,"            arcLocation={character.arc?.arcLocation || null}\n            antagonistOptions={antagonistsForLevel(character.level)}\n            adventureOptions={ADVENTURES}\n            adventure={character.adventure || null}",1)
+m="            onRollAdventure={() => {\n              const adventure = rollSituationAdventure(charRef.current.completedAdventures || []);"
+if "onSetAdventure={(title)" not in s:
+    if m not in s: raise SystemExit('App adventure callback marker missing')
+    block="""            onSetAdventure={(title) => {
+              const selected = prepareSituationAdventure(title);
+              if (!selected) return;
+              const { arc, adventure: oldAdventure, ...rest } = charRef.current;
+              updateChar({ ...rest, adventure: selected });
+              log(`[ADVENTURE] Chosen by player — ${selected.title}`);
+            }}
+"""
+    s=s.replace(m,block+m,1)
+m="            onSetArc={(text) => {\n              const { adventure, ...rest } = charRef.current;\n              updateChar({ ...rest, arc: makeArc(text) });"
+if m not in s: raise SystemExit('App arc callback marker missing')
+if "onSetArcLocation={(location)" not in s:
+    block="""            onSetArcLocation={(location) => {
+              const c = charRef.current;
+              if (!c.arc?.antagonist) return;
+              const fixed = fixedArcLocationFor(c.arc.antagonist);
+              const nextLocation = fixed || location;
+              updateChar({ ...c, arc: { ...c.arc, arcLocation: nextLocation } });
+              log(`[ARC] Location chosen by player — ${nextLocation}`);
+            }}
+"""
+    s=s.replace(m,block+m,1)
+imp="import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';"
+if "import { fixedArcLocationFor } from './constants/encounters/arcLocations.js';" not in s:
+    if imp not in s: raise SystemExit('App import marker missing')
+    s=s.replace(imp,imp+"\nimport { fixedArcLocationFor } from './constants/encounters/arcLocations.js';",1)
+p.write_text(s)
