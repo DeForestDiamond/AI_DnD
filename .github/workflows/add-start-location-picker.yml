@@ -1,0 +1,77 @@
+name: Add antagonist location picker
+on:
+  push:
+    branches: [gpt-prompt-split]
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Patch antagonist location selection
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # ---- arcLocations.js -------------------------------------------------
+          p = Path('src/constants/encounters/arcLocations.js')
+          s = p.read_text()
+          s = s.replace('const FIXED_ARC_LOCATIONS = new Map([', 'export const FIXED_ARC_LOCATIONS = new Map([', 1)
+          s = s.replace('const locationPoolFor = (antagonist) => {', 'export const locationPoolFor = (antagonist) => {', 1)
+          s = s.replace("export const resolveArcLocation = (antagonist) => {\n  if (!antagonist) return null;\n  const fixed=FIXED_ARC_LOCATIONS.get(antagonist); if (fixed) return fixed;",
+                        "export const fixedArcLocationFor = (antagonist) => FIXED_ARC_LOCATIONS.get(antagonist) || null;\n\nexport const ARC_LOCATION_CHOICES = [...new Set([\n  ...FAERUN_LOCATION_POOLS.general,\n  'Feywild','Shadowfell','Astral Plane','Nine Hells','Avernus','Cania, the Eighth Hell','Nessus, the Ninth Hell',\n  'Abyss','Hades, the Gray Waste','Gehenna','Carceri','Mechanus','Limbo','Outlands','Mount Celestia','Arborea','Ysgard',\n  'Elemental Plane of Fire','Elemental Plane of Water','Elemental Plane of Air','Elemental Plane of Earth','Ethereal Plane',\n  'Negative Plane','Domains of Dread','Far Realm','Demiplane'\n])].sort((a,b)=>a.localeCompare(b));\n\nexport const arcLocationOptionsFor = (antagonist) => {\n  const fixed = fixedArcLocationFor(antagonist);\n  if (fixed) return [fixed];\n  const sensible = FAERUN_LOCATION_POOLS[locationPoolFor(antagonist)] || FAERUN_LOCATION_POOLS.general;\n  return [...new Set([...sensible, ...ARC_LOCATION_CHOICES])];\n};\n\nexport const resolveArcLocation = (antagonist, override = null) => {\n  if (!antagonist) return null;\n  const fixed=FIXED_ARC_LOCATIONS.get(antagonist); if (fixed) return fixed;\n  if (override && String(override).trim()) return String(override).trim();", 1)
+          s = s.replace('export const makeArc = (antagonist) => ({ antagonist, arcLocation: resolveArcLocation(antagonist) });',
+                        'export const makeArc = (antagonist, arcLocationOverride = null) => ({ antagonist, arcLocation: resolveArcLocation(antagonist, arcLocationOverride) });', 1)
+          p.write_text(s)
+
+          # ---- StartModal.jsx --------------------------------------------------
+          p = Path('src/components/modals/StartModal.jsx')
+          s = p.read_text()
+          s = s.replace("import { colors, fonts, btn } from '../../styles/theme.js';",
+                        "import { colors, fonts, btn } from '../../styles/theme.js';\nimport { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/encounters.js';", 1)
+          s = s.replace("  const [showCompletedAdventures, setShowCompletedAdventures] = useState(false);",
+                        "  const [showCompletedAdventures, setShowCompletedAdventures] = useState(false);\n  const [pendingAntagonist, setPendingAntagonist] = useState('');\n  const [locationSearch, setLocationSearch] = useState('');", 1)
+          s = s.replace("  const dmOptions = [",
+                        "  const locationOptions = pendingAntagonist ? arcLocationOptionsFor(pendingAntagonist) : [];\n  const visibleLocations = locationOptions.filter(loc => !locationSearch.trim() || loc.toLowerCase().includes(locationSearch.trim().toLowerCase()));\n\n  const chooseAntagonist = (name) => {\n    const fixed = fixedArcLocationFor(name);\n    if (fixed) { onChooseAntagonist(name, fixed); return; }\n    setPendingAntagonist(name);\n    setLocationSearch('');\n    setMode('location');\n  };\n\n  const dmOptions = [", 1)
+          s = s.replace("{visibleAntagonists.length ? visibleAntagonists.map(a => { const wasDefeated=defeated.has(a.toLowerCase()); return <div key={a} onClick={()=>onChooseAntagonist(a)}",
+                        "{visibleAntagonists.length ? visibleAntagonists.map(a => { const wasDefeated=defeated.has(a.toLowerCase()); const fixed=fixedArcLocationFor(a); return <div key={a} onClick={()=>chooseAntagonist(a)}", 1)
+          s = s.replace("{a}{wasDefeated&&<span style={{fontSize:9,marginLeft:8,color:colors.textGhost}}>DEFEATED</span>}</div>; })",
+                        "{a}{fixed&&<span style={{fontSize:9,marginLeft:8,color:colors.textGhost}}>📍 {fixed}</span>}{wasDefeated&&<span style={{fontSize:9,marginLeft:8,color:colors.textGhost}}>DEFEATED</span>}</div>; })", 1)
+          old = """        ) : (\n          <div>\n            <div style={{fontSize:12,color:colors.textGhost,marginBottom:10,lineHeight:1.5}}>Choose the hidden antagonist for this arc. The app will roll the opening normally and build toward this foe.</div>"""
+          new = """        ) : mode === 'antagonist' ? (\n          <div>\n            <div style={{fontSize:12,color:colors.textGhost,marginBottom:10,lineHeight:1.5}}>Choose the hidden antagonist for this arc. The app will roll the opening normally and build toward this foe.</div>"""
+          if old not in s: raise SystemExit('antagonist branch marker missing')
+          s = s.replace(old, new, 1)
+          marker = """            <button style={{...btn(false),width:'100%'}} onClick={()=>setMode(null)}>← Back</button>\n          </div>\n        )}\n      </div>"""
+          replacement = """            <button style={{...btn(false),width:'100%'}} onClick={()=>setMode(null)}>← Back</button>\n          </div>\n        ) : (\n          <div>\n            <div style={{fontSize:12,color:colors.textGhost,marginBottom:6,lineHeight:1.5}}>Choose where <span style={{color:colors.gold}}>{pendingAntagonist}</span> is based for this arc.</div>\n            <div style={{fontSize:10,color:colors.textGhost,marginBottom:10,lineHeight:1.45}}>Antagonists with a fixed canon location skip this step automatically. Choose Random to keep the normal location roll.</div>\n            <input value={locationSearch} onChange={e=>setLocationSearch(e.target.value)} autoFocus placeholder=\"Search locations...\" style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:10}} />\n            <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,maxHeight:'48vh',overflowY:'auto',marginBottom:12}}>\n              <div onClick={()=>onChooseAntagonist(pendingAntagonist, null)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',color:colors.gold}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>🎲 Random compatible location</div>\n              {visibleLocations.map(loc => <div key={loc} onClick={()=>onChooseAntagonist(pendingAntagonist, loc)} style={{padding:'9px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',fontSize:12,color:colors.textDim}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>{loc}</div>)}\n              {!visibleLocations.length && <div style={{padding:18,textAlign:'center',fontSize:11,color:colors.textGhost}}>No locations match this filter.</div>}\n            </div>\n            <button style={{...btn(false),width:'100%'}} onClick={()=>setMode('antagonist')}>← Back to Antagonists</button>\n          </div>\n        )}\n      </div>"""
+          if marker not in s: raise SystemExit('modal tail marker missing')
+          s = s.replace(marker, replacement, 1)
+          p.write_text(s)
+
+          # ---- App.jsx ---------------------------------------------------------
+          p = Path('src/App.jsx')
+          s = p.read_text()
+          s = s.replace('const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false, situationOverride = null) => {',
+                        'const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false, situationOverride = null, arcLocationOverride = null) => {', 1)
+          s = s.replace('charWithArc = { ...rest, arc: makeArc(arcAntagonist) };',
+                        'charWithArc = { ...rest, arc: makeArc(arcAntagonist, arcLocationOverride) };', 1)
+          s = s.replace('onChooseAntagonist={(antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, antagonist); }}',
+                        'onChooseAntagonist={(antagonist, arcLocation) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, antagonist, false, null, arcLocation); }}', 1)
+          p.write_text(s)
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Commit feature and retire workflow
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/add-start-location-picker.yml
+          git add src/App.jsx src/components/modals/StartModal.jsx src/constants/encounters/arcLocations.js
+          git commit -m "Add antagonist arc location picker"
+          git push
