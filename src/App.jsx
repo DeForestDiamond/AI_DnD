@@ -108,6 +108,13 @@ export default function App() {
   const [storySummary, setStorySummary] = useState('');
   const [tokenUsage, setTokenUsage]     = useState(null);
   const storySummaryRef = useRef('');
+
+  const SUMMARIZE_AFTER   = 12;
+  const KEEP_RECENT       = 4;
+  const ENTRIES_BEFORE_COMPRESS = 6;
+  const COMPRESS_KEEP_RECENT_ENTRIES = 2;
+  const lastSummarizedAt = useRef(0);
+
   const isMobile = window.innerWidth < 768;
 
   const log = (msg, data) => {
@@ -387,12 +394,6 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     }
     setLoading(false);
   };
-
-  const SUMMARIZE_AFTER   = 12;
-  const KEEP_RECENT       = 4;
-  const ENTRIES_BEFORE_COMPRESS = 6;
-  const COMPRESS_KEEP_RECENT_ENTRIES = 2;
-  const lastSummarizedAt = useRef(0);
 
   // ── Arc objectives ─────────────────────────────────────────────────────────
   // A rough homebrew campaign skeleton for the current antagonist, shaped by the
