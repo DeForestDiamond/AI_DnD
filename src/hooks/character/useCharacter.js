@@ -4,10 +4,11 @@ import { STARTING_GEAR } from '../../constants/classes.js';
 import { parseCoinAmount } from '../../constants/currency.js';
 import { rollArc } from '../../constants/encounters.js';
 import { normalizeStacks, stackCount, stackHas, stackNames, addStack, takeStack, takeAllStack, renameStack } from '../../utils/itemStacks.js';
-import { calcMaxHp, applyRaceBonus } from './stats.js';
-import { allItems, effectiveMaxHp, reconcileHp, pruneDeadItemDefinitions } from './items.js';
+import { calcMaxHp, applyRaceBonus, statMod, levelUpsAvailable } from './stats.js';
+import { allItems, effectiveMaxHp, reconcileHp, pruneDeadItemDefinitions, itemExistsAnywhere, equippableInSlot } from './items.js';
 import { migrateCharacter } from './migration.js';
-import { EMPTY_CHAR } from './defaults.js';
+import { EMPTY_CHAR, emptyCompanionSlots } from './defaults.js';
+import { HP_PER_LEVEL } from '../../constants/progression.js';
 
 // -- The hook -------------------------------------------------------------------
 export function useCharacter(log) {
