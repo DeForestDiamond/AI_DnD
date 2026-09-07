@@ -33,7 +33,7 @@ jobs:
           p = Path('src/components/modals/StartModal.jsx')
           s = p.read_text()
           s = s.replace("import { colors, fonts, btn } from '../../styles/theme.js';",
-                        "import { colors, fonts, btn } from '../../styles/theme.js';\nimport { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/encounters.js';", 1)
+                        "import { colors, fonts, btn } from '../../styles/theme.js';\nimport { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/encounters/arcLocations.js';", 1)
           s = s.replace("  const [showCompletedAdventures, setShowCompletedAdventures] = useState(false);",
                         "  const [showCompletedAdventures, setShowCompletedAdventures] = useState(false);\n  const [pendingAntagonist, setPendingAntagonist] = useState('');\n  const [locationSearch, setLocationSearch] = useState('');", 1)
           s = s.replace("  const dmOptions = [",
