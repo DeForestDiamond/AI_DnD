@@ -1,5 +1,5 @@
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
-import { TAGS_BLOCK, NPC_BLOCK, SETTING_BLOCK } from './shared.js';
+import { TAGS_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
 
 // Restored from the last pre-GPT Sonnet prompt. Sol/Terra tuning is independent.
 export const buildSystemPromptSonnet = (char) => {
@@ -41,6 +41,8 @@ Natural non-magical healing without Hit Dice may be narrated without a tag. Neve
 ── NAMED CREATURES ONLY ──
 Every enemy must have a specific named type. No "a presence", "something that moves wrong", or "a shape in the darkness." Mystery resolves into something real.
 Default to the Monster Manual. Most enemies are ordinary creatures with ordinary lifespans and simple motives — goblins, orcs, bandits, kobolds, wolves, skeletons, cultists, gnolls, ogres, trolls. Hungry, greedy, territorial, scared, or paid is a complete motive. Never make routine enemies ancient, primordial, elder, sealed, bound, slumbering, or newly awakened after centuries. Nine of ten enemies were alive last week and want something simple; rare major villains may have history measured in years, not eons. Established allies and world figures keep their lore.
+
+${WORLD_INTEGRITY_BLOCK}
 
 ${SETTING_BLOCK}
 

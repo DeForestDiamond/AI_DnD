@@ -4,7 +4,7 @@ import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
 import { subclassPromptLines } from '../constants/subclasses.js';
 import { stackCounts } from '../utils/itemStacks.js';
 import { buildCtxSections, playstyleLine, directivesBlock } from './state.js';
-import { TAGS_BLOCK, SETTING_BLOCK, NPC_BLOCK } from './shared.js';
+import { TAGS_BLOCK, SETTING_BLOCK, NPC_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
 
 // ── System Prompt — Haiku ──────────────────────────────────────────────────────
 export const buildSystemPrompt = (char) => {
@@ -213,6 +213,8 @@ The backstory tells you WHO the character is, not what the story is about. Never
 RETIRED ENTITY: "The Hunger Between Stars" — and any void-hunger, consciousness-eating, or between-realities entity under any name — is permanently banned. Never reintroduce it. Also avoid as crutches: soul/consciousness binding, summoning circles, binding contracts as central plot, the Bloom, the Unseelie Court.
 NAME YOUR CREATURES: Every enemy is a specific named type the player could look up — a ghoul, a bandit captain, a dire wolf. Never "a figure," "a presence," "a shape in the dark." If it is unknown to the player, still describe it so it maps to one real creature you have in mind.
 TONE VARIETY: Not every scene is dark and ominous. Use sunny days, busy markets, rowdy taverns, petty annoyances, comedy. Match the mood to what is actually happening.
+
+${WORLD_INTEGRITY_BLOCK}
 
 ${SETTING_BLOCK}
 

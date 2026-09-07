@@ -1,5 +1,5 @@
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
-import { TAGS_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES } from './shared.js';
+import { TAGS_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from './shared.js';
 
 // ── System Prompt — Sol ────────────────────────────────────────────────────────
 export const buildSystemPromptSol = (char) => {
@@ -35,6 +35,8 @@ Every enemy has a specific named type; mystery resolves into something real, nev
 
 ${ORDINARY_WORLD_BLOCK}
 ${ARC_RULES_BLOCK}
+
+${WORLD_INTEGRITY_BLOCK}
 
 ${SETTING_BLOCK}
 
