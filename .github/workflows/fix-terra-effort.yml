@@ -11,10 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 20
       - name: Restore useGame and set Terra medium
         run: |
-          git checkout HEAD^ -- src/hooks/useGame.js
+          git checkout 30a7df90912b925a4a93e5aa31aa0370b74da210 -- src/hooks/useGame.js
           python - <<'PY'
           from pathlib import Path
           p = Path('src/hooks/useGame.js')
