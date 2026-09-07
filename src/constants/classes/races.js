@@ -1,8 +1,11 @@
 export const RACES = [
   { name:'Human', emoji:'👤', desc:'Adaptable and ambitious. +2 Strength, +1 Constitution.', bonus:{str:2,dex:0,con:1,int:0,wis:0,cha:0} },
   { name:'Elf', emoji:'🧝', desc:'Graceful and perceptive. +2 Dexterity, +1 Intelligence.', bonus:{str:0,dex:2,con:0,int:1,wis:0,cha:0} },
+  { name:'Sun Elf', emoji:'☀️', desc:'High elves of Faerûn known for ancient magical traditions, patience, and formidable arcane learning. Fey Ancestry, Darkvision, Keen Senses, and innate elven magic. +2 Dexterity, +1 Intelligence.', bonus:{str:0,dex:2,con:0,int:1,wis:0,cha:0} },
+  { name:'Moon Elf', emoji:'🌙', desc:'The most widely traveled of Faerûn\'s high elves — curious, expressive, and comfortable among other peoples. Fey Ancestry, Darkvision, Keen Senses, and innate elven magic. +2 Dexterity, +1 Intelligence.', bonus:{str:0,dex:2,con:0,int:1,wis:0,cha:0} },
   { name:'Dwarf', emoji:'⛏️', desc:'Tough and resilient. +2 Constitution, +1 Strength.', bonus:{str:1,dex:0,con:2,int:0,wis:0,cha:0} },
   { name:'Halfling', emoji:'🍀', desc:'Lucky and nimble. +2 Dexterity, +1 Charisma.', bonus:{str:0,dex:2,con:0,int:0,wis:0,cha:1} },
+  { name:'Kender', emoji:'🪶', desc:'Fearless, intensely curious wanderers with a talent for slipping free of danger and getting into places they probably should not be. Brave, nimble, and irrepressibly social. +2 Dexterity, +1 Charisma.', bonus:{str:0,dex:2,con:0,int:0,wis:0,cha:1} },
   { name:'Tiefling', emoji:'😈', desc:'Infernal heritage — born with devil\'s blood. Darkvision, fire resistance, and natural dark magic. +2 Charisma, +1 Intelligence.', bonus:{str:0,dex:0,con:0,int:1,wis:0,cha:2} },
   { name:'Shadar-kai', emoji:'🌑', desc:'Shadow-touched elves from the Shadowfell. Necrotic resistance, Blessing of the Raven Queen teleport, and supernatural calm. +2 Dexterity, +1 Wisdom.', bonus:{str:0,dex:2,con:0,int:0,wis:1,cha:0} },
   { name:'Half-Elf', emoji:'🧬', desc:'Born of two worlds — human ambition and elven grace. Darkvision, Fey Ancestry (charm resistance), and a free +1 to any two stats of your choice. +1 Charisma, +1 Dexterity, +1 Wisdom.', bonus:{str:0,dex:1,con:0,int:0,wis:1,cha:1} },
@@ -15,4 +18,5 @@ export const RACES = [
   { name:'Reborn', emoji:'🪦', desc:'Those who died and yet still live, carrying memories from a past life. Deathless Nature (no need to eat, drink, or breathe; advantage on death saves) and Knowledge from a Past Life. +2 Constitution, +1 Intelligence.', bonus:{str:0,dex:0,con:2,int:1,wis:0,cha:0} },
   { name:'Kalashtar', emoji:'🌙', desc:'A compound people born of humanity bonded with renegade spirits from the plane of dreams. Dual Mind, psychic resistance, telepathic Mind Link, and immunity to dream magic. +2 Wisdom, +1 Charisma.', bonus:{str:0,dex:0,con:0,int:0,wis:2,cha:1} },
   { name:'Dhampir', emoji:'🧛', desc:'Living people cursed with vampiric hunger and prowess. Darkvision, Spider Climb, a life-draining Vampiric Bite, and a trace of undeath. +2 Dexterity, +1 Constitution.', bonus:{str:0,dex:2,con:1,int:0,wis:0,cha:0} },
+  { name:'Warforged', emoji:'🤖', desc:'Living constructs built for war and capable of becoming far more than their original purpose. Constructed Resilience, tireless sentry-like rest, and integrated armor make them exceptionally durable. +2 Constitution, +1 Strength.', bonus:{str:1,dex:0,con:2,int:0,wis:0,cha:0} },
 ];
