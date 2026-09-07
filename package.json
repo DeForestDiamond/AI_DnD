@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/patchLootDestination.mjs && node scripts/patchTtsSaveSettings.mjs && node scripts/patchInventoryCategoryMoves.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/patchLootDestination.mjs && node scripts/patchTtsSaveSettings.mjs && node scripts/patchInventoryCategoryMoves.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
