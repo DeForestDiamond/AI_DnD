@@ -1,0 +1,39 @@
+name: Split encounter tables
+
+on:
+  push:
+    branches: [gpt-prompt-split]
+    paths:
+      - 'scripts/splitEncounters.mjs'
+      - '.github/workflows/split-encounters.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gpt-prompt-split
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Split encounter monolith
+        run: node scripts/splitEncounters.mjs
+      - name: Verify encounter module loads
+        run: node --input-type=module -e "import('./src/constants/encounters.js').then(m=>{const expected=['ENVIRONMENTS','FAERUN_LOCATION_POOLS','NAMED_ANTAGONISTS','PACING','PACING_ORDER','antagonistsForLevel','encounterCRCap','encounterChance','makeArc','resolveArcLocation','rollAntagonist','rollArc','rollEncounterDirective']; for (const k of expected) if (!(k in m)) throw new Error('missing export '+k); console.log('encounter exports OK')})"
+      - name: Verify production bundle
+        run: npx vite build
+      - name: Remove one-shot migration files
+        run: git rm scripts/splitEncounters.mjs .github/workflows/split-encounters.yml
+      - name: Commit encounter split
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/constants/encounters.js src/constants/encounters
+          git commit -m 'Split encounters into environment modules'
+          git push origin HEAD:gpt-prompt-split
