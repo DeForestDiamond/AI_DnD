@@ -63,6 +63,7 @@ export default function App() {
   };
   const [nameInput, setNameInput] = useState('');
   const [bioInput, setBioInput] = useState('');
+  const [appearanceInput, setAppearanceInput] = useState('');
   const [dispInput, setDispInput] = useState({ alignment:'', cares:'', indifferent:'', methods:'', lines:'' });
   const [apiKey, setApiKey]     = useState('');
   const [openAiApiKey, setOpenAiApiKey] = useState('');
@@ -793,7 +794,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
 
   // ── Character creation helpers ─────────────────────────────────────────────
   const handleFinalize = async () => {
-    const char = finalizeCharacter(nameInput, bioInput, dispInput);
+    const char = finalizeCharacter(nameInput, bioInput, appearanceInput, dispInput);
     setPhase('playing');
     beginAdventure(char);
   };
@@ -998,6 +999,9 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         <textarea value={bioInput} onChange={e=>setBioInput(e.target.value)} rows={5}
           placeholder="Backstory / bio (optional) — who this character is, how they act, what drives them. The DM reads this every message and anchors its behavior to it."
           style={{width:'100%',boxSizing:'border-box',background:colors.bg,border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.5,padding:'10px 14px',borderRadius:4,marginBottom:10,outline:'none',resize:'vertical'}}/>
+        <textarea value={appearanceInput} onChange={e=>setAppearanceInput(e.target.value)} rows={4}
+          placeholder="Physical appearance (optional) — build, features, hair, eyes, clothing, scars, mannerisms, or anything the DM should consistently remember."
+          style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.35)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:13,padding:'8px 10px',borderRadius:4,marginBottom:10,outline:'none',resize:'vertical'}}/>
 
         {/* Disposition — the DM assumes heroism unless told otherwise. Optional
             at creation and editable later in Settings, but far better set now. */}
@@ -1244,6 +1248,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             }}
             onToggleContextExclusion={toggleContextExclusion}
             onSaveBio={(bio) => { updateChar({ ...charRef.current, bio }); log('[BIO] Updated by player'); }}
+            onSaveAppearance={(appearance) => { updateChar({ ...charRef.current, appearance }); log('[APPEARANCE] Updated by player'); }}
             arcObjectives={character.arc?.objectives || []}
             arcGoal={character.arc?.goal || ''}
             onSetArcGoal={(goal) => updateChar({ ...charRef.current, arc: { ...(charRef.current.arc || {}), goal } })}

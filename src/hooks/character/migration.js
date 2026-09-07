@@ -256,6 +256,12 @@ export const migrateCharacter = (char) => {
       notes.push('Banked coins initialized');
     }
   }
+  if (v < 21) {
+    if (typeof c.appearance !== 'string') {
+      c.appearance = '';
+      notes.push('Physical appearance field initialized');
+    }
+  }
   c.bankedCoins = Math.max(0, Math.floor(Number(c.bankedCoins) || 0));
   // Be tolerant of hand-edited/new saves: normalize the two location lists even
   // when the file already claims the current version.

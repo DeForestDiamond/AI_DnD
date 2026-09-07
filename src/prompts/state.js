@@ -148,7 +148,8 @@ export const buildConstructSection = (char) => {
 
 export const buildCtxSections = (char) => {
   const loc = char.currentLocation || '';
-  const bio = char.bio ? `\nBACKSTORY: ${char.bio}\n` : '';
+  const appearance = char.appearance ? `\nPHYSICAL APPEARANCE: ${char.appearance}\n` : '';
+  const bio = `${appearance}${char.bio ? `\nBACKSTORY: ${char.bio}\n` : ''}`;
   const excl = char.contextExclusions || { companions:{}, npcs:{}, towns:{} };
 
   // Companions

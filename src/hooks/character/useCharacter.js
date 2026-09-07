@@ -486,8 +486,8 @@ export function useCharacter(log) {
     });
   };
 
-  const finalizeCharacter = (name, bio = '', disposition = null) => {
-    const char = { ...charRef.current, name: name.trim() || 'Adventurer', bio: bio.trim(),
+  const finalizeCharacter = (name, bio = '', appearance = '', disposition = null) => {
+    const char = { ...charRef.current, name: name.trim() || 'Adventurer', bio: bio.trim(), appearance: appearance.trim(),
       ...(disposition ? { disposition } : {}), xp:0, _v:SAVE_VERSION };
     updateChar(char);
     return char;

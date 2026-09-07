@@ -15,6 +15,7 @@ export const EMPTY_CHAR = {
   items:{},
   contextExclusions: { companions:{}, npcs:{}, towns:{} },
   bio: '',
+  appearance: '',
   directives: '',
   currentLocation: '',
   companions: {},

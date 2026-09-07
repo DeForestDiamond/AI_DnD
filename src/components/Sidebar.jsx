@@ -19,7 +19,7 @@ import { BioEditor, TownManager, NPCManager, CompanionSlots } from './sidebar/wo
 export { resetCraftingPanels } from './sidebar/crafting/Panels.jsx';
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, lootDestination, onToggleLootDestination, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, onSetArcLocation, antagonistOptions=[], adventure, onClearAdventure, onRollAdventure, onSetAdventure, adventureOptions=[], onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, completedAdventures, onRestoreAdventure, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeConsolidation, onExecuteConsolidation, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, lootDestination, onToggleLootDestination, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, onSetArcLocation, antagonistOptions=[], adventure, onClearAdventure, onRollAdventure, onSetAdventure, adventureOptions=[], onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onSaveAppearance, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, completedAdventures, onRestoreAdventure, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeConsolidation, onExecuteConsolidation, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
   const db       = allItems(character.items || {});
   const [activeTab, setActiveTab] = useState('character');
   const [levelClassChoice, setLevelClassChoice] = useState(null);
@@ -679,7 +679,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       )}
 
       {/* Bio — the DM's behavior anchor */}
-      {onSaveBio && <BioEditor key={character.bio || 'empty'} character={character} onSaveBio={onSaveBio} />}
+      {onSaveBio && <BioEditor key={`${character.bio || 'empty'}|${character.appearance || 'empty'}`} character={character} onSaveBio={onSaveBio} onSaveAppearance={onSaveAppearance} />}
 
       {/* NPC Manager — extract from log, edit, add, delete */}
       {(onExtractNPC || onSaveNPC) && (

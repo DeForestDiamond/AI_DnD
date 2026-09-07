@@ -4,17 +4,24 @@ import { SLOTS } from '../../../constants/items.js';
 import { equippableInSlot } from '../../../hooks/useCharacter.js';
 import { CollapsibleSection, npcInput } from '../common/index.jsx';
 
-export function BioEditor({ character, onSaveBio }) {
+export function BioEditor({ character, onSaveBio, onSaveAppearance }) {
   const [text, setText] = useState(character.bio || '');
+  const [appearance, setAppearance] = useState(character.appearance || '');
   const [dirty, setDirty] = useState(false);
   return (
-    <CollapsibleSection title="📖 BIO" defaultOpen={false}>
+    <CollapsibleSection title="📖 BIO & APPEARANCE" defaultOpen={false}>
+      <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:4}}>PHYSICAL APPEARANCE</div>
+      <textarea value={appearance} rows={5}
+        onChange={e=>{ setAppearance(e.target.value); setDirty(true); }}
+        placeholder="Build, features, hair, eyes, clothing, scars, mannerisms — what the DM should consistently remember about how you look."
+        style={{...npcInput, resize:'vertical', lineHeight:1.5, marginBottom:8}}/>
+      <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:4}}>BACKSTORY / BIO</div>
       <textarea value={text} rows={7}
         onChange={e=>{ setText(e.target.value); setDirty(true); }}
         placeholder="Backstory / bio — who this character is, how they act, what drives them. The DM reads this every message."
         style={{...npcInput, resize:'vertical', lineHeight:1.5, marginBottom:6}}/>
-      <button onClick={()=>{ onSaveBio(text.trim()); setDirty(false); }} disabled={!dirty}
-        style={{...btn, width:'100%', opacity:dirty?1:0.4}}>{dirty ? '✓ SAVE BIO' : 'SAVED'}</button>
+      <button onClick={()=>{ onSaveAppearance?.(appearance.trim()); onSaveBio(text.trim()); setDirty(false); }} disabled={!dirty}
+        style={{...btn, width:'100%', opacity:dirty?1:0.4}}>{dirty ? '✓ SAVE BIO & APPEARANCE' : 'SAVED'}</button>
     </CollapsibleSection>
   );
 }
