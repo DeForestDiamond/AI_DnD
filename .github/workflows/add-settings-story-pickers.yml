@@ -53,8 +53,6 @@ jobs:
               if adv_marker not in s: raise SystemExit('Adventure UI marker missing')
               s = s.replace(adv_marker, adv_insert, 1)
 
-          arc_marker = "      {/* Story arc — the hidden antagonist all foreshadowing builds toward */}"
-          # Insert selection controls immediately after the arc panel wrapper opening.
           arc_open = "      {onClearArc && (\n        <div style={{marginTop:6,padding:'7px 9px',background:'rgba(0,0,0,0.25)',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>"
           arc_controls = arc_open + """
           <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>ANTAGONIST ARC</div>
@@ -91,14 +89,12 @@ jobs:
           p = Path('src/App.jsx')
           s = p.read_text()
 
-          # Feed the settings panel the same canonical lists used by the start modal.
           sidebar_marker = "            arcLocation={character.arc?.arcLocation || null}\n            adventure={character.adventure || null}"
           sidebar_new = "            arcLocation={character.arc?.arcLocation || null}\n            antagonistOptions={antagonistsForLevel(character.level)}\n            adventureOptions={ADVENTURES}\n            adventure={character.adventure || null}"
           if "antagonistOptions={antagonistsForLevel(character.level)}" not in s:
               if sidebar_marker not in s: raise SystemExit('App Sidebar options marker missing')
               s = s.replace(sidebar_marker, sidebar_new, 1)
 
-          # Add direct Adventure chooser next to existing random roll callback.
           adv_cb_marker = "            onRollAdventure={() => {\n              const adventure = rollSituationAdventure(charRef.current.completedAdventures || []);"
           adv_cb_new = """            onSetAdventure={(title) => {
               const selected = prepareSituationAdventure(title);
@@ -112,13 +108,10 @@ jobs:
               if adv_cb_marker not in s: raise SystemExit('App Adventure callback marker missing')
               s = s.replace(adv_cb_marker, adv_cb_new, 1)
 
-          # Existing custom antagonist setter becomes the canonical chooser too.
           old_set_arc = "            onSetArc={(text) => {\n              const { adventure, ...rest } = charRef.current;\n              updateChar({ ...rest, arc: makeArc(text) });"
-          new_set_arc = "            onSetArc={(text) => {\n              const { adventure, ...rest } = charRef.current;\n              updateChar({ ...rest, arc: makeArc(text) });"
           if old_set_arc not in s:
               raise SystemExit('App onSetArc callback marker missing')
 
-          # Add location setter before onSetArc.
           loc_cb = """            onSetArcLocation={(location) => {
               const c = charRef.current;
               if (!c.arc?.antagonist) return;
@@ -131,13 +124,11 @@ jobs:
           if "onSetArcLocation={(location)" not in s:
               s = s.replace(old_set_arc, loc_cb + old_set_arc, 1)
 
-          # App needs the fixed-location helper for guarding settings changes.
           import_marker = "import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';"
           import_new = import_marker + "\nimport { fixedArcLocationFor } from './constants/encounters/arcLocations.js';"
-          if "fixedArcLocationFor" not in s.split('\n', 20)[0:20]:
-              if "import { fixedArcLocationFor } from './constants/encounters/arcLocations.js';" not in s:
-                  if import_marker not in s: raise SystemExit('App encounter import marker missing')
-                  s = s.replace(import_marker, import_new, 1)
+          if "import { fixedArcLocationFor } from './constants/encounters/arcLocations.js';" not in s:
+              if import_marker not in s: raise SystemExit('App encounter import marker missing')
+              s = s.replace(import_marker, import_new, 1)
 
           p.write_text(s)
           PY
