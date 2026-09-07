@@ -10,6 +10,7 @@ import { XP_THRESHOLDS } from '../constants/progression.js';
 import { MULTICLASS_OPTIONS } from '../constants/multiclass.js';
 import { stackCounts, stackCount, stackHas } from '../utils/itemStacks.js';
 import { categorizeItem, CATEGORY_META, hasInspectableItemInfo } from './sidebar/inventory/categorization.js';
+import { slotItemLabel } from './sidebar/inventory/labels.js';
 import { HPBar, XPBar, PanelErrorBoundary, CollapsibleSection } from './sidebar/common/index.jsx';
 import { VoiceSettings, DispositionEditor, ObjectivesPanel, DirectivesEditor, DebugViewer } from './sidebar/settings/Controls.jsx';
 import { CraftingPanel, ConsolidatePanel, SalvagePanel } from './sidebar/crafting/Panels.jsx';
