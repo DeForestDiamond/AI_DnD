@@ -3,7 +3,7 @@ import { colors, fonts, btn } from '../../../styles/theme.js';
 import { allItems } from '../../../hooks/useCharacter.js';
 import { stackCounts, stackCount, stackHas } from '../../../utils/itemStacks.js';
 import { categorizeItem, CATEGORY_META, hasInspectableItemInfo } from '../inventory/categorization.js';
-import { CollapsibleSection } from '../common/index.jsx';
+import { CollapsibleSection, npcInput } from '../common/index.jsx';
 
 const SEL_KEY = 'dnd-panel-selections';
 const loadSel = () => { try { return JSON.parse(localStorage.getItem(SEL_KEY)) || {}; } catch { return {}; } };

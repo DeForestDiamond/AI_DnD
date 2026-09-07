@@ -2,6 +2,8 @@ import { useState, Component } from 'react';
 import { colors, fonts } from '../../../styles/theme.js';
 import { XP_THRESHOLDS } from '../../../constants/progression.js';
 
+export const npcInput = { width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.4)', border:`1px solid ${colors.borderDim}`, color:colors.text, fontFamily:fonts.body, fontSize:13, padding:'6px 8px', borderRadius:4, outline:'none' };
+
 // ── Sub-components ─────────────────────────────────────────────────────────────
 export function HPBar({ current, max }) {
   const pct   = max > 0 ? Math.max(0, (current / max) * 100) : 0;

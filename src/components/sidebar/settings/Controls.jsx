@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { colors, fonts, btn } from '../../../styles/theme.js';
+import { CollapsibleSection, npcInput } from '../common/index.jsx';
 
 // ── Voice settings: pick an installed TTS voice + speaking speed ──────────────
 export function VoiceSettings({ voiceName, setVoiceName, rate, setRate, pitch, setPitch, pronounce, setPronounce, availableVoices, preview }) {

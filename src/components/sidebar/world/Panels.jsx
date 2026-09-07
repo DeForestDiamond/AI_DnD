@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { colors, fonts, btn } from '../../../styles/theme.js';
 import { SLOTS } from '../../../constants/items.js';
 import { equippableInSlot } from '../../../hooks/useCharacter.js';
+import { CollapsibleSection, npcInput } from '../common/index.jsx';
 
 export function BioEditor({ character, onSaveBio }) {
   const [text, setText] = useState(character.bio || '');
@@ -125,7 +126,6 @@ export function TownManager({ character, onExtractTown, onSaveNPC, onDeleteNPC }
 const closeEditTown = (set) => () => set('');
 
 // ── NPC Manager: extract-from-log + edit/add/delete for npcs & companions ──────
-const npcInput = { width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.4)', border:`1px solid ${colors.borderDim}`, color:colors.text, fontFamily:fonts.body, fontSize:13, padding:'6px 8px', borderRadius:4, outline:'none' };
 export function NPCManager({ character, onExtractNPC, onSaveNPC, onDeleteNPC }) {
   const [exName, setExName] = useState('');
   const [exFrom, setExFrom] = useState('');
