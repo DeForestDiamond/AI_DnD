@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Triggered patch for compact settings groups.
 p = Path('src/components/Sidebar.jsx')
 s = p.read_text()
 
@@ -76,7 +77,6 @@ repl = """      {/* Story arc — the hidden antagonist all foreshadowing builds
 """
 if start not in s: raise SystemExit('antagonist start not found')
 s = s.replace(start, repl, 1)
-# anchor on the custom antagonist close immediately before completed adventures
 end = """          )}
         </div>
       )}
