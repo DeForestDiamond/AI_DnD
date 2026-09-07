@@ -26,3 +26,4 @@ jobs:
           git add src/prompts/shared.js src/prompts/sol.js src/prompts/terra.js src/prompts/sonnet.js src/prompts/haiku.js
           git commit -m "Add world resistance and observer knowledge rules"
           git push
+# trigger
