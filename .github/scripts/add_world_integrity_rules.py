@@ -3,9 +3,7 @@ from pathlib import Path
 p = Path('src/prompts/shared.js')
 s = p.read_text()
 anchor = "export const GPT_EXTRA_RULES = `"
-if anchor not in s:
-    raise SystemExit('GPT_EXTRA_RULES anchor not found')
-
+if anchor not in s: raise SystemExit('GPT_EXTRA_RULES anchor not found')
 block = '''export const WORLD_INTEGRITY_BLOCK = `── WORLD INTEGRITY — RESISTANCE, KNOWLEDGE & REACTION ──
 THE WORLD DOES NOT EXIST TO ACCOMMODATE THE PLAYER. NPCs, creatures, factions, institutions, magic, environments, and supernatural beings have independent motives, rules, limitations, prejudices, obligations, and interests. When those things conflict with what the player wants, they should naturally refuse, disagree, resist, bargain, demand a price, enforce consequences, or require the player to change the circumstances. Politeness, sincerity, clever arguments, intimidation, status, or good roleplay may influence someone, but never automatically overrides their interests, authority, beliefs, laws, bargains, nature, or established constraints.
 
@@ -20,38 +18,22 @@ THE WORLD NOTICES THE EXTRAORDINARY AFTER IT IS WITNESSED. When the player visib
 FEY ARE NOT HELPFUL HUMANS WITH WINGS. Fey logic may be alien, literal, contractual, emotional, capricious, and shaped by hospitality, ownership, promises, names, gifts, debts, invitations, local laws, and strange etiquette. A fey creature may be friendly without being accommodating. Sincere apologies do not automatically erase debts or override established fey law; promises and bargains carry weight, and solving a fey problem may create obligations rather than simply removing the obstacle. Preserve the specific personality and established rules of the individual fey instead of making every fey generically whimsical or obstructive.`;
 
 '''
-if 'export const WORLD_INTEGRITY_BLOCK' in s:
-    raise SystemExit('WORLD_INTEGRITY_BLOCK already exists')
+if 'export const WORLD_INTEGRITY_BLOCK' in s: raise SystemExit('WORLD_INTEGRITY_BLOCK already exists')
 s = s.replace(anchor, block + anchor, 1)
 p.write_text(s)
 
-# Wire the universal block into all four DM prompts immediately before setting/geography.
-for name in ['sol.js', 'terra.js']:
+imports = {
+ 'sol.js': ("GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES } from './shared.js';", "GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from './shared.js';"),
+ 'terra.js': ("GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES } from './shared.js';", "GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from './shared.js';"),
+ 'sonnet.js': ("TAGS_BLOCK, NPC_BLOCK, SETTING_BLOCK } from './shared.js';", "TAGS_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';"),
+ 'haiku.js': ("TAGS_BLOCK, SETTING_BLOCK, NPC_BLOCK } from './shared.js';", "TAGS_BLOCK, SETTING_BLOCK, NPC_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';"),
+}
+for name, (old, new) in imports.items():
     p = Path('src/prompts') / name
     s = p.read_text()
-    old = 'GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES } from \'./shared.js\';'
-    new = 'GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from \'./shared.js\';'
-    if old not in s:
-        raise SystemExit(f'{name}: shared import anchor not found')
+    if old not in s: raise SystemExit(f'{name}: shared import anchor not found')
     s = s.replace(old, new, 1)
-    marker = '${SETTING_BLOCK}'
-    if marker not in s:
-        raise SystemExit(f'{name}: SETTING_BLOCK marker not found')
-    s = s.replace(marker, '${WORLD_INTEGRITY_BLOCK}\n\n${SETTING_BLOCK}', 1)
+    if '${SETTING_BLOCK}' not in s: raise SystemExit(f'{name}: SETTING_BLOCK marker not found')
+    s = s.replace('${SETTING_BLOCK}', '${WORLD_INTEGRITY_BLOCK}\n\n${SETTING_BLOCK}', 1)
     p.write_text(s)
-
-for name in ['sonnet.js', 'haiku.js']:
-    p = Path('src/prompts') / name
-    s = p.read_text()
-    old = 'TAGS_BLOCK, NPC_BLOCK, SETTING_BLOCK } from \'./shared.js\';'
-    new = 'TAGS_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from \'./shared.js\';'
-    if old not in s:
-        raise SystemExit(f'{name}: shared import anchor not found')
-    s = s.replace(old, new, 1)
-    marker = '${SETTING_BLOCK}'
-    if marker not in s:
-        raise SystemExit(f'{name}: SETTING_BLOCK marker not found')
-    s = s.replace(marker, '${WORLD_INTEGRITY_BLOCK}\n\n${SETTING_BLOCK}', 1)
-    p.write_text(s)
-
 print('world integrity rules added to Sol, Terra, Sonnet, and Haiku')
