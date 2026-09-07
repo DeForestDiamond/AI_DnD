@@ -11,8 +11,8 @@ const saveSel = (craft, salvage, consolidate) => {
   try { localStorage.setItem(SEL_KEY, JSON.stringify({ craft, salvage, consolidate })); } catch { /* quota, ignore */ }
 };
 const persistedSel = loadSel();
-const craftStore = { selected: persistedSel.craft || {}, intent:'', mode:'item', options:null, status:'', filter:'', source:'both', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1' };
-const consolidateStore = { selected: persistedSel.consolidate || {}, filter:'', source:'both', destination:'stash', draft:{}, catClosed:{}, groups:null, status:'' };
+const craftStore = { selected: persistedSel.craft || {}, intent:'', mode:'item', options:null, status:'', filter:'', source:'both', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1', open:false };
+const consolidateStore = { selected: persistedSel.consolidate || {}, filter:'', source:'both', destination:'stash', draft:{}, catClosed:{}, groups:null, status:'', open:false };
 
 // Loading a save replaces the character wholesale, so any proposal or selection
 // still sitting in these stores refers to a world that no longer exists.
@@ -22,7 +22,7 @@ export const resetCraftingPanels = () => {
   Object.assign(consolidateStore, { selected:{}, filter:'', draft:{}, groups:null, status:'' });
   saveSel({}, {}, {});
 };
-const salvageStore = { selected: persistedSel.salvage || {}, result:null, status:'', filter:'', source:'both', destination:'inventory', showAll:false, draft:{}, infoOpen:{}, catClosed:{} };
+const salvageStore = { selected: persistedSel.salvage || {}, result:null, status:'', filter:'', source:'both', destination:'inventory', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, open:false };
 
 // Bind a store key to component state, writing through on every change.
 const useStored = (store, key) => {
@@ -46,6 +46,7 @@ export function CraftingPanel({ character, db, onProposeCrafting, onExecuteCraft
   const [showAll, setShowAll]   = useStored(craftStore, 'showAll');
   const [source, setSource]     = useStored(craftStore, 'source');   // inventory | stash | both
   const [qty, setQty]           = useStored(craftStore, 'qty');   // how many identical copies
+  const [open, setOpen]         = useStored(craftStore, 'open');
 
   // Default to things that read as crafting stock, but categorisation is
   // keyword-based and imperfect — 'Carapace Plates' lands in armor, scale mail
@@ -148,7 +149,7 @@ export function CraftingPanel({ character, db, onProposeCrafting, onExecuteCraft
 
   const selCount = Object.keys(liveSelected).length;
   return (
-    <CollapsibleSection title="🔨 CRAFTING" count={selCount || undefined} defaultOpen={true}>
+    <CollapsibleSection title="🔨 CRAFTING" count={selCount || undefined} open={open} onOpenChange={setOpen}>
       <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
         Select materials, then ask what they could become. Nothing is consumed until you confirm.
       </div>
@@ -357,6 +358,7 @@ export function ConsolidatePanel({ character, db, onProposeConsolidation, onExec
   const [catClosed, setCatClosed] = useStored(consolidateStore, 'catClosed');
   const [groups, setGroups] = useStored(consolidateStore, 'groups');
   const [status, setStatus] = useStored(consolidateStore, 'status');
+  const [open, setOpen] = useStored(consolidateStore, 'open');
   const [target, setTarget] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -426,7 +428,7 @@ export function ConsolidatePanel({ character, db, onProposeConsolidation, onExec
   };
 
   return (
-    <CollapsibleSection title="🧹 CONSOLIDATE" count={Object.keys(liveSelected).length || undefined} defaultOpen={true}>
+    <CollapsibleSection title="🧹 CONSOLIDATE" count={Object.keys(liveSelected).length || undefined} open={open} onOpenChange={setOpen}>
       <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
         Manual combine is local and literal: selected quantities become one plain stack. Smart Group asks the helper to propose aggressive material abstractions, but nothing changes until you approve it.
       </div>
@@ -488,6 +490,7 @@ export function ConsolidatePanel({ character, db, onProposeConsolidation, onExec
 }
 
 export function SalvagePanel({ character, db, onProposeDismantle, onExecuteDismantle }) {
+  const [open, setOpen] = useStored(salvageStore, 'open');
   const [selected, setSelected] = useStored(salvageStore, 'selected');
   const [busy, setBusy]         = useState(false);
   const [result, setResult]     = useStored(salvageStore, 'result');
@@ -586,7 +589,7 @@ export function SalvagePanel({ character, db, onProposeDismantle, onExecuteDisma
 
   const selCount = Object.keys(liveSelected).length;
   return (
-    <CollapsibleSection title="🔧 SALVAGE" count={selCount || undefined} defaultOpen={false}>
+    <CollapsibleSection title="🔧 SALVAGE" count={selCount || undefined} open={open} onOpenChange={setOpen}>
       <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
         Break made things down into materials — lossy, you never get everything back. Harvesting a corpse or unworked remains is NOT lossy: the full yield is there for the taking. Equipped gear is not listed.
       </div>

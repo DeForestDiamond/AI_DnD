@@ -55,11 +55,18 @@ export class PanelErrorBoundary extends Component {
   }
 }
 
-export function CollapsibleSection({ title, count, defaultOpen = false, children }) {
-  const [open, setOpen] = useState(defaultOpen);
+export function CollapsibleSection({ title, count, defaultOpen = false, open: controlledOpen, onOpenChange, children }) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : internalOpen;
+  const toggleOpen = () => {
+    const next = !open;
+    if (!controlled) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
   return (
     <div>
-      <div onClick={() => setOpen(v => !v)}
+      <div onClick={toggleOpen}
         style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer',padding:'3px 0',borderBottom:`1px solid ${colors.borderDim}`,marginBottom: open ? 4 : 0}}>
         <span style={{fontFamily:fonts.display,fontSize:13,color:colors.textFaint,letterSpacing:2}}>{title}</span>
         <span style={{fontFamily:fonts.mono,fontSize:13,color:colors.textGhost}}>
