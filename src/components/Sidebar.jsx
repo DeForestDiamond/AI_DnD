@@ -274,24 +274,26 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
 
       {voiceSettings && <VoiceSettings {...voiceSettings} />}
 
-      {/* Pacing knob — how often the world pushes back */}
-      {onTogglePacing && (
-        <button onClick={onTogglePacing} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,opacity:pacing==='off'?0.6:1,borderColor:pacing==='dangerous'?colors.red:pacing==='normal'?colors.gold:colors.border}}>
-          {PACING[pacing]?.label || PACING.normal.label}
-        </button>
-      )}
+      <CollapsibleSection title="⚔️ ENCOUNTERS" defaultOpen={false}>
+        {/* Pacing knob — how often the world pushes back */}
+        {onTogglePacing && (
+          <button onClick={onTogglePacing} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',opacity:pacing==='off'?0.6:1,borderColor:pacing==='dangerous'?colors.red:pacing==='normal'?colors.gold:colors.border}}>
+            {PACING[pacing]?.label || PACING.normal.label}
+          </button>
+        )}
 
-      {onChangeEnvironment && (
-        <select value={environment || 'wilderness'} onChange={e=>onChangeEnvironment(e.target.value)}
-          title="Where you are — encounters match your surroundings"
-          style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:13,padding:'7px 8px',borderRadius:4,outline:'none',marginTop:6,cursor:'pointer'}}>
-          {ENVIRONMENTS.map(env => <option key={env.id} value={env.id}>📍 {env.label}</option>)}
-        </select>
-      )}
+        {onChangeEnvironment && (
+          <select value={environment || 'wilderness'} onChange={e=>onChangeEnvironment(e.target.value)}
+            title="Where you are — encounters match your surroundings"
+            style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:13,padding:'7px 8px',borderRadius:4,outline:'none',marginTop:6,cursor:'pointer'}}>
+            {ENVIRONMENTS.map(env => <option key={env.id} value={env.id}>📍 {env.label}</option>)}
+          </select>
+        )}
+      </CollapsibleSection>
 
       {/* Situation Adventure — mutually exclusive with antagonist arcs */}
       {onRollAdventure && (
-        <div style={{marginTop:6,padding:'7px 9px',background:'rgba(0,0,0,0.25)',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>
+        <CollapsibleSection title="🎭 ADVENTURE" defaultOpen={false}>
           <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>ADVENTURE</div>
           <div style={{fontSize:12,color:adventure?colors.textDim:colors.textFaint,fontStyle:'italic',marginBottom:6,lineHeight:1.35}}>
             {adventure ? adventure.title : (arcAntagonist ? 'Inactive — antagonist arc is the current story driver.' : 'Open — no Adventure is active.')}
@@ -316,12 +318,12 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           <div style={{fontSize:9,color:colors.textDead,lineHeight:1.35,marginTop:5}}>
             Rolling an Adventure clears any antagonist. [ADVENTURE COMPLETE] clears it without rolling a replacement.
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Story arc — the hidden antagonist all foreshadowing builds toward */}
       {onClearArc && (
-        <div style={{marginTop:6,padding:'7px 9px',background:'rgba(0,0,0,0.25)',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>
+        <CollapsibleSection title="👁️ ANTAGONIST" defaultOpen={false}>
           <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>ANTAGONIST ARC</div>
           <div style={{display:'flex',gap:6,marginBottom:6}}>
             <select value={storyAntagonistPick} onChange={e=>setStoryAntagonistPick(e.target.value)} style={{flex:1,minWidth:0,background:colors.bgDark,border:`1px solid ${colors.borderDim}`,color:colors.textDim,fontSize:10,padding:'4px 5px',borderRadius:3}}>
@@ -379,7 +381,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
                 style={{...btn(false),width:'100%',fontSize:11,padding:'4px 0'}}>✓ SET ANTAGONIST</button>
             </div>
           )}
-        </div>
+        </CollapsibleSection>
       )}
 
       {onRestoreAdventure && (completedAdventures?.length > 0) && (
@@ -691,8 +693,7 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
 
       {/* DM loot destination — affects only [ITEM:] rewards from gameplay. Crafting/salvage keep their own destinations. */}
       {onToggleLootDestination && (
-        <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:6}}>
-          <div style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:2,marginBottom:5}}>LOOT DESTINATION</div>
+        <CollapsibleSection title="🎒 DM LOOT LOCATION" defaultOpen={false}>
           <div style={{display:'flex',gap:4}}>
             {['inventory','stash'].map(dest => (
               <button key={dest} onClick={() => dest !== (lootDestination || 'inventory') && onToggleLootDestination()}
@@ -702,14 +703,16 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
             ))}
           </div>
           <div style={{fontSize:9,color:colors.textDead,marginTop:5,lineHeight:1.35}}>New loot granted by the DM goes here. Crafted and salvaged items keep their existing destination controls.</div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Raw tag visibility (moved from the header) */}
       {onToggleRawTags && (
-        <button onClick={onToggleRawTags} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',marginTop:6,borderColor:showRawTags?colors.gold:colors.border}}>
-          🏷️ Raw tags: {showRawTags ? 'shown' : 'hidden'}
-        </button>
+        <CollapsibleSection title="🏷️ TAGS" defaultOpen={false}>
+          <button onClick={onToggleRawTags} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:showRawTags?colors.gold:colors.border}}>
+            Raw tags: {showRawTags ? 'shown' : 'hidden'}
+          </button>
+        </CollapsibleSection>
       )}
 
       {/* Standing instructions (moved from the header) */}
