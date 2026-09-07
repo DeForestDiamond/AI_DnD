@@ -1,0 +1,128 @@
+export const hostile = [
+  {
+    "cr": 0.125,
+    "label": "1/8",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "tiny rogue clockwork mites begin dismantling the player’s equipment to correct an unauthorized asymmetry"
+  },
+  {
+    "cr": 0.25,
+    "label": "1/4",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a malfunctioning monodrone identifies the player as an unscheduled obstruction and attempts removal"
+  },
+  {
+    "cr": 0.5,
+    "label": "1/2",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a pair of duodrones blocks the gear-road and escalates immediately when the player cannot provide a valid transit number"
+  },
+  {
+    "cr": 1,
+    "label": "1",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a tridrone patrol interprets contradictory orders in the most hostile mathematically consistent way possible"
+  },
+  {
+    "cr": 2,
+    "label": "2",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a quadrone enforcement unit descends from a rotating gear and declares the player temporarily unlawful"
+  },
+  {
+    "cr": 3,
+    "label": "3",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a pentadrone supervises a squad of lesser modrons attempting to quarantine the entire roadway around the player"
+  },
+  {
+    "cr": 4,
+    "label": "4",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a rogue clockwork adjudicator attacks after calculating that negotiation has only a 0.03 percent chance of efficiency"
+  },
+  {
+    "cr": 5,
+    "label": "5",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "an inevitable servitor arrives to enforce a minor cosmic clause whose penalty is wildly disproportionate to the offense"
+  },
+  {
+    "cr": 6,
+    "label": "6",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a modron war-engine unfolds from the surface of a gear and begins a perfectly systematic attack pattern"
+  },
+  {
+    "cr": 8,
+    "label": "8",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a hierarch’s elite correction squad surrounds the player after a prediction engine flags them as an unacceptable source of variance"
+  },
+  {
+    "cr": 10,
+    "label": "10",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a massive inevitable hunter steps through synchronized portals with a warrant written in equations"
+  },
+  {
+    "cr": 12,
+    "label": "12",
+    "env": [
+      "mechanus"
+    ],
+    "desc": "a rogue law-engine awakens beneath the gear-road and tries to erase every variable it cannot reconcile, beginning with the player"
+  }
+];
+
+export const social = [
+  "a modron survey team asks the player to stand exactly still for seventeen seconds while it recalibrates a road that is drifting one millimeter per century",
+  "a rogue modron quietly asks what it feels like to want something that was not assigned",
+  "a clockwork merchant sells tools measured to impossible tolerances and becomes delighted by any object that is handmade and slightly crooked",
+  "an inevitable clerk offers directions after verifying the player is not currently the subject of any cosmically binding warrants",
+  "a mortal mathematician living on a rotating gear invites the player to dinner and complains that the neighbors schedule every conversation months ahead",
+  "a quadrone courier has two equally valid delivery routes and asks an outsider to introduce randomness into the decision",
+  "a gearwright repairs planar mechanisms and offers to inspect any device that behaves unpredictably because unpredictability is fascinating contraband here",
+  "a modron census procession politely asks the player to select the category that least inaccurately describes them",
+  "a visiting gnome artificer has been having the time of their life and desperately wants someone less orderly to talk to",
+  "a hierarch’s assistant requests testimony about a tiny irregularity that has somehow generated six thousand pages of proceedings",
+  "a clockwork pilgrim follows a sequence of numbered gears toward a place where Primus supposedly issued a single unanswered question",
+  "an awakened construct asks whether changing one’s own purpose counts as theft if the original purpose belonged to its creator"
+];
+
+export const weird = [
+  "every gear in sight stops for exactly one second and the resulting silence feels physically heavier than sound",
+  "a tiny brass cube rolls uphill, crosses three rotating gears, and slots perfectly into a machine nobody can see",
+  "an entire district repeats the previous minute exactly except the player remembers both versions",
+  "a numbered door opens once every 997 rotations and reveals a room containing only an unfinished equation carved into light",
+  "a gear the size of a continent turns backward by a single tooth and distant alarms begin ringing in perfect sequence",
+  "a flock of clockwork birds rearranges into a mathematical symbol that does not exist in any known notation",
+  "the player’s footsteps begin landing exactly on a beat generated by machinery miles away regardless of walking speed",
+  "a line painted across a roadway marks the point where probability becomes visibly more predictable on one side",
+  "a fallen screw larger than a tower bears microscopic serial numbers that continue far below what vision can resolve",
+  "a perfectly ordinary flower grows from a seam between gears and nearby modrons have erected a formal observation perimeter",
+  "a passing shadow belongs to a machine that will not arrive for another several minutes",
+  "two adjacent gears rotate in mathematically incompatible directions without slipping, grinding, or acknowledging the contradiction"
+];
