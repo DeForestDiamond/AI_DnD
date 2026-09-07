@@ -1,5 +1,6 @@
 import { useState, Component } from 'react';
 import { PACING, ENVIRONMENTS } from '../constants/encounters.js';
+import { fixedArcLocationFor, arcLocationOptionsFor } from '../constants/encounters/arcLocations.js';
 import { colors, fonts, btn } from '../styles/theme.js';
 import { SLOTS } from '../constants/items.js';
 import { STAT_NAMES } from '../constants/classes.js';
@@ -18,7 +19,7 @@ import { BioEditor, TownManager, NPCManager, CompanionSlots } from './sidebar/wo
 export { resetCraftingPanels } from './sidebar/crafting/Panels.jsx';
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
-export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, lootDestination, onToggleLootDestination, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, adventure, onClearAdventure, onRollAdventure, onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, completedAdventures, onRestoreAdventure, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeConsolidation, onExecuteConsolidation, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
+export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompanionUnequip, onSaveClick, onClose, onAbilitiesClick, onMoveToStash, onMoveToInventory, onBankCoins, onWithdrawCoins, onCreateBag, onAddToBag, onRemoveFromBag, onDeleteItem, onRenameItem, onDeleteFromBag, selectedModel, onToggleModel, pacing, onTogglePacing, lootDestination, onToggleLootDestination, environment, onChangeEnvironment, arcAntagonist, arcLocation, onClearArc, onRollArc, onSetArc, onSetArcLocation, antagonistOptions=[], adventure, onClearAdventure, onRollAdventure, onSetAdventure, adventureOptions=[], onToggleContextExclusion, onExtractNPC, onExtractTown, onSaveNPC, onDeleteNPC, onSaveBio, onStartNewCampaign, arcObjectives, arcGoal, onSetArcGoal, onGenerateObjectives, onSetObjectives, disposition, onSaveDisposition, defeatedAntagonists, onReviveAntagonist, completedAdventures, onRestoreAdventure, onCycleConstructStatus, onPromoteConstruct, onProposeCrafting, onExecuteCrafting, onProposeConsolidation, onExecuteConsolidation, onProposeDismantle, onExecuteDismantle, voiceSettings, showRawTags, onToggleRawTags, debugLog, debugStatus, onExportDebug, onCopyDebug, directives, onChangeDirectives, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
   const db       = allItems(character.items || {});
   const [activeTab, setActiveTab] = useState('character');
   const [levelClassChoice, setLevelClassChoice] = useState(null);
@@ -33,6 +34,8 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
   const [renaming, setRenaming] = useState(null);   // { name, draft }
   const [actionsFor, setActionsFor] = useState(null);   // which row has its edit/delete revealed
   const [arcCustomText, setArcCustomText] = useState('');
+  const [storyAntagonistPick, setStoryAntagonistPick] = useState('');
+  const [storyAdventurePick, setStoryAdventurePick] = useState('');
   const effStats = character.stats.dex ? effectiveStats(character.stats, character.slots, character.items||{}) : character.stats;
   const gearSkills = skillBonuses(character.slots, character.items || {});
   const ac       = character.stats.dex ? calcAC(character.slots, character.stats, character.items||{}) : '—';
@@ -299,6 +302,13 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
           {adventure?.location && (
             <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.35,marginBottom:6}}>📍 {adventure.location}</div>
           )}
+          <div style={{display:'flex',gap:6,marginBottom:6}}>
+            <select value={storyAdventurePick} onChange={e=>setStoryAdventurePick(e.target.value)} style={{flex:1,minWidth:0,background:colors.bgDark,border:`1px solid ${colors.borderDim}`,color:colors.textDim,fontSize:10,padding:'4px 5px',borderRadius:3}}>
+              <option value="">Choose Adventure…</option>
+              {(adventureOptions||[]).map(a => <option key={a.title} value={a.title}>{a.title}</option>)}
+            </select>
+            <button disabled={!storyAdventurePick} onClick={()=>{ if(storyAdventurePick){ onSetAdventure?.(storyAdventurePick); setStoryAdventurePick(''); } }} style={{...btn(false),fontSize:10,padding:'4px 7px',opacity:storyAdventurePick?1:0.4}}>Set</button>
+          </div>
           <div style={{display:'flex',gap:6}}>
             <button onClick={onRollAdventure} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>🎭 {adventure?'Reroll':'Roll Adventure'}</button>
             {adventure && <button onClick={onClearAdventure} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✕ Clear</button>}
@@ -312,6 +322,23 @@ export function Sidebar({ character, onSlotClick, onCompanionSlotClick, onCompan
       {/* Story arc — the hidden antagonist all foreshadowing builds toward */}
       {onClearArc && (
         <div style={{marginTop:6,padding:'7px 9px',background:'rgba(0,0,0,0.25)',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>
+          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>ANTAGONIST ARC</div>
+          <div style={{display:'flex',gap:6,marginBottom:6}}>
+            <select value={storyAntagonistPick} onChange={e=>setStoryAntagonistPick(e.target.value)} style={{flex:1,minWidth:0,background:colors.bgDark,border:`1px solid ${colors.borderDim}`,color:colors.textDim,fontSize:10,padding:'4px 5px',borderRadius:3}}>
+              <option value="">Choose Antagonist…</option>
+              {(antagonistOptions||[]).map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <button disabled={!storyAntagonistPick} onClick={()=>{ if(storyAntagonistPick){ onSetArc?.(storyAntagonistPick); setStoryAntagonistPick(''); } }} style={{...btn(false),fontSize:10,padding:'4px 7px',opacity:storyAntagonistPick?1:0.4}}>Set</button>
+          </div>
+          {arcAntagonist && (() => {
+            const fixed = fixedArcLocationFor(arcAntagonist);
+            const locations = arcLocationOptionsFor(arcAntagonist);
+            return <div style={{marginBottom:6}}>
+              <div style={{fontSize:9,color:colors.textGhost,marginBottom:3}}>ANTAGONIST LOCATION</div>
+              {fixed ? <div style={{fontSize:10,color:colors.textFaint,padding:'4px 5px',border:`1px solid ${colors.borderDim}`,borderRadius:3}}>📍 {fixed} <span style={{color:colors.textDead}}>(fixed)</span></div> : <select value={arcLocation || ''} onChange={e=>e.target.value && onSetArcLocation?.(e.target.value)} style={{width:'100%',background:colors.bgDark,border:`1px solid ${colors.borderDim}`,color:colors.textDim,fontSize:10,padding:'4px 5px',borderRadius:3}}><option value="">Choose location…</option>{locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}</select>}
+            </div>;
+          })()}
+
           <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>STORY ARC</div>
           <div style={{fontSize:12,color:arcAntagonist?colors.textDim:colors.textFaint,fontStyle:'italic',marginBottom:6,lineHeight:1.35}}>
             {arcAntagonist ? 'A hidden antagonist is in play.' : 'Open — no antagonist. The story drifts where you take it.'}

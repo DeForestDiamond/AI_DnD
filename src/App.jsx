@@ -8,6 +8,7 @@ import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
 import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, buildSystemPromptSol, buildSystemPromptTerra, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
 import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
+import { fixedArcLocationFor } from './constants/encounters/arcLocations.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
@@ -1195,11 +1196,20 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             }}
             arcAntagonist={character.arc?.antagonist || null}
             arcLocation={character.arc?.arcLocation || null}
+            antagonistOptions={antagonistsForLevel(character.level)}
+            adventureOptions={ADVENTURES}
             adventure={character.adventure || null}
             onClearAdventure={() => {
               const { adventure, ...rest } = charRef.current;
               updateChar(rest);
               log('[ADVENTURE] Cleared by player — no story driver');
+            }}
+            onSetAdventure={(title) => {
+              const selected = prepareSituationAdventure(title);
+              if (!selected) return;
+              const { arc, adventure: oldAdventure, ...rest } = charRef.current;
+              updateChar({ ...rest, adventure: selected });
+              log(`[ADVENTURE] Chosen by player — ${selected.title}`);
             }}
             onRollAdventure={() => {
               const adventure = rollSituationAdventure(charRef.current.completedAdventures || []);
@@ -1218,6 +1228,14 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
               const { adventure, ...rest } = charRef.current;
               updateChar({ ...rest, arc });
               log(`[ARC] Rolled by player — new antagonist: ${arc.antagonist} @ ${arc.arcLocation}; Adventure cleared`);
+            }}
+            onSetArcLocation={(location) => {
+              const c = charRef.current;
+              if (!c.arc?.antagonist) return;
+              const fixed = fixedArcLocationFor(c.arc.antagonist);
+              const nextLocation = fixed || location;
+              updateChar({ ...c, arc: { ...c.arc, arcLocation: nextLocation } });
+              log(`[ARC] Location chosen by player — ${nextLocation}`);
             }}
             onSetArc={(text) => {
               const { adventure, ...rest } = charRef.current;
