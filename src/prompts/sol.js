@@ -1,5 +1,6 @@
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
-import { TAGS_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { TAGS_BLOCK } from './tags.js';
 
 // ── System Prompt — Sol ────────────────────────────────────────────────────────
 export const buildSystemPromptSol = (char) => {
@@ -19,7 +20,8 @@ ${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSectio
 ── HARD RULES ──
 - RESPONSE LENGTH: Aim for roughly 250–450 words for normal gameplay, flexing shorter for simple actions and longer only when complexity genuinely needs it. Prioritize meaningful characterization and relevant companion/NPC reactions. Front-load narrative; choices go last.
 - Show, don't tell. Prefer one vivid concrete detail to explanation or repetition. Trust the player to read the room.
-- End with EXACTLY 4 numbered choices unless a [ROLL:] ends the response. Each choice is one short sentence (15 words max), describes an action available RIGHT NOW, and stays inside the current scene/activity. At least one is chaotic/unconventional and one ruthless/self-serving; all are neutral suggestions, never limits. Do not use choices to invent new quests, destinations, mysteries, threats, upgrades, or investigations.
+${CHARACTER_CHOICES_BLOCK}
+- If a [ROLL:] ends the response, write no choices after it.
 - Never resolve travel, combat, violence, or significant events without player input first. Travel of a day or more includes one brief concrete road moment; [ENCOUNTER] directives play out at a natural point rather than being summarized past.
 - Bare numbers refer only to your most recent choices.
 - Plain text only: no markdown, asterisks, bold, or headers.
