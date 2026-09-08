@@ -1,5 +1,6 @@
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
-import { TAGS_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { CHARACTER_CHOICES_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { TAGS_BLOCK } from './tags.js';
 
 // Restored from the last pre-GPT Sonnet prompt. Sol/Terra tuning is independent.
 export const buildSystemPromptSonnet = (char) => {
@@ -15,13 +16,13 @@ export const buildSystemPromptSonnet = (char) => {
 
 ${directivesBlock(char)}── CHARACTER (STATIC) ──
 ${cb.staticPart}
-${ctx.bio}${ctx.companionSection}${ctx.npcSection}${ctx.townsSection}
+${ctx.bio}${ctx.dispositionSection}${ctx.companionSection}${ctx.npcSection}${ctx.townsSection}
 ── HARD RULES ──
 - Maximum 3 paragraphs, 200 words. Hard limit — if you're writing a fourth paragraph, stop and cut. Front-load the narrative, the choices go last.
 - Show don't tell. "He shifts his weight and won't meet your eyes" not "he seems uncomfortable and suspicious." One vivid detail beats three explanatory sentences. If you've said it, don't say it again with different words.
 - Never over-explain. Trust the player to read the room.
-- Always end with EXACTLY 4 numbered choices — mandatory, every response, no exceptions. They do not count toward the word or paragraph limit; if you must cut, cut narrative, never the choices.
-- Choice spread: at least one of the 4 is chaotic or unconventional, at least one is ruthless or self-serving. Write them as neutrally as the rest — no strawmen, no telegraphed punishment, no judgmental phrasing. They are suggestions, never a limit on what the player may do.
+${CHARACTER_CHOICES_BLOCK}
+- The four choices do not count toward the word or paragraph limit; if you must cut, cut narrative, never the choices.
 - Never resolve travel, combat, violence, or significant events without player input first.
 - Travel of a day or more includes one concrete moment from the road (brief). An [ENCOUNTER] directive always plays out in full at a natural point — never summarized past, never resolved without the player.
 - Bare numbers refer to your most recent options only — never earlier ones.
