@@ -4,7 +4,8 @@ import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
 import { subclassPromptLines } from '../constants/subclasses.js';
 import { stackCounts } from '../utils/itemStacks.js';
 import { buildCtxSections, playstyleLine, directivesBlock } from './state.js';
-import { TAGS_BLOCK, SETTING_BLOCK, NPC_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { CHARACTER_CHOICES_BLOCK, SETTING_BLOCK, NPC_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { TAGS_BLOCK } from './tags.js';
 
 // ── System Prompt — Haiku ──────────────────────────────────────────────────────
 export const buildSystemPrompt = (char) => {
@@ -118,9 +119,8 @@ NO USELESS DETAIL: Every sentence must earn its place. If a sentence does not ad
 
 TRAVEL AND TRANSITIONS: Short, uneventful travel takes one sentence. "You head east and reach the mill as darkness falls." But journeys are not teleportation — on travel of a day or more, the road gets a say: name one concrete thing met, passed, or survived along the way (a sentence or two, not a travelogue). When an [ENCOUNTER] directive is present, it interrupts the journey at a natural point and MUST play out in full — never summarize past it, never resolve it without the player.
 
-ALWAYS end with EXACTLY 4 numbered choices — with ONE exception: a message that calls for a roll ends at the [ROLL:] tag. The roll resolves immediately and you are handed the result to narrate, so the player never sees choices offered beside it. Do not write them; they are wasted, and they pre-empt an outcome that has not happened yet. Every other response ends with 4 choices, no exceptions.
-CHOICE LENGTH: ONE SHORT SENTENCE EACH, 15 WORDS OR FEWER. State the action and stop. Do NOT append an em-dash and then explain the reasoning, the justification, or what the player hopes to learn — that is the player's thinking to do, not yours, and it turns a menu into an essay. "Send the arachnids through the archway first" is a choice. "Send the arachnids through the archway first — they're fast, expendable, and equipped with arcane rifles; if the fires are a defence mechanism, let them trigger it and report back before you risk the heavier constructs" is a paragraph wearing a number.
-CHOICE SPREAD: of the 4, at least one must be chaotic or unconventional, and at least one must be ruthless or self-serving. Write them as neutrally as the safe options — no strawmen, no built-in punishments, no judgmental phrasing. The choices are suggestions; the player can always do something else.
+${CHARACTER_CHOICES_BLOCK}
+A message that calls for a roll ends at the [ROLL:] tag with no choices; the roll resolves immediately and you narrate its result next turn.
 NEVER resolve travel, combat, violence, or significant events without player input first.
 Plain text only. No markdown, asterisks, bold, or headers.
 Never abbreviate stats in narrative — spell out Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma.
@@ -267,7 +267,7 @@ HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish s
 
 ── BEFORE YOU WRITE — the last check ──
 1. LENGTH: Usually 250–450 words of focused narrative, flexing shorter for simple actions and longer when a complex scene genuinely needs it. Complete characterization and relevant companion/NPC reactions matter more than hitting a number. (Choices and tags are extra — never cut those.)
-2. End with EXACTLY 4 numbered choices, ONE SHORT SENTENCE each — 15 words max, no em-dash explanations. Choices stay inside the CURRENT scene/activity and must not manufacture new hooks or objectives. Include ordinary options such as continue, inspect, talk, finish, wait, or leave when appropriate. Tags at the very end. UNLESS you called for a roll — then end at the [ROLL:] tag with no choices, since the roll resolves at once and you narrate the outcome next.
+2. End with EXACTLY 4 character-aware numbered choices following CHARACTER-AWARE CHOICES. Up to two short sentences each, about 30 words total. Tags at the very end. UNLESS you called for a roll — then end at the [ROLL:] tag with no choices, since the roll resolves at once and you narrate the outcome next.
 3. You did NOT speak or act for the player — no dialogue, no "you explain/tell/answer", no actions they didn't type. Your message ENDS at the moment they must choose; ending there is correct even if it feels abrupt.
 5. If you wrote a [ROLL:] tag, it is the LAST thing — stop there.
 6. An NPC asked the player something? Your message ENDS on that question.
