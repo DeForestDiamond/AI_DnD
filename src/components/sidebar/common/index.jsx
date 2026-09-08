@@ -4,6 +4,12 @@ import { XP_THRESHOLDS } from '../../../constants/progression.js';
 
 export const npcInput = { width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.4)', border:`1px solid ${colors.borderDim}`, color:colors.text, fontFamily:fonts.body, fontSize:13, padding:'6px 8px', borderRadius:4, outline:'none' };
 
+// Sidebar.jsx historically used npcInput directly but its split-module import
+// omitted the symbol. Expose the same immutable style on the browser global so
+// the existing rename UI cannot crash while keeping npcInput's normal named
+// export for all properly imported sidebar panels.
+if (typeof globalThis !== 'undefined') globalThis.npcInput = npcInput;
+
 // ── Sub-components ─────────────────────────────────────────────────────────────
 export function HPBar({ current, max }) {
   const pct   = max > 0 ? Math.max(0, (current / max) * 100) : 0;
