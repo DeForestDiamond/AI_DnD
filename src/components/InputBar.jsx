@@ -1,13 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { colors, fonts, btn } from '../styles/theme.js';
-import {
-  clearPendingOpenAiImage,
-  clearPersistentOpenAiMap,
-  getPersistentOpenAiMap,
-  installOpenAiImageInterceptor,
-  setPendingOpenAiImage,
-  setPersistentOpenAiMap,
-} from '../helpers/openai/pendingImage.js';
+import { clearPendingOpenAiImage, installOpenAiImageInterceptor, setPendingOpenAiImage } from '../helpers/openai/pendingImage.js';
 
 // USD per million tokens. Cache writes are billed separately from cache reads.
 // OpenAI rates here are the standard short-context API rates used by this app's
@@ -23,10 +16,8 @@ const PRICING = {
 export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, tokenUsage, selectedModel }) {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState(null);
-  const [campaignMap, setCampaignMap] = useState(() => getPersistentOpenAiMap());
   const inputRef = useRef(null);
   const fileRef = useRef(null);
-  const mapFileRef = useRef(null);
   const openAiModel = selectedModel === 'terra' || selectedModel === 'gpt';
 
   useEffect(() => {
@@ -38,8 +29,8 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
   }, [loading]);
 
   // If the player switches back to Claude before sending, discard only the
-  // one-turn OpenAI screenshot. The campaign map remains ready for the next time
-  // Terra/Sol is selected.
+  // one-turn OpenAI screenshot. The persistent campaign map is managed safely
+  // from Settings and remains ready for the next Terra/Sol turn.
   useEffect(() => {
     if (!openAiModel && attachment) {
       setAttachment(null);
@@ -48,14 +39,13 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
     }
   }, [openAiModel, attachment]);
 
-  const readImageFile = (file, fallbackName, onReady, inputEl) => {
+  const handleImagePick = (e) => {
+    const file = e.target.files?.[0];
     if (!file || !file.type?.startsWith('image/')) return;
 
-    // Large phone screenshots can make a browser request enormous. Ten MiB is
-    // intentionally generous while still preventing accidental camera-roll bombs.
     if (file.size > 10 * 1024 * 1024) {
       alert('That image is over 10 MB. Crop or resize it and try again.');
-      if (inputEl) inputEl.value = '';
+      e.target.value = '';
       return;
     }
 
@@ -63,37 +53,17 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
     reader.onload = () => {
       const dataUrl = typeof reader.result === 'string' ? reader.result : '';
       if (!dataUrl) return;
-      onReady({ name: file.name || fallbackName, dataUrl });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleImagePick = (e) => {
-    const file = e.target.files?.[0];
-    readImageFile(file, 'screenshot', next => {
+      const next = { name: file.name || 'screenshot', dataUrl };
       setAttachment(next);
       setPendingOpenAiImage(next);
-    }, e.target);
-  };
-
-  const handleMapPick = (e) => {
-    const file = e.target.files?.[0];
-    readImageFile(file, 'campaign map', next => {
-      setCampaignMap(next);
-      setPersistentOpenAiMap(next);
-    }, e.target);
+    };
+    reader.readAsDataURL(file);
   };
 
   const removeAttachment = () => {
     setAttachment(null);
     clearPendingOpenAiImage();
     if (fileRef.current) fileRef.current.value = '';
-  };
-
-  const removeCampaignMap = () => {
-    setCampaignMap(null);
-    clearPersistentOpenAiMap();
-    if (mapFileRef.current) mapFileRef.current.value = '';
   };
 
   const handleSend = () => {
@@ -114,20 +84,6 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
     return () => window.removeEventListener('dnd-set-input', handler);
   }, []);
 
-  const attachmentRow = (item, label, onRemove, alt) => (
-    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,padding:'7px 9px',border:'1px solid #4a3820',borderRadius:4,background:'rgba(201,168,76,0.05)'}}>
-      <img src={item.dataUrl} alt={alt} style={{width:54,height:42,objectFit:'cover',borderRadius:3,border:'1px solid #4a3820'}} />
-      <div style={{minWidth:0,flex:1}}>
-        <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,letterSpacing:1}}>{label}</div>
-        <div style={{fontSize:10,color:colors.textGhost,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
-      </div>
-      <button onClick={onRemove} disabled={loading} title={`Remove ${label.toLowerCase()}`}
-        style={{background:'transparent',border:'1px solid #4a3820',color:'#8a7a5a',borderRadius:3,padding:'4px 8px',cursor:'pointer',opacity:loading?0.4:1}}>
-        ✕
-      </button>
-    </div>
-  );
-
   return (
     <div style={{background:'rgba(10,7,3,0.9)',borderTop:`1px solid ${colors.border}`,padding:14,flexShrink:0}}>
       <div style={{display:'flex',gap:6,marginBottom:8}}>
@@ -139,8 +95,19 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
         ))}
       </div>
 
-      {openAiModel && campaignMap && attachmentRow(campaignMap, 'CAMPAIGN MAP — PERSISTENT/CACHED', removeCampaignMap, 'Campaign map')}
-      {attachment && attachmentRow(attachment, 'SCREENSHOT ATTACHED — THIS TURN', removeAttachment, 'Attached screenshot')}
+      {attachment && (
+        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,padding:'7px 9px',border:'1px solid #4a3820',borderRadius:4,background:'rgba(201,168,76,0.05)'}}>
+          <img src={attachment.dataUrl} alt="Attached screenshot" style={{width:54,height:42,objectFit:'cover',borderRadius:3,border:'1px solid #4a3820'}} />
+          <div style={{minWidth:0,flex:1}}>
+            <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,letterSpacing:1}}>SCREENSHOT ATTACHED — THIS TURN</div>
+            <div style={{fontSize:10,color:colors.textGhost,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{attachment.name}</div>
+          </div>
+          <button onClick={removeAttachment} disabled={loading} title="Remove screenshot"
+            style={{background:'transparent',border:'1px solid #4a3820',color:'#8a7a5a',borderRadius:3,padding:'4px 8px',cursor:'pointer',opacity:loading?0.4:1}}>
+            ✕
+          </button>
+        </div>
+      )}
 
       <div style={{display:'flex',gap:8}}>
         {sttSupported && (
@@ -155,11 +122,6 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
             <button onClick={() => !loading && fileRef.current?.click()} disabled={loading} title="Attach screenshot for this turn"
               style={{background:attachment?'rgba(201,168,76,0.2)':'transparent',border:`1px solid ${attachment?colors.gold:'#4a3820'}`,color:attachment?colors.gold:'#6a5a3a',padding:'10px 12px',fontSize:16,borderRadius:3,cursor:'pointer',opacity:loading?0.4:1}}>
               🖼️
-            </button>
-            <input ref={mapFileRef} type="file" accept="image/*" onChange={handleMapPick} style={{display:'none'}} />
-            <button onClick={() => !loading && mapFileRef.current?.click()} disabled={loading} title={campaignMap ? 'Replace persistent campaign map' : 'Attach persistent campaign map'}
-              style={{background:campaignMap?'rgba(201,168,76,0.2)':'transparent',border:`1px solid ${campaignMap?colors.gold:'#4a3820'}`,color:campaignMap?colors.gold:'#6a5a3a',padding:'10px 12px',fontSize:16,borderRadius:3,cursor:'pointer',opacity:loading?0.4:1}}>
-              🗺️
             </button>
           </>
         )}
@@ -189,7 +151,7 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
       </div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
         <div style={{fontSize:10,color:colors.textDead,fontFamily:fonts.display,letterSpacing:1}}>
-          {loading ? 'Tap ⏹ Stop to cancel' : `ACT to send · Shift+Enter for new line${sttSupported?' · 🎙 speak':''}${openAiModel?' · 🖼️ turn screenshot · 🗺️ persistent map':''} · 💾 save in sidebar`}
+          {loading ? 'Tap ⏹ Stop to cancel' : `ACT to send · Shift+Enter for new line${sttSupported?' · 🎙 speak':''}${openAiModel?' · 🖼️ turn screenshot':''} · 💾 save in sidebar`}
         </div>
         {voiceSupported && (
           <div style={{display:'flex',gap:6}}>
@@ -202,9 +164,6 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
         )}
       </div>
       {tokenUsage && (() => {
-        // API usage splits prompt input into ordinary uncached input, cache reads,
-        // and cache writes. Keep each bucket visible so the footer never changes
-        // shape and a zero is meaningful instead of making the field disappear.
         const fresh       = tokenUsage.input_tokens ?? 0;
         const cacheRead   = tokenUsage.cache_read_input_tokens ?? 0;
         const cacheCreate = tokenUsage.cache_creation_input_tokens ?? 0;
