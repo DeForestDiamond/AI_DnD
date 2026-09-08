@@ -1,11 +1,74 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { colors, fonts, btn } from '../../../styles/theme.js';
 import { CollapsibleSection, npcInput } from '../common/index.jsx';
+import {
+  clearPersistentOpenAiMap,
+  getPersistentOpenAiMap,
+  setPersistentOpenAiMap,
+} from '../../../helpers/openai/pendingImage.js';
+
+export function CampaignMapSettings() {
+  const [campaignMap, setCampaignMap] = useState(() => getPersistentOpenAiMap());
+  const fileRef = useRef(null);
+
+  const handlePick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type?.startsWith('image/')) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('That image is over 10 MB. Crop or resize it and try again.');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+      if (!dataUrl) return;
+      const next = { name: file.name || 'campaign map', dataUrl };
+      setCampaignMap(next);
+      setPersistentOpenAiMap(next);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearMap = () => {
+    // Deliberately require confirmation here. A persistent map can represent a
+    // large, annoying-to-find reference image and should not disappear to a
+    // stray thumb tap on mobile.
+    if (!window.confirm('Clear the persistent campaign map?')) return;
+    setCampaignMap(null);
+    clearPersistentOpenAiMap();
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  return (
+    <CollapsibleSection title="🗺️ CAMPAIGN MAP" count={campaignMap ? 'ACTIVE' : undefined} defaultOpen={false}>
+      <div style={{fontSize:10,color:colors.textFaint,marginBottom:7,lineHeight:1.45}}>
+        Persistent visual reference for GPT Terra / Sol. The map is sent before changing conversation history so its visual context can benefit from prompt caching. It is not written into campaign saves or summaries.
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" onChange={handlePick} style={{display:'none'}} />
+      {campaignMap ? (
+        <>
+          <div style={{display:'flex',alignItems:'center',gap:8,padding:7,border:`1px solid ${colors.borderDim}`,borderRadius:4,background:'rgba(201,168,76,0.05)',marginBottom:7}}>
+            <img src={campaignMap.dataUrl} alt="Campaign map" style={{width:64,height:48,objectFit:'cover',borderRadius:3,border:`1px solid ${colors.borderDim}`}} />
+            <div style={{minWidth:0,flex:1}}>
+              <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,letterSpacing:1}}>ACTIVE / CACHED</div>
+              <div style={{fontSize:10,color:colors.textGhost,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{campaignMap.name}</div>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:6}}>
+            <button onClick={()=>fileRef.current?.click()} style={{...btn(false),flex:1,fontSize:10,padding:'5px 0'}}>🗺️ Replace Map</button>
+            <button onClick={clearMap} style={{...btn(false),flex:1,fontSize:10,padding:'5px 0',color:'#c96a4c'}}>✕ Clear Map</button>
+          </div>
+        </>
+      ) : (
+        <button onClick={()=>fileRef.current?.click()} style={{...btn(false),width:'100%',fontSize:11,padding:'6px 0'}}>🗺️ Set Campaign Map</button>
+      )}
+    </CollapsibleSection>
+  );
+}
 
 // ── Voice settings: pick an installed TTS voice + speaking speed ──────────────
 export function VoiceSettings({ voiceName, setVoiceName, rate, setRate, pitch, setPitch, pronounce, setPronounce, availableVoices, preview }) {
-  // Android variants often share one display name — number the duplicates so
-  // "English (United States)" 1..N are individually selectable (keyed by voiceURI).
   const nameCounts = {};
   availableVoices.forEach(v => { nameCounts[v.name] = (nameCounts[v.name] || 0) + 1; });
   const seen = {};
@@ -16,37 +79,40 @@ export function VoiceSettings({ voiceName, setVoiceName, rate, setRate, pitch, s
   };
   const [open, setOpen] = useState(false);
   return (
-    <div style={{marginBottom:8}}>
-      <button onClick={()=>setOpen(o=>!o)} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>
-        🔊 Voice {open ? '▲' : '▼'}
-      </button>
-      {open && (
-        <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:4}}>
-          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>VOICE</div>
-          <select value={voiceName} onChange={e=>setVoiceName(e.target.value)}
-            style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:12,padding:'5px 8px',borderRadius:4,outline:'none',marginBottom:8}}>
-            <option value="">Auto (system default)</option>
-            {availableVoices.map(v => <option key={v.voiceURI} value={v.voiceURI}>{labelFor(v)}</option>)}
-          </select>
-          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>SPEED — {rate.toFixed(2)}×</div>
-          <input type="range" min="0.5" max="1.5" step="0.05" value={rate}
-            onChange={e=>setRate(parseFloat(e.target.value))}
-            style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
-          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>PITCH — {pitch.toFixed(2)}</div>
-          <input type="range" min="0.5" max="1.5" step="0.05" value={pitch}
-            onChange={e=>setPitch(parseFloat(e.target.value))}
-            style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
-          <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>PRONUNCIATION</div>
-          <textarea value={pronounce || ''} onChange={e=>setPronounce(e.target.value)} rows={3}
-            placeholder={"One per line — word: how to say it\nSseth'karix: Seth ka rix\nVyn: Vinn"}
-            style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:11,padding:'5px 8px',borderRadius:4,outline:'none',resize:'vertical',marginBottom:8,lineHeight:1.4}}/>
-          <button onClick={preview} style={{...btn(false),width:'100%',fontSize:11,padding:'4px 0'}}>▶ Preview</button>
-          {availableVoices.length === 0 && (
-            <div style={{fontSize:10,color:colors.textGhost,marginTop:6,lineHeight:1.4}}>No voices detected yet — they load a moment after the page. To add better ones, install a TTS engine in your device's accessibility settings.</div>
-          )}
-        </div>
-      )}
-    </div>
+    <>
+      <div style={{marginBottom:8}}>
+        <button onClick={()=>setOpen(o=>!o)} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>
+          🔊 Voice {open ? '▲' : '▼'}
+        </button>
+        {open && (
+          <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:4}}>
+            <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>VOICE</div>
+            <select value={voiceName} onChange={e=>setVoiceName(e.target.value)}
+              style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:12,padding:'5px 8px',borderRadius:4,outline:'none',marginBottom:8}}>
+              <option value="">Auto (system default)</option>
+              {availableVoices.map(v => <option key={v.voiceURI} value={v.voiceURI}>{labelFor(v)}</option>)}
+            </select>
+            <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>SPEED — {rate.toFixed(2)}×</div>
+            <input type="range" min="0.5" max="1.5" step="0.05" value={rate}
+              onChange={e=>setRate(parseFloat(e.target.value))}
+              style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
+            <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>PITCH — {pitch.toFixed(2)}</div>
+            <input type="range" min="0.5" max="1.5" step="0.05" value={pitch}
+              onChange={e=>setPitch(parseFloat(e.target.value))}
+              style={{width:'100%',accentColor:colors.gold,marginBottom:8}}/>
+            <div style={{fontSize:10,color:colors.textGhost,letterSpacing:1,marginBottom:3}}>PRONUNCIATION</div>
+            <textarea value={pronounce || ''} onChange={e=>setPronounce(e.target.value)} rows={3}
+              placeholder={"One per line — word: how to say it\nSseth'karix: Seth ka rix\nVyn: Vinn"}
+              style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:11,padding:'5px 8px',borderRadius:4,outline:'none',resize:'vertical',marginBottom:8,lineHeight:1.4}}/>
+            <button onClick={preview} style={{...btn(false),width:'100%',fontSize:11,padding:'4px 0'}}>▶ Preview</button>
+            {availableVoices.length === 0 && (
+              <div style={{fontSize:10,color:colors.textGhost,marginTop:6,lineHeight:1.4}}>No voices detected yet — they load a moment after the page. To add better ones, install a TTS engine in your device's accessibility settings.</div>
+            )}
+          </div>
+        )}
+      </div>
+      <CampaignMapSettings />
+    </>
   );
 }
 
