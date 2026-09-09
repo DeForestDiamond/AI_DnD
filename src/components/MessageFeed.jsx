@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { colors, fonts } from '../styles/theme.js';
 import { cleanDisplayText } from '../hooks/useGame.js';
+import { clearPendingOpenAiImage, setPendingOpenAiImage } from '../helpers/openai/pendingImage.js';
 function DiceRollDisplay({ roll }) {
   if (!roll) return null;
   const hit = roll.dc == null || roll.value >= roll.dc;
-  // Attack rolls can be auto-triggered by lightweight keyword matching. Never
-  // expose the equipped weapon name in the visible roll card; the player's prose
-  // remains authoritative about what kind of attack they actually attempted.
   const displayLabel = roll.dmg != null ? 'Attack' : roll.label;
   return (
     <div style={{marginTop:6,display:'flex',flexWrap:'wrap',gap:6}}>
@@ -41,7 +39,7 @@ const staticBtn = (label, onClick, dim = false) => (
       border: `1px solid ${dim ? colors.borderFaint : colors.borderDim}`,
       color: dim ? 'rgba(255,255,255,0.15)' : colors.textDead,
       fontSize: 10, padding: '2px 7px', borderRadius: 3,
-      cursor: 'pointer', lineHeight: 1.5, flexShrink: 0,
+      cursor: dim ? 'default' : 'pointer', lineHeight: 1.5, flexShrink: 0,
     }}
     onMouseEnter={e => { if (!dim) { e.currentTarget.style.borderColor = colors.gold; e.currentTarget.style.color = colors.gold; }}}
     onMouseLeave={e => { if (!dim) { e.currentTarget.style.borderColor = colors.borderDim; e.currentTarget.style.color = colors.textDead; }}}
@@ -50,15 +48,15 @@ const staticBtn = (label, onClick, dim = false) => (
 
 export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, onRegenerate, editableFromId, showRawTags }) {
   const endRef = useRef(null);
+  const editFileRef = useRef(null);
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [editAttachment, setEditAttachment] = useState(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
 
   const lastDMId   = [...messages].reverse().find(m => m.role === 'dm')?.id;
-  const lastUserId = [...messages].reverse().find(m => m.role === 'user')?.id;
 
-  // A message is editable if it appears at or after the editableFromId in the list
   const editableFromIdx = editableFromId
     ? messages.findIndex(m => m.id === editableFromId)
     : 0;
@@ -67,13 +65,50 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
     msg.role === 'user' &&
     messages.findIndex(m => m.id === msg.id) >= editableFromIdx;
 
+  const clearEditAttachment = () => {
+    setEditAttachment(null);
+    clearPendingOpenAiImage();
+    if (editFileRef.current) editFileRef.current.value = '';
+  };
+
   const startEdit = (msg) => {
+    clearEditAttachment();
     setEditingId(msg.id);
     setEditText(cleanDisplayText(msg.text));
   };
 
+  const handleEditImagePick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type?.startsWith('image/')) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('That image is over 10 MB. Crop or resize it and try again.');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+      if (!dataUrl) return;
+      setEditAttachment({ name: file.name || 'screenshot', dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const confirmEdit = (msgId) => {
-    if (editText.trim()) onEditMessage?.(msgId, editText.trim());
+    if (!editText.trim()) return;
+    // Editing replays the turn through handleSend(). Queue the image immediately
+    // before that replay so the same turn-scoped OpenAI transport used by the
+    // main input attaches it to the replacement player message.
+    if (editAttachment) setPendingOpenAiImage(editAttachment);
+    else clearPendingOpenAiImage();
+    onEditMessage?.(msgId, editText.trim());
+    setEditingId(null);
+    setEditAttachment(null);
+    if (editFileRef.current) editFileRef.current.value = '';
+  };
+
+  const cancelEdit = () => {
+    clearEditAttachment();
     setEditingId(null);
   };
 
@@ -115,9 +150,18 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
                       autoFocus
                       style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.gold}`,color:colors.text,fontFamily:fonts.body,fontSize:13,lineHeight:1.7,padding:'8px 10px',borderRadius:4,resize:'vertical',minHeight:80,outline:'none'}}
                     />
-                    <div style={{display:'flex',gap:6,marginTop:6}}>
+                    {editAttachment && (
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginTop:6,padding:'6px 8px',border:'1px solid #4a3820',borderRadius:4,background:'rgba(201,168,76,0.05)'}}>
+                        <img src={editAttachment.dataUrl} alt="Attached screenshot" style={{width:48,height:38,objectFit:'cover',borderRadius:3,border:'1px solid #4a3820'}} />
+                        <div style={{minWidth:0,flex:1,fontSize:10,color:colors.textGhost,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{editAttachment.name}</div>
+                        {staticBtn('✕', clearEditAttachment)}
+                      </div>
+                    )}
+                    <div style={{display:'flex',gap:6,marginTop:6,alignItems:'center'}}>
                       {staticBtn('✓ Send', () => confirmEdit(msg.id))}
-                      {staticBtn('✕ Cancel', () => setEditingId(null))}
+                      <input ref={editFileRef} type="file" accept="image/*" onChange={handleEditImagePick} style={{display:'none'}} />
+                      {staticBtn('🖼️', () => editFileRef.current?.click())}
+                      {staticBtn('✕ Cancel', cancelEdit)}
                     </div>
                   </div>
                 ) : (
@@ -128,7 +172,6 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
                 {msg.role === 'dm' && <DiceRollDisplay roll={msg.roll}/>}
               </div>
 
-              {/* Static action buttons — always visible, dimmed if not applicable */}
               {!editingId && !loading && (
                 <div style={{display:'flex',gap:4,marginTop:4,justifyContent:msg.role==='user'?'flex-end':'flex-start'}}>
                   {msg.role === 'user' && (

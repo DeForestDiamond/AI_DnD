@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
+import { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/encounters/arcLocations.js';
 
 // Fresh-campaign chooser. Situation Adventure is deliberately separate from the
 // classic random/antagonist generator: its premise owns the starting context.
@@ -11,6 +12,8 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
   const [showDefeated, setShowDefeated] = useState(false);
   const [adventureSearch, setAdventureSearch] = useState('');
   const [showCompletedAdventures, setShowCompletedAdventures] = useState(false);
+  const [pendingAntagonist, setPendingAntagonist] = useState('');
+  const [locationSearch, setLocationSearch] = useState('');
 
   const defeated = new Set((defeatedAntagonists || []).map(x => String(x).toLowerCase()));
   const visibleAntagonists = antagonists
@@ -21,6 +24,17 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
   const visibleAdventures = (adventures || [])
     .filter(a => showCompletedAdventures || !completedTitles.has(a.title))
     .filter(a => !adventureSearch.trim() || a.title.toLowerCase().includes(adventureSearch.trim().toLowerCase()));
+
+  const locationOptions = pendingAntagonist ? arcLocationOptionsFor(pendingAntagonist) : [];
+  const visibleLocations = locationOptions.filter(loc => !locationSearch.trim() || loc.toLowerCase().includes(locationSearch.trim().toLowerCase()));
+
+  const chooseAntagonist = (name) => {
+    const fixed = fixedArcLocationFor(name);
+    if (fixed) { onChooseAntagonist(name, fixed); return; }
+    setPendingAntagonist(name);
+    setLocationSearch('');
+    setMode('location');
+  };
 
   const dmOptions = [
     { id:'sonnet', label:'✨ Sonnet', provider:'Anthropic', enabled:hasAnthropic },
@@ -87,15 +101,27 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
             </div>
             <button style={{...btn(false),width:'100%'}} onClick={()=>setMode(null)}>← Back</button>
           </div>
-        ) : (
+        ) : mode === 'antagonist' ? (
           <div>
             <div style={{fontSize:12,color:colors.textGhost,marginBottom:10,lineHeight:1.5}}>Choose the hidden antagonist for this arc. The app will roll the opening normally and build toward this foe.</div>
             <input value={search} onChange={e=>setSearch(e.target.value)} autoFocus placeholder="Search antagonists..." style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:10}} />
             <label style={{display:'flex',alignItems:'center',gap:8,fontSize:11,color:colors.textFaint,marginBottom:10,cursor:'pointer'}}><input type="checkbox" checked={showDefeated} onChange={e=>setShowDefeated(e.target.checked)} />Show defeated foes ({defeatedAntagonists.length})</label>
             <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,maxHeight:'52vh',overflowY:'auto',marginBottom:12}}>
-              {visibleAntagonists.length ? visibleAntagonists.map(a => { const wasDefeated=defeated.has(a.toLowerCase()); return <div key={a} onClick={()=>onChooseAntagonist(a)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',fontSize:12,lineHeight:1.4,color:wasDefeated?colors.textGhost:colors.textDim,opacity:wasDefeated?0.65:1}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>{wasDefeated&&<span style={{marginRight:6}}>☠</span>}{a}{wasDefeated&&<span style={{fontSize:9,marginLeft:8,color:colors.textGhost}}>DEFEATED</span>}</div>; }) : <div style={{padding:18,textAlign:'center',fontSize:11,color:colors.textGhost}}>No antagonists match this filter.</div>}
+              {visibleAntagonists.length ? visibleAntagonists.map(a => { const wasDefeated=defeated.has(a.toLowerCase()); const fixed=fixedArcLocationFor(a); return <div key={a} onClick={()=>chooseAntagonist(a)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',fontSize:12,lineHeight:1.4,color:wasDefeated?colors.textGhost:colors.textDim,opacity:wasDefeated?0.65:1}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>{wasDefeated&&<span style={{marginRight:6}}>☠</span>}{a}{fixed&&<span style={{fontSize:9,marginLeft:8,color:colors.textGhost}}>📍 {fixed}</span>}{wasDefeated&&<span style={{fontSize:9,marginLeft:8,color:colors.textGhost}}>DEFEATED</span>}</div>; }) : <div style={{padding:18,textAlign:'center',fontSize:11,color:colors.textGhost}}>No antagonists match this filter.</div>}
             </div>
             <button style={{...btn(false),width:'100%'}} onClick={()=>setMode(null)}>← Back</button>
+          </div>
+        ) : (
+          <div>
+            <div style={{fontSize:12,color:colors.textGhost,marginBottom:6,lineHeight:1.5}}>Choose where <span style={{color:colors.gold}}>{pendingAntagonist}</span> is based for this arc.</div>
+            <div style={{fontSize:10,color:colors.textGhost,marginBottom:10,lineHeight:1.45}}>Antagonists with a fixed canon location skip this step automatically. Choose Random to keep the normal location roll.</div>
+            <input value={locationSearch} onChange={e=>setLocationSearch(e.target.value)} autoFocus placeholder="Search locations..." style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:10}} />
+            <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,maxHeight:'48vh',overflowY:'auto',marginBottom:12}}>
+              <div onClick={()=>onChooseAntagonist(pendingAntagonist, null)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',color:colors.gold}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>🎲 Random compatible location</div>
+              {visibleLocations.map(loc => <div key={loc} onClick={()=>onChooseAntagonist(pendingAntagonist, loc)} style={{padding:'9px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',fontSize:12,color:colors.textDim}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>{loc}</div>)}
+              {!visibleLocations.length && <div style={{padding:18,textAlign:'center',fontSize:11,color:colors.textGhost}}>No locations match this filter.</div>}
+            </div>
+            <button style={{...btn(false),width:'100%'}} onClick={()=>setMode('antagonist')}>← Back to Antagonists</button>
           </div>
         )}
       </div>

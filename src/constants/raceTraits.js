@@ -17,6 +17,26 @@ export const RACE_TRAITS = {
       { name: 'Weapon Training',     desc: 'Proficiency with longswords, shortswords, shortbows, longbows.' },
     ],
   },
+  'Sun Elf': {
+    traits: [
+      { name: 'Darkvision 60ft',     desc: 'See in dim light as if it were bright, and in darkness as if dim.' },
+      { name: 'Keen Senses',         desc: 'Proficiency in Perception.' },
+      { name: 'Fey Ancestry',        desc: 'Advantage on saves vs. charm. Immune to magical sleep.' },
+      { name: 'Trance',              desc: 'Meditate for 4 hours instead of sleeping. Fully rested.' },
+      { name: 'Cantrip',             desc: 'Know one wizard cantrip of your choice. Intelligence is your spellcasting ability for it.' },
+      { name: 'Sun Elf Weapon Training', desc: 'Proficiency with longswords, shortswords, shortbows, and longbows.' },
+    ],
+  },
+  'Moon Elf': {
+    traits: [
+      { name: 'Darkvision 60ft',     desc: 'See in dim light as if it were bright, and in darkness as if dim.' },
+      { name: 'Keen Senses',         desc: 'Proficiency in Perception.' },
+      { name: 'Fey Ancestry',        desc: 'Advantage on saves vs. charm. Immune to magical sleep.' },
+      { name: 'Trance',              desc: 'Meditate for 4 hours instead of sleeping. Fully rested.' },
+      { name: 'Cantrip',             desc: 'Know one wizard cantrip of your choice. Intelligence is your spellcasting ability for it.' },
+      { name: 'Moon Elf Weapon Training', desc: 'Proficiency with longswords, shortswords, shortbows, and longbows.' },
+    ],
+  },
   'Dwarf': {
     traits: [
       { name: 'Darkvision 60ft',     desc: 'See in dim light as if bright, darkness as if dim.' },
@@ -31,6 +51,14 @@ export const RACE_TRAITS = {
       { name: 'Brave',               desc: 'Advantage on saving throws vs. the frightened condition.' },
       { name: 'Nimbleness',          desc: 'Move through the space of any creature larger than you.' },
       { name: 'Small',               desc: 'About 3 feet tall. No darkvision.' },
+    ],
+  },
+  'Kender': {
+    traits: [
+      { name: 'Fearless',            desc: 'Advantage on saving throws to avoid or end the frightened condition.' },
+      { name: 'Kender Aptitude',      desc: 'Choose proficiency in one skill from Insight, Investigation, Sleight of Hand, Stealth, or Survival.' },
+      { name: 'Taunt',               desc: 'Bonus action: provoke a creature within 60ft that can hear and understand you. On a failed Wisdom save, it has disadvantage on attacks against targets other than you until your next turn.' },
+      { name: 'Small',               desc: 'Roughly halfling-sized, quick, nimble, and famously difficult to intimidate.' },
     ],
   },
   'Tiefling': {
@@ -128,14 +156,25 @@ export const RACE_TRAITS = {
       { name: 'Vampiric Bite',  desc: 'A Constitution-based bite that damages a creature and lets you regain hit points or empower your next roll.' },
     ],
   },
+  'Warforged': {
+    traits: [
+      { name: 'Constructed Resilience', desc: 'Advantage on saves against poison, resistance to poison damage, immunity to disease, and no need to eat, drink, or breathe.' },
+      { name: 'Sentry’s Rest',          desc: 'When taking a long rest, remain motionless and inactive for 6 hours while staying conscious and aware of your surroundings.' },
+      { name: 'Integrated Protection',  desc: 'Your body incorporates protective plating. Gain +1 AC, and armor you wear integrates into your frame and cannot be removed against your will while you live.' },
+      { name: 'Specialized Design',     desc: 'Gain proficiency in one skill and one tool of your choice.' },
+    ],
+  },
 };
 
 // Flat string version for the DM system prompt
 export const RACE_TRAIT_STRINGS = {
   'Human':      'Versatile and ambitious. Proficiency in one extra skill. Gains one extra feat at level 1. No darkvision.',
   'Elf':        'Darkvision 60ft. Keen Senses (proficiency in Perception). Fey Ancestry (advantage on saves vs. charm, immune to magical sleep). Trance (meditate 4hrs instead of sleeping). Proficiency with longswords, shortswords, shortbows, longbows.',
+  'Sun Elf':    'Darkvision 60ft. Keen Senses (proficiency in Perception). Fey Ancestry (advantage on saves vs. charm, immune to magical sleep). Trance (meditate 4hrs instead of sleeping). Knows one wizard cantrip using Intelligence. Proficiency with longswords, shortswords, shortbows, and longbows. Ancient, patient, and steeped in high elven arcane tradition.',
+  'Moon Elf':   'Darkvision 60ft. Keen Senses (proficiency in Perception). Fey Ancestry (advantage on saves vs. charm, immune to magical sleep). Trance (meditate 4hrs instead of sleeping). Knows one wizard cantrip using Intelligence. Proficiency with longswords, shortswords, shortbows, and longbows. Curious, expressive, widely traveled, and unusually comfortable among other peoples.',
   'Dwarf':      'Darkvision 60ft. Dwarven Resilience (advantage on poison saves, resistance to poison damage). Stonecunning (expertise on History checks about stonework). Proficiency with battleaxes, handaxes, throwing hammers, warhammers.',
   'Halfling':   'Lucky (reroll any attack/ability/save roll of 1, must use new roll). Brave (advantage on saves vs. frightened). Halfling Nimbleness (move through space of larger creatures). Small — 3 feet tall. No darkvision.',
+  'Kender':     'Fearless (advantage on saves to avoid or end frightened). Kender Aptitude: proficiency in one of Insight, Investigation, Sleight of Hand, Stealth, or Survival. Taunt: bonus action to provoke a creature within 60ft; on a failed Wisdom save it has disadvantage attacking targets other than you until your next turn. Small, nimble, intensely curious, and notoriously difficult to intimidate.',
   'Tiefling':   'Darkvision 60ft. Resistance to fire damage. Infernal Legacy: Thaumaturgy cantrip, Hellish Rebuke 1/day, Darkness 1/day. Horns, tail, and unusual eye color — may face prejudice.',
   'Shadar-kai': 'Darkvision 60ft. Resistance to necrotic damage. Blessing of the Raven Queen: teleport up to 30ft as bonus action 1/long rest, briefly become incorporeal. Pale and unnervingly still in appearance.',
   'Half-Elf':   'Darkvision 60ft. Fey Ancestry (advantage on saves vs. charm, immune to magical sleep). Skill Versatility: proficiency in any two skills. Charming and adaptable.',
@@ -148,4 +187,5 @@ export const RACE_TRAIT_STRINGS = {
   'Reborn': 'Deathless Nature: no need to eat, drink, breathe, or sleep; advantage on death saves and vs. disease/poison; resistance to poison. Ancestral Legacy from a former life. Knowledge from a Past Life: add 1d6 to an unproficient ability check, proficiency-bonus times per long rest. Carries fragmented memories of who they were.',
   'Kalashtar': 'Dual Mind (advantage on all Wisdom saves). Mental Discipline (resistance to psychic damage). Mind Link: telepathy with creatures you can see. Severed from Dreams: immune to dream magic and magical sleep, rests in a wakeful trance. Quietly serene, bonded to a spirit of the plane of dreams.',
   'Dhampir': 'Darkvision up to 120ft. Spider Climb: scale sheer surfaces and ceilings, climb speed equal to walking speed. Vampiric Bite: Constitution-based bite that drains life to heal you or empower a roll. Trace of Undeath: needs only half normal food and sleep. Cursed with a macabre hunger.',
+  'Warforged': 'Constructed Resilience: advantage on poison saves, resistance to poison damage, immunity to disease, and no need to eat, drink, or breathe. Sentry’s Rest: remain conscious and aware while resting motionless. Integrated Protection: +1 AC and armor integrates into the body. Specialized Design: proficiency in one skill and one tool. A living construct built for war but capable of becoming far more than its intended purpose.',
 };

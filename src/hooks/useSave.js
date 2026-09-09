@@ -1,5 +1,5 @@
 import { SAVE_VERSION } from '../constants/progression.js';
-import { migrateCharacter } from './useCharacter.js';
+import { migrateCharacter } from './character/migration.js';
 
 // ── Tolerant save parser ───────────────────────────────────────────────────────
 // Hand-edited saves on mobile commonly have small JSON slips. Try strict parse

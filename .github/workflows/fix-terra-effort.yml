@@ -1,0 +1,32 @@
+name: Fix Terra reasoning effort
+on:
+  push:
+    branches: [gpt-prompt-split]
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
+      - name: Restore useGame and set Terra medium
+        run: |
+          git checkout 30a7df90912b925a4a93e5aa31aa0370b74da210 -- src/hooks/useGame.js
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/hooks/useGame.js')
+          s = p.read_text()
+          old = "terra: {\n    provider: 'openai',\n    model: 'gpt-5.6-terra',\n    max_tokens: 2048,\n    reasoning_effort: 'low',"
+          new = "terra: {\n    provider: 'openai',\n    model: 'gpt-5.6-terra',\n    max_tokens: 2048,\n    reasoning_effort: 'medium',"
+          if old not in s:
+              raise SystemExit('Terra config pattern not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/hooks/useGame.js
+          git commit -m "Set Terra reasoning effort to medium"
+          git push
