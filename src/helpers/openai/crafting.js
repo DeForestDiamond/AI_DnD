@@ -192,7 +192,7 @@ export async function callGptCrafting({ apiKey, model = GPT_CRAFTING_MODEL, mate
     body: JSON.stringify({
       model,
       input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }] }],
-      max_output_tokens: asSet ? 8000 : asConstruct ? 4000 : 3000,
+      max_output_tokens: asSet ? 12000 : asConstruct ? 8000 : 6000,
       reasoning: { effort: 'low' },
       text: { format: { type: 'json_schema', name: asConstruct ? 'craft_construct_options' : asSet ? 'craft_set_options' : 'craft_item_options', strict: true, schema } },
     }),
