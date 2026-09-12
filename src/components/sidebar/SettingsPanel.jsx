@@ -63,6 +63,17 @@ export function SettingsPanel({
   const [arcCustomText, setArcCustomText] = useState('');
   const [storyAntagonistPick, setStoryAntagonistPick] = useState('');
   const [storyAdventurePick, setStoryAdventurePick] = useState('');
+  const [showAllAdventures, setShowAllAdventures] = useState(false);
+  const [showAllAntagonists, setShowAllAntagonists] = useState(false);
+
+  const completedAdventureTitles = new Set((completedAdventures || []).map(entry => typeof entry === 'string' ? entry : entry?.title).filter(Boolean));
+  const defeatedAntagonistNames = new Set(defeatedAntagonists || []);
+  const visibleAdventureOptions = showAllAdventures
+    ? (adventureOptions || [])
+    : (adventureOptions || []).filter(option => !completedAdventureTitles.has(option?.title));
+  const visibleAntagonistOptions = showAllAntagonists
+    ? (antagonistOptions || [])
+    : (antagonistOptions || []).filter(name => !defeatedAntagonistNames.has(name));
 
   return <>
     <button onClick={onSaveClick} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>💾 Save / Load</button>
@@ -98,31 +109,37 @@ export function SettingsPanel({
         </div>
         {adventure?.premise && <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.4,marginBottom:6}}>{adventure.premise}</div>}
         {adventure?.location && <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.35,marginBottom:6}}>📍 {adventure.location}</div>}
-        <div style={{display:'flex',gap:6,marginBottom:6}}>
+        <div style={{display:'flex',gap:6,marginBottom:4}}>
           <select value={storyAdventurePick} onChange={e=>setStoryAdventurePick(e.target.value)} style={{flex:1,minWidth:0,background:colors.bgDark,border:`1px solid ${colors.borderDim}`,color:colors.textDim,fontSize:10,padding:'4px 5px',borderRadius:3}}>
             <option value="">Choose Adventure…</option>
-            {(adventureOptions||[]).map(a => <option key={a.title} value={a.title}>{a.title}</option>)}
+            {visibleAdventureOptions.map(a => <option key={a.title} value={a.title}>{a.title}</option>)}
           </select>
           <button disabled={!storyAdventurePick} onClick={()=>{ if(storyAdventurePick){ onSetAdventure?.(storyAdventurePick); setStoryAdventurePick(''); } }} style={{...btn(false),fontSize:10,padding:'4px 7px',opacity:storyAdventurePick?1:0.4}}>Set</button>
         </div>
+        <button onClick={()=>{ setShowAllAdventures(v=>!v); setStoryAdventurePick(''); }} style={{...btn(showAllAdventures),width:'100%',fontSize:9,padding:'3px 0',marginBottom:6}}>
+          {showAllAdventures ? '✓ Showing all adventures' : `Show all adventures (${(adventureOptions||[]).length})`}
+        </button>
         <div style={{display:'flex',gap:6}}>
           <button onClick={onRollAdventure} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>🎭 {adventure?'Reroll':'Roll Adventure'}</button>
           {adventure && <button onClick={onClearAdventure} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✕ Clear</button>}
         </div>
-        <div style={{fontSize:9,color:colors.textDead,lineHeight:1.35,marginTop:5}}>Rolling an Adventure clears any antagonist. [ADVENTURE COMPLETE] clears it without rolling a replacement.</div>
+        <div style={{fontSize:9,color:colors.textDead,lineHeight:1.35,marginTop:5}}>Picker defaults to unfinished adventures. Rolling an Adventure clears any antagonist. [ADVENTURE COMPLETE] clears it without rolling a replacement.</div>
       </CollapsibleSection>
     )}
 
     {onClearArc && (
       <CollapsibleSection title="👁️ ANTAGONIST" defaultOpen={false}>
         <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>ANTAGONIST ARC</div>
-        <div style={{display:'flex',gap:6,marginBottom:6}}>
+        <div style={{display:'flex',gap:6,marginBottom:4}}>
           <select value={storyAntagonistPick} onChange={e=>setStoryAntagonistPick(e.target.value)} style={{flex:1,minWidth:0,background:colors.bgDark,border:`1px solid ${colors.borderDim}`,color:colors.textDim,fontSize:10,padding:'4px 5px',borderRadius:3}}>
             <option value="">Choose Antagonist…</option>
-            {(antagonistOptions||[]).map(a => <option key={a} value={a}>{a}</option>)}
+            {visibleAntagonistOptions.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
           <button disabled={!storyAntagonistPick} onClick={()=>{ if(storyAntagonistPick){ onSetArc?.(storyAntagonistPick); setStoryAntagonistPick(''); } }} style={{...btn(false),fontSize:10,padding:'4px 7px',opacity:storyAntagonistPick?1:0.4}}>Set</button>
         </div>
+        <button onClick={()=>{ setShowAllAntagonists(v=>!v); setStoryAntagonistPick(''); }} style={{...btn(showAllAntagonists),width:'100%',fontSize:9,padding:'3px 0',marginBottom:6}}>
+          {showAllAntagonists ? '✓ Showing all antagonists' : `Show all antagonists (${(antagonistOptions||[]).length})`}
+        </button>
         {arcAntagonist && (() => {
           const fixed = fixedArcLocationFor(arcAntagonist);
           const locations = arcLocationOptionsFor(arcAntagonist);
