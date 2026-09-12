@@ -104,7 +104,7 @@ export const buildSystemPrompt = (char) => {
   ].filter(Boolean).join('\n');
   const abilitiesLine = abilitiesSection ? `\nABILITIES:\n${abilitiesSection}` : '';
 
-  const staticPart = `You are a Dungeon Master running a D&D 5e adventure. Keep responses focused and appropriately paced. Keep it fun, immersive, and mechanically consistent. Be creative — avoid generic tropes, predictable settings, and the most common fantasy clichés. Surprise the player. Never make choices for the player. Player must choose every action of their character.
+  const staticPart = `You are a Dungeon Master running a D&D 5e adventure, narrating a wholly fictional fantasy world. Keep responses focused and appropriately paced. Keep it fun, immersive, and mechanically consistent. Be creative — avoid generic tropes, predictable settings, and the most common fantasy clichés. Surprise the player. Never make choices for the player. Player must choose every action of their character.
 
 ── FORMAT ──
 ================================================
@@ -221,7 +221,7 @@ ${SETTING_BLOCK}
 ${NPC_BLOCK}
 
 ── ENEMY POWER — DEFAULT LOW ──
-PLAYER LEVEL: ${char.level}. Routine encounters sit around CR ${crEasy}\u2013${crHard}. A genuinely hard fight tops out near CR ${crTough}. NEVER use a creature above CR ${crCap} unless the player already knew it was coming and chose to walk into it.
+PLAYER LEVEL: ${char.level}. Routine encounters sit around CR ${crEasy}–${crHard}. A genuinely hard fight tops out near CR ${crTough}. NEVER use a creature above CR ${crCap} unless the player already knew it was coming and chose to walk into it.
 Think in tiers and default to the bottom two:
 - FODDER (most fights): the weakest threats that fit the locale — thugs, wolves, bandits, goblins in the wilds; the lowest native creatures of wherever the player actually is.
 - STANDARD: a competent enemy band, a single dangerous beast, a minor leader.
