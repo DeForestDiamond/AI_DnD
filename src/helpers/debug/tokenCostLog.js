@@ -15,8 +15,6 @@ export function normalizeUsage(modelKey, data) {
   const cacheRead = num(u.cache_read_input_tokens ?? details.cached_tokens);
   const cacheWrite = num(u.cache_creation_input_tokens);
   const reportedInput = num(u.input_tokens ?? u.prompt_tokens);
-  // Anthropic reports fresh input separately from cache tokens. OpenAI/xAI report
-  // input_tokens including cached tokens, so subtract cached tokens for billing.
   const fresh = (u.cache_read_input_tokens != null || u.cache_creation_input_tokens != null)
     ? reportedInput
     : Math.max(0, reportedInput - cacheRead);
@@ -24,8 +22,6 @@ export function normalizeUsage(modelKey, data) {
   const reasoning = num(u.output_tokens_details?.reasoning_tokens ?? u.reasoning_tokens);
   const rate = PRICING[modelKey] || PRICING.sonnet;
   const estimatedCost = (fresh * rate.input + cacheWrite * rate.cacheWrite + cacheRead * rate.cacheRead + output * rate.output) / 1e6;
-  // xAI can expose billed cost directly. Prefer it when present; ticks are one
-  // billionth of a USD according to xAI's cost-tracking response shape.
   const ticks = u.cost_in_usd_ticks ?? data?.cost_in_usd_ticks;
   const reportedCost = ticks != null ? num(ticks) / 1e9 : null;
   return {
@@ -45,7 +41,7 @@ export function makeUsageEntry({ modelKey, modelConfig, requestType='gameplay', 
     id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
     timestamp: Date.now(),
     provider: modelConfig?.provider || 'unknown',
-    model: modelConfig?.model || modelKey || 'unknown',
+    model: data?.model || data?.rawData?.model || modelConfig?.model || modelKey || 'unknown',
     modelKey,
     requestType,
     ...usage,
@@ -54,7 +50,11 @@ export function makeUsageEntry({ modelKey, modelConfig, requestType='gameplay', 
   };
 }
 
-const names = xs => (Array.isArray(xs) ? xs : []).map(x => typeof x === 'string' ? x : (x?.name || x?.title || '')).filter(Boolean);
+const names = xs => {
+  if (Array.isArray(xs)) return xs.map(x => typeof x === 'string' ? x : (x?.name || x?.title || '')).filter(Boolean);
+  if (xs && typeof xs === 'object') return Object.keys(xs);
+  return [];
+};
 const mapNames = xs => new Set(names(xs));
 const diffNames = (before, after) => {
   const a = mapNames(before), b = mapNames(after);
@@ -63,22 +63,28 @@ const diffNames = (before, after) => {
     removed: [...a].filter(x => !b.has(x)),
   };
 };
-
 const stable = value => JSON.stringify(value ?? null);
+const constructState = c => {
+  const inv = Array.isArray(c.inventory) ? c.inventory : [];
+  const owned = new Set(inv.map(x => typeof x === 'string' ? x : x?.name).filter(Boolean));
+  return Object.fromEntries(Object.entries(c.items || {}).filter(([name,d]) => d?.type === 'construct' && owned.has(name)));
+};
+const companionEquipment = c => Object.fromEntries(Object.entries(c.companions || {}).map(([name,d]) => [name, d?.slots || {}]));
 
 export function snapshotCacheState(char, summary='') {
   const c = char || {};
+  const excl = c.contextExclusions || {};
   return {
     character: {
-      level:c.level, classLevels:c.classLevels, subclasses:c.subclasses, stats:c.stats,
+      name:c.name, level:c.level, classLevels:c.classLevels, subclasses:c.subclasses,
       abilities:c.abilities, deity:c.deity, disposition:c.disposition, directives:c.directives,
-      race:c.race?.name || c.race, cls:c.cls?.name || c.cls,
+      race:c.race?.name || c.race, cls:c.cls?.name || c.cls, bio:c.bio, appearance:c.appearance,
     },
-    gear: { slots:c.slots, companionSlots:(c.companions || []).map(x=>({name:x.name,slots:x.slots,equipment:x.equipment})), constructs:c.constructs },
+    gear: { slots:c.slots, companionEquipment:companionEquipment(c), constructs:constructState(c) },
     inventory: { inventory:c.inventory, stash:c.stash, bags:c.bags },
-    companions: c.companions,
-    npcs: c.npcs,
-    towns: c.towns,
+    companions: { records:c.companions, exclusions:excl.companions },
+    npcs: { records:c.npcs, exclusions:excl.npcs },
+    towns: { records:c.towns, exclusions:excl.towns },
     story: { adventure:c.adventure, arc:c.arc, objectives:c.arcObjectives, goal:c.arcGoal },
     history: summary,
   };
@@ -89,23 +95,22 @@ export function diffCacheState(prev, next) {
   const out = [];
   const push = (section, action, detail='') => out.push({ section, action, detail });
 
-  if (stable(prev.character) !== stable(next.character)) push('character','Character/static state changed');
-  if (stable(prev.gear) !== stable(next.gear)) push('gear','Equipment or construct configuration changed');
-  if (stable(prev.inventory) !== stable(next.inventory)) push('inventory','Inventory, stash, or bag contents changed');
+  if (stable(prev.character) !== stable(next.character)) push('character','Level, class, spell/skill, bio, appearance, disposition, directives, or other static character state changed');
+  if (stable(prev.gear) !== stable(next.gear)) push('gear','Player/companion equipment or construct definition/status changed');
+  if (stable(prev.inventory) !== stable(next.inventory)) push('inventory','Inventory, stash, bag, or item quantity changed');
 
-  if (stable(prev.companions) !== stable(next.companions)) {
-    const d=diffNames(prev.companions,next.companions);
-    push('companions','Companion state changed',[d.added.length?`added: ${d.added.join(', ')}`:'',d.removed.length?`removed: ${d.removed.join(', ')}`:''].filter(Boolean).join(' · '));
+  for (const section of ['companions','npcs','towns']) {
+    if (stable(prev[section]) !== stable(next[section])) {
+      const d = diffNames(prev[section]?.records, next[section]?.records);
+      const details = [
+        d.added.length ? `added: ${d.added.join(', ')}` : '',
+        d.removed.length ? `removed: ${d.removed.join(', ')}` : '',
+        stable(prev[section]?.exclusions) !== stable(next[section]?.exclusions) ? 'selection/context inclusion changed' : '',
+      ].filter(Boolean).join(' · ');
+      push(section, section === 'npcs' ? 'Persistent NPC state changed' : section === 'towns' ? 'Town/world record changed' : 'Companion state changed', details);
+    }
   }
-  if (stable(prev.npcs) !== stable(next.npcs)) {
-    const d=diffNames(prev.npcs,next.npcs);
-    push('npcs','Persistent NPC state changed',[d.added.length?`added: ${d.added.join(', ')}`:'',d.removed.length?`removed: ${d.removed.join(', ')}`:''].filter(Boolean).join(' · '));
-  }
-  if (stable(prev.towns) !== stable(next.towns)) {
-    const d=diffNames(prev.towns,next.towns);
-    push('towns','Town/world record changed',[d.added.length?`added: ${d.added.join(', ')}`:'',d.removed.length?`removed: ${d.removed.join(', ')}`:''].filter(Boolean).join(' · '));
-  }
-  if (stable(prev.story) !== stable(next.story)) push('story','Adventure, antagonist, arc, or objectives changed');
-  if (prev.history !== next.history) push('history','Story summary changed');
+  if (stable(prev.story) !== stable(next.story)) push('story','Adventure, antagonist, arc, objective, or story-driver state changed');
+  if (prev.history !== next.history) push('history','Story summary generated or compressed');
   return out;
 }
