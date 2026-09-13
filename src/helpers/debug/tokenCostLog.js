@@ -23,7 +23,7 @@ export function normalizeUsage(modelKey, data) {
   const rate = PRICING[modelKey] || PRICING.sonnet;
   const estimatedCost = (fresh * rate.input + cacheWrite * rate.cacheWrite + cacheRead * rate.cacheRead + output * rate.output) / 1e6;
   const ticks = u.cost_in_usd_ticks ?? data?.cost_in_usd_ticks;
-  const reportedCost = ticks != null ? num(ticks) / 1e9 : null;
+  const reportedCost = ticks != null ? num(ticks) / 1e10 : null;
   return {
     inputTokens: fresh + cacheRead + cacheWrite,
     freshTokens: fresh,
