@@ -1,9 +1,11 @@
 import { callGptNpcManager } from '../openai/npcs.js';
 import { callGptTownManager } from '../openai/towns.js';
+import { callGrokNpcManager } from '../xai/npcs.js';
+import { callGrokTownManager } from '../xai/towns.js';
 import { callAnthropicNpcManager } from '../anthropic/npcs.js';
 import { callAnthropicTownManager } from '../anthropic/towns.js';
 
-export const createExtractionManager = ({ apiKey, openAiApiKey, fullLogRef, charRef, updateChar, selectedModel, MODEL_CONFIGS, log, logUsage }) => {
+export const createExtractionManager = ({ apiKey, openAiApiKey, xAiApiKey, fullLogRef, charRef, updateChar, selectedModel, MODEL_CONFIGS, log, logUsage }) => {
   // ── NPC extraction ─────────────────────────────────────────────────────────
   // Player-driven: reads a range of RAW fullLog messages (primary text, not the
   // degraded summary) via a dedicated API call and writes structured entries
@@ -49,6 +51,33 @@ export const createExtractionManager = ({ apiKey, openAiApiKey, fullLogRef, char
       const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions } };
       const applied = [];
       for (const [n, e] of Object.entries(gptFound)) {
+        const entry = { location: String(e?.location ?? ''), relationship: String(e?.relationship ?? ''), desc: String(e?.desc ?? '') };
+        const inComp = Object.keys(c.companions).find(k => k.toLowerCase() === n.toLowerCase());
+        const inNpc = Object.keys(c.npcs).find(k => k.toLowerCase() === n.toLowerCase());
+        if (inComp) c.companions[inComp] = { ...c.companions[inComp], ...entry };
+        else if (inNpc && !asCompanion) c.npcs[inNpc] = { ...c.npcs[inNpc], ...entry };
+        else if (inNpc && asCompanion) { c.companions[n] = { ...c.npcs[inNpc], ...entry }; delete c.npcs[inNpc]; }
+        else c[group][n] = entry;
+        applied.push(n);
+      }
+      updateChar(c);
+      log(`[NPC] Saved: ${applied.join(', ')}`);
+      return { applied };
+    }
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'xai') {
+      const xaiKey = xAiApiKey || import.meta.env.VITE_XAI_KEY;
+      const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
+      const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
+      const { found: grokFound, usage: grokUsage } = await callGrokNpcManager({
+        model: MODEL_CONFIGS[selectedModel].model,
+        apiKey: xaiKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
+      });
+      log(`[HELPER] NPC manager via Grok ${(grokUsage?.input_tokens || 0).toLocaleString()} in / ${(grokUsage?.output_tokens || 0).toLocaleString()} out`);
+      const names = Object.keys(grokFound || {});
+      if (!names.length) { log('[NPC] Nothing found in range'); return { applied: [] }; }
+      const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions } };
+      const applied = [];
+      for (const [n, e] of Object.entries(grokFound)) {
         const entry = { location: String(e?.location ?? ''), relationship: String(e?.relationship ?? ''), desc: String(e?.desc ?? '') };
         const inComp = Object.keys(c.companions).find(k => k.toLowerCase() === n.toLowerCase());
         const inNpc = Object.keys(c.npcs).find(k => k.toLowerCase() === n.toLowerCase());
@@ -128,6 +157,30 @@ export const createExtractionManager = ({ apiKey, openAiApiKey, fullLogRef, char
       const applied = [];
       const asDict = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
       for (const [n, e] of Object.entries(gptFound)) {
+        const entry = { desc: String(e?.desc ?? ''), status: String(e?.status ?? ''), notable_locations: asDict(e?.notable_locations), minor_residents: asDict(e?.minor_residents) };
+        const hit = Object.keys(c.towns).find(k => k.toLowerCase() === n.toLowerCase());
+        if (hit) c.towns[hit] = { ...c.towns[hit], ...entry };
+        else c.towns[n] = entry;
+        applied.push(n);
+      }
+      updateChar(c);
+      log(`[TOWN] Saved: ${applied.join(', ')}`);
+      return { applied };
+    }
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'xai') {
+      const xaiKey = xAiApiKey || import.meta.env.VITE_XAI_KEY;
+      const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
+      const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
+      const { found: grokFound, usage: grokUsage } = await callGrokTownManager({
+        model: MODEL_CONFIGS[selectedModel].model,
+        apiKey: xaiKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
+      });
+      log(`[HELPER] town manager via Grok ${(grokUsage?.input_tokens || 0).toLocaleString()} in / ${(grokUsage?.output_tokens || 0).toLocaleString()} out`);
+      if (!Object.keys(grokFound || {}).length) { log('[TOWN] Nothing found in range'); return { applied: [] }; }
+      const c = { ...charRef.current, towns: { ...charRef.current.towns } };
+      const applied = [];
+      const asDict = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+      for (const [n, e] of Object.entries(grokFound)) {
         const entry = { desc: String(e?.desc ?? ''), status: String(e?.status ?? ''), notable_locations: asDict(e?.notable_locations), minor_residents: asDict(e?.minor_residents) };
         const hit = Object.keys(c.towns).find(k => k.toLowerCase() === n.toLowerCase());
         if (hit) c.towns[hit] = { ...c.towns[hit], ...entry };

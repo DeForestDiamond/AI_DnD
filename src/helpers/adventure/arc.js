@@ -48,12 +48,34 @@ const parseArc = (raw, cut = false) => {
   return { goal, objectives: first ? [{ text: first, done: false }] : [] };
 };
 
-export async function generateAdventureArc({ antagonist, character, modelConfig, anthropicApiKey, openAiApiKey }) {
+export async function generateAdventureArc({ antagonist, character, modelConfig, anthropicApiKey, openAiApiKey, xAiApiKey }) {
   if (!antagonist) throw new Error('No antagonist to build a campaign around');
   if (!character) throw new Error('No character available for arc generation');
   const config = modelConfig || {};
   const provider = config.provider || 'anthropic';
   const { system, user } = buildPrompt(antagonist, character);
+
+  if (provider === 'xai') {
+    const key = xAiApiKey || import.meta.env.VITE_XAI_KEY;
+    if (!key) throw new Error('xAI API key is missing');
+    const res = await fetch('https://api.x.ai/v1/responses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: config.model,
+        reasoning: { effort: config.reasoning_effort || 'low' },
+        max_output_tokens: 1400,
+        input: [
+          { role: 'developer', content: [{ type: 'input_text', text: system }] },
+          { role: 'user', content: [{ type: 'input_text', text: user }] },
+        ],
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || `xAI API error ${res.status}`);
+    const result = parseArc(responseText(data), data.status === 'incomplete');
+    return { ...result, usage: data.usage, rawData: data };
+  }
 
   if (provider === 'openai') {
     const key = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;

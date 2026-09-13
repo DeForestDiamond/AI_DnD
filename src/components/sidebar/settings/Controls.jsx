@@ -6,6 +6,7 @@ import {
   getPersistentOpenAiMap,
   setPersistentOpenAiMap,
 } from '../../../helpers/openai/pendingImage.js';
+import { clearPersistentXaiMap, setPersistentXaiMap } from '../../../helpers/xai/pendingImage.js';
 
 export function CampaignMapSettings() {
   const [campaignMap, setCampaignMap] = useState(() => getPersistentOpenAiMap());
@@ -26,6 +27,7 @@ export function CampaignMapSettings() {
       const next = { name: file.name || 'campaign map', dataUrl };
       setCampaignMap(next);
       setPersistentOpenAiMap(next);
+      setPersistentXaiMap(next);
     };
     reader.readAsDataURL(file);
   };
@@ -37,13 +39,14 @@ export function CampaignMapSettings() {
     if (!window.confirm('Clear the persistent campaign map?')) return;
     setCampaignMap(null);
     clearPersistentOpenAiMap();
+    clearPersistentXaiMap();
     if (fileRef.current) fileRef.current.value = '';
   };
 
   return (
     <CollapsibleSection title="🗺️ CAMPAIGN MAP" count={campaignMap ? 'ACTIVE' : undefined} defaultOpen={false}>
       <div style={{fontSize:10,color:colors.textFaint,marginBottom:7,lineHeight:1.45}}>
-        Persistent visual reference for GPT Terra / Sol. The map is sent before changing conversation history so its visual context can benefit from prompt caching. It is not written into campaign saves or summaries.
+        Persistent visual reference for GPT Terra / Sol and Grok. The map is sent before changing conversation history so its visual context can benefit from prompt caching. It is not written into campaign saves or summaries.
       </div>
       <input ref={fileRef} type="file" accept="image/*" onChange={handlePick} style={{display:'none'}} />
       {campaignMap ? (

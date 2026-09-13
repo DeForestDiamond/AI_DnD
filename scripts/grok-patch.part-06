@@ -1,4 +1,0 @@
-t')}
-             pacing={character.pacing || 'normal'}
-             lootDestination={character.lootDestination || 'inventory'}
-             onToggleLootDestination={() => {

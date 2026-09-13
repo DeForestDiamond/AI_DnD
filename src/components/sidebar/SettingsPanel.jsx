@@ -79,8 +79,8 @@ export function SettingsPanel({
     <button onClick={onSaveClick} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>💾 Save / Load</button>
 
     {onToggleModel && (
-      <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:(selectedModel==='gpt'||selectedModel==='terra')?'#7aa7ff':colors.border}}>
-        {selectedModel==='sonnet' ? '✨ DM: Sonnet' : selectedModel==='haiku' ? '⚡ DM: Haiku' : selectedModel==='gpt' ? '🧠 DM: GPT Sol' : '🌍 DM: GPT Terra'}
+      <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:(selectedModel==='gpt'||selectedModel==='terra')?'#7aa7ff':selectedModel==='grok'?'#9ad17b':colors.border}}>
+        {selectedModel==='sonnet' ? '✨ DM: Sonnet' : selectedModel==='haiku' ? '⚡ DM: Haiku' : selectedModel==='gpt' ? '🧠 DM: GPT Sol' : selectedModel==='terra' ? '🌍 DM: GPT Terra' : '🚀 DM: Grok 4.3'}
       </button>
     )}
 

@@ -1,11 +1,12 @@
 import { callGptStoryEntry, callGptArchive } from '../openai/history.js';
+import { callGrokStoryEntry, callGrokArchive } from '../xai/history.js';
 import { callAnthropicStoryEntry, callAnthropicArchive } from '../anthropic/history.js';
 
 export const parseSummary = (raw) => { if(!raw)return {chunks:[],entries:[]}; try{const p=JSON.parse(raw);if(p.chunks!==undefined)return p;}catch{} return {chunks:[],entries:[{id:1,type:'entry',text:raw}]}; };
 export const serializeSummary = obj => JSON.stringify(obj);
 export const formatSummaryForApi = (summaryObj) => { const activeChunks=summaryObj.chunks.filter(c=>!c.excluded), activeEntries=summaryObj.entries.filter(e=>!e.excluded); if(!activeChunks.length&&!activeEntries.length)return ''; const parts=[]; activeChunks.forEach(c=>parts.push(`[ARCHIVED HISTORY — ${c.sessions}]\n${c.text}`)); activeEntries.forEach((e,i)=>parts.push(`[RECENT SUMMARY ${i+1}]\n${e.text}`)); return parts.join('\n\n'); };
 
-export const createSummaryManager = ({ lastSummarizedAt, storySummaryRef, setStorySummary, charRef, fullLogRef, save, selectedModel, MODEL_CONFIGS, apiKey, openAiApiKey, log, logUsage, SUMMARIZE_AFTER, KEEP_RECENT, ENTRIES_BEFORE_COMPRESS, COMPRESS_KEEP_RECENT_ENTRIES }) => {
+export const createSummaryManager = ({ lastSummarizedAt, storySummaryRef, setStorySummary, charRef, fullLogRef, save, selectedModel, MODEL_CONFIGS, apiKey, openAiApiKey, xAiApiKey, log, logUsage, SUMMARIZE_AFTER, KEEP_RECENT, ENTRIES_BEFORE_COMPRESS, COMPRESS_KEEP_RECENT_ENTRIES }) => {
   const initSummarizedAt = (loadedMsgCount, loadedSummary = '') => {
     if (loadedSummary) {
       // If we have an existing summary, calculate how many messages it covers
@@ -87,6 +88,22 @@ export const createSummaryManager = ({ lastSummarizedAt, storySummaryRef, setSto
         return entriesToCompress.map(e => e.text).join('\n\n');
       }
     }
+    if (MODEL_CONFIGS[selectedModel]?.provider === 'xai') {
+      try {
+        const xaiKey = xAiApiKey || import.meta.env.VITE_XAI_KEY;
+        const { text: grokArchiveText, usage: grokArchiveUsage } = await callGrokArchive({
+          model: MODEL_CONFIGS[selectedModel].model,
+          apiKey: xaiKey,
+          entriesText: entriesToCompress.map(e => e.text).join('\n\n'),
+        });
+        log(`[HELPER] archive via Grok ${(grokArchiveUsage?.input_tokens || 0).toLocaleString()} in / ${(grokArchiveUsage?.output_tokens || 0).toLocaleString()} out`);
+        log(`[SUMMARY] Archived chunk created: ${grokArchiveText.length} chars`);
+        return grokArchiveText;
+      } catch (e) {
+        log('[SUMMARY] Grok compression failed: ' + e.message);
+        return entriesToCompress.map(e => e.text).join('\n\n');
+      }
+    }
     try {
       const { text, usage } = await callAnthropicArchive({
         apiKey: key, entriesText: entriesToCompress.map(e => e.text).join('\n\n'),
@@ -134,6 +151,7 @@ export const createSummaryManager = ({ lastSummarizedAt, storySummaryRef, setSto
       // Step 1 — write new entry for recent events
       let gptStoryEntry = '';
       let gptStoryUsage = null;
+      let grokStoryEntry = '';
       if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
         const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
         const gptTranscript = historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
@@ -152,8 +170,23 @@ export const createSummaryManager = ({ lastSummarizedAt, storySummaryRef, setSto
         const gOut = gptStoryUsage?.output_tokens || 0;
         log(`[HELPER] story log via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
       }
+      if (MODEL_CONFIGS[selectedModel]?.provider === 'xai') {
+        const xaiKey = xAiApiKey || import.meta.env.VITE_XAI_KEY;
+        const transcript = historyForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
+        const grokStory = await callGrokStoryEntry({
+          model: MODEL_CONFIGS[selectedModel].model,
+          apiKey: xaiKey,
+          playerName: charRef.current?.name || 'the adventurer',
+          currentLocation: charRef.current?.currentLocation || 'unknown',
+          priorSummary: storySummaryRef.current || '',
+          transcript,
+          followingTranscript: followingForSummary.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n'),
+        });
+        grokStoryEntry = grokStory.text;
+        log(`[HELPER] story log via Grok ${(grokStory.usage?.input_tokens || 0).toLocaleString()} in / ${(grokStory.usage?.output_tokens || 0).toLocaleString()} out`);
+      }
       let anthropicStory = null;
-      if (!gptStoryEntry) {
+      if (!gptStoryEntry && !grokStoryEntry) {
         anthropicStory = await callAnthropicStoryEntry({
           apiKey: key,
           playerName: charRef.current?.name || 'the adventurer',
@@ -164,7 +197,7 @@ export const createSummaryManager = ({ lastSummarizedAt, storySummaryRef, setSto
         });
         if (anthropicStory.usage) logUsage('story log entry', { usage: anthropicStory.usage });
       }
-      const newEntry = gptStoryEntry || anthropicStory?.text || '';
+      const newEntry = gptStoryEntry || grokStoryEntry || anthropicStory?.text || '';
       if (!newEntry) { lastSummarizedAt.current = prevSummarizedAt; return; }
 
       // From here the entry is real. Past this point we NEVER rewind
