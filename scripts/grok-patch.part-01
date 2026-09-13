@@ -1,0 +1,78 @@
+es structured entries
+@@ -62,6 +64,33 @@
+       log(`[NPC] Saved: ${applied.join(', ')}`);
+       return { applied };
+     }
++    if (MODEL_CONFIGS[selectedModel]?.provider === 'xai') {
++      const xaiKey = xAiApiKey || import.meta.env.VITE_XAI_KEY;
++      const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
++      const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
++      const { found: grokFound, usage: grokUsage } = await callGrokNpcManager({
++        model: MODEL_CONFIGS[selectedModel].model,
++        apiKey: xaiKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
++      });
++      log(`[HELPER] NPC manager via Grok ${(grokUsage?.input_tokens || 0).toLocaleString()} in / ${(grokUsage?.output_tokens || 0).toLocaleString()} out`);
++      const names = Object.keys(grokFound || {});
++      if (!names.length) { log('[NPC] Nothing found in range'); return { applied: [] }; }
++      const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions } };
++      const applied = [];
++      for (const [n, e] of Object.entries(grokFound)) {
++        const entry = { location: String(e?.location ?? ''), relationship: String(e?.relationship ?? ''), desc: String(e?.desc ?? '') };
++        const inComp = Object.keys(c.companions).find(k => k.toLowerCase() === n.toLowerCase());
++        const inNpc = Object.keys(c.npcs).find(k => k.toLowerCase() === n.toLowerCase());
++        if (inComp) c.companions[inComp] = { ...c.companions[inComp], ...entry };
++        else if (inNpc && !asCompanion) c.npcs[inNpc] = { ...c.npcs[inNpc], ...entry };
++        else if (inNpc && asCompanion) { c.companions[n] = { ...c.npcs[inNpc], ...entry }; delete c.npcs[inNpc]; }
++        else c[group][n] = entry;
++        applied.push(n);
++      }
++      updateChar(c);
++      log(`[NPC] Saved: ${applied.join(', ')}`);
++      return { applied };
++    }
+     const { found, usage: anthropicUsage } = await callAnthropicNpcManager({
+       apiKey: key, playerName, messages: apiMsgs, name: trimmedName,
+       existing: existing ? { [existing[0]]: existing[1] } : null, note,
+@@ -131,6 +160,30 @@
+         const entry = { desc: String(e?.desc ?? ''), status: String(e?.status ?? ''), notable_locations: asDict(e?.notable_locations), minor_residents: asDict(e?.minor_residents) };
+         const hit = Object.keys(c.towns).find(k => k.toLowerCase() === n.toLowerCase());
+         if (hit) c.towns[hit] = { ...c.towns[hit], ...entry };
++        else c.towns[n] = entry;
++        applied.push(n);
++      }
++      updateChar(c);
++      log(`[TOWN] Saved: ${applied.join(', ')}`);
++      return { applied };
++    }
++    if (MODEL_CONFIGS[selectedModel]?.provider === 'xai') {
++      const xaiKey = xAiApiKey || import.meta.env.VITE_XAI_KEY;
++      const transcript = apiMsgs.map(m => `${m.role === 'assistant' ? 'DM' : 'PLAYER'}: ${m.content}`).join('\n\n');
++      const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
++      const { found: grokFound, usage: grokUsage } = await callGrokTownManager({
++        model: MODEL_CONFIGS[selectedModel].model,
++        apiKey: xaiKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
++      });
++      log(`[HELPER] town manager via Grok ${(grokUsage?.input_tokens || 0).toLocaleString()} in / ${(grokUsage?.output_tokens || 0).toLocaleString()} out`);
++      if (!Object.keys(grokFound || {}).length) { log('[TOWN] Nothing found in range'); return { applied: [] }; }
++      const c = { ...charRef.current, towns: { ...charRef.current.towns } };
++      const applied = [];
++      const asDict = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
++      for (const [n, e] of Object.entries(grokFound)) {
++        const entry = { desc: String(e?.desc ?? ''), status: String(e?.status ?? ''), notable_locations: asDict(e?.notable_locations), minor_residents: asDict(e?.minor_residents) };
++        const hit = Object.keys(c.towns).find(k => k.toLowerCase() === n.toLowerCase());
++        if (hit) c.towns[hit] = { ...c.towns[hit], ...entry };
+         else c.towns[n] = entry;
+         applied.push(n);
+       }
+--- a/src/helpers/history/manager.js
++++ b/src/helpers/history/manager.js
+@@ -1,11 +1,12 @@
+ import { callGptStoryEntry, callGptArchive } from '../openai/history.js';
++import { callGrokStoryEntry, callGrokArchive } from '../xai/history.js';
+ import { callAnthropicStoryEntry, callAnthropicArchive } from '../anthropic/history.js';
+ 
+ export const parseSummary = (raw) => { if(!raw)return {chunks:[],entries:[]}; try{const p=JSON.parse(raw);if(p.chunks!==undefined)return p;}catch{} return {chunks:[],entries:[{id:1,type:'entry',text:raw}]}; };
+ export const serializeSummary = obj => JSON.stringify(obj);
+ export const formatSummaryForApi = (summaryObj) => { const activeChunks=summaryObj.chunks.filter(c=>!c.excluded), activeEntries=summaryObj.entries.filter(e=>!e.excluded); if(!activeChunks.length&&!activeEntries.length)return ''; const parts=[]; activeChunks.forEach(c=>parts.push(`[ARCHIVED HISTORY — ${c.sessions}]\n${c.text}`)); activeEntries.forEach((e,i)=>parts.push(`[RECENT SUMMARY ${i+1}]\n${e.text}`)); return parts.join('\n\n'); };
+ 
+-export const createSummaryManager = ({ lastSummarizedAt, storySummaryRef, setStorySummary, charRef, fullLogRef, save, selectedModel, MODEL_CONFIGS, apiKey, openAiApiKey, log, logUsage, SUMMARIZE_AFTER, KE
