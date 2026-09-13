@@ -1,0 +1,115 @@
+ror ${res.status}`);
++    const result = parseArc(responseText(data), data.status === 'incomplete');
++    return { ...result, usage: data.usage, rawData: data };
++  }
++
+   if (provider === 'openai') {
+     const key = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
+     if (!key) throw new Error('OpenAI API key is missing');
+--- a/src/components/InputBar.jsx
++++ b/src/components/InputBar.jsx
+@@ -1,6 +1,7 @@
+ import { useState, useRef, useEffect } from 'react';
+ import { colors, fonts, btn } from '../styles/theme.js';
+ import { clearPendingOpenAiImage, installOpenAiImageInterceptor, setPendingOpenAiImage } from '../helpers/openai/pendingImage.js';
++import { clearPendingXaiImage, installXaiImageInterceptor, setPendingXaiImage } from '../helpers/xai/pendingImage.js';
+ 
+ // USD per million tokens. Cache writes are billed separately from cache reads.
+ // OpenAI rates here are the standard short-context API rates used by this app's
+@@ -10,7 +11,8 @@
+   sonnet:   { input: 3.0, output: 15.0, cacheWrite: 3.75,  cacheRead: 0.30 },
+   haiku:    { input: 1.0, output: 5.0,  cacheWrite: 1.25,  cacheRead: 0.10 },
+   gpt:      { input: 5.0, output: 30.0, cacheWrite: 6.25,  cacheRead: 0.50 },
+-  gptTerra: { input: 2.5, output: 15.0, cacheWrite: 3.125, cacheRead: 0.25 },
++  terra:    { input: 2.5, output: 15.0, cacheWrite: 3.125, cacheRead: 0.25 },
++  grok:     { input: 1.25, output: 2.50, cacheWrite: 1.25, cacheRead: 0.20 },
+ };
+ 
+ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, tokenUsage, selectedModel }) {
+@@ -19,9 +21,12 @@
+   const inputRef = useRef(null);
+   const fileRef = useRef(null);
+   const openAiModel = selectedModel === 'terra' || selectedModel === 'gpt';
++  const xaiModel = selectedModel === 'grok';
++  const imageModel = openAiModel || xaiModel;
+ 
+   useEffect(() => {
+     installOpenAiImageInterceptor();
++    installXaiImageInterceptor();
+   }, []);
+ 
+   useEffect(() => {
+@@ -29,15 +34,16 @@
+   }, [loading]);
+ 
+   // If the player switches back to Claude before sending, discard only the
+-  // one-turn OpenAI screenshot. The persistent campaign map is managed safely
++  // one-turn provider screenshot. The persistent campaign map is managed safely
+   // from Settings and remains ready for the next Terra/Sol turn.
+   useEffect(() => {
+-    if (!openAiModel && attachment) {
++    if (!imageModel && attachment) {
+       setAttachment(null);
+       clearPendingOpenAiImage();
++      clearPendingXaiImage();
+       if (fileRef.current) fileRef.current.value = '';
+     }
+-  }, [openAiModel, attachment]);
++  }, [imageModel, attachment]);
+ 
+   const handleImagePick = (e) => {
+     const file = e.target.files?.[0];
+@@ -55,7 +61,8 @@
+       if (!dataUrl) return;
+       const next = { name: file.name || 'screenshot', dataUrl };
+       setAttachment(next);
+-      setPendingOpenAiImage(next);
++      if (xaiModel) setPendingXaiImage(next);
++      else setPendingOpenAiImage(next);
+     };
+     reader.readAsDataURL(file);
+   };
+@@ -63,6 +70,7 @@
+   const removeAttachment = () => {
+     setAttachment(null);
+     clearPendingOpenAiImage();
++    clearPendingXaiImage();
+     if (fileRef.current) fileRef.current.value = '';
+   };
+ 
+@@ -72,7 +80,7 @@
+     onSend(text);
+     setInput('');
+     // Do NOT clear the pending transport here — callDM consumes it when the
+-    // actual OpenAI request is assembled. Only clear the local preview.
++    // actual provider request is assembled. Only clear the local preview.
+     setAttachment(null);
+     if (fileRef.current) fileRef.current.value = '';
+   };
+@@ -116,7 +124,7 @@
+             🎙
+           </button>
+         )}
+-        {openAiModel && (
++        {imageModel && (
+           <>
+             <input ref={fileRef} type="file" accept="image/*" onChange={handleImagePick} style={{display:'none'}} />
+             <button onClick={() => !loading && fileRef.current?.click()} disabled={loading} title="Attach screenshot for this turn"
+@@ -151,7 +159,7 @@
+       </div>
+       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
+         <div style={{fontSize:10,color:colors.textDead,fontFamily:fonts.display,letterSpacing:1}}>
+-          {loading ? 'Tap ⏹ Stop to cancel' : `ACT to send · Shift+Enter for new line${sttSupported?' · 🎙 speak':''}${openAiModel?' · 🖼️ turn screenshot':''} · 💾 save in sidebar`}
++          {loading ? 'Tap ⏹ Stop to cancel' : `ACT to send · Shift+Enter for new line${sttSupported?' · 🎙 speak':''}${imageModel?' · 🖼️ turn screenshot':''} · 💾 save in sidebar`}
+         </div>
+         {voiceSupported && (
+           <div style={{display:'flex',gap:6}}>
+--- a/src/components/sidebar/SettingsPanel.jsx
++++ b/src/components/sidebar/SettingsPanel.jsx
+@@ -79,8 +79,8 @@
+     <button onClick={onSaveClick} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>💾 Save / Load</button>
+ 
+     {onToggleModel && (
+-      <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:(selectedModel==='gpt'||selectedModel==='terra')?'#7aa7ff':colors.border}}>
+-        {selectedModel==='sonnet' ? '✨ DM: Sonnet' : selectedModel==='haiku' ? '⚡ DM: Haiku' : selectedModel==='gpt' ? '🧠 DM: GPT Sol' : '🌍 DM: GPT Terra'}
++      <button onClick={onToggleModel} style={{...btn(false),width:'10
