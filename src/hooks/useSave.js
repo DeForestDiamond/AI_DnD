@@ -42,7 +42,7 @@ export function parseSaveJSON(raw) {
   }
 }
 
-export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, getSettings, onLoadFull, onLoadCharacter }) {
+export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, tokenCostLogRef, pendingCacheChangesRef, getSettings, onLoadFull, onLoadCharacter }) {
 
   // Inventory and stash are already compact [{name, qty}] stacks in memory.
   // Save the character exactly as it exists; migration handles older compressed
@@ -58,9 +58,14 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
     character: type === 'character'
       ? (({ arc, ...rest }) => compressCharForSave({ ...rest, _v: SAVE_VERSION }))(charRef.current)
       : compressCharForSave({ ...charRef.current, _v: SAVE_VERSION }),
-    // Full saves carry the debug log so cost tracing and diagnostics survive a
-    // reload. Autosave writes its own payload and is unaffected.
-    ...(type === 'fullsave' ? { messages, storySummary: storySummaryRef.current || '', debugLog: debugLogRef?.current || [], promptLog: promptLogRef?.current || null } : {}),
+    ...(type === 'fullsave' ? {
+      messages,
+      storySummary: storySummaryRef.current || '',
+      debugLog: debugLogRef?.current || [],
+      promptLog: promptLogRef?.current || null,
+      tokenCostLog: tokenCostLogRef?.current || [],
+      pendingCacheChanges: pendingCacheChangesRef?.current || [],
+    } : {}),
   });
 
   // ── File download ────────────────────────────────────────────────────────────
@@ -96,6 +101,8 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
         character: compressCharForSave({ ...char, _v: SAVE_VERSION }),
         messages: msgs,
         storySummary: storySummaryRef.current || '',
+        tokenCostLog: tokenCostLogRef?.current || [],
+        pendingCacheChanges: pendingCacheChangesRef?.current || [],
       }));
     } catch {}
   };
@@ -122,7 +129,14 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
     const { char: migrated, notes } = migrateCharacter(state.character);
     const isFullSave = state._type === 'fullsave' || !!state.messages;
     if (isFullSave) {
-      onLoadFull(migrated, state.messages || [], state.storySummary || '', state.settings);
+      onLoadFull(
+        migrated,
+        state.messages || [],
+        state.storySummary || '',
+        state.settings,
+        state.tokenCostLog || [],
+        state.pendingCacheChanges || []
+      );
     } else {
       onLoadCharacter(migrated, state.settings);
     }
