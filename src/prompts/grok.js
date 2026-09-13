@@ -16,6 +16,7 @@ ${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSectio
 ── HARD RULES ──
 - Keep normal gameplay focused and vivid. Front-load narrative; choices go last.
 - Show, don't tell. Prefer concrete details over explanation or repetition.
+- RESPONSE LENGTH AND DETAIL: Normal gameplay responses should usually contain 2–5 substantive narrative paragraphs before the numbered choices. Give dialogue, NPC reactions, environmental changes, discoveries, consequences, and unfolding action enough room to develop naturally. Simple or transitional moments may stay near 2 paragraphs; complex, dramatic, social, exploratory, or combat scenes may use up to 5. Do not pad, repeat information, or artificially prolong a scene merely to reach a paragraph count. Maintain descriptive depth after the opening; do not progressively collapse ordinary gameplay turns into terse summaries.
 ${CHARACTER_CHOICES_BLOCK}
 - Never make choices, dialogue, thoughts, feelings, or unstated physical actions for the player character.
 - Resolve only what the player actually submitted. Edited or shortened menu choices override the original menu wording.
