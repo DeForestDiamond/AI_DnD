@@ -2,7 +2,7 @@ import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
 import { TAGS_BLOCK } from './tags.js';
 
-// Initial Grok prompt scaffold. Keep provider tuning independent from Sol/Terra.
+// ── System Prompt — Grok ───────────────────────────────────────────────────────
 export const buildSystemPromptGrok = (char) => {
   const cb = buildCharBlock(char);
   const ctx = buildCtxSections(char);
