@@ -4,7 +4,7 @@ import { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/enco
 
 // Fresh-campaign chooser. Situation Adventure is deliberately separate from the
 // classic random/antagonist generator: its premise owns the starting context.
-export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAdventure, onManual, onChooseAntagonist, selectedModel = 'sonnet', onSelectModel, hasAnthropic = false, hasOpenAI = false, antagonists = [], defeatedAntagonists = [], adventures = [], completedAdventures = [] }) {
+export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAdventure, onManual, onChooseAntagonist, selectedModel = 'sonnet', onSelectModel, hasAnthropic = false, hasOpenAI = false, hasXAI = Boolean(import.meta.env.VITE_XAI_KEY), antagonists = [], defeatedAntagonists = [], adventures = [], completedAdventures = [] }) {
   const [mode, setMode] = useState(null);
   const [text, setText] = useState('');
   const [antagonist, setAntagonist] = useState('');
@@ -41,6 +41,7 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
     { id:'haiku', label:'⚡ Haiku', provider:'Anthropic', enabled:hasAnthropic },
     { id:'gpt', label:'🧠 GPT Sol', provider:'OpenAI', enabled:hasOpenAI },
     { id:'terra', label:'🌍 GPT Terra', provider:'OpenAI', enabled:hasOpenAI },
+    { id:'grok', label:'🚀 Grok 4.3', provider:'xAI', enabled:hasXAI },
   ];
 
   const card = { background:colors.bg,border:`1px solid ${colors.border}`,borderRadius:6,padding:16,cursor:'pointer',transition:'all 0.15s',textAlign:'left' };
