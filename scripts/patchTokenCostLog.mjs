@@ -2,10 +2,17 @@ import fs from 'node:fs';
 
 function patch(path, edits) {
   let s = fs.readFileSync(path, 'utf8');
-  for (const [from,to,label] of edits) {
-    const n = s.split(from).length - 1;
-    if (n !== 1) throw new Error(`${path}: expected one ${label}, found ${n}`);
-    s = s.replace(from,to);
+  for (const edit of edits) {
+    const [from,to,label,expected=1] = edit;
+    if (from instanceof RegExp) {
+      const matches = [...s.matchAll(new RegExp(from.source, from.flags.includes('g') ? from.flags : from.flags + 'g'))];
+      if (matches.length !== expected) throw new Error(`${path}: expected ${expected} ${label}, found ${matches.length}`);
+      s = s.replace(from,to);
+    } else {
+      const n = s.split(from).length - 1;
+      if (n !== expected) throw new Error(`${path}: expected ${expected} ${label}, found ${n}`);
+      s = expected > 1 ? s.split(from).join(to) : s.replace(from,to);
+    }
   }
   fs.writeFileSync(path,s);
 }
@@ -48,8 +55,7 @@ patch('src/App.jsx', [
 
 patch('src/hooks/useSave.js', [
   ["tokenCostLogRef, pendingCacheChangesRef,", "tokenCostLogRef, cacheStateRef,", 'save arg rename'],
-  ["pendingCacheChanges: pendingCacheChangesRef?.current || [],", "cacheStateSnapshot: cacheStateRef?.current || null,", 'full snapshot'],
-  ["pendingCacheChanges: pendingCacheChangesRef?.current || [],", "cacheStateSnapshot: cacheStateRef?.current || null,", 'autosave snapshot'],
+  ["pendingCacheChanges: pendingCacheChangesRef?.current || [],", "cacheStateSnapshot: cacheStateRef?.current || null,", 'cache snapshot fields', 2],
   ["state.pendingCacheChanges || []", "state.cacheStateSnapshot || null", 'load snapshot'],
 ]);
 
