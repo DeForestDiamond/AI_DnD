@@ -1,0 +1,32 @@
+name: Apply token cost telemetry follow-up
+on:
+  push:
+    branches: [grok-provider]
+    paths:
+      - 'scripts/patchTokenCostFollowup.mjs'
+      - '.github/workflows/apply-token-cost-followup.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: grok-provider
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: node scripts/patchTokenCostFollowup.mjs
+      - run: npm ci
+      - run: npm run build
+      - name: Commit and clean temporary patcher
+        run: |
+          rm scripts/patchTokenCostFollowup.mjs .github/workflows/apply-token-cost-followup.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          git commit -m "Finish token cost telemetry plumbing"
+          git push
