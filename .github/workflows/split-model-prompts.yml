@@ -1,0 +1,67 @@
+name: Split model prompts
+on:
+  push:
+    branches: [grok-provider]
+    paths: ['.github/workflows/split-model-prompts.yml']
+permissions:
+  contents: write
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: grok-provider
+          fetch-depth: 0
+      - name: Split shared and Grok prompts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp src/prompts/shared.js src/prompts/sharedLow.js
+          cp src/prompts/grok.js src/prompts/grok43.js
+          cp src/prompts/grok.js src/prompts/grok46.js
+
+          # Lower-end models get their own independent shared/static rules copy.
+          sed -i "s#from './shared.js'#from './sharedLow.js'#" src/prompts/haiku.js src/prompts/terra.js src/prompts/grok43.js
+
+          # Split the Grok model builders so 4.3 and 4.6 can diverge independently.
+          sed -i 's/buildSystemPromptGrok =/buildSystemPromptGrok43 =/' src/prompts/grok43.js
+          sed -i 's/System Prompt — Grok/System Prompt — Grok 4.3/' src/prompts/grok43.js
+          sed -i 's/buildSystemPromptGrok =/buildSystemPromptGrok46 =/' src/prompts/grok46.js
+          sed -i 's/System Prompt — Grok/System Prompt — Grok 4.6/' src/prompts/grok46.js
+          git rm src/prompts/grok.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/hooks/useGame.js')
+          s=p.read_text()
+          s=s.replace("import { buildSystemPromptGrok } from '../prompts/grok.js';", "import { buildSystemPromptGrok43 } from '../prompts/grok43.js';\nimport { buildSystemPromptGrok46 } from '../prompts/grok46.js';")
+          s=s.replace('export { buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok };', 'export { buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46 };')
+          p.write_text(s)
+
+          p=Path('src/App.jsx')
+          s=p.read_text()
+          s=s.replace('buildSystemPromptGrok,', 'buildSystemPromptGrok43, buildSystemPromptGrok46,')
+          s=s.replace("(selectedModel === 'grok' || selectedModel === 'grok46') ? buildSystemPromptGrok(c)", "selectedModel === 'grok' ? buildSystemPromptGrok43(c) :\n      selectedModel === 'grok46' ? buildSystemPromptGrok46(c)")
+          p.write_text(s)
+          PY
+
+          # Verify no stale Grok builder/import remains and both selection sites were split.
+          ! grep -R "prompts/grok.js\|buildSystemPromptGrok(c)" -n src --exclude-dir=node_modules
+          test "$(grep -c "buildSystemPromptGrok43(c)" src/App.jsx)" -ge 2
+          test "$(grep -c "buildSystemPromptGrok46(c)" src/App.jsx)" -ge 2
+          grep -q "from './sharedLow.js'" src/prompts/haiku.js
+          grep -q "from './sharedLow.js'" src/prompts/terra.js
+          grep -q "from './sharedLow.js'" src/prompts/grok43.js
+          grep -q "from './shared.js'" src/prompts/grok46.js
+
+          git diff --check
+          npm ci
+          npm run build
+
+          git rm .github/workflows/split-model-prompts.yml
+          git add src
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Split low-end shared and Grok model prompts'
+          git push origin grok-provider
