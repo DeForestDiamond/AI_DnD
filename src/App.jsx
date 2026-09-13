@@ -148,6 +148,11 @@ export default function App() {
       tokenCostLogRef.current = next;
       return next;
     });
+    // Usage is campaign data. Persist it immediately instead of waiting for a
+    // character mutation to happen to trigger the ordinary autosave effect.
+    setTimeout(() => {
+      try { save.autoSave(charRef.current, fullLogRef.current); } catch {}
+    }, 0);
     return entry;
   };
 

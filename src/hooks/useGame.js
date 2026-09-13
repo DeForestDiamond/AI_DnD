@@ -217,15 +217,6 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
 
       dynamicTail = liveState + gptArc;
     }
-    // Diagnostic: which region is actually costing tokens. Rough estimate at
-    // 4 chars per token — enough to see where the bulk sits.
-    if (log) {
-      const est = t => Math.round((t || '').length / 4);
-      const cachedMsgs = messages.length > 2 ? messages.slice(0, -2) : [];
-      const freshMsgs = messages.length > 2 ? messages.slice(-2) : messages;
-      const sz = arr => arr.reduce((a, m) => a + est(typeof m.content === 'string' ? m.content : JSON.stringify(m.content)), 0);
-      log(`[PROMPT] static ${est(hasSplit ? systemPrompt.static : systemPrompt).toLocaleString()} · gear ${est(hasSplit ? systemPrompt.gear : '').toLocaleString()} · items ${est(hasSplit ? systemPrompt.items : '').toLocaleString()} (cached) · history ${sz(cachedMsgs).toLocaleString()} (${cachedMsgs.length} msgs, cached) · fresh ${(sz(freshMsgs) + est(dynamicTail)).toLocaleString()} (${freshMsgs.length} msgs + ${est(dynamicTail)} state)`);
-    }
 
     // Hand the assembled prompt to the caller so it can be recorded for
     // diagnosis. Blocks are passed whole; the caller deduplicates them, since
