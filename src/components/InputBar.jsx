@@ -13,6 +13,7 @@ const PRICING = {
   gpt:      { input: 5.0, output: 30.0, cacheWrite: 6.25,  cacheRead: 0.50 },
   terra:    { input: 2.5, output: 15.0, cacheWrite: 3.125, cacheRead: 0.25 },
   grok:     { input: 1.25, output: 2.50, cacheWrite: 1.25, cacheRead: 0.20 },
+  grok46:   { input: 2.00, output: 6.00, cacheWrite: 2.00, cacheRead: 0.50 },
 };
 
 export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, tokenUsage, selectedModel }) {
@@ -21,7 +22,7 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
   const inputRef = useRef(null);
   const fileRef = useRef(null);
   const openAiModel = selectedModel === 'terra' || selectedModel === 'gpt';
-  const xaiModel = selectedModel === 'grok';
+  const xaiModel = selectedModel === 'grok' || selectedModel === 'grok46';
   const imageModel = openAiModel || xaiModel;
 
   useEffect(() => {

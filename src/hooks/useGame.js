@@ -127,6 +127,14 @@ export const MODEL_CONFIGS = {
     label: 'Grok 4.3',
     emoji: '🚀',
   },
+  grok46: {
+    provider: 'xai',
+    model: 'grok-4.6',
+    max_tokens: 2048,
+    reasoning_effort: 'low',
+    label: 'Grok 4.6',
+    emoji: '🚀',
+  },
 };
 
 // Stack duplicate inventory items for display
