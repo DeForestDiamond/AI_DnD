@@ -1,0 +1,43 @@
+name: Normalize Grok useGame integration
+
+on:
+  push:
+    branches:
+      - grok-provider
+    paths:
+      - '.github/workflows/normalize-grok-usegame.yml'
+      - 'scripts/usegame-grok.part-*'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: grok-provider
+          fetch-depth: 0
+
+      - name: Restore current main useGame and apply focused Grok patch
+        shell: bash
+        run: |
+          git fetch origin main
+          git checkout origin/main -- src/hooks/useGame.js
+          cat scripts/usegame-grok.part-* > /tmp/usegame-grok.patch
+          git apply --check /tmp/usegame-grok.patch
+          git apply /tmp/usegame-grok.patch
+          node --check src/hooks/useGame.js
+          rm -f scripts/usegame-grok.part-*
+          rm -f .github/workflows/normalize-grok-usegame.yml
+
+      - name: Commit normalized integration
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Normalize Grok useGame integration"
+          git push origin HEAD:grok-provider
