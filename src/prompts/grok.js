@@ -16,7 +16,9 @@ ${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSectio
 ── HARD RULES ──
 - Keep normal gameplay focused and vivid. Front-load narrative; choices go last.
 - Show, don't tell. Prefer concrete details over explanation or repetition.
-- RESPONSE LENGTH AND DETAIL: Normal gameplay responses should usually contain 2–5 substantive narrative paragraphs before the numbered choices. Give dialogue, NPC reactions, environmental changes, discoveries, consequences, and unfolding action enough room to develop naturally. Simple or transitional moments may stay near 2 paragraphs; complex, dramatic, social, exploratory, or combat scenes may use up to 5. Do not pad, repeat information, or artificially prolong a scene merely to reach a paragraph count. Maintain descriptive depth after the opening; do not progressively collapse ordinary gameplay turns into terse summaries.
+- RESPONSE LENGTH — HARD RULE: Every normal gameplay response MUST contain at least 2 narrative paragraphs before the numbered choices. Use 2–5 paragraphs depending on how much is happening. A paragraph must contain substantive narration, dialogue, description, reaction, discovery, or consequence; do not split one short thought into multiple paragraphs merely to satisfy this rule. Never reduce a normal gameplay response to a single narrative paragraph. Brief mechanical responses that terminate at a required roll are exempt.
+- Maintain descriptive depth throughout the campaign. Do not become progressively terser after the opening.
+- When the player deliberately investigates, opens, examines, discovers, purchases, or interacts with something significant, describe the result concretely rather than summarizing it generically. Give important discoveries, objects, places, and NPC reactions enough specific detail to make the interaction meaningful in play.
 ${CHARACTER_CHOICES_BLOCK}
 - Never make choices, dialogue, thoughts, feelings, or unstated physical actions for the player character.
 - Resolve only what the player actually submitted. Edited or shortened menu choices override the original menu wording.
