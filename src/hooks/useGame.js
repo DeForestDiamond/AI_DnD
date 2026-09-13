@@ -36,14 +36,14 @@ export const SKILL_LIST = [
   { key: 'nature',         label: 'Nature',          ability: 'int' },
   { key: 'religion',       label: 'Religion',        ability: 'int' },
   { key: 'animalhandling', label: 'Animal Handling', ability: 'wis' },
-  { key: 'insight',        label: 'Insight',          ability: 'wis' },
-  { key: 'medicine',       label: 'Medicine',         ability: 'wis' },
-  { key: 'perception',     label: 'Perception',       ability: 'wis' },
-  { key: 'survival',       label: 'Survival',         ability: 'wis' },
-  { key: 'deception',      label: 'Deception',        ability: 'cha' },
-  { key: 'intimidation',   label: 'Intimidation',     ability: 'cha' },
-  { key: 'performance',    label: 'Performance',      ability: 'cha' },
-  { key: 'persuasion',     label: 'Persuasion',       ability: 'cha' },
+  { key: 'insight',        label: 'Insight',         ability: 'wis' },
+  { key: 'medicine',       label: 'Medicine',        ability: 'wis' },
+  { key: 'perception',     label: 'Perception',      ability: 'wis' },
+  { key: 'survival',       label: 'Survival',        ability: 'wis' },
+  { key: 'deception',      label: 'Deception',       ability: 'cha' },
+  { key: 'intimidation',   label: 'Intimidation',    ability: 'cha' },
+  { key: 'performance',    label: 'Performance',     ability: 'cha' },
+  { key: 'persuasion',     label: 'Persuasion',      ability: 'cha' },
 ];
 
 export const SKILL_ABILITY = {
@@ -75,6 +75,9 @@ export const performAttack = (weapon, stats, level) => {
   const dmgBonus        = statBonus + weaponBonus;
   const crit     = atkRoll === 20;
   const fumble   = atkRoll === 1;
+  // Extra damage dice of another type (1d4 radiant, 2d6 fire...). Rolled
+  // separately so the DM can narrate the damage types, and — per 5e — the dice
+  // double on a critical hit just like the base weapon dice.
   const extras = (weapon.extras || []).map(e => {
     const roll = rollDice(e.dice) + (crit ? rollDice(e.dice) : 0);
     return { ...e, roll };
@@ -84,17 +87,54 @@ export const performAttack = (weapon, stats, level) => {
   return { atkRoll, atkBonus, totalAtk, statBonus, statLabel, profBonus: profBonusValue, weaponBonus, dmgRoll, dmgBonus, extras, extraTotal, totalDmg, crit, fumble };
 };
 
+// ── Model configs ──────────────────────────────────────────────────────────────
 export const MODEL_CONFIGS = {
-  sonnet: { provider: 'anthropic', model: 'claude-sonnet-4-5', max_tokens: 2048, label: 'Sonnet', emoji: '✨' },
-  haiku: { provider: 'anthropic', model: 'claude-haiku-4-5-20251001', max_tokens: 1536, label: 'Haiku', emoji: '⚡' },
-  gpt: { provider: 'openai', model: 'gpt-5.6-sol', max_tokens: 2048, reasoning_effort: 'low', label: 'GPT Sol', emoji: '🧠' },
-  terra: { provider: 'openai', model: 'gpt-5.6-terra', max_tokens: 2048, reasoning_effort: 'medium', label: 'GPT Terra', emoji: '🌍' },
-  grok: { provider: 'xai', model: 'grok-4.3', max_tokens: 2048, reasoning_effort: 'low', label: 'Grok 4.3', emoji: '🚀' },
+  sonnet: {
+    provider: 'anthropic',
+    model: 'claude-sonnet-4-5',
+    max_tokens: 2048,
+    label: 'Sonnet',
+    emoji: '✨',
+  },
+  haiku: {
+    provider: 'anthropic',
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1536,
+    label: 'Haiku',
+    emoji: '⚡',
+  },
+  gpt: {
+    provider: 'openai',
+    model: 'gpt-5.6-sol',
+    max_tokens: 2048,
+    reasoning_effort: 'low',
+    label: 'GPT Sol',
+    emoji: '🧠',
+  },
+  terra: {
+    provider: 'openai',
+    model: 'gpt-5.6-terra',
+    max_tokens: 2048,
+    reasoning_effort: 'medium',
+    label: 'GPT Terra',
+    emoji: '🌍',
+  },
+  grok: {
+    provider: 'xai',
+    model: 'grok-4.3',
+    max_tokens: 2048,
+    reasoning_effort: 'low',
+    label: 'Grok 4.3',
+    emoji: '🚀',
+  },
 };
 
+// Stack duplicate inventory items for display
 export const stackInventory = (inventory) => stackCounts(inventory);
 
+// ── The Hook ───────────────────────────────────────────────────────────────────
 export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
+
   const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null, onPrompt = null) => {
     const provider = modelConfig.provider || 'anthropic';
     const key = provider === 'openai'
@@ -107,16 +147,44 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       throw new Error(`${providerName} API key is missing`);
     }
 
+    // systemPrompt can be a string (legacy) or { static, dynamic }
+    // Static block gets cached — bio, rules, companions, NPCs, towns (rarely change)
+    // Dynamic block is fresh every message — HP, stats, inventory, gold, location
+    // Caching is PREFIX based, so anything volatile must come LAST or it breaks
+    // every cache breakpoint behind it. The dynamic state (HP, inventory, coins,
+    // equipment) used to sit in the system array between the two breakpoints,
+    // which meant any inventory or HP change re-cached the whole message history
+    // as well. It now rides on the final user message instead, so both
+    // breakpoints stay stable and only the tail is ever rewritten.
     const hasSplit = typeof systemPrompt === 'object' && systemPrompt.static;
+    // Three tiers, each its own cache breakpoint, ordered most stable first:
+    //   1. rules and world — changes almost never
+    //   2. item descriptions — large, but only change when gear does
+    //   3. volatile state — small, changes every turn, rides on the last message
+    // Item text was previously resent fresh every turn at full price; it is the
+    // single largest recurring cost in the prompt.
+    // Ordered least volatile first, because caching is prefix-based: a change
+    // rebuilds its own block and everything after it, never anything before.
+    //   1. static — rules and world, changes almost never
+    //   2. gear   — worn equipment and constructs, changes when you equip
+    //   3. items  — carried inventory, changes whenever loot arrives
+    // Splitting 2 from 3 means picking something up no longer rebuilds the
+    // descriptions of everything you are wearing.
     const systemBlocks = hasSplit
       ? [
           { type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } },
-          ...(systemPrompt.gear ? [{ type: 'text', text: systemPrompt.gear, cache_control: { type: 'ephemeral' } }] : []),
-          ...(systemPrompt.items ? [{ type: 'text', text: systemPrompt.items, cache_control: { type: 'ephemeral' } }] : []),
+          ...(systemPrompt.gear
+            ? [{ type: 'text', text: systemPrompt.gear, cache_control: { type: 'ephemeral' } }]
+            : []),
+          ...(systemPrompt.items
+            ? [{ type: 'text', text: systemPrompt.items, cache_control: { type: 'ephemeral' } }]
+            : []),
         ]
       : [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
     let dynamicTail = hasSplit ? systemPrompt.dynamic : '';
-
+    // GPT gets its OWN lean dynamic tail. Claude's dynamic prompt contains a large
+    // arc-policy essay plus a repeated preflight checklist that Sol does not need.
+    // Preserve only the actual CURRENT STATE lines, then add a compact GPT arc block.
     if ((provider === 'openai' || provider === 'xai') && dynamicTail) {
       const arcMarker = '\nACTIVE ARC ANTAGONIST';
       const hooksMarker = '\n\nHOOKS — ARC OR NO ARC:';
@@ -126,6 +194,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       const hooksIdx = liveState.indexOf(hooksMarker);
       if (hooksIdx >= 0) liveState = liveState.slice(0, hooksIdx);
       liveState = liveState.trim();
+
       const arc = charRef.current?.arc;
       const gptArc = arc?.antagonist ? [
         '',
@@ -137,9 +206,11 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
         'Use the character’s supplied disposition when motivating involvement; do not assume altruism. If the player ignores the arc, do not nag them every turn.',
         'When the antagonist is resolved — defeated, captured, dismantled, permanently driven off, or the player concludes their business through a deal, truce, alliance, payment, or deliberate disengagement — emit [ARC COMPLETE] in that same response. Do not invent a hidden superior or deeper layer to keep the arc alive.'
       ].join('\n') : '';
+
       dynamicTail = liveState + gptArc;
     }
-
+    // Diagnostic: which region is actually costing tokens. Rough estimate at
+    // 4 chars per token — enough to see where the bulk sits.
     if (log) {
       const est = t => Math.round((t || '').length / 4);
       const cachedMsgs = messages.length > 2 ? messages.slice(0, -2) : [];
@@ -148,35 +219,57 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       log(`[PROMPT] static ${est(hasSplit ? systemPrompt.static : systemPrompt).toLocaleString()} · gear ${est(hasSplit ? systemPrompt.gear : '').toLocaleString()} · items ${est(hasSplit ? systemPrompt.items : '').toLocaleString()} (cached) · history ${sz(cachedMsgs).toLocaleString()} (${cachedMsgs.length} msgs, cached) · fresh ${(sz(freshMsgs) + est(dynamicTail)).toLocaleString()} (${freshMsgs.length} msgs + ${est(dynamicTail)} state)`);
     }
 
+    // Hand the assembled prompt to the caller so it can be recorded for
+    // diagnosis. Blocks are passed whole; the caller deduplicates them, since
+    // static is usually identical turn to turn.
     const promptRecord = onPrompt ? {
-      at: new Date().toISOString(), model: modelConfig.model,
+      at: new Date().toISOString(),
+      model: modelConfig.model,
       staticBlock: hasSplit ? systemPrompt.static : systemPrompt,
-      itemsBlock: hasSplit ? (systemPrompt.items || '') : '', dynamicBlock: dynamicTail,
+      itemsBlock: hasSplit ? (systemPrompt.items || '') : '',
+      dynamicBlock: dynamicTail,
       cachedMessages: messages.length > 2 ? messages.slice(0, -2).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })) : [],
       freshMessages: (messages.length > 2 ? messages.slice(-2) : messages).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })),
     } : null;
 
     if (provider === 'xai') {
+      // xAI Responses API is OpenAI-compatible, but its prompt cache is automatic.
+      // Keep the same stable-prefix ordering and provide a sticky prompt_cache_key
+      // without sending OpenAI-specific explicit cache breakpoint fields.
       const grokCtx = hasSplit ? buildCtxSections(charRef.current) : null;
-      const grokLocationContext = grokCtx ? [grokCtx.npcSection, grokCtx.townsSection].filter(Boolean).join('\n') : '';
+      const grokLocationContext = grokCtx
+        ? [grokCtx.npcSection, grokCtx.townsSection].filter(Boolean).join('\n')
+        : '';
       const developerContent = [
         { type: 'input_text', text: hasSplit ? systemPrompt.static : systemPrompt },
         ...(grokLocationContext ? [{ type: 'input_text', text: grokLocationContext }] : []),
         ...(hasSplit && systemPrompt.gear ? [{ type: 'input_text', text: systemPrompt.gear }] : []),
         ...(hasSplit && systemPrompt.items ? [{ type: 'input_text', text: systemPrompt.items }] : []),
       ];
+
       const input = [{ type: 'message', role: 'developer', content: developerContent }];
       messages.forEach((m, i) => {
         let text = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
         if (dynamicTail && i === messages.length - 1) text = `${text}\n\n${dynamicTail}`;
         const role = m.role === 'assistant' ? 'assistant' : 'user';
-        input.push({ type: 'message', role, content: [{ type: role === 'assistant' ? 'output_text' : 'input_text', text }] });
+        input.push({
+          type: 'message',
+          role,
+          content: [{ type: role === 'assistant' ? 'output_text' : 'input_text', text }],
+        });
       });
+
       const res = await fetch('https://api.x.ai/v1/responses', {
-        method: 'POST', signal,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        method: 'POST',
+        signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
         body: JSON.stringify({
-          model: modelConfig.model, input, max_output_tokens: modelConfig.max_tokens,
+          model: modelConfig.model,
+          input,
+          max_output_tokens: modelConfig.max_tokens,
           reasoning: { effort: modelConfig.reasoning_effort || 'low' },
           prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`,
           store: false,
@@ -184,92 +277,212 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error?.message || `xAI API error ${res.status}`);
-      if (data.status === 'incomplete') throw new Error(`Grok reply incomplete${data.incomplete_details?.reason ? `: ${data.incomplete_details.reason}` : ''}`);
-      const text = (data.output || []).filter(item => item?.type === 'message').flatMap(item => item.content || []).filter(part => part?.type === 'output_text').map(part => part.text || '').join('') || '...';
+      if (data.status === 'incomplete') {
+        throw new Error(`Grok reply incomplete${data.incomplete_details?.reason ? `: ${data.incomplete_details.reason}` : ''}`);
+      }
+      const text = (data.output || [])
+        .filter(item => item?.type === 'message')
+        .flatMap(item => item.content || [])
+        .filter(part => part?.type === 'output_text')
+        .map(part => part.text || '')
+        .join('') || '...';
       const totalInput = data.usage?.input_tokens || 0;
       const cached = data.usage?.input_tokens_details?.cached_tokens || 0;
-      const usage = { input_tokens: Math.max(0, totalInput - cached), output_tokens: data.usage?.output_tokens || 0, cache_read_input_tokens: cached, cache_creation_input_tokens: 0, total_tokens: data.usage?.total_tokens || (totalInput + (data.usage?.output_tokens || 0)), provider: 'xai' };
+      const usage = {
+        input_tokens: Math.max(0, totalInput - cached),
+        output_tokens: data.usage?.output_tokens || 0,
+        cache_read_input_tokens: cached,
+        cache_creation_input_tokens: 0,
+        total_tokens: data.usage?.total_tokens || (totalInput + (data.usage?.output_tokens || 0)),
+        provider: 'xai',
+      };
       if (log) log(`[CACHE] xAI actual: total ${totalInput.toLocaleString()} · cached ${cached.toLocaleString()} · fresh ${Math.max(0, totalInput - cached).toLocaleString()}`);
       if (promptRecord) onPrompt({ ...promptRecord, usage });
       return { text, usage };
     }
 
     if (provider === 'openai') {
+      // OpenAI prompt caching is automatic and prefix-based. Preserve the same
+      // stable -> gear -> carried-items -> history -> volatile-state ordering as
+      // Anthropic, but do not send Anthropic cache_control objects.
+      // GPT prompt experiment: OpenAI gets a lighter prompt than Sonnet/Haiku.
+      // Location-tiered NPC/town context is intentionally removed from the first
+      // cache layer and reinserted after its breakpoint below. A [LOCATION:] tag
+      // can therefore change nearby/distant detail without invalidating ~13k rules.
       const gptCtx = hasSplit ? buildCtxSections(charRef.current) : null;
-      const gptLocationContext = gptCtx ? [gptCtx.npcSection, gptCtx.townsSection].filter(Boolean).join('\n') : '';
+      const gptLocationContext = gptCtx
+        ? [gptCtx.npcSection, gptCtx.townsSection].filter(Boolean).join('\n')
+        : '';
+      // GPT arrives here with its final static instructions already assembled by
+      // buildSystemPromptGpt(). callDM only handles cache layout and transport.
       const gptStaticInstructions = hasSplit ? systemPrompt.static : systemPrompt;
+
       const cacheBreakpoint = () => ({ mode: 'explicit' });
       const developerContent = [
-        { type: 'input_text', text: gptStaticInstructions, prompt_cache_breakpoint: cacheBreakpoint() },
-        ...(gptLocationContext ? [{ type: 'input_text', text: gptLocationContext, ...(!systemPrompt.gear ? { prompt_cache_breakpoint: cacheBreakpoint() } : {}) }] : []),
-        ...(hasSplit && systemPrompt.gear ? [{ type: 'input_text', text: systemPrompt.gear, prompt_cache_breakpoint: cacheBreakpoint() }] : []),
-        ...(hasSplit && systemPrompt.items ? [{ type: 'input_text', text: systemPrompt.items }] : []),
+        {
+          type: 'input_text',
+          text: gptStaticInstructions,
+          prompt_cache_breakpoint: cacheBreakpoint(),
+        },
+        ...(gptLocationContext ? [{
+          type: 'input_text',
+          text: gptLocationContext,
+          ...(!systemPrompt.gear ? { prompt_cache_breakpoint: cacheBreakpoint() } : {}),
+        }] : []),
+        ...(hasSplit && systemPrompt.gear ? [{
+          type: 'input_text',
+          text: systemPrompt.gear,
+          prompt_cache_breakpoint: cacheBreakpoint(),
+        }] : []),
+        ...(hasSplit && systemPrompt.items ? [{
+          type: 'input_text',
+          text: systemPrompt.items,
+        }] : []),
       ];
+
       const stableHistoryCount = Math.max(0, messages.length - 2);
       const previousHistoryBoundary = stableHistoryCount >= 3 ? stableHistoryCount - 3 : -1;
       const currentHistoryBoundary = stableHistoryCount >= 1 ? stableHistoryCount - 1 : -1;
-      const input = [{ type: 'message', role: 'developer', content: developerContent }];
+      const input = [{
+        type: 'message',
+        role: 'developer',
+        content: developerContent,
+      }];
+
       messages.forEach((m, i) => {
         let text = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
         if (dynamicTail && i === messages.length - 1) text = `${text}\n\n${dynamicTail}`;
         const markHistory = i === previousHistoryBoundary || i === currentHistoryBoundary;
         const role = m.role === 'assistant' ? 'assistant' : 'user';
-        input.push({ type: 'message', role, content: [{ type: role === 'assistant' ? 'output_text' : 'input_text', text, ...(markHistory ? { prompt_cache_breakpoint: cacheBreakpoint() } : {}) }] });
+        input.push({
+          type: 'message',
+          role,
+          content: [{
+            // Responses API assistant history accepts output_text/refusal, while
+            // user/developer messages accept input_text. The breakpoint itself
+            // works on either role-valid text content item.
+            type: role === 'assistant' ? 'output_text' : 'input_text',
+            text,
+            ...(markHistory ? { prompt_cache_breakpoint: cacheBreakpoint() } : {}),
+          }],
+        });
       });
+
       const res = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST', signal,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({ model: modelConfig.model, input, max_output_tokens: modelConfig.max_tokens, reasoning: { effort: modelConfig.reasoning_effort || 'low' }, text: { verbosity: 'low' }, prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`, prompt_cache_options: { mode: 'explicit', ttl: '30m' }, store: false }),
+        method: 'POST',
+        signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: modelConfig.model,
+          input,
+          max_output_tokens: modelConfig.max_tokens,
+          reasoning: { effort: modelConfig.reasoning_effort || 'low' },
+          text: { verbosity: 'low' },
+          prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`,
+          prompt_cache_options: { mode: 'explicit', ttl: '30m' },
+          store: false,
+        }),
       });
-      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || `OpenAI API error ${res.status}`); }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `OpenAI API error ${res.status}`);
+      }
       const data = await res.json();
-      const text = (data.output || []).filter(item => item?.type === 'message').flatMap(item => item.content || []).filter(part => part?.type === 'output_text').map(part => part.text || '').join('') || '...';
+      const text = (data.output || [])
+        .filter(item => item?.type === 'message')
+        .flatMap(item => item.content || [])
+        .filter(part => part?.type === 'output_text')
+        .map(part => part.text || '')
+        .join('') || '...';
       const totalInput = data.usage?.input_tokens || 0;
       const cached = data.usage?.input_tokens_details?.cached_tokens || 0;
       const cacheWrite = data.usage?.input_tokens_details?.cache_write_tokens || 0;
-      const usage = { input_tokens: Math.max(0, totalInput - cached - cacheWrite), output_tokens: data.usage?.output_tokens || 0, cache_read_input_tokens: cached, cache_creation_input_tokens: cacheWrite, total_tokens: data.usage?.total_tokens || (totalInput + (data.usage?.output_tokens || 0)), provider: 'openai' };
+      const usage = {
+        input_tokens: Math.max(0, totalInput - cached - cacheWrite),
+        output_tokens: data.usage?.output_tokens || 0,
+        cache_read_input_tokens: cached,
+        cache_creation_input_tokens: cacheWrite,
+        total_tokens: data.usage?.total_tokens || (totalInput + (data.usage?.output_tokens || 0)),
+        provider: 'openai',
+      };
       if (log) log(`[CACHE] OpenAI actual: total ${totalInput.toLocaleString()} · cached ${cached.toLocaleString()} · write ${cacheWrite.toLocaleString()} · uncached ${Math.max(0, totalInput - cached - cacheWrite).toLocaleString()}`);
       if (promptRecord) onPrompt({ ...promptRecord, usage });
       return { text, usage };
     }
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST', signal,
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      method: 'POST',
+      signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
       body: JSON.stringify({
-        model: modelConfig.model, max_tokens: modelConfig.max_tokens, system: systemBlocks,
+        model: modelConfig.model,
+        max_tokens: modelConfig.max_tokens,
+        system: systemBlocks,
+        // Cache the stable history (everything except the last 2 messages)
+        // The last message before the tail gets the cache checkpoint
         messages: (msgs => {
+          // Append the volatile state to the FINAL message so it sits after both
+          // cache breakpoints rather than in front of them.
           if (!dynamicTail || !msgs.length) return msgs;
           const out = [...msgs];
           const last = out[out.length - 1];
           const text = typeof last.content === 'string' ? last.content : JSON.stringify(last.content);
           out[out.length - 1] = { ...last, content: `${text}\n\n${dynamicTail}` };
           return out;
-        })(messages.length > 2 ? [
-          ...messages.slice(0, -2).map((m, i) => i === messages.slice(0, -2).length - 1 ? { ...m, content: [{ type: 'text', text: typeof m.content === 'string' ? m.content : JSON.stringify(m.content), cache_control: { type: 'ephemeral' } }] } : m),
-          ...messages.slice(-2)
-        ] : messages),
+        })(messages.length > 2
+          ? [
+              ...messages.slice(0, -2).map((m, i) =>
+                i === messages.slice(0, -2).length - 1
+                  ? {
+                      ...m,
+                      content: [{ type: 'text', text: typeof m.content === 'string' ? m.content : JSON.stringify(m.content), cache_control: { type: 'ephemeral' } }]
+                    }
+                  : m
+              ),
+              ...messages.slice(-2)
+            ]
+          : messages),
       }),
     });
-    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || `API error ${res.status}`); }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `API error ${res.status}`);
+    }
     const data = await res.json();
     if (promptRecord) onPrompt({ ...promptRecord, usage: data.usage || null });
     return { text: data.content?.[0]?.text || '...', usage: data.usage || null };
   };
 
+  // Process player action — handle attacks, intercepted skill rolls etc
   const buildActionContext = (userMsg, log) => {
-    const char = charRef.current;
-    let context = '';
+    const char   = charRef.current;
+    const rolls  = [];
+    let context  = '';
     let rollResult = null;
+
+    // Attack detection — only explicit combat actions
+    // Excluded: "cut" (cut a deal, cut through), "kill" (too ambiguous in dialogue/planning)
     const attackWords = /\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge|shoot|fire|loose)\b/i;
+    // Don't trigger if the attack word is inside quotes (player is speaking dialogue, not acting)
     const insideQuotes = /["'「][^"'「」]*\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge|shoot|fire|loose)\b[^"'「」]*["'」]/i;
     if (attackWords.test(userMsg) && !insideQuotes.test(userMsg) && !/\b(don't|dont|not|no|avoid|retreat|run|flee|hide|sneak)\b/i.test(userMsg)) {
       const weapon = getMainWeapon(char.slots, char.stats, char.items || {});
       if (!weapon) log?.('[ATTACK] Attack word detected but no weapon equipped in mainhand — no roll made');
       if (weapon) {
         const result = performAttack(weapon, char.stats, char.level);
+        const pb     = profBonus(char.level);
+
+        // Check for sneak attack
         const rogueLevels = (char.classLevels || {}).Rogue || 0;
-        const isStealth = /\b(hiding|hidden|shadow|stealth|sneak|ambush|surprise|dark|darkness|unseen|undetected|ghost|backstab|behind|silently)\b/i.test(userMsg);
+        const isStealth   = /\b(hiding|hidden|shadow|stealth|sneak|ambush|surprise|dark|darkness|unseen|undetected|ghost|backstab|behind|silently)\b/i.test(userMsg);
         let sneakDmg = 0;
         let sneakDesc = '';
         if (rogueLevels > 0 && isStealth && !result.fumble) {
@@ -277,6 +490,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
           sneakDmg = rollDice(sneakDice);
           sneakDesc = ` + ${sneakDmg} sneak attack (${sneakDice})`;
         }
+
         if (result.crit) {
           const bonusDmg = rollDice(weapon.damage);
           result.totalDmg += bonusDmg + sneakDmg;
@@ -292,59 +506,138 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
           log?.(`[ATTACK] ${weapon.name}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} to hit → dmg ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}`);
           context += `\n\n[GAME DATA — ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
         }
-        rollResult = { label: `${weapon.name}${sneakDmg?' + Sneak Attack':''}`, value: result.totalAtk, dc: null, dmg: result.totalDmg, crit: result.crit, fumble: result.fumble, sneak: sneakDmg > 0 };
+        rollResult = {
+          label: `${weapon.name}${sneakDmg?' + Sneak Attack':''}`,
+          value: result.totalAtk,
+          dc: null,
+          dmg: result.totalDmg,
+          crit: result.crit,
+          fumble: result.fumble,
+          sneak: sneakDmg > 0,
+        };
       }
     }
+
     return { context, rollResult };
   };
 
+  // When DM requests a skill roll, intercept and roll it
   const interceptRollRequest = (dmText, char, log) => {
+    // Tolerant of how the DM phrases it: "[ROLL: dexterity difficulty 15]",
+    // "[ROLL: dexterity saving throw difficulty 15]", "[ROLL: perception check DC 14]".
+    // Previously only the bare "<stat> difficulty <N>" form matched, so every
+    // saving throw silently failed to roll at all.
     const rollMatch = dmText.match(/\[ROLL:\s*([a-z' ]+?)\s*(saving throw|save|check)?\s*(?:difficulty|dc)\s*(\d+)\s*(?:ac)?\s*\]/i);
     if (!rollMatch) return { resultText: null, rollResult: null };
-    const statLabel = rollMatch[1].trim().toLowerCase();
-    const statName = statLabel.replace(/\s+/g, '');
-    const isSave = /sav/i.test(rollMatch[2] || '');
-    const diff = parseInt(rollMatch[3]);
+
+    const statLabel = rollMatch[1].trim().toLowerCase();          // as written, for display
+    const statName  = statLabel.replace(/\s+/g, '');                // normalised, for lookup
+    const isSave   = /sav/i.test(rollMatch[2] || '');
+    const diff     = parseInt(rollMatch[3]);
+    // An "attack" isn't an ability or a skill — it's the equipped weapon's own
+    // to-hit bonus. Without this it fell through to a stat that doesn't exist
+    // and rolled at +0 regardless of Strength or weapon.
     if (/^(attack|attackroll|attacks|tohit|hit|melee|ranged|weapon|weaponattack)$/.test(statName)) {
       const weapon = getMainWeapon(char.slots, char.stats, char.items || {});
+      const pb2 = profBonus(char.level);
       const effAtk = effectiveStats(char.stats, char.slots, char.items || {});
+      // Whatever happens, an attack must never resolve at +0. If the equipped
+      // item has no definition (lost or renamed entry) fall back to the better
+      // of STR/DEX rather than a phantom stat, and name the culprit.
       let abilityMod, enchant = 0, label;
-      if (weapon) { abilityMod = weapon.statBonus; enchant = weapon.bonus || 0; label = weapon.name; }
-      else {
+      if (weapon) {
+        abilityMod = weapon.statBonus;
+        enchant = weapon.bonus || 0;
+        label = weapon.name;
+      } else {
         abilityMod = Math.max(statMod(effAtk.str), statMod(effAtk.dex));
         const held = char.slots?.mainhand;
         label = held ? `${held} (no stats on file)` : 'unarmed';
         if (held) log?.(`[ROLL] WARNING: "${held}" is equipped but has no entry in the character item registry — attack resolved from raw STR/DEX. Re-issue or re-craft the item to restore its stats.`);
       }
-      const attackWeapon = weapon || { name: label, damage: '1d1', statBonus: abilityMod, attackAbility: statMod(effAtk.dex) >= statMod(effAtk.str) ? 'dex' : 'str', bonus: enchant, extras: [] };
+      const attackWeapon = weapon || {
+        name: label,
+        damage: '1d1',
+        statBonus: abilityMod,
+        attackAbility: statMod(effAtk.dex) >= statMod(effAtk.str) ? 'dex' : 'str',
+        bonus: enchant,
+        extras: [],
+      };
       const result = performAttack(attackWeapon, char.stats, char.level);
       const hit = result.crit || (!result.fumble && result.totalAtk >= diff);
       log?.(`[ROLL] ${statLabel} with ${label}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} vs DC${diff} — ${hit?'HIT':'MISS'}`);
-      return { resultText: `[ROLL RESULT: attack roll — d20 ${result.atkRoll} + ${result.statLabel} ${result.statBonus} + proficiency ${result.profBonus}${result.weaponBonus ? ` + equipment ${result.weaponBonus}` : ''} = ${result.totalAtk} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}${hit ? `; damage ${result.totalDmg}` : ''}]`, rollResult: { label: 'Attack', value: result.totalAtk, dc: diff, dmg: hit ? result.totalDmg : null, crit: result.crit, fumble: result.fumble } };
+      return {
+        resultText: `[ROLL RESULT: attack roll — d20 ${result.atkRoll} + ${result.statLabel} ${result.statBonus} + proficiency ${result.profBonus}${result.weaponBonus ? ` + equipment ${result.weaponBonus}` : ''} = ${result.totalAtk} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}${hit ? `; damage ${result.totalDmg}` : ''}]`,
+        rollResult: {
+          label: 'Attack',
+          value: result.totalAtk,
+          dc: diff,
+          dmg: hit ? result.totalDmg : null,
+          crit: result.crit,
+          fumble: result.fumble,
+        },
+      };
     }
+
+    // There is no "defence roll" in 5e — AC is passive and attackers roll
+    // against it. If the DM asks for one anyway, treat it as the dodge it
+    // means: a Dexterity save, rather than rolling against a stat of 10.
     const DEFENCE_AS_DEX = /^(defence|defense|dodge|parry|evade|evasion|block|ac|armorclass|armourclass)$/;
-    const statMap = { strength:'str', dexterity:'dex', constitution:'con', intelligence:'int', wisdom:'wis', charisma:'cha' };
-    const statKey = statMap[statName] || SKILL_ABILITY[statName] || (DEFENCE_AS_DEX.test(statName) ? 'dex' : statName);
-    if (DEFENCE_AS_DEX.test(statName)) log?.(`[ROLL] "${statLabel}" is not a 5e roll — AC is passive. Resolved as a Dexterity save.`);
-    if (!statMap[statName] && !SKILL_ABILITY[statName] && !['str','dex','con','int','wis','cha'].includes(statKey)) log?.(`[ROLL] WARNING: "${statLabel}" is not a known ability or skill — rolling against a default of 10 (+0). Tell the DM to name an ability or a 5e skill.`);
+    const statMap  = { strength:'str', dexterity:'dex', constitution:'con', intelligence:'int', wisdom:'wis', charisma:'cha' };
+    const statKey  = statMap[statName] || SKILL_ABILITY[statName]
+                   || (DEFENCE_AS_DEX.test(statName) ? 'dex' : statName);
+    if (DEFENCE_AS_DEX.test(statName)) {
+      log?.(`[ROLL] "${statLabel}" is not a 5e roll — AC is passive. Resolved as a Dexterity save.`);
+    }
+    // Anything that maps to nothing silently rolls against a phantom 10. Say so
+    // in the log rather than letting it pass unnoticed.
+    if (!statMap[statName] && !SKILL_ABILITY[statName] && !['str','dex','con','int','wis','cha'].includes(statKey)) {
+      log?.(`[ROLL] WARNING: "${statLabel}" is not a known ability or skill — rolling against a default of 10 (+0). Tell the DM to name an ability or a 5e skill.`);
+    }
     const effStats = effectiveStats(char.stats, char.slots, char.items || {});
-    const statVal = effStats[statKey] || 10;
+    const statVal  = effStats[statKey] || 10;
+    // Equipped gear with a bonus for this exact skill (e.g. stealth:+3) adds flat
     const db = allItems(char.items || {});
     let gearBonus = 0;
-    Object.values(char.slots || {}).forEach(itemName => { const b = itemName && db[itemName]?.bonuses; if (b && typeof b[statName] === 'number') gearBonus += b[statName]; });
-    const check = performSkillCheck(statVal, diff, true, char.level, gearBonus);
-    const kind = isSave ? 'saving throw' : 'check';
+    Object.values(char.slots || {}).forEach(itemName => {
+      const b = itemName && db[itemName]?.bonuses;
+      if (b && typeof b[statName] === 'number') gearBonus += b[statName];
+    });
+    const check    = performSkillCheck(statVal, diff, true, char.level, gearBonus);
+    const kind     = isSave ? 'saving throw' : 'check';
+
     log?.(`[ROLL] ${statLabel} ${kind} (${statKey}): d20=${check.d20}+${check.mod}+${check.prof}${gearBonus?`+${gearBonus}gear`:''}=${check.total} vs DC${diff} — ${check.hit?'SUCCESS':'FAILURE'}`);
-    return { resultText: `[ROLL RESULT: ${statLabel} ${kind} — d20 rolled ${check.d20} + ${check.mod} ${statKey.toUpperCase()} modifier + ${check.prof} proficiency${gearBonus ? ` + ${gearBonus} equipment` : ''} = ${check.total} vs difficulty ${diff} — ${check.hit ? 'SUCCESS' : 'FAILURE'}]`, rollResult: { label: `${statName.charAt(0).toUpperCase() + statName.slice(1)} Check`, value: check.total, dc: diff } };
+
+    const resultText = `[ROLL RESULT: ${statLabel} ${kind} — d20 rolled ${check.d20} + ${check.mod} ${statKey.toUpperCase()} modifier + ${check.prof} proficiency${gearBonus ? ` + ${gearBonus} equipment` : ''} = ${check.total} vs difficulty ${diff} — ${check.hit ? 'SUCCESS' : 'FAILURE'}]`;
+    const rollResult = {
+      label: `${statName.charAt(0).toUpperCase() + statName.slice(1)} Check`,
+      value: check.total,
+      dc: diff,
+    };
+
+    return { resultText, rollResult };
   };
 
+  // Keep the prompt cache warm across a short break. A cache READ refreshes the
+  // 5-minute TTL, so one minimal call costs ~$0.006 against ~$0.071 to rebuild
+  // the block from scratch — about 12x cheaper. Deliberately fired ONCE: pinging
+  // continuously overtakes the cost of a single rebuild after roughly 50
+  // minutes idle, so a lone extension is the whole of the win.
   const pingCache = async (systemPrompt) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     if (!key || !systemPrompt?.static) return null;
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: MODEL_CONFIGS.sonnet.model, max_tokens: 1, system: [{ type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } }], messages: [{ role: 'user', content: '.' }] }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: MODEL_CONFIGS.sonnet.model,
+          max_tokens: 1,
+          // The cached prefix must match the real call EXACTLY or this reads
+          // nothing and writes a second entry instead.
+          system: [{ type: 'text', text: systemPrompt.static, cache_control: { type: 'ephemeral' } }],
+          messages: [{ role: 'user', content: '.' }],
+        }),
       });
       if (!res.ok) return null;
       return await res.json();
