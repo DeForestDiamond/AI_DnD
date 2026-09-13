@@ -3,20 +3,7 @@ import { colors, fonts, btn } from '../styles/theme.js';
 import { clearPendingOpenAiImage, installOpenAiImageInterceptor, setPendingOpenAiImage } from '../helpers/openai/pendingImage.js';
 import { clearPendingXaiImage, installXaiImageInterceptor, setPendingXaiImage } from '../helpers/xai/pendingImage.js';
 
-// USD per million tokens. Cache writes are billed separately from cache reads.
-// OpenAI rates here are the standard short-context API rates used by this app's
-// explicit-cache path. Requests above the long-context threshold have different
-// pricing; normal game turns are far below it.
-const PRICING = {
-  sonnet:   { input: 3.0, output: 15.0, cacheWrite: 3.75,  cacheRead: 0.30 },
-  haiku:    { input: 1.0, output: 5.0,  cacheWrite: 1.25,  cacheRead: 0.10 },
-  gpt:      { input: 5.0, output: 30.0, cacheWrite: 6.25,  cacheRead: 0.50 },
-  terra:    { input: 2.5, output: 15.0, cacheWrite: 3.125, cacheRead: 0.25 },
-  grok:     { input: 1.25, output: 2.50, cacheWrite: 1.25, cacheRead: 0.20 },
-  grok46:   { input: 2.00, output: 6.00, cacheWrite: 2.00, cacheRead: 0.50 },
-};
-
-export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, tokenUsage, selectedModel }) {
+export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, selectedModel }) {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState(null);
   const inputRef = useRef(null);
@@ -172,55 +159,6 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
           </div>
         )}
       </div>
-      {tokenUsage && (() => {
-        const fresh       = tokenUsage.input_tokens ?? 0;
-        const cacheRead   = tokenUsage.cache_read_input_tokens ?? 0;
-        const cacheCreate = tokenUsage.cache_creation_input_tokens ?? 0;
-        const inputTotal  = fresh + cacheRead + cacheCreate;
-        const output      = tokenUsage.output_tokens ?? 0;
-        const total       = inputTotal + output;
-        const rate = PRICING[selectedModel] || PRICING.sonnet;
-        const cost = (
-          fresh       * rate.input +
-          cacheCreate * rate.cacheWrite +
-          cacheRead   * rate.cacheRead +
-          output      * rate.output
-        ) / 1e6;
-
-        const cellStyle = {
-          minWidth:0,
-          whiteSpace:'nowrap',
-          fontSize:10,
-          color:'rgba(150,130,90,0.65)',
-          fontFamily:fonts.display,
-          letterSpacing:0.8,
-        };
-        const labelStyle = {
-          color:'rgba(150,130,90,0.42)',
-          marginRight:5,
-        };
-        const cells = [
-          ['INPUT', inputTotal.toLocaleString()],
-          ['CACHE HIT', cacheRead.toLocaleString()],
-          ['CACHE WRITE', cacheCreate.toLocaleString()],
-          ['FRESH', fresh.toLocaleString()],
-          ['OUTPUT', output.toLocaleString()],
-          ['TOTAL', total.toLocaleString()],
-          ['COST', `$${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(3)}`],
-        ];
-
-        return (
-          <div style={{marginTop:5,paddingTop:6,borderTop:`1px solid rgba(74,56,32,0.3)`,overflowX:'auto'}}>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(7, minmax(105px, 1fr))',columnGap:14,minWidth:820}}>
-              {cells.map(([label, value]) => (
-                <div key={label} style={cellStyle}>
-                  <span style={labelStyle}>{label}</span>{value}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }

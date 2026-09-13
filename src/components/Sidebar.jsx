@@ -132,6 +132,7 @@ export function Sidebar(props) {
         onToggleRawTags={props.onToggleRawTags}
         directives={props.directives}
         onChangeDirectives={props.onChangeDirectives}
+        tokenCostLog={props.tokenCostLog}
         debugLog={props.debugLog}
         debugStatus={props.debugStatus}
         onExportDebug={props.onExportDebug}

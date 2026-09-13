@@ -26,7 +26,7 @@ import { generateAdventureArc } from './helpers/adventure/arc.js';
 import { callGptConsolidate } from './helpers/openai/consolidate.js';
 import { armAnthropicCacheKeepWarm, cancelAnthropicCacheKeepWarm } from './helpers/anthropic/cache.js';
 import { createPromptRecorder } from './helpers/debug/promptLog.js';
-import { logHelperUsage } from './helpers/debug/usage.js';
+import { makeUsageEntry, snapshotCacheState, diffCacheState } from './helpers/debug/tokenCostLog.js';
 import { createSummaryManager, parseSummary, formatSummaryForApi } from './helpers/history/manager.js';
 import { createExtractionManager } from './helpers/extraction/manager.js';
 import { createItemManager } from './helpers/items/manager.js';
@@ -82,7 +82,6 @@ export default function App() {
   const promptLogRef = useRef({ blocks: {}, turns: [] });
   const promptRecorder = createPromptRecorder({ enabled: PROMPT_LOG_ENABLED, keepTurns: PROMPT_LOG_KEEP });
   const recordPrompt = (rec) => promptRecorder(promptLogRef, rec);
-  const sideCostRef = useRef({ calls: 0, cost: 0 });   // running total for non-DM calls
   const cacheTimerRef = useRef(null);   // one-shot Anthropic cache keep-warm
   const armCacheTimer = () => armAnthropicCacheKeepWarm({
     timerRef: cacheTimerRef,
@@ -93,10 +92,6 @@ export default function App() {
   });
   useEffect(() => () => cancelAnthropicCacheKeepWarm(cacheTimerRef), []);
 
-  // Every helper call (crafting, salvage, extraction, summaries, objectives) is
-  // a separate billed request that never appeared in the token bar. Log each
-  // one's usage and keep a session running total so costs can be traced.
-  const logUsage = (label, data) => logHelperUsage({ sideCostRef, label, data, log });
   const [adventureStartChar, setAdventureStartChar] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(true);
@@ -109,7 +104,9 @@ export default function App() {
   const [subclassQueue, setSubclassQueue] = useState([]);
   const [selectedModel, setSelectedModel] = useState('sonnet'); // sonnet, haiku, gpt (Sol), terra, grok, grok46
   const [storySummary, setStorySummary] = useState('');
-  const [tokenUsage, setTokenUsage]     = useState(null);
+  const [tokenCostLog, setTokenCostLog] = useState([]);
+  const tokenCostLogRef = useRef([]);
+  const cacheStateRef = useRef(null);
   const storySummaryRef = useRef('');
 
   const SUMMARIZE_AFTER   = 12;
@@ -138,6 +135,26 @@ export default function App() {
 
   const voice = useVoice();
   const { callDM, buildActionContext, interceptRollRequest, pingCache } = useGame({ charRef, apiKey, openAiApiKey, xAiApiKey });
+
+  const appendTokenCostEntry = (requestType, data, { includeCacheChanges=false, modelKey=selectedModel } = {}) => {
+    if (!data) return null;
+    const modelConfig = MODEL_CONFIGS[modelKey] || MODEL_CONFIGS[selectedModel];
+    const snapshot = snapshotCacheState(charRef.current, storySummaryRef.current);
+    const changes = includeCacheChanges ? diffCacheState(cacheStateRef.current, snapshot) : [];
+    const entry = makeUsageEntry({ modelKey, modelConfig, requestType, data, changes });
+    if (includeCacheChanges) cacheStateRef.current = snapshot;
+    setTokenCostLog(prev => {
+      const next = [...prev, entry];
+      tokenCostLogRef.current = next;
+      return next;
+    });
+    return entry;
+  };
+
+  // Helper calls are billed too, but do not themselves consume the DM cache.
+  // Their resulting state mutations (summary, NPC extraction, crafting, etc.) are
+  // detected against the last gameplay snapshot on the next DM request.
+  const logUsage = (label, data) => appendTokenCostEntry(label, data);
 
   // ── Save/Load ──────────────────────────────────────────────────────────────
   // Which patron class is the deity/patron being chosen for? Prefers Warlock so a
@@ -183,7 +200,7 @@ export default function App() {
     voice.applySavedSettings?.({ rate: settings.ttsRate, pitch: settings.ttsPitch });
   };
 
-  const applyLoadedFull = (char, msgs, summary = '', settings = null) => {
+  const applyLoadedFull = (char, msgs, summary = '', settings = null, savedTokenCostLog = [], savedCacheState = null) => {
     applyLoadedSettings(settings);
     resetCraftingPanels();   // any pending proposal refers to the character being replaced
     loadCharacter(char);
@@ -191,6 +208,8 @@ export default function App() {
     fullLogRef.current = msgs;
     setStorySummary(summary);
     storySummaryRef.current = summary;
+    setTokenCostLog(savedTokenCostLog); tokenCostLogRef.current = savedTokenCostLog;
+    cacheStateRef.current = savedCacheState;
     initSummarizedAt(msgs.length, summary);
     queuePostLoadModals(char);
     setPhase('playing');
@@ -229,6 +248,8 @@ export default function App() {
     storySummaryRef,
     debugLogRef,
     promptLogRef,
+    tokenCostLogRef,
+    cacheStateRef,
     getSettings: () => ({ selectedModel, showRawTags, ttsRate: voice.rate, ttsPitch: voice.pitch }),
     onLoadFull: applyLoadedFull,
     onLoadCharacter: applyLoadedCharacter,
@@ -627,7 +648,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         log,
         recordPrompt
       );
-      if (dmUsage) setTokenUsage(dmUsage);
+      if (dmUsage) appendTokenCostEntry('gameplay', dmUsage, { includeCacheChanges:true });
       armCacheTimer();
 
       // Check if DM requested a skill roll — intercept and roll it
@@ -663,7 +684,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           signal,
           log
         );
-        if (followUpUsage) setTokenUsage(followUpUsage);
+        if (followUpUsage) appendTokenCostEntry('roll follow-up', followUpUsage, { includeCacheChanges:true });
         armCacheTimer();
         finalText = followUp;
       }
@@ -1157,6 +1178,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             showRawTags={showRawTags}
             onToggleRawTags={()=>setShowRawTags(v=>!v)}
             debugLog={debugLog}
+            tokenCostLog={tokenCostLog}
         onExportDebug={() => {
           const blob = new Blob([debugLog.join('\n')], { type:'text/plain' });
           const url = URL.createObjectURL(blob);
@@ -1409,7 +1431,6 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             const lastDM = [...fullLog].reverse().find(m => m.role === 'dm');
             if (lastDM) voice.speak(lastDM.text);
           }}
-          tokenUsage={tokenUsage}
           selectedModel={selectedModel}
         />
       </div>

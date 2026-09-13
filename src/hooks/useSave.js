@@ -42,7 +42,7 @@ export function parseSaveJSON(raw) {
   }
 }
 
-export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, tokenCostLogRef, pendingCacheChangesRef, getSettings, onLoadFull, onLoadCharacter }) {
+export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, tokenCostLogRef, cacheStateRef, getSettings, onLoadFull, onLoadCharacter }) {
 
   // Inventory and stash are already compact [{name, qty}] stacks in memory.
   // Save the character exactly as it exists; migration handles older compressed
@@ -64,7 +64,7 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
       debugLog: debugLogRef?.current || [],
       promptLog: promptLogRef?.current || null,
       tokenCostLog: tokenCostLogRef?.current || [],
-      pendingCacheChanges: pendingCacheChangesRef?.current || [],
+      cacheStateSnapshot: cacheStateRef?.current || null,
     } : {}),
   });
 
@@ -102,7 +102,7 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
         messages: msgs,
         storySummary: storySummaryRef.current || '',
         tokenCostLog: tokenCostLogRef?.current || [],
-        pendingCacheChanges: pendingCacheChangesRef?.current || [],
+        cacheStateSnapshot: cacheStateRef?.current || null,
       }));
     } catch {}
   };
@@ -135,7 +135,7 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
         state.storySummary || '',
         state.settings,
         state.tokenCostLog || [],
-        state.pendingCacheChanges || []
+        state.cacheStateSnapshot || null
       );
     } else {
       onLoadCharacter(migrated, state.settings);

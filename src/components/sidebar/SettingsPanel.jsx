@@ -4,6 +4,7 @@ import { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/enco
 import { colors, fonts, btn } from '../../styles/theme.js';
 import { CollapsibleSection } from './common/index.jsx';
 import { VoiceSettings, DispositionEditor, ObjectivesPanel, DirectivesEditor, DebugViewer } from './settings/Controls.jsx';
+import { TokenCostViewer } from './settings/TokenCostViewer.jsx';
 import { BioEditor, TownManager, NPCManager } from './world/Panels.jsx';
 
 export function SettingsPanel({
@@ -52,6 +53,7 @@ export function SettingsPanel({
   onToggleRawTags,
   directives,
   onChangeDirectives,
+  tokenCostLog,
   debugLog,
   debugStatus,
   onExportDebug,
@@ -252,6 +254,7 @@ export function SettingsPanel({
       </CollapsibleSection>
     )}
     {onChangeDirectives && <DirectivesEditor directives={directives} onChangeDirectives={onChangeDirectives} />}
+    {tokenCostLog !== undefined && <TokenCostViewer entries={tokenCostLog} />}
     {debugLog !== undefined && <DebugViewer debugLog={debugLog} debugStatus={debugStatus} onExportDebug={onExportDebug} onCopyDebug={onCopyDebug} />}
   </>;
 }
