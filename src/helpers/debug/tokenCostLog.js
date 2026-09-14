@@ -37,7 +37,7 @@ export function normalizeUsage(modelKey, data) {
 
 export function makeUsageEntry({ modelKey, modelConfig, requestType='gameplay', data, changes=[] }) {
   const usage = normalizeUsage(modelKey, data);
-  return {
+  const entry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
     timestamp: Date.now(),
     provider: modelConfig?.provider || 'unknown',
@@ -48,6 +48,10 @@ export function makeUsageEntry({ modelKey, modelConfig, requestType='gameplay', 
     cacheSensitiveChanges: changes,
     rebuildLikely: changes.length > 0,
   };
+  if (typeof window !== 'undefined' && (requestType === 'gameplay' || requestType === 'campaign opening')) {
+    window.dispatchEvent(new CustomEvent('dnd-token-usage', { detail: entry }));
+  }
+  return entry;
 }
 
 const names = xs => {
