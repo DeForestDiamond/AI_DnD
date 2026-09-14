@@ -6,6 +6,12 @@ export const createPromptRecorder = ({ enabled = true, keepTurns = 15 } = {}) =>
   };
   return (storeRef, rec) => {
     if (!enabled) return;
+
+    // Keep one ephemeral, raw copy for the token/cost logger. The normal prompt
+    // log below still deduplicates large blocks; this copy is consumed once by
+    // makeUsageEntry() and is never persisted by itself.
+    globalThis.__aiDndLastPromptRecord = rec;
+
     const store = storeRef.current;
     const blocks = { ...store.blocks };
     const keep = (text) => { if (!text) return null; const h=hashText(text); if(!blocks[h]) blocks[h]=text; return h; };
