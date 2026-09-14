@@ -6,7 +6,7 @@ import { SLOTS } from './constants/items.js';
 import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
-import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
+import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
 import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
 import { fixedArcLocationFor } from './constants/encounters/arcLocations.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
@@ -397,8 +397,10 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         ? buildSystemPromptSonnet(charWithArc)
         : selectedModel === 'terra'
         ? buildSystemPromptTerra(charWithArc)
-        : (selectedModel === 'grok' || selectedModel === 'grok46')
-        ? buildSystemPromptGrok(charWithArc)
+        : selectedModel === 'grok'
+        ? buildSystemPromptGrok43(charWithArc)
+        : selectedModel === 'grok46'
+        ? buildSystemPromptGrok46(charWithArc)
         : buildSystemPromptSol(charWithArc);
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
@@ -642,8 +644,10 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         ? buildSystemPromptSonnet(charRef.current)
         : selectedModel === 'terra'
         ? buildSystemPromptTerra(charRef.current)
-        : (selectedModel === 'grok' || selectedModel === 'grok46')
-        ? buildSystemPromptGrok(charRef.current)
+        : selectedModel === 'grok'
+        ? buildSystemPromptGrok43(charRef.current)
+        : selectedModel === 'grok46'
+        ? buildSystemPromptGrok46(charRef.current)
         : buildSystemPromptSol(charRef.current);
       const { text: dmText, usage: dmUsage } = await callDM(
         [...history, { role:'user', content: outgoing }],

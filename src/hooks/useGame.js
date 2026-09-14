@@ -8,9 +8,10 @@ import { buildSystemPrompt as buildSystemPromptHaiku } from '../prompts/haiku.js
 import { buildSystemPromptSonnet } from '../prompts/sonnet.js';
 import { buildSystemPromptSol } from '../prompts/sol.js';
 import { buildSystemPromptTerra } from '../prompts/terra.js';
-import { buildSystemPromptGrok } from '../prompts/grok.js';
+import { buildSystemPromptGrok43 } from '../prompts/grok43.js';
+import { buildSystemPromptGrok46 } from '../prompts/grok46.js';
 
-export { buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok };
+export { buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46 };
 export const buildSystemPrompt = buildSystemPromptHaiku;
 export const buildSystemPromptGpt = buildSystemPromptSol;
 

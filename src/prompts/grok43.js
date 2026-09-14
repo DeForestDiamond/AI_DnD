@@ -1,9 +1,9 @@
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
-import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './sharedLow.js';
 import { TAGS_BLOCK } from './tags.js';
 
-// ── System Prompt — Grok ───────────────────────────────────────────────────────
-export const buildSystemPromptGrok = (char) => {
+// ── System Prompt — Grok 4.3 ───────────────────────────────────────────────────────
+export const buildSystemPromptGrok43 = (char) => {
   const cb = buildCharBlock(char);
   const ctx = buildCtxSections(char);
 

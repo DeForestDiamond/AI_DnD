@@ -4,7 +4,7 @@ import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
 import { subclassPromptLines } from '../constants/subclasses.js';
 import { stackCounts } from '../utils/itemStacks.js';
 import { buildCtxSections, playstyleLine, directivesBlock } from './state.js';
-import { CHARACTER_CHOICES_BLOCK, SETTING_BLOCK, NPC_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { CHARACTER_CHOICES_BLOCK, SETTING_BLOCK, NPC_BLOCK, WORLD_INTEGRITY_BLOCK } from './sharedLow.js';
 import { TAGS_BLOCK } from './tags.js';
 
 // ── System Prompt — Haiku ──────────────────────────────────────────────────────
