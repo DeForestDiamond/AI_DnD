@@ -27,17 +27,37 @@ export function TokenCostViewer({ entries=[] }) {
         <div style={{color:colors.textFaint}}>CACHED <span style={{color:colors.gold}}>{fmt(totalCached)}</span></div>
         <div style={{color:colors.textFaint}}>OUTPUT <span style={{color:colors.gold}}>{fmt(totalOutput)}</span></div>
       </div>
-      <div style={{maxHeight:330,overflowY:'auto',fontFamily:fonts.mono,fontSize:9}}>
+      <div style={{maxHeight:430,overflowY:'auto',fontFamily:fonts.mono,fontSize:9}}>
         {[...entries].reverse().map(e => {
           const pct = e.inputTokens ? Math.round((e.cachedTokens || 0) / e.inputTokens * 100) : 0;
+          const diag = e.cacheDiagnostic;
+          const b = diag?.boundary;
           return <div key={e.id} style={{padding:'6px 0',borderBottom:`1px solid ${colors.borderFaint}`}}>
             <div style={{display:'flex',justifyContent:'space-between',gap:8,color:colors.goldFaint}}>
               <span>{new Date(e.timestamp).toLocaleTimeString()} · {e.model} · {(e.requestType||'request').toUpperCase()}</span>
               <span>{money(e.cost)}</span>
             </div>
             <div style={{color:colors.textGhost,lineHeight:1.45}}>
-              in {fmt(e.inputTokens)} · cached {fmt(e.cachedTokens)} ({pct}%) · fresh {fmt(e.freshTokens)} · out {fmt(e.outputTokens)}{e.reasoningTokens ? ` · reasoning ${fmt(e.reasoningTokens)}` : ''}
+              in {fmt(e.inputTokens)} · cached {fmt(e.cachedTokens)} ({pct}%) · write {fmt(e.cacheWriteTokens)} · fresh {fmt(e.freshTokens)} · out {fmt(e.outputTokens)}{e.reasoningTokens ? ` · reasoning ${fmt(e.reasoningTokens)}` : ''}
             </div>
+            {diag && <details style={{marginTop:4,color:colors.textGhost}}>
+              <summary style={{cursor:'pointer',color:'#b79a67'}}>
+                cache map ≈ {b?.section || 'unknown'}{b?.sectionEstimatedTokens ? ` (${fmt(b.estimatedTokensIntoSection)}/${fmt(b.sectionEstimatedTokens)} est. tokens)` : ''}
+              </summary>
+              <div style={{marginTop:4,paddingLeft:7,borderLeft:`1px solid ${colors.borderFaint}`,lineHeight:1.5}}>
+                {diag.sections?.map(s => <div key={s.key}>
+                  <span style={{color:s.cacheState==='cached'?'#9eae79':s.cacheState==='partial'?'#d2a55e':colors.textDead}}>
+                    {s.cacheState==='cached'?'✓':s.cacheState==='partial'?'◐':'○'}
+                  </span>{' '}
+                  {s.label}: ~{fmt(s.estimatedTokens)} tokens · ~{fmt(s.chars)} chars
+                  {s.cacheState==='partial' ? ` · ~${fmt(s.cachedInSection)} cached` : ''}
+                </div>)}
+                <div style={{marginTop:4,color:colors.textDead}}>
+                  ≈ estimated section attribution. Provider cache/token totals above are exact; named-section boundaries are inferred from recorded prompt sizes.
+                </div>
+                {diag.limitations?.[1] && <div style={{color:colors.textDead}}>{diag.limitations[1]}</div>}
+              </div>
+            </details>}
             {e.cacheSensitiveChanges?.length > 0 && <div style={{marginTop:3,color:'#c99b63',lineHeight:1.4}}>
               cache-sensitive changes: {e.cacheSensitiveChanges.map((c,i)=><div key={i}>• {c.section}: {c.action}{c.detail ? ` — ${c.detail}` : ''}</div>)}
             </div>}
