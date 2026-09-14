@@ -51,4 +51,6 @@ Preserve creature nature and established personality. Dragons should feel like d
 
 export const GPT_EXTRA_RULES = `NPC INTRODUCTIONS: The first time a character appears, explicitly state their race or creature type in the narration. Do not rely on appearance alone to imply it.
 
-ROLL TAGS ARE PLAYER-ONLY: [ROLL:] always uses the PLAYER CHARACTER's stats, skills, saving throws, equipment, and bonuses. NEVER emit [ROLL:] for an NPC, enemy, companion, summoned creature, construct, or any other non-player creature. Resolve non-player checks, attacks, and saving throws yourself from the fiction or stat block. If an NPC must resist something the player does, do not request a player [ROLL:] and treat it as the NPC's result.`;
+ROLL TAGS ARE PLAYER-ONLY: [ROLL:] always uses the PLAYER CHARACTER's stats, skills, saving throws, equipment, and bonuses. NEVER emit [ROLL:] for an NPC, enemy, companion, summoned creature, construct, or any other non-player creature. Resolve non-player checks, attacks, and saving throws yourself from the fiction or stat block. If an NPC must resist something the player does, do not request a player [ROLL:] and treat it as the NPC's result.
+
+REWARDS MUST ENTER GAME STATE: If the player receives, buys, finds, loots, steals, harvests, or is given an item or coin, always emit the appropriate [ITEM:] and/or [GOLD:] tags in that same response. Narrating that the player received something without the tag means they did not receive it.`;
