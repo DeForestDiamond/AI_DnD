@@ -6,6 +6,7 @@ import { clearPendingXaiImage, installXaiImageInterceptor, setPendingXaiImage } 
 export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, selectedModel }) {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState(null);
+  const [tokenUsage, setTokenUsage] = useState(null);
   const inputRef = useRef(null);
   const fileRef = useRef(null);
   const openAiModel = selectedModel === 'terra' || selectedModel === 'gpt';
@@ -20,6 +21,12 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
   useEffect(() => {
     if (!loading) setTimeout(() => inputRef.current?.focus(), 100);
   }, [loading]);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.detail) setTokenUsage(e.detail); };
+    window.addEventListener('dnd-token-usage', handler);
+    return () => window.removeEventListener('dnd-token-usage', handler);
+  }, []);
 
   // If the player switches back to Claude before sending, discard only the
   // one-turn provider screenshot. The persistent campaign map is managed safely
@@ -159,6 +166,48 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
           </div>
         )}
       </div>
+      {tokenUsage && (() => {
+        const inputTotal = tokenUsage.inputTokens ?? 0;
+        const cacheRead = tokenUsage.cachedTokens ?? 0;
+        const cacheCreate = tokenUsage.cacheWriteTokens ?? 0;
+        const fresh = tokenUsage.freshTokens ?? 0;
+        const output = tokenUsage.outputTokens ?? 0;
+        const total = inputTotal + output;
+        const cost = tokenUsage.cost ?? 0;
+        const cellStyle = {
+          minWidth:0,
+          whiteSpace:'nowrap',
+          fontSize:10,
+          color:'rgba(150,130,90,0.65)',
+          fontFamily:fonts.display,
+          letterSpacing:0.8,
+        };
+        const labelStyle = {
+          color:'rgba(150,130,90,0.42)',
+          marginRight:5,
+        };
+        const cells = [
+          ['INPUT', inputTotal.toLocaleString()],
+          ['CACHE HIT', cacheRead.toLocaleString()],
+          ['CACHE WRITE', cacheCreate.toLocaleString()],
+          ['FRESH', fresh.toLocaleString()],
+          ['OUTPUT', output.toLocaleString()],
+          ['TOTAL', total.toLocaleString()],
+          ['COST', `$${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(3)}`],
+        ];
+
+        return (
+          <div style={{marginTop:5,paddingTop:6,borderTop:`1px solid rgba(74,56,32,0.3)`,overflowX:'auto'}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7, minmax(105px, 1fr))',columnGap:14,minWidth:820}}>
+              {cells.map(([label, value]) => (
+                <div key={label} style={cellStyle}>
+                  <span style={labelStyle}>{label}</span>{value}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
