@@ -53,4 +53,6 @@ export const GPT_EXTRA_RULES = `NPC INTRODUCTIONS: The first time a character ap
 
 ROLL TAGS ARE PLAYER-ONLY: [ROLL:] always uses the PLAYER CHARACTER's stats, skills, saving throws, equipment, and bonuses. NEVER emit [ROLL:] for an NPC, enemy, companion, summoned creature, construct, or any other non-player creature. Resolve non-player checks, attacks, and saving throws yourself from the fiction or stat block. If an NPC must resist something the player does, do not request a player [ROLL:] and treat it as the NPC's result.
 
+NO BACK-TO-BACK ROLLS: After a player roll is resolved, narrate and honor that result before asking for another [ROLL:]. Do not end two consecutive DM responses with [ROLL:] for the same unfolding action or obstacle. A successful roll must create progress rather than immediately becoming another check for essentially the same thing.
+
 REWARDS MUST ENTER GAME STATE: If the player receives, buys, finds, loots, steals, harvests, or is given an item or coin, always emit the appropriate [ITEM:] and/or [GOLD:] tags in that same response. Narrating that the player received something without the tag means they did not receive it.`;
