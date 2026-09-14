@@ -49,4 +49,6 @@ Use the setting's own cultures, laws, customs, religions, species, social classe
 
 Preserve creature nature and established personality. Dragons should feel like dragons, giants like giants, fiends like fiends, celestials like celestials, and fey like fey rather than generic helpful humans in different bodies. Fey may follow alien, literal, contractual, emotional, capricious rules involving hospitality, names, gifts, debts, promises, invitations, ownership, and local etiquette. Friendly does not mean accommodating.`;
 
-export const GPT_EXTRA_RULES = `NPC INTRODUCTIONS: The first time a character appears, explicitly state their race or creature type in the narration. Do not rely on appearance alone to imply it.`;
+export const GPT_EXTRA_RULES = `NPC INTRODUCTIONS: The first time a character appears, explicitly state their race or creature type in the narration. Do not rely on appearance alone to imply it.
+
+ROLL TAGS ARE PLAYER-ONLY: [ROLL:] always uses the PLAYER CHARACTER's stats, skills, saving throws, equipment, and bonuses. NEVER emit [ROLL:] for an NPC, enemy, companion, summoned creature, construct, or any other non-player creature. Resolve non-player checks, attacks, and saving throws yourself from the fiction or stat block. If an NPC must resist something the player does, do not request a player [ROLL:] and treat it as the NPC's result.`;
