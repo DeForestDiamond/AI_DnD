@@ -409,7 +409,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         null,
         log
       );
-      if (usage) setTokenUsage(usage);
+      if (usage) appendTokenCostEntry('campaign opening', usage, { includeCacheChanges:true });
       armCacheTimer();
       const newChar = applyEffects(text, charWithArc, false, charWithArc.lootDestination === 'stash' ? 'stash' : 'inventory');
       log('applyEffects after startAdventure', { xpBefore: char.xp, xpAfter: newChar.xp, levelBefore: char.level, levelAfter: newChar.level });
