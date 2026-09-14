@@ -35,16 +35,94 @@ export function normalizeUsage(modelKey, data) {
   };
 }
 
+const charCount = value => String(value || '').length;
+const messageChars = list => (list || []).reduce((sum, m) => sum + charCount(m?.content), 0);
+
+// Providers expose cache token COUNTS, not which named prompt section those
+// tokens came from. The prompt recorder already knows the order/size of the
+// major regions, so calibrate their character lengths against the provider's
+// exact input-token total and estimate where the cached prefix ended.
+function consumePromptCacheDiagnostic(model, usage) {
+  const rec = globalThis.__aiDndLastPromptRecord;
+  if (!rec) return null;
+
+  // This raw record belongs to the immediately following billed DM request.
+  // Consume it once so a helper call or roll follow-up cannot inherit stale data.
+  globalThis.__aiDndLastPromptRecord = null;
+  if (rec.model && model && rec.model !== model) return null;
+
+  const sections = [
+    { key:'static', label:'STATIC / RULES', chars:charCount(rec.staticBlock) },
+    { key:'items', label:'CARRIED ITEMS', chars:charCount(rec.itemsBlock) },
+    { key:'history', label:'CACHED HISTORY', chars:messageChars(rec.cachedMessages) },
+    { key:'recent', label:'RECENT MESSAGES', chars:messageChars(rec.freshMessages) },
+    { key:'dynamic', label:'DYNAMIC STATE', chars:charCount(rec.dynamicBlock) },
+  ].filter(s => s.chars > 0);
+
+  const totalChars = sections.reduce((sum, s) => sum + s.chars, 0);
+  if (!totalChars || !usage.inputTokens) return null;
+
+  let assigned = 0;
+  const withTokens = sections.map((s, i) => {
+    const last = i === sections.length - 1;
+    const estimatedTokens = last
+      ? Math.max(0, usage.inputTokens - assigned)
+      : Math.round(usage.inputTokens * (s.chars / totalChars));
+    assigned += estimatedTokens;
+    return { ...s, estimatedTokens };
+  });
+
+  let cumulative = 0;
+  let boundary = null;
+  const cached = usage.cachedTokens || 0;
+  const annotated = withTokens.map(s => {
+    const start = cumulative;
+    cumulative += s.estimatedTokens;
+    const cachedInSection = Math.max(0, Math.min(s.estimatedTokens, cached - start));
+    const cacheState = cachedInSection <= 0 ? 'not-cached'
+      : cachedInSection >= s.estimatedTokens ? 'cached'
+      : 'partial';
+    if (!boundary && cached > start && cached <= cumulative) {
+      boundary = {
+        section: s.label,
+        sectionKey: s.key,
+        estimatedTokensIntoSection: Math.max(0, cached - start),
+        sectionEstimatedTokens: s.estimatedTokens,
+      };
+    }
+    return { ...s, cachedInSection, cacheState, cumulativeEstimatedTokens:cumulative };
+  });
+
+  if (!boundary && cached === 0) boundary = { section:'NO CACHE HIT', sectionKey:null, estimatedTokensIntoSection:0, sectionEstimatedTokens:0 };
+  if (!boundary && cached >= usage.inputTokens) boundary = { section:'END OF INPUT', sectionKey:'end', estimatedTokensIntoSection:0, sectionEstimatedTokens:0 };
+
+  return {
+    method:'provider-total-calibrated character estimate',
+    totalRecordedCharacters: totalChars,
+    providerInputTokens: usage.inputTokens,
+    providerCachedTokens: cached,
+    boundary,
+    sections: annotated,
+    limitations:[
+      'Provider reports token counts, not named-section attribution.',
+      'Gear/location transport blocks and role/format overhead are not separately exposed by the current prompt recorder, so section token counts and the named boundary are estimates.',
+    ],
+  };
+}
+
 export function makeUsageEntry({ modelKey, modelConfig, requestType='gameplay', data, changes=[] }) {
   const usage = normalizeUsage(modelKey, data);
+  const model = data?.model || data?.rawData?.model || modelConfig?.model || modelKey || 'unknown';
+  const cacheDiagnostic = consumePromptCacheDiagnostic(model, usage);
   const entry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
     timestamp: Date.now(),
     provider: modelConfig?.provider || 'unknown',
-    model: data?.model || data?.rawData?.model || modelConfig?.model || modelKey || 'unknown',
+    model,
     modelKey,
     requestType,
     ...usage,
+    cacheDiagnostic,
     cacheSensitiveChanges: changes,
     rebuildLikely: changes.length > 0,
   };
