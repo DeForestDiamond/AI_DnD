@@ -113,7 +113,8 @@ function consumePromptCacheDiagnostic(model, usage) {
 export function makeUsageEntry({ modelKey, modelConfig, requestType='gameplay', data, changes=[] }) {
   const usage = normalizeUsage(modelKey, data);
   const model = data?.model || data?.rawData?.model || modelConfig?.model || modelKey || 'unknown';
-  const cacheDiagnostic = consumePromptCacheDiagnostic(model, usage);
+  const isRecordedDmRequest = requestType === 'gameplay' || requestType === 'campaign opening';
+  const cacheDiagnostic = isRecordedDmRequest ? consumePromptCacheDiagnostic(model, usage) : null;
   const entry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
     timestamp: Date.now(),
@@ -126,7 +127,7 @@ export function makeUsageEntry({ modelKey, modelConfig, requestType='gameplay', 
     cacheSensitiveChanges: changes,
     rebuildLikely: changes.length > 0,
   };
-  if (typeof window !== 'undefined' && (requestType === 'gameplay' || requestType === 'campaign opening')) {
+  if (typeof window !== 'undefined' && isRecordedDmRequest) {
     window.dispatchEvent(new CustomEvent('dnd-token-usage', { detail: entry }));
   }
   return entry;
