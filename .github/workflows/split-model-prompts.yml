@@ -30,6 +30,8 @@ jobs:
 
           python3 - <<'PY'
           from pathlib import Path
+          import re
+
           p=Path('src/hooks/useGame.js')
           s=p.read_text()
           a="import { buildSystemPromptGrok } from '../prompts/grok.js';"
@@ -47,10 +49,13 @@ jobs:
           b='buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46, cleanDisplayText'
           assert a in s
           s=s.replace(a,b,1)
-          a=": (selectedModel === 'grok' || selectedModel === 'grok46')\n        ? buildSystemPromptGrok("
-          b=": selectedModel === 'grok'\n        ? buildSystemPromptGrok43(\n        : selectedModel === 'grok46'\n        ? buildSystemPromptGrok46("
-          assert s.count(a) == 2, s.count(a)
-          p.write_text(s.replace(a,b))
+          pattern=re.compile(r": \(selectedModel === 'grok' \|\| selectedModel === 'grok46'\)\n\s+\? buildSystemPromptGrok\(([^)\n]+)\)")
+          def repl(m):
+              arg=m.group(1)
+              return ": selectedModel === 'grok'\n        ? buildSystemPromptGrok43("+arg+")\n        : selectedModel === 'grok46'\n        ? buildSystemPromptGrok46("+arg+")"
+          s,count=pattern.subn(repl,s)
+          assert count == 2, count
+          p.write_text(s)
           PY
 
           ! grep -R "prompts/grok.js\|buildSystemPromptGrok(" -n src --exclude-dir=node_modules
