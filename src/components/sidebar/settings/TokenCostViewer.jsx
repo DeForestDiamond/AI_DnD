@@ -1,17 +1,51 @@
+import { useEffect, useMemo, useState } from 'react';
 import { colors, fonts, btn } from '../../../styles/theme.js';
 import { CollapsibleSection } from '../common/index.jsx';
 
 const fmt = n => Number(n || 0).toLocaleString();
 const money = n => `$${Number(n || 0).toFixed(Number(n || 0) < 0.01 ? 4 : 3)}`;
+const STORAGE_KEY = 'ai-dnd-token-cost-log-v1';
+const MAX_ENTRIES = 5000;
+
+const loadStored = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const parsed = JSON.parse(window.localStorage?.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.slice(-MAX_ENTRIES) : [];
+  } catch { return []; }
+};
+
+const mergeEntries = (older, newer) => {
+  const byId = new Map();
+  [...(older || []), ...(newer || [])].forEach(e => {
+    if (e?.id) byId.set(e.id, e);
+  });
+  return [...byId.values()].sort((a,b)=>(a.timestamp||0)-(b.timestamp||0)).slice(-MAX_ENTRIES);
+};
 
 export function TokenCostViewer({ entries=[] }) {
-  const totalCost = entries.reduce((s,e)=>s+(Number(e.cost)||0),0);
-  const totalInput = entries.reduce((s,e)=>s+(Number(e.inputTokens)||0),0);
-  const totalOutput = entries.reduce((s,e)=>s+(Number(e.outputTokens)||0),0);
-  const totalCached = entries.reduce((s,e)=>s+(Number(e.cachedTokens)||0),0);
+  const [storedEntries, setStoredEntries] = useState(loadStored);
+  const allEntries = useMemo(() => mergeEntries(storedEntries, entries), [storedEntries, entries]);
+
+  // The telemetry log has its own browser persistence instead of depending on a
+  // campaign autosave. This survives reloads/deploys and keeps up to 5,000 calls.
+  useEffect(() => {
+    const merged = mergeEntries(storedEntries, entries);
+    const changed = merged.length !== storedEntries.length || merged.some((e,i) => e.id !== storedEntries[i]?.id);
+    if (!changed) return;
+    setStoredEntries(merged);
+    try { window.localStorage?.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch (err) {
+      console.warn('[TOKEN LOG] Could not persist telemetry:', err);
+    }
+  }, [entries, storedEntries]);
+
+  const totalCost = allEntries.reduce((s,e)=>s+(Number(e.cost)||0),0);
+  const totalInput = allEntries.reduce((s,e)=>s+(Number(e.inputTokens)||0),0);
+  const totalOutput = allEntries.reduce((s,e)=>s+(Number(e.outputTokens)||0),0);
+  const totalCached = allEntries.reduce((s,e)=>s+(Number(e.cachedTokens)||0),0);
 
   const download = () => {
-    const blob = new Blob([JSON.stringify(entries, null, 2)], { type:'application/json' });
+    const blob = new Blob([JSON.stringify(allEntries, null, 2)], { type:'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `token-cost-log-${Date.now()}.json`;
@@ -19,16 +53,17 @@ export function TokenCostViewer({ entries=[] }) {
   };
 
   return (
-    <CollapsibleSection title="📊 TOKEN & COST LOG" count={entries.length || 0} defaultOpen={false}>
+    <CollapsibleSection title="📊 TOKEN & COST LOG" count={allEntries.length || 0} defaultOpen={false}>
+      <div style={{fontSize:9,color:colors.textDead,marginBottom:6,lineHeight:1.4}}>Autosaved in this browser · keeps the latest {fmt(MAX_ENTRIES)} requests</div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5,marginBottom:8,fontFamily:fonts.mono,fontSize:10}}>
         <div style={{color:colors.textFaint}}>COST <span style={{color:colors.gold}}>{money(totalCost)}</span></div>
-        <div style={{color:colors.textFaint}}>CALLS <span style={{color:colors.gold}}>{fmt(entries.length)}</span></div>
+        <div style={{color:colors.textFaint}}>CALLS <span style={{color:colors.gold}}>{fmt(allEntries.length)}</span></div>
         <div style={{color:colors.textFaint}}>INPUT <span style={{color:colors.gold}}>{fmt(totalInput)}</span></div>
         <div style={{color:colors.textFaint}}>CACHED <span style={{color:colors.gold}}>{fmt(totalCached)}</span></div>
         <div style={{color:colors.textFaint}}>OUTPUT <span style={{color:colors.gold}}>{fmt(totalOutput)}</span></div>
       </div>
       <div style={{maxHeight:430,overflowY:'auto',fontFamily:fonts.mono,fontSize:9}}>
-        {[...entries].reverse().map(e => {
+        {[...allEntries].reverse().map(e => {
           const pct = e.inputTokens ? Math.round((e.cachedTokens || 0) / e.inputTokens * 100) : 0;
           const diag = e.cacheDiagnostic;
           const b = diag?.boundary;
@@ -63,9 +98,9 @@ export function TokenCostViewer({ entries=[] }) {
             </div>}
           </div>;
         })}
-        {entries.length===0 && <div style={{color:colors.textDead}}>No billed requests logged yet.</div>}
+        {allEntries.length===0 && <div style={{color:colors.textDead}}>No billed requests logged yet.</div>}
       </div>
-      {entries.length>0 && <button onClick={download} style={{...btn(false),width:'100%',fontSize:10,marginTop:7}}>⬇ Download JSON</button>}
+      {allEntries.length>0 && <button onClick={download} style={{...btn(false),width:'100%',fontSize:10,marginTop:7}}>⬇ Download JSON</button>}
     </CollapsibleSection>
   );
 }
