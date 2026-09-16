@@ -102,12 +102,16 @@ MATERIAL RULES
 - Selected materials are context, not merely a menu of unrelated ingredients. Use the important selected pieces coherently.
 - If the pile cannot make the requested result, propose the closest achievable versions and explain the limitation briefly in reason.
 
-UPGRADING FINISHED ITEMS
+UPGRADING FINISHED ITEMS — ADD OR IMPROVE, NEVER TRADE AWAY
 - A finished selected item being modified is consumed and replaced. Preserve its identity/name lineage unless the requested transformation clearly changes what it is.
 - Preserve its TYPE by default. A construct remains construct, weapon remains weapon, armor remains armor, etc., unless the requested transformation genuinely changes category.
-- Never reduce existing mechanics. Every current bonus key is a floor; armour AC stays equal or rises; weapon base/enchantment/extra damage stays equal or rises; meaningful existing abilities remain.
-- An upgrade must actually improve something. Do not merely rename the base, move bonuses around, or recreate it unchanged.
-- Preserve all meaningful capabilities, properties, and material composition from the existing label. You may trim only genuinely redundant wording, attack-bonus prose, weapon-property boilerplate, and unenforceable mechanics. Do NOT delete what the item is physically made from, because salvage later relies on that provenance. Add new capabilities and newly incorporated materials clearly without erasing existing ones.
+- EXISTING FUNCTIONALITY IS A HARD FLOOR. Every current bonus, AC value, damage component, function, effect, capability, defense, sense, movement mode, command authority, integrated weapon/system, immunity/resistance, utility, and other meaningful property remains present in the result unless the PLAYER EXPLICITLY asks to remove or replace that specific thing.
+- New crafting is ADDITIVE: add a new capability, or upgrade an existing overlapping capability. Never delete, weaken, merge away, summarize away, or exchange an unrelated existing capability to make room for the new one. Adding a shield does not remove a sword; adding flight does not remove teleportation; improving armor does not erase sensors; adding a weapon does not remove another weapon.
+- If the new material improves something the base item already does, upgrade that capability in place and preserve its identity. If it provides a genuinely new function, add that function alongside everything already present.
+- Every current bonus key is a floor; armour AC stays equal or rises; weapon base/enchantment/extra damage stays equal or rises. Do not move bonuses between fields or pieces and call it an upgrade.
+- LABEL COMPLETENESS OVERRIDES BREVITY. You may tighten wording only when every distinct function/effect remains unambiguously represented. If preserving all capabilities makes the label long, KEEP IT LONG. Never remove functionality merely to hit a length target or produce a cleaner label.
+- Preserve meaningful material composition because salvage later relies on provenance. Add newly incorporated substantial materials without erasing existing composition.
+- Before returning an upgraded item, compare OLD → NEW capability by capability. If any old function/effect is absent or weaker without an explicit player-requested replacement, the result is invalid and must be corrected.
 
 ITEM TYPE IS STRICT
 - weapon: wielded weapon.
@@ -135,16 +139,15 @@ MECHANICS
 
 LABELS — NARRATIVE CAPABILITIES ONLY
 - Labels are persistent narrative guidance for the DM, NOT a second character sheet and NOT a place to invent mechanics the app cannot enforce.
-- Write compact capability notes: what the item is unusually capable of doing, what it ignores/resists/enables, important movement/senses/protection, or other properties the DM can honor directly in narration.
+- Write capability notes describing what the item is unusually capable of doing, what it ignores/resists/enables, important movement/senses/protection, or other properties the DM can honor directly in narration.
 - Good narrative capability examples: "ignores all resistances", "cannot be disarmed", "cuts magical barriers", "immune to divination", "flies in atmosphere and wildspace", "sees invisible creatures".
 - Do NOT write temporary or turn-based mechanics: no "until next turn", "for 1 round", "on your next attack", "once per turn", reactions, bonus actions, concentration, or similar timing rules.
 - Do NOT write unsupported numeric combat/healing mechanics in labels: no "+15 healing", "+3 to attack rolls", "+10 damage", temporary AC, saving-throw DCs, or other numbers the app does not actually calculate. If a numeric bonus belongs to a supported bonuses key, put it there; otherwise express the capability narratively or omit it.
-- PRESERVE MATERIAL PROVENANCE, BUT ABSTRACT IT. Record the finished object's meaningful recoverable composition, not its full bill of materials or crafting history. Preserve major metals, woods, hides, scales, gems/crystals, planar substances, monster materials, cores, and other substantial construction, but combine related materials into compact categories when practical (for example: "assorted enchanted glass," "divinatory crystals," "silvered planar glasswork," "integrated scrying circuitry"). Do not list every consumed ingredient, lens, junction, circuit, ward core, fastener, or tiny reagent individually unless that specific part remains a distinct salvageable subsystem or uniquely explains a capability.
-- When upgrading an existing item, preserve the CURRENT meaningful composition and newly incorporated substantial materials, but rewrite them into the most compact accurate description. Do not preserve upgrade chronology. Describe what the finished item is now, not a running list of what was added over time. Collapse duplicate or overlapping subsystems into one current-state description unless they remain meaningfully separate salvageable modules.
-- Material provenance should normally occupy no more than one short clause or sentence of a label. The rest of the label should describe persistent capabilities. If composition starts to dominate the label, summarize it more aggressively without losing salvage-relevant categories.
-- Do not pad labels with useless visual prose, generic adjectives, or construction history, but keep concise lore/context when it materially explains a persistent capability or unusual construction.
-- Labels should be concise but complete, not aggressively compressed. Prefer readable semicolon-separated clauses. Simple items may be short; complex legendary items, constructs, ships, and heavily upgraded gear may use several sentences when needed to preserve distinct capabilities, but material composition must remain summarized rather than becoming a component list.
-- For item-mode constructs such as ships/vehicles/war machines, label should begin with CR when a CR is useful, then compactly state form and capabilities. Preserve important existing capabilities when upgrading.
+- PRESERVE MATERIAL PROVENANCE, BUT ABSTRACT IT. Record the finished object's meaningful recoverable composition, not its full bill of materials or crafting history. Preserve major metals, woods, hides, scales, gems/crystals, planar substances, monster materials, cores, and other substantial construction. Related materials may be grouped only when that does not erase a distinct salvageable subsystem or capability.
+- When upgrading an existing item, preserve its CURRENT meaningful composition and newly incorporated substantial materials. Do not preserve upgrade chronology; describe what the finished item is now. This permission to summarize COMPOSITION never permits summarizing away a FUNCTION OR EFFECT.
+- Do not pad labels with useless visual prose, generic adjectives, or construction history, but keep lore/context when it materially explains a persistent capability or unusual construction.
+- Labels should be as long as necessary to preserve every distinct capability. Prefer readable semicolon-separated clauses. Simple items may be short; complex legendary items, constructs, ships, and heavily upgraded gear may be long. Never compress a complex item by deleting a function/effect.
+- For item-mode constructs such as ships/vehicles/war machines, label should begin with CR when a CR is useful, then state form and ALL capabilities. Preserve every important existing capability when upgrading.
 - Name results for what they are/do, not merely "Enchanted X".`;
 
 const SET_RULES = `MATCHED SET RULES
@@ -155,7 +158,7 @@ const SET_RULES = `MATCHED SET RULES
 - At most one armor chest piece; other wearables are magic; weapons may be included.
 - Legendary materials should make genuinely legendary pieces; do not arbitrarily dilute every piece.
 - Names share a coherent lineage/motif.
-- Existing finished set pieces are bases: consume and upgrade them, preserving every mechanical floor and meaningful ability.`;
+- Existing finished set pieces are bases: consume and upgrade them. Every old mechanic, function and effect is a floor; add or improve, never remove or trade one away unless the player explicitly requests that replacement.`;
 
 const CONSTRUCT_RULES = `DEDICATED CONSTRUCT MODE
 - Return exactly 2 alternative companion-style constructs. This mode is for entities that become commanded companions, not ordinary inventory vehicles/ships made in ITEM mode.
