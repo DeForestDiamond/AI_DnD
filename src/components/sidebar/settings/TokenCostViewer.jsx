@@ -18,11 +18,10 @@ const loadGrok43Reasoning = () => {
   } catch { return 'low'; }
 };
 
-// TokenCostViewer is imported with the app shell, so restore the saved Grok 4.3
-// effort at module load rather than waiting for the Settings tab to be opened.
-// MODEL_CONFIGS is the object every DM/helper call reads immediately before use.
-const initialGrok43Reasoning = loadGrok43Reasoning();
-if (MODEL_CONFIGS?.grok) MODEL_CONFIGS.grok.reasoning_effort = initialGrok43Reasoning;
+// Restore the saved effort as soon as this module loads. The actual select also
+// re-reads localStorage on every mount so closing/reopening Settings cannot reset
+// a choice made earlier in the session.
+if (MODEL_CONFIGS?.grok) MODEL_CONFIGS.grok.reasoning_effort = loadGrok43Reasoning();
 
 const loadStored = () => {
   if (typeof window === 'undefined') return [];
@@ -42,7 +41,7 @@ const mergeEntries = (older, newer) => {
 
 export function TokenCostViewer({ entries=[] }) {
   const [storedEntries, setStoredEntries] = useState(loadStored);
-  const [grok43Reasoning, setGrok43Reasoning] = useState(initialGrok43Reasoning);
+  const [grok43Reasoning, setGrok43Reasoning] = useState(loadGrok43Reasoning);
   const allEntries = useMemo(() => mergeEntries(storedEntries, entries), [storedEntries, entries]);
 
   // The telemetry log has its own browser persistence instead of depending on a
@@ -57,12 +56,16 @@ export function TokenCostViewer({ entries=[] }) {
     }
   }, [entries, storedEntries]);
 
-  useEffect(() => {
-    if (MODEL_CONFIGS?.grok) MODEL_CONFIGS.grok.reasoning_effort = grok43Reasoning;
-    try { window.localStorage?.setItem(GROK43_REASONING_KEY, grok43Reasoning); } catch (err) {
+  const changeGrok43Reasoning = (effort) => {
+    if (!GROK43_REASONING_LEVELS.includes(effort)) return;
+    // Write synchronously with the UI event. Settings/TokenCostViewer can unmount
+    // immediately after this click, so persistence must not depend on an effect.
+    if (MODEL_CONFIGS?.grok) MODEL_CONFIGS.grok.reasoning_effort = effort;
+    try { window.localStorage?.setItem(GROK43_REASONING_KEY, effort); } catch (err) {
       console.warn('[GROK 4.3] Could not persist reasoning effort:', err);
     }
-  }, [grok43Reasoning]);
+    setGrok43Reasoning(effort);
+  };
 
   const totalCost = allEntries.reduce((s,e)=>s+(Number(e.cost)||0),0);
   const totalInput = allEntries.reduce((s,e)=>s+(Number(e.inputTokens)||0),0);
@@ -81,7 +84,7 @@ export function TokenCostViewer({ entries=[] }) {
     <CollapsibleSection title="📊 TOKEN & COST LOG" count={allEntries.length || 0} defaultOpen={false}>
       <div style={{marginBottom:9,padding:'7px 8px',border:`1px solid ${colors.borderDim}`,borderRadius:4,background:'rgba(0,0,0,0.2)'}}>
         <div style={{fontSize:9,color:colors.textGhost,letterSpacing:0.7,marginBottom:4}}>GROK 4.3 REASONING</div>
-        <select value={grok43Reasoning} onChange={e=>setGrok43Reasoning(e.target.value)}
+        <select value={grok43Reasoning} onChange={e=>changeGrok43Reasoning(e.target.value)}
           style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.text,fontFamily:fonts.body,fontSize:11,padding:'5px 6px',borderRadius:3,outline:'none',cursor:'pointer'}}>
           <option value="none">None</option>
           <option value="low">Low</option>
