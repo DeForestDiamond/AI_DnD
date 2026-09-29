@@ -6,7 +6,7 @@ import { SLOTS } from './constants/items.js';
 import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
-import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, buildSystemPromptSol, buildSystemPromptTerra, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
+import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
 import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
 import { fixedArcLocationFor } from './constants/encounters/arcLocations.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
@@ -26,7 +26,7 @@ import { generateAdventureArc } from './helpers/adventure/arc.js';
 import { callGptConsolidate } from './helpers/openai/consolidate.js';
 import { armAnthropicCacheKeepWarm, cancelAnthropicCacheKeepWarm } from './helpers/anthropic/cache.js';
 import { createPromptRecorder } from './helpers/debug/promptLog.js';
-import { logHelperUsage } from './helpers/debug/usage.js';
+import { makeUsageEntry, snapshotCacheState, diffCacheState } from './helpers/debug/tokenCostLog.js';
 import { createSummaryManager, parseSummary, formatSummaryForApi } from './helpers/history/manager.js';
 import { createExtractionManager } from './helpers/extraction/manager.js';
 import { createItemManager } from './helpers/items/manager.js';
@@ -67,6 +67,7 @@ export default function App() {
   const [dispInput, setDispInput] = useState({ alignment:'', cares:'', indifferent:'', methods:'', lines:'' });
   const [apiKey, setApiKey]     = useState('');
   const [openAiApiKey, setOpenAiApiKey] = useState('');
+  const [xAiApiKey, setXAiApiKey] = useState('');
   const [apiError, setApiError] = useState('');
   const [showSave, setShowSave] = useState(false);
   const [slotTarget, setSlotTarget] = useState(null);
@@ -81,7 +82,6 @@ export default function App() {
   const promptLogRef = useRef({ blocks: {}, turns: [] });
   const promptRecorder = createPromptRecorder({ enabled: PROMPT_LOG_ENABLED, keepTurns: PROMPT_LOG_KEEP });
   const recordPrompt = (rec) => promptRecorder(promptLogRef, rec);
-  const sideCostRef = useRef({ calls: 0, cost: 0 });   // running total for non-DM calls
   const cacheTimerRef = useRef(null);   // one-shot Anthropic cache keep-warm
   const armCacheTimer = () => armAnthropicCacheKeepWarm({
     timerRef: cacheTimerRef,
@@ -92,10 +92,6 @@ export default function App() {
   });
   useEffect(() => () => cancelAnthropicCacheKeepWarm(cacheTimerRef), []);
 
-  // Every helper call (crafting, salvage, extraction, summaries, objectives) is
-  // a separate billed request that never appeared in the token bar. Log each
-  // one's usage and keep a session running total so costs can be traced.
-  const logUsage = (label, data) => logHelperUsage({ sideCostRef, label, data, log });
   const [adventureStartChar, setAdventureStartChar] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(true);
@@ -106,9 +102,11 @@ export default function App() {
   const [deityModalClass, setDeityModalClass] = useState(null);
   const [showSubclassModal, setShowSubclassModal] = useState(false);
   const [subclassQueue, setSubclassQueue] = useState([]);
-  const [selectedModel, setSelectedModel] = useState('sonnet'); // sonnet, haiku, gpt (Sol), terra
+  const [selectedModel, setSelectedModel] = useState('sonnet'); // sonnet, haiku, gpt (Sol), terra, grok, grok46
   const [storySummary, setStorySummary] = useState('');
-  const [tokenUsage, setTokenUsage]     = useState(null);
+  const [tokenCostLog, setTokenCostLog] = useState([]);
+  const tokenCostLogRef = useRef([]);
+  const cacheStateRef = useRef(null);
   const storySummaryRef = useRef('');
 
   const SUMMARIZE_AFTER   = 12;
@@ -136,7 +134,32 @@ export default function App() {
   } = useCharacter(log);
 
   const voice = useVoice();
-  const { callDM, buildActionContext, interceptRollRequest, pingCache } = useGame({ charRef, apiKey, openAiApiKey });
+  const { callDM, buildActionContext, interceptRollRequest, pingCache } = useGame({ charRef, apiKey, openAiApiKey, xAiApiKey });
+
+  const appendTokenCostEntry = (requestType, data, { includeCacheChanges=false, modelKey=selectedModel } = {}) => {
+    if (!data) return null;
+    const modelConfig = MODEL_CONFIGS[modelKey] || MODEL_CONFIGS[selectedModel];
+    const snapshot = snapshotCacheState(charRef.current, storySummaryRef.current);
+    const changes = includeCacheChanges ? diffCacheState(cacheStateRef.current, snapshot) : [];
+    const entry = makeUsageEntry({ modelKey, modelConfig, requestType, data, changes });
+    if (includeCacheChanges) cacheStateRef.current = snapshot;
+    setTokenCostLog(prev => {
+      const next = [...prev, entry];
+      tokenCostLogRef.current = next;
+      return next;
+    });
+    // Usage is campaign data. Persist it immediately instead of waiting for a
+    // character mutation to happen to trigger the ordinary autosave effect.
+    setTimeout(() => {
+      try { save.autoSave(charRef.current, fullLogRef.current); } catch {}
+    }, 0);
+    return entry;
+  };
+
+  // Helper calls are billed too, but do not themselves consume the DM cache.
+  // Their resulting state mutations (summary, NPC extraction, crafting, etc.) are
+  // detected against the last gameplay snapshot on the next DM request.
+  const logUsage = (label, data) => appendTokenCostEntry(label, data);
 
   // ── Save/Load ──────────────────────────────────────────────────────────────
   // Which patron class is the deity/patron being chosen for? Prefers Warlock so a
@@ -182,7 +205,7 @@ export default function App() {
     voice.applySavedSettings?.({ rate: settings.ttsRate, pitch: settings.ttsPitch });
   };
 
-  const applyLoadedFull = (char, msgs, summary = '', settings = null) => {
+  const applyLoadedFull = (char, msgs, summary = '', settings = null, savedTokenCostLog = [], savedCacheState = null) => {
     applyLoadedSettings(settings);
     resetCraftingPanels();   // any pending proposal refers to the character being replaced
     loadCharacter(char);
@@ -190,6 +213,8 @@ export default function App() {
     fullLogRef.current = msgs;
     setStorySummary(summary);
     storySummaryRef.current = summary;
+    setTokenCostLog(savedTokenCostLog); tokenCostLogRef.current = savedTokenCostLog;
+    cacheStateRef.current = savedCacheState;
     initSummarizedAt(msgs.length, summary);
     queuePostLoadModals(char);
     setPhase('playing');
@@ -228,6 +253,8 @@ export default function App() {
     storySummaryRef,
     debugLogRef,
     promptLogRef,
+    tokenCostLogRef,
+    cacheStateRef,
     getSettings: () => ({ selectedModel, showRawTags, ttsRate: voice.rate, ttsPitch: voice.pitch }),
     onLoadFull: applyLoadedFull,
     onLoadCharacter: applyLoadedCharacter,
@@ -235,10 +262,10 @@ export default function App() {
 
   const { initSummarizedAt, toggleSummaryEntry, maybeAutoSummarize } = createSummaryManager({
     lastSummarizedAt, storySummaryRef, setStorySummary, charRef, fullLogRef, save, selectedModel, MODEL_CONFIGS,
-    apiKey, openAiApiKey, log, logUsage, SUMMARIZE_AFTER, KEEP_RECENT, ENTRIES_BEFORE_COMPRESS, COMPRESS_KEEP_RECENT_ENTRIES,
+    apiKey, openAiApiKey, xAiApiKey, log, logUsage, SUMMARIZE_AFTER, KEEP_RECENT, ENTRIES_BEFORE_COMPRESS, COMPRESS_KEEP_RECENT_ENTRIES,
   });
-  const { extractNPCs, extractTowns } = createExtractionManager({ apiKey, openAiApiKey, fullLogRef, charRef, updateChar, selectedModel, MODEL_CONFIGS, log, logUsage });
-  const { proposeCrafting, executeCrafting, proposeConsolidation, executeConsolidation, proposeDismantle, executeDismantle } = createItemManager({ apiKey, openAiApiKey, charRef, updateChar, applyEffects, selectedModel, MODEL_CONFIGS, log, logUsage });
+  const { extractNPCs, extractTowns } = createExtractionManager({ apiKey, openAiApiKey, xAiApiKey, fullLogRef, charRef, updateChar, selectedModel, MODEL_CONFIGS, log, logUsage });
+  const { proposeCrafting, executeCrafting, proposeConsolidation, executeConsolidation, proposeDismantle, executeDismantle } = createItemManager({ apiKey, openAiApiKey, xAiApiKey, charRef, updateChar, applyEffects, selectedModel, MODEL_CONFIGS, log, logUsage });
 
   // Autosave was only triggered by message events, so anything changed BETWEEN
   // turns was lost on reload — a crafting session, salvage, equipment changes,
@@ -370,6 +397,10 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         ? buildSystemPromptSonnet(charWithArc)
         : selectedModel === 'terra'
         ? buildSystemPromptTerra(charWithArc)
+        : selectedModel === 'grok'
+        ? buildSystemPromptGrok43(charWithArc)
+        : selectedModel === 'grok46'
+        ? buildSystemPromptGrok46(charWithArc)
         : buildSystemPromptSol(charWithArc);
       const { text, usage } = await callDM(
         [{ role:'user', content: seedPrompt }],
@@ -378,7 +409,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         null,
         log
       );
-      if (usage) setTokenUsage(usage);
+      if (usage) appendTokenCostEntry('campaign opening', usage, { includeCacheChanges:true });
       armCacheTimer();
       const newChar = applyEffects(text, charWithArc, false, charWithArc.lootDestination === 'stash' ? 'stash' : 'inventory');
       log('applyEffects after startAdventure', { xpBefore: char.xp, xpAfter: newChar.xp, levelBefore: char.level, levelAfter: newChar.level });
@@ -412,6 +443,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
       modelConfig,
       anthropicApiKey: apiKey,
       openAiApiKey,
+      xAiApiKey,
     });
 
     if (modelConfig?.provider === 'anthropic') {
@@ -612,6 +644,10 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         ? buildSystemPromptSonnet(charRef.current)
         : selectedModel === 'terra'
         ? buildSystemPromptTerra(charRef.current)
+        : selectedModel === 'grok'
+        ? buildSystemPromptGrok43(charRef.current)
+        : selectedModel === 'grok46'
+        ? buildSystemPromptGrok46(charRef.current)
         : buildSystemPromptSol(charRef.current);
       const { text: dmText, usage: dmUsage } = await callDM(
         [...history, { role:'user', content: outgoing }],
@@ -621,7 +657,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         log,
         recordPrompt
       );
-      if (dmUsage) setTokenUsage(dmUsage);
+      if (dmUsage) appendTokenCostEntry('gameplay', dmUsage, { includeCacheChanges:true });
       armCacheTimer();
 
       // Check if DM requested a skill roll — intercept and roll it
@@ -657,7 +693,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           signal,
           log
         );
-        if (followUpUsage) setTokenUsage(followUpUsage);
+        if (followUpUsage) appendTokenCostEntry('roll follow-up', followUpUsage, { includeCacheChanges:true });
         armCacheTimer();
         finalText = followUp;
       }
@@ -851,20 +887,28 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             placeholder="sk-..."
             style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.mono,fontSize:12,padding:'9px 10px',borderRadius:4,outline:'none'}}
           />
-          <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.5}}>
-            Your keys stay in your browser only. Enter either provider key to begin; the selected model will use its matching provider.
+          <div style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:2,marginTop:12,marginBottom:6}}>XAI API KEY</div>
+          <input
+            type="password"
+            value={xAiApiKey}
+            onChange={e => setXAiApiKey(e.target.value)}
+            placeholder="xai-..."
+            style={{width:'100%',boxSizing:'border-box',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.border}`,color:colors.text,fontFamily:fonts.mono,fontSize:12,padding:'9px 10px',borderRadius:4,outline:'none'}}
+          />
+          <div style={{fontSize:10,color:colors.textGhost,lineHeight:1.5,marginTop:6}}>
+            Your keys stay in your browser only. Enter any provider key to begin; the selected model uses its matching provider.
           </div>
         </div>
 
         <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
-          <button style={{...btn(true),fontSize:14,padding:'12px 28px',opacity:(apiKey || openAiApiKey)?1:0.4}} disabled={!apiKey && !openAiApiKey} onClick={()=>setPhase('create-race')}>
+          <button style={{...btn(true),fontSize:14,padding:'12px 28px',opacity:(apiKey || openAiApiKey || xAiApiKey)?1:0.4}} disabled={!apiKey && !openAiApiKey && !xAiApiKey} onClick={()=>setPhase('create-race')}>
             BEGIN YOUR LEGEND
           </button>
-          <button style={{...btn(false),fontSize:12,padding:'12px 18px',opacity:(apiKey || openAiApiKey)?1:0.4}} disabled={!apiKey && !openAiApiKey} onClick={()=>{setShowSave(true);}}>
+          <button style={{...btn(false),fontSize:12,padding:'12px 18px',opacity:(apiKey || openAiApiKey || xAiApiKey)?1:0.4}} disabled={!apiKey && !openAiApiKey && !xAiApiKey} onClick={()=>{setShowSave(true);}}>
             📂 Load / Import
           </button>
         </div>
-        {!apiKey && !openAiApiKey && <div style={{fontSize:11,color:colors.textGhost,marginTop:12}}>Enter an Anthropic or OpenAI API key above to begin</div>}
+        {!apiKey && !openAiApiKey && !xAiApiKey && <div style={{fontSize:11,color:colors.textGhost,marginTop:12}}>Enter an Anthropic, OpenAI, or xAI API key above to begin</div>}
       </div>
     </div>
   );
@@ -1096,6 +1140,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           onSelectModel={setSelectedModel}
           hasAnthropic={!!(apiKey || import.meta.env.VITE_ANTHROPIC_KEY)}
           hasOpenAI={!!(openAiApiKey || import.meta.env.VITE_OPENAI_KEY)}
+          hasXAI={!!(xAiApiKey || import.meta.env.VITE_XAI_KEY)}
           antagonists={antagonistsForLevel(adventureStartChar.level)}
           defeatedAntagonists={adventureStartChar.defeatedAntagonists || []}
           onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
@@ -1142,6 +1187,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             showRawTags={showRawTags}
             onToggleRawTags={()=>setShowRawTags(v=>!v)}
             debugLog={debugLog}
+            tokenCostLog={tokenCostLog}
         onExportDebug={() => {
           const blob = new Blob([debugLog.join('\n')], { type:'text/plain' });
           const url = URL.createObjectURL(blob);
@@ -1183,7 +1229,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             onRenameItem={renameItem}
             onDeleteFromBag={deleteFromBag}
             selectedModel={selectedModel}
-            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : m === 'gpt' ? 'terra' : 'sonnet')}
+            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : m === 'gpt' ? 'terra' : m === 'terra' ? 'grok' : m === 'grok' ? 'grok46' : 'sonnet')}
             pacing={character.pacing || 'normal'}
             lootDestination={character.lootDestination || 'inventory'}
             onToggleLootDestination={() => {
@@ -1394,7 +1440,6 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             const lastDM = [...fullLog].reverse().find(m => m.role === 'dm');
             if (lastDM) voice.speak(lastDM.text);
           }}
-          tokenUsage={tokenUsage}
           selectedModel={selectedModel}
         />
       </div>

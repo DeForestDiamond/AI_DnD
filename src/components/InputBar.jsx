@@ -1,43 +1,44 @@
 import { useState, useRef, useEffect } from 'react';
 import { colors, fonts, btn } from '../styles/theme.js';
 import { clearPendingOpenAiImage, installOpenAiImageInterceptor, setPendingOpenAiImage } from '../helpers/openai/pendingImage.js';
+import { clearPendingXaiImage, installXaiImageInterceptor, setPendingXaiImage } from '../helpers/xai/pendingImage.js';
 
-// USD per million tokens. Cache writes are billed separately from cache reads.
-// OpenAI rates here are the standard short-context API rates used by this app's
-// explicit-cache path. Requests above the long-context threshold have different
-// pricing; normal game turns are far below it.
-const PRICING = {
-  sonnet:   { input: 3.0, output: 15.0, cacheWrite: 3.75,  cacheRead: 0.30 },
-  haiku:    { input: 1.0, output: 5.0,  cacheWrite: 1.25,  cacheRead: 0.10 },
-  gpt:      { input: 5.0, output: 30.0, cacheWrite: 6.25,  cacheRead: 0.50 },
-  gptTerra: { input: 2.5, output: 15.0, cacheWrite: 3.125, cacheRead: 0.25 },
-};
-
-export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, tokenUsage, selectedModel }) {
+export function InputBar({ onSend, onStop, loading, isListening, sttSupported, onMicClick, isSpeaking, voiceSupported, ttsEnabled, onToggleTts, onStopSpeaking, onReplay, selectedModel }) {
   const [input, setInput] = useState('');
   const [attachment, setAttachment] = useState(null);
+  const [tokenUsage, setTokenUsage] = useState(null);
   const inputRef = useRef(null);
   const fileRef = useRef(null);
   const openAiModel = selectedModel === 'terra' || selectedModel === 'gpt';
+  const xaiModel = selectedModel === 'grok' || selectedModel === 'grok46';
+  const imageModel = openAiModel || xaiModel;
 
   useEffect(() => {
     installOpenAiImageInterceptor();
+    installXaiImageInterceptor();
   }, []);
 
   useEffect(() => {
     if (!loading) setTimeout(() => inputRef.current?.focus(), 100);
   }, [loading]);
 
+  useEffect(() => {
+    const handler = (e) => { if (e.detail) setTokenUsage(e.detail); };
+    window.addEventListener('dnd-token-usage', handler);
+    return () => window.removeEventListener('dnd-token-usage', handler);
+  }, []);
+
   // If the player switches back to Claude before sending, discard only the
-  // one-turn OpenAI screenshot. The persistent campaign map is managed safely
+  // one-turn provider screenshot. The persistent campaign map is managed safely
   // from Settings and remains ready for the next Terra/Sol turn.
   useEffect(() => {
-    if (!openAiModel && attachment) {
+    if (!imageModel && attachment) {
       setAttachment(null);
       clearPendingOpenAiImage();
+      clearPendingXaiImage();
       if (fileRef.current) fileRef.current.value = '';
     }
-  }, [openAiModel, attachment]);
+  }, [imageModel, attachment]);
 
   const handleImagePick = (e) => {
     const file = e.target.files?.[0];
@@ -55,7 +56,8 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
       if (!dataUrl) return;
       const next = { name: file.name || 'screenshot', dataUrl };
       setAttachment(next);
-      setPendingOpenAiImage(next);
+      if (xaiModel) setPendingXaiImage(next);
+      else setPendingOpenAiImage(next);
     };
     reader.readAsDataURL(file);
   };
@@ -63,6 +65,7 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
   const removeAttachment = () => {
     setAttachment(null);
     clearPendingOpenAiImage();
+    clearPendingXaiImage();
     if (fileRef.current) fileRef.current.value = '';
   };
 
@@ -72,7 +75,7 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
     onSend(text);
     setInput('');
     // Do NOT clear the pending transport here — callDM consumes it when the
-    // actual OpenAI request is assembled. Only clear the local preview.
+    // actual provider request is assembled. Only clear the local preview.
     setAttachment(null);
     if (fileRef.current) fileRef.current.value = '';
   };
@@ -116,7 +119,7 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
             🎙
           </button>
         )}
-        {openAiModel && (
+        {imageModel && (
           <>
             <input ref={fileRef} type="file" accept="image/*" onChange={handleImagePick} style={{display:'none'}} />
             <button onClick={() => !loading && fileRef.current?.click()} disabled={loading} title="Attach screenshot for this turn"
@@ -151,7 +154,7 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
       </div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
         <div style={{fontSize:10,color:colors.textDead,fontFamily:fonts.display,letterSpacing:1}}>
-          {loading ? 'Tap ⏹ Stop to cancel' : `ACT to send · Shift+Enter for new line${sttSupported?' · 🎙 speak':''}${openAiModel?' · 🖼️ turn screenshot':''} · 💾 save in sidebar`}
+          {loading ? 'Tap ⏹ Stop to cancel' : `ACT to send · Shift+Enter for new line${sttSupported?' · 🎙 speak':''}${imageModel?' · 🖼️ turn screenshot':''} · 💾 save in sidebar`}
         </div>
         {voiceSupported && (
           <div style={{display:'flex',gap:6}}>
@@ -164,20 +167,13 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
         )}
       </div>
       {tokenUsage && (() => {
-        const fresh       = tokenUsage.input_tokens ?? 0;
-        const cacheRead   = tokenUsage.cache_read_input_tokens ?? 0;
-        const cacheCreate = tokenUsage.cache_creation_input_tokens ?? 0;
-        const inputTotal  = fresh + cacheRead + cacheCreate;
-        const output      = tokenUsage.output_tokens ?? 0;
-        const total       = inputTotal + output;
-        const rate = PRICING[selectedModel] || PRICING.sonnet;
-        const cost = (
-          fresh       * rate.input +
-          cacheCreate * rate.cacheWrite +
-          cacheRead   * rate.cacheRead +
-          output      * rate.output
-        ) / 1e6;
-
+        const inputTotal = tokenUsage.inputTokens ?? 0;
+        const cacheRead = tokenUsage.cachedTokens ?? 0;
+        const cacheCreate = tokenUsage.cacheWriteTokens ?? 0;
+        const fresh = tokenUsage.freshTokens ?? 0;
+        const output = tokenUsage.outputTokens ?? 0;
+        const total = inputTotal + output;
+        const cost = tokenUsage.cost ?? 0;
         const cellStyle = {
           minWidth:0,
           whiteSpace:'nowrap',

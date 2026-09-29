@@ -8,8 +8,10 @@ import { buildSystemPrompt as buildSystemPromptHaiku } from '../prompts/haiku.js
 import { buildSystemPromptSonnet } from '../prompts/sonnet.js';
 import { buildSystemPromptSol } from '../prompts/sol.js';
 import { buildSystemPromptTerra } from '../prompts/terra.js';
+import { buildSystemPromptGrok43 } from '../prompts/grok43.js';
+import { buildSystemPromptGrok46 } from '../prompts/grok46.js';
 
-export { buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra };
+export { buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46 };
 export const buildSystemPrompt = buildSystemPromptHaiku;
 export const buildSystemPromptGpt = buildSystemPromptSol;
 
@@ -118,20 +120,41 @@ export const MODEL_CONFIGS = {
     label: 'GPT Terra',
     emoji: '🌍',
   },
+  grok: {
+    provider: 'xai',
+    model: 'grok-4.3',
+    max_tokens: 2048,
+    reasoning_effort: 'low',
+    label: 'Grok 4.3',
+    emoji: '🚀',
+  },
+  grok46: {
+    provider: 'xai',
+    model: 'grok-4.6',
+    max_tokens: 2048,
+    reasoning_effort: 'low',
+    label: 'Grok 4.6',
+    emoji: '🚀',
+  },
 };
 
 // Stack duplicate inventory items for display
 export const stackInventory = (inventory) => stackCounts(inventory);
 
 // ── The Hook ───────────────────────────────────────────────────────────────────
-export function useGame({ charRef, apiKey, openAiApiKey }) {
+export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
 
   const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null, onPrompt = null) => {
     const provider = modelConfig.provider || 'anthropic';
     const key = provider === 'openai'
       ? (openAiApiKey || import.meta.env.VITE_OPENAI_KEY)
-      : (apiKey || import.meta.env.VITE_ANTHROPIC_KEY);
-    if (!key) throw new Error(provider === 'openai' ? 'OpenAI API key is missing' : 'Anthropic API key is missing');
+      : provider === 'xai'
+        ? (xAiApiKey || import.meta.env.VITE_XAI_KEY)
+        : (apiKey || import.meta.env.VITE_ANTHROPIC_KEY);
+    if (!key) {
+      const providerName = provider === 'openai' ? 'OpenAI' : provider === 'xai' ? 'xAI' : 'Anthropic';
+      throw new Error(`${providerName} API key is missing`);
+    }
 
     // systemPrompt can be a string (legacy) or { static, dynamic }
     // Static block gets cached — bio, rules, companions, NPCs, towns (rarely change)
@@ -171,7 +194,7 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
     // GPT gets its OWN lean dynamic tail. Claude's dynamic prompt contains a large
     // arc-policy essay plus a repeated preflight checklist that Sol does not need.
     // Preserve only the actual CURRENT STATE lines, then add a compact GPT arc block.
-    if (provider === 'openai' && dynamicTail) {
+    if ((provider === 'openai' || provider === 'xai') && dynamicTail) {
       const arcMarker = '\nACTIVE ARC ANTAGONIST';
       const hooksMarker = '\n\nHOOKS — ARC OR NO ARC:';
       let liveState = dynamicTail;
@@ -195,15 +218,6 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
 
       dynamicTail = liveState + gptArc;
     }
-    // Diagnostic: which region is actually costing tokens. Rough estimate at
-    // 4 chars per token — enough to see where the bulk sits.
-    if (log) {
-      const est = t => Math.round((t || '').length / 4);
-      const cachedMsgs = messages.length > 2 ? messages.slice(0, -2) : [];
-      const freshMsgs = messages.length > 2 ? messages.slice(-2) : messages;
-      const sz = arr => arr.reduce((a, m) => a + est(typeof m.content === 'string' ? m.content : JSON.stringify(m.content)), 0);
-      log(`[PROMPT] static ${est(hasSplit ? systemPrompt.static : systemPrompt).toLocaleString()} · gear ${est(hasSplit ? systemPrompt.gear : '').toLocaleString()} · items ${est(hasSplit ? systemPrompt.items : '').toLocaleString()} (cached) · history ${sz(cachedMsgs).toLocaleString()} (${cachedMsgs.length} msgs, cached) · fresh ${(sz(freshMsgs) + est(dynamicTail)).toLocaleString()} (${freshMsgs.length} msgs + ${est(dynamicTail)} state)`);
-    }
 
     // Hand the assembled prompt to the caller so it can be recorded for
     // diagnosis. Blocks are passed whole; the caller deduplicates them, since
@@ -217,6 +231,75 @@ export function useGame({ charRef, apiKey, openAiApiKey }) {
       cachedMessages: messages.length > 2 ? messages.slice(0, -2).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })) : [],
       freshMessages: (messages.length > 2 ? messages.slice(-2) : messages).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })),
     } : null;
+
+    if (provider === 'xai') {
+      // xAI Responses API is OpenAI-compatible, but its prompt cache is automatic.
+      // Keep the same stable-prefix ordering and provide a sticky prompt_cache_key
+      // without sending OpenAI-specific explicit cache breakpoint fields.
+      const grokCtx = hasSplit ? buildCtxSections(charRef.current) : null;
+      const grokLocationContext = grokCtx
+        ? [grokCtx.npcSection, grokCtx.townsSection].filter(Boolean).join('\n')
+        : '';
+      const developerContent = [
+        { type: 'input_text', text: hasSplit ? systemPrompt.static : systemPrompt },
+        ...(grokLocationContext ? [{ type: 'input_text', text: grokLocationContext }] : []),
+        ...(hasSplit && systemPrompt.gear ? [{ type: 'input_text', text: systemPrompt.gear }] : []),
+        ...(hasSplit && systemPrompt.items ? [{ type: 'input_text', text: systemPrompt.items }] : []),
+      ];
+
+      const input = [{ type: 'message', role: 'developer', content: developerContent }];
+      messages.forEach((m, i) => {
+        let text = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+        if (dynamicTail && i === messages.length - 1) text = `${text}\n\n${dynamicTail}`;
+        const role = m.role === 'assistant' ? 'assistant' : 'user';
+        input.push({
+          type: 'message',
+          role,
+          content: [{ type: role === 'assistant' ? 'output_text' : 'input_text', text }],
+        });
+      });
+
+      const res = await fetch('https://api.x.ai/v1/responses', {
+        method: 'POST',
+        signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: modelConfig.model,
+          input,
+          max_output_tokens: modelConfig.max_tokens,
+          reasoning: { effort: modelConfig.reasoning_effort || 'low' },
+          prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`,
+          store: false,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error?.message || `xAI API error ${res.status}`);
+      if (data.status === 'incomplete') {
+        throw new Error(`Grok reply incomplete${data.incomplete_details?.reason ? `: ${data.incomplete_details.reason}` : ''}`);
+      }
+      const text = (data.output || [])
+        .filter(item => item?.type === 'message')
+        .flatMap(item => item.content || [])
+        .filter(part => part?.type === 'output_text')
+        .map(part => part.text || '')
+        .join('') || '...';
+      const totalInput = data.usage?.input_tokens || 0;
+      const cached = data.usage?.input_tokens_details?.cached_tokens || 0;
+      const usage = {
+        input_tokens: Math.max(0, totalInput - cached),
+        output_tokens: data.usage?.output_tokens || 0,
+        cache_read_input_tokens: cached,
+        cache_creation_input_tokens: 0,
+        total_tokens: data.usage?.total_tokens || (totalInput + (data.usage?.output_tokens || 0)),
+        provider: 'xai',
+      };
+      if (log) log(`[CACHE] xAI actual: total ${totalInput.toLocaleString()} · cached ${cached.toLocaleString()} · fresh ${Math.max(0, totalInput - cached).toLocaleString()}`);
+      if (promptRecord) onPrompt({ ...promptRecord, usage });
+      return { text, usage };
+    }
 
     if (provider === 'openai') {
       // OpenAI prompt caching is automatic and prefix-based. Preserve the same
