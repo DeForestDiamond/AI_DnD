@@ -1,5 +1,6 @@
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { CONFLICT_RESISTANCE_BLOCK } from './conflict.js';
 import { TAGS_BLOCK } from './tags.js';
 
 // ── System Prompt — Grok 4.6 ───────────────────────────────────────────────────────
@@ -34,6 +35,8 @@ ${TAGS_BLOCK}
 ${ORDINARY_WORLD_BLOCK}
 ${ARC_RULES_BLOCK}
 ${WORLD_INTEGRITY_BLOCK}
+
+${CONFLICT_RESISTANCE_BLOCK}
 ${SETTING_BLOCK}
 
 ── PROVIDER TUNING ──
