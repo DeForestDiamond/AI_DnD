@@ -95,16 +95,18 @@ MATERIAL RULES
 
 UPGRADING FINISHED ITEMS — EXISTING FUNCTIONALITY IS A HARD FLOOR
 - A finished selected item being modified is consumed and replaced. Preserve its identity/name lineage and TYPE unless the requested transformation genuinely changes them.
-- Preserve EVERY existing mechanical value and EVERY distinct persistent capability unless the PLAYER REQUEST explicitly asks to remove, replace, sacrifice, or transform that specific capability.
+- Preserve EVERY existing mechanical value and EVERY genuinely distinct persistent capability unless the PLAYER REQUEST explicitly asks to remove, replace, sacrifice, or transform that specific capability.
 - Existing bonus keys are floors; armour AC cannot fall; weapon base/enchantment/typed bonus damage cannot fall. Normalize weapon damage without losing approximate average damage.
-- Existing narrative capabilities are floors too. Flight, planar travel, command authority, sensors, wards, immunities, fabrication systems, environmental control, communications, special movement, and every other meaningful capability remain present after an upgrade even when unrelated to the new materials.
-- Preserve FUNCTIONAL SCOPE, not old wording. Old clauses, examples, lists of applications, implementation details, and redundant qualifiers may be rewritten or collapsed whenever the broader replacement still covers what the item could do.
-- UPGRADE EXISTING CAPABILITIES BEFORE ADDING PARALLEL ONES. If new materials improve an area the item already covers, strengthen, broaden, or generalize that existing capability instead of appending another overlapping effect. Add a separate capability only for a genuinely different function.
-- Repeated upgrades should produce increasingly capable systems, not accumulating lists of narrowly overlapping powers.
-- NEVER delete a genuinely distinct old capability merely to shorten the label or make room for a new one. Brevity does not outrank functionality, but wording and examples are not functionality.
+- Existing narrative capabilities are floors too. Flight, planar travel, command authority, sensors, wards, immunities, fabrication systems, environmental control, communications, special movement, and every other genuinely distinct capability remain present after an upgrade even when unrelated to the new materials.
+- PRESERVE SEMANTICS, NOT SENTENCES. The old label is source data, not prose that must survive. Rebuild the new label from the item's actual capability set.
+- Before writing, mentally group old effects and new material-derived effects into capability domains such as planar sensing/navigation, elemental control, temporal control, spirit containment, defenses, fabrication, communications, movement, or command. Each domain should normally become ONE broad capability statement, not a list of constituent tricks.
+- UPGRADE VERTICALLY BEFORE ADDING HORIZONTALLY. If the item already has a capability in a domain, new materials affecting that domain MUST first strengthen, broaden, deepen, or generalize that existing capability. Do not append a second overlapping subsystem merely because the new material arrived under a different name.
+- Add a separate capability only when the new material creates a genuinely different function that cannot reasonably fit inside an existing domain.
+- A stronger upgrade may replace several narrower old statements with one broader statement. This is desired when the broader statement clearly encompasses their functional scope.
+- Repeated upgrades should make a small number of systems broader and stronger, not make the label grow in proportion to upgrade count.
+- NEVER delete a genuinely distinct old capability merely to shorten the label or make room for a new one. Brevity does not outrank functionality, but examples, implementation details, subsystem names, material names, and lists of applications are not automatically distinct functionality.
 - An upgrade must actually improve something. Do not merely rename, rearrange bonuses, or recreate unchanged.
-- Preserve meaningful recoverable composition at a useful level of abstraction. Preserve the important substance and major systems, not an exhaustive historical ingredient list.
-- FINAL UPGRADE CHECK: compare the proposed result against the BASE ITEM by FUNCTION, not sentence. If a genuinely distinct old mechanic or persistent capability is absent or weaker without an explicit player request to remove it, rewrite the proposal. Do not require every old material name, example, qualifier, or implementation detail to survive verbatim.
+- FINAL UPGRADE CHECK: compare the proposed result against the BASE ITEM by CAPABILITY DOMAIN, not sentence. Confirm that every genuinely distinct old function still exists at equal or greater scope. Do NOT restore old wording, exhaustive examples, component lists, or subsystem names merely because they appeared in the base label.
 
 ITEM TYPE IS STRICT
 - weapon: wielded weapon. armor: ONLY main chest/body armour. magic: every other wearable magical item, including shields/foci. consumable: one-use preparations.
@@ -121,27 +123,43 @@ MECHANICS
 - Weapon damage canonical form: ONE untyped base dice expression with modifier, then at most ONE typed bonus expression per damage type. Consolidate mixed base dice and duplicate typed groups while preserving approximate average damage. Never type the base expression; every bonus expression must have a type.
 - Do NOT put attack-roll bonuses or ordinary weapon-property boilerplate in label. Accessories/armour do not get attack damage dice. Non-applicable fields are null or empty string.
 
-LABELS — CONCISE CAPABILITIES, NOT TECHNICAL MANUALS
-- Labels are persistent DM guidance. State what the item can actually do at the broadest useful level that remains clear.
-- DEFINE THE POWER, NOT EVERY APPLICATION. Do not enumerate every target, subfunction, environmental condition, edge case, or obvious consequence of a capability. Prefer "comprehensively detects and maps planar phenomena" over separately listing breaches, boundaries, seams, anchors, apertures, destinations, layers, and similar examples.
-- Add specificity only when it establishes a meaningful limitation, unusual exception, genuinely distinct capability, or mechanically important property.
-- Do not repeat implications already clearly contained within a broader capability. A powerful item may have many capabilities; that does not require many words per capability.
-- When several effects form one coherent subsystem, describe the subsystem and its broad function rather than documenting each constituent effect separately.
+LABELS — CAPABILITY SUMMARY, NOT TECHNICAL DOCUMENTATION
+- A label is a compact persistent reference for the DM. It is NOT a rules treatise, engineering specification, crafting history, inventory manifest, or exhaustive explanation of every way a power could be used.
+- Start from the minimum wording needed to preserve the item's meaningful identity and capability domains. Expand only when additional words communicate a genuinely distinct function or important limitation.
+- DEFINE THE POWER ONCE. State a capability at the broadest useful level. Do not enumerate its obvious targets, applications, subfunctions, edge cases, environmental conditions, implementation steps, or downstream consequences.
+- Example: prefer "Comprehensively detects, analyzes, maps, tracks, and manipulates planar phenomena despite hostile planar interference" over separate clauses for portals, breaches, seams, boundaries, anchors, apertures, destinations, layers, drift, timeless regions, weightless regions, and magic-warped regions.
+- Example: prefer "Controls, stores, redirects, and suppresses fire across mundane, magical, divine, infernal, and planar forms" over individually documenting every flame subtype, delivery path, reservoir behavior, and protection interaction.
+- Broad verbs are intentionally inclusive. If a capability says it comprehensively detects and maps planar phenomena, do not separately state that it detects planar breaches, maps anchors, identifies linked apertures, or reveals destinations unless one of those has an exceptional behavior not reasonably implied by the broad statement.
+- DO NOT EXPLAIN HOW THE POWER WORKS unless the mechanism itself matters to gameplay. Core names, matrices, glands, lattices, relays, reservoirs, lenses, crystals, organs, and similar implementation details should normally disappear into the broader system description.
+- When several effects interact to create one outcome, describe the outcome, not each internal step.
+- Do not repeat the same capability from different perspectives. Sensing a thing, tracking the sensed thing, and remembering the track may often be one advanced sensing/tracking capability rather than three paragraphs.
+- Add specificity only for a meaningful limitation, unusual exception, genuinely separate power, mechanically important property, or especially identity-defining behavior.
 - No temporary/turn-based mechanics, action economy, concentration, unsupported numeric combat/healing mechanics, or saving-throw DCs.
-- COMPOSITION IS CONSTRUCTION, NOT INVENTORY HISTORY. Describe significant physical composition and major identifiable systems at a useful level of abstraction. Group related materials into broader categories where appropriate.
-- Do not preserve quantities, exhaustive ingredient lists, redundant variants, individual minor components, or a chronological record of materials incorporated through previous upgrades.
-- Preserve a specific material/component by name only when its identity remains functionally important, substantially defines the item's construction, or would materially matter if salvaged. Once many related components become one integrated system, describe the resulting system instead of listing every constituent.
-- Upgrades may freely rewrite and consolidate composition wording. Preserve recoverable value and substance where practical, not every historical ingredient name.
-- Keep labels concise even for legendary items. Complex items may need several sentences, but length must come from genuinely distinct capabilities, not exhaustive examples, repeated overlap, or component inventories.
-- On upgrade, rewrite the whole label as a coherent current description. Do not simply append new text to the old label.
-- For item-mode constructs such as ships/vehicles/war machines, begin label with CR when useful, then concise form/composition and persistent capabilities.
+
+COMPOSITION — WHAT IT IS MADE OF, NOT EVERYTHING EVER FED INTO IT
+- Composition should usually be ONE concise phrase or sentence naming the dominant structural materials and a few identity-defining integrated systems.
+- NEVER copy the consumes list into the label. The consumes field records what was used; the label describes what the finished item now is.
+- NEVER preserve exact component quantities in a label merely for salvage. Do not write counts such as 17,402 spirit-cores, 152 giant hearts, 941 gemstones, eighteen thorns, nine crystals, or similar inventory bookkeeping unless that exact count is itself a meaningful active mechanic requested by the player.
+- Group related inputs aggressively. Many dragon glands, elemental organs, crystals, reservoirs, conduits, and cores may become "an integrated regenerative elemental engine." Many necromantic cores and spirit vessels may become "a vast self-restoring spirit-core matrix." Many planar sensors may become "an integrated planar sensorium."
+- Named exotic materials may remain when they materially define the item's identity or substance, but variants of the same family should be grouped rather than exhaustively listed.
+- Once components are integrated into a larger functional system, prefer the SYSTEM over its parts. Do not preserve both the long parts list and the system description.
+- Previous upgrade history has no privileged place in the new label. Do not retain a material, component, or subsystem name solely because an earlier label mentioned it.
+- Preserve recoverable substance at a useful category level where practical, accepting that exact salvage provenance may be lost. Label readability and coherent current construction take priority over historical salvage bookkeeping.
+
+LENGTH DISCIPLINE
+- Label length should scale primarily with the number of GENUINELY DISTINCT capability domains, not item age, material count, upgrade count, power level, or rarity.
+- A legendary artifact can be extremely powerful while still having a compact label. Power does not require verbosity.
+- As a strong default, describe ordinary items in 1-3 sentences and complex artifacts in roughly 4-8 information-dense sentences. Exceed this only when genuinely distinct capabilities cannot be represented accurately within that space.
+- If a proposed label is much longer than the base item's actual number of distinct capability domains warrants, COMPRESS IT before output.
+- On every upgrade, rewrite the ENTIRE label as a coherent current-state summary. Never append a new paragraph to the old label. Never preserve verbosity merely because it already exists.
+- For item-mode constructs such as ships/vehicles/war machines, begin label with CR when useful, then concise form/composition and capability-domain summary.
 - Name results for what they are/do, not merely "Enchanted X".`;
 
 const SET_RULES = `MATCHED SET RULES
 - Default: exactly 2 alternative sets with 3-6 pieces. A player-requested set size overrides this, up to 20 pieces when slots/materials support it.
 - SET count is number of COMPLETE SETS, not pieces. Normally count:1 unless multiple complete identical sets were explicitly requested.
 - At most one armor chest piece; other wearables are magic; weapons may be included. Legendary materials should produce genuinely legendary pieces. Names share a coherent lineage.
-- Existing finished pieces are bases. Every old mechanic and genuinely distinct persistent capability on EACH PIECE is a hard floor. Preserve functional scope, but rewrite/consolidate wording and upgrade overlapping capabilities rather than appending parallel effects.`;
+- Existing finished pieces are bases. Every old mechanic and genuinely distinct persistent capability on EACH PIECE is a hard floor. Preserve functional scope by capability domain, rewrite the whole label, and upgrade overlapping domains rather than appending parallel effects or component histories.`;
 
 const CONSTRUCT_RULES = `DEDICATED CONSTRUCT MODE
 - Return exactly 2 alternative companion-style constructs; ordinary inventory vehicles/ships are made in ITEM mode.
