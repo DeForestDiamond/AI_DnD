@@ -8,7 +8,7 @@ import { calcMaxHp, applyRaceBonus, statMod, levelUpsAvailable } from './stats.j
 import { allItems, effectiveMaxHp, reconcileHp, pruneDeadItemDefinitions, itemExistsAnywhere, equippableInSlot } from './items.js';
 import { migrateCharacter } from './migration.js';
 import { EMPTY_CHAR, emptyCompanionSlots } from './defaults.js';
-import { HP_PER_LEVEL } from '../../constants/progression.js';
+import { HP_PER_LEVEL, SAVE_VERSION } from '../../constants/progression.js';
 
 // -- The hook -------------------------------------------------------------------
 export function useCharacter(log) {
