@@ -34,7 +34,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       if (d.type) bits.push(`type ${d.type}`);
       if (d.slot) bits.push(`slot ${d.slot}`);
       if (d.ac !== undefined) bits.push(`ARMOUR RATING ac ${d.ac}${d.dexBonus === false ? ' (heavy)' : d.maxDex != null ? ` (max dex ${d.maxDex})` : ''}`);
-      if (d.damage) bits.push(`damage ${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
+      if (d.damage) bits.push(`damage ${d.damage}${d.damageBonus ? `+${d.damageBonus}` : ''}; enchantment bonus:${d.bonus || 0}`);
       if (Array.isArray(d.extras) && d.extras.length) bits.push(`extra damage ${d.extras.map(e => `${e.dice} ${e.type}`).join(' + ')}`);
       if (d.bonuses && Object.keys(d.bonuses).length) bits.push(`CURRENT BONUSES ${Object.entries(d.bonuses).map(([k, v]) => `${k}:${v}`).join(',')}`);
       if (d.label) bits.push(`"${d.label}"`);
@@ -249,7 +249,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
     // Build the [ITEM:] tag for one piece (also used for single items).
     const tagFor = (o) => {
       if (o.type === 'weapon') {
-        return `[ITEM: ${o.name} | weapon | ${o.damage || '1d6'} | | melee | ${o.label || ''}${o.bonuses ? ` | ${o.bonuses}` : ''}]`;
+        return `[ITEM: ${o.name} | weapon | ${o.damage || '1d6'} | ${o.finesse ? 'finesse' : ''} | ${o.range === 'ranged' ? 'ranged' : 'melee'} | ${o.label || ''} | bonus:${Number(o.bonus) || 0}${o.bonuses ? ` | ${o.bonuses}` : ''}]`;
       }
       if (o.type === 'armor') {
         const dexBonus = o.heavy === true || o.heavy === 'true' ? 'false' : 'true';
@@ -429,7 +429,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       const d = db[it.name];
       const bits = [];
       if (d?.type) bits.push(d.type);
-      if (d?.damage) bits.push(`damage ${d.damage}${d.bonus ? `+${d.bonus}` : ''}`);
+      if (d?.damage) bits.push(`damage ${d.damage}${d.damageBonus ? `+${d.damageBonus}` : ''}; enchantment bonus:${d.bonus || 0}`);
       if (d?.ac) bits.push(`AC ${d.ac}`);
       if (d?.bonuses && Object.keys(d.bonuses).length) bits.push(Object.entries(d.bonuses).map(([k, v]) => `${k}:${v}`).join(','));
       if (d?.label) bits.push(d.label);
@@ -515,3 +515,4 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
 
   return { proposeCrafting, executeCrafting, proposeConsolidation, executeConsolidation, proposeDismantle, executeDismantle };
 };
+
