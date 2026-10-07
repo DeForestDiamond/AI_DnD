@@ -484,6 +484,19 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       .join('');
     const { removeTags, apply } = consumeMaterials(c, submitted);
     let next = apply(applyEffects(addTags + removeTags, c));
+    // Store salvage labels directly so descriptive metadata does not overwrite
+    // an existing item's mechanical definition through a structured ITEM tag.
+    for (const recovered of result.recovers || []) {
+      const label = typeof recovered.label === 'string' ? recovered.label.trim() : '';
+      if (!label) continue;
+      const itemKey = Object.keys(next.items || {}).find(name => name.toLowerCase() === String(recovered.name || '').trim().toLowerCase());
+      if (!itemKey) continue;
+      const item = next.items[itemKey];
+      const existingLabel = typeof item.label === 'string' ? item.label.trim() : '';
+      const mergedLabel = existingLabel && existingLabel !== label && !existingLabel.includes(label)
+        ? existingLabel + ' ' + label : existingLabel || label;
+      next = { ...next, items: { ...next.items, [itemKey]: { ...item, label: mergedLabel } } };
+    }
     if (destination === 'stash') {
       for (const recovered of result.recovers || []) {
         const count = Math.max(1, Number(recovered.count) || 1);

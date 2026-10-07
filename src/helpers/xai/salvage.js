@@ -7,7 +7,7 @@ const salvageSchema = {
   type: 'object', additionalProperties: false, required: ['results'], properties: {
     results: { type: 'array', minItems: 1, items: { type: 'object', additionalProperties: false, required: ['source','recovers','note'], properties: {
       source: { type: 'string' },
-      recovers: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['name','count'], properties: { name: { type: 'string' }, count: { type: 'integer', minimum: 1 } } } },
+      recovers: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['name','count','label'], properties: { name: { type: 'string' }, count: { type: 'integer', minimum: 1 }, label: { type: ['string', 'null'] } } } },
       note: { type: 'string' },
     } } },
   },
@@ -78,6 +78,14 @@ MATERIAL NAMING
 - Ordinary construction usually becomes raw material, not intact working subassemblies. Preserve named components only when genuinely precision, magical, mechanical, or independently reusable AND they clear the specialized-component high bar above.
 - Do NOT merge biologically different creature materials into generic monster parts.
 
+RECOVERED ITEM LABELS
+- Each recovered entry may carry a concise label describing useful properties, condition, or identifying details that its name alone does not capture. Use labels only when those details matter for later use or crafting.
+- Ground labels in the submitted source description and what plausibly survives salvage. Preserve established qualities; never invent enchantments, resistances, powers, or intact functionality merely because the source was magical or powerful.
+- Keep names generic and stackable; put useful detail in label instead of bloating the name. Ordinary bulk materials need no label. Use null (or omit label where allowed) when no useful detail is needed.
+- Examples, only when supported by the source: Damaged Command Core — "Command lattice intact; power coupling destroyed."; Blue Dragon Scale — "Large, intact scales retaining established lightning-resistant properties."
+- Labels must describe the recovered material/component itself, not the finished source's full capabilities. Do not add provenance-only flavor or a paragraph to every pile of scrap.
+- When combining entries with the same name, retain distinct useful label details without repetition; never imply a property applies to the whole stack if it only describes some units.
+
 OUTPUT
 - Return ONE result object for EACH submitted source item/stack, in the same order as the submitted list.
 - source must be the submitted item's exact name without quantity or descriptive suffixes.
@@ -89,6 +97,7 @@ const responseText = (data) => (data?.output || []).filter(item => item?.type ==
 
 const stackResults = (results) => {
   const counts = new Map();
+  const labels = new Map();
   const destroyed = [];
   const notes = [];
   for (const result of results || []) {
@@ -99,10 +108,15 @@ const stackResults = (results) => {
       const count = Math.max(1, Number(recovered?.count) || 1);
       if (!name) continue;
       counts.set(name, (counts.get(name) || 0) + count);
+      const label = typeof recovered.label === 'string' ? recovered.label.trim() : '';
+      if (label) {
+        if (!labels.has(name)) labels.set(name, new Set());
+        labels.get(name).add(label);
+      }
     }
   }
   return {
-    recovers: [...counts.entries()].map(([name, count]) => ({ name, count })),
+    recovers: [...counts.entries()].map(([name, count]) => ({ name, count, ...(labels.has(name) ? { label: [...labels.get(name)].join(' ') } : {}) })),
     destroyed,
     note: notes.join(' '),
   };

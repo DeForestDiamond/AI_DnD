@@ -1,7 +1,15 @@
 export const ANTHROPIC_SALVAGE_MODEL = 'claude-sonnet-4-5';
-const shape = `{ "results": [ { "recovers": [{"name":"Material Name","count":2}], "destroyed": ["Item Name"], "note": "one sentence on what survived the process and what was lost" } ] }`;
+const shape = `{ "results": [ { "recovers": [{"name":"Material Name","count":2,"label":null}], "destroyed": ["Item Name"], "note": "one sentence on what survived the process and what was lost" } ] }`;
 
 const SYSTEM = `You are a salvager in a D&D 5e game (Forgotten Realms). Given finished items, determine what raw materials are recovered by breaking them down.
+
+RECOVERED ITEM LABELS
+- Each recovered entry may carry a concise label describing useful properties, condition, or identifying details that its name alone does not capture. Use labels only when those details matter for later use or crafting.
+- Ground labels in the submitted source description and what plausibly survives salvage. Preserve established qualities; never invent enchantments, resistances, powers, or intact functionality merely because the source was magical or powerful.
+- Keep names generic and stackable; put useful detail in label instead of bloating the name. Ordinary bulk materials need no label. Use null (or omit label where allowed) when no useful detail is needed.
+- Examples, only when supported by the source: Damaged Command Core — "Command lattice intact; power coupling destroyed."; Blue Dragon Scale — "Large, intact scales retaining established lightning-resistant properties."
+- Labels must describe the recovered material/component itself, not the finished source's full capabilities. Do not add provenance-only flavor or a paragraph to every pile of scrap.
+- When combining entries with the same name, retain distinct useful label details without repetition; never imply a property applies to the whole stack if it only describes some units.
 
 RULES:
 - TWO DIFFERENT JOBS, decide which this is:
