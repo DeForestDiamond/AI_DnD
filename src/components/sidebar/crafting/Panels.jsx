@@ -740,7 +740,16 @@ export function SalvagePanel({ character, db, onProposeDismantle, onExecuteDisma
           {(result.recovers || []).length === 0
             ? <div style={{fontSize:11,color:colors.textDead,fontStyle:'italic',marginBottom:6}}>Nothing usable.</div>
             : <div style={{fontSize:12,color:colors.text,marginBottom:6,lineHeight:1.5}}>
-                {result.recovers.map(r => `${r.name}${r.count > 1 ? ` x${r.count}` : ''}`).join(', ')}
+                {result.recovers.some(r => typeof r.label === 'string' && r.label.trim())
+                  ? result.recovers.map((r, index) => (
+                      <div key={index} style={{marginBottom:typeof r.label === 'string' && r.label.trim() ? 8 : 2,overflowWrap:'anywhere'}}>
+                        <div>{r.name}{r.count > 1 ? ` x${r.count}` : ''}</div>
+                        {typeof r.label === 'string' && r.label.trim() && (
+                          <div style={{fontSize:11,color:colors.textGhost,lineHeight:1.4,marginTop:2}}>{r.label.trim()}</div>
+                        )}
+                      </div>
+                    ))
+                  : result.recovers.map(r => `${r.name}${r.count > 1 ? ` x${r.count}` : ''}`).join(', ')}
               </div>}
           {result.note && <div style={{fontSize:10,color:colors.textGhost,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>{result.note}</div>}
           <div style={{fontSize:10,color:'#c96a4c',marginBottom:6,lineHeight:1.4}}>
