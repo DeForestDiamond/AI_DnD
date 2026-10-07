@@ -1,3 +1,4 @@
+import { INTERDICT_BOONS, normalizeInterdictAbilities } from '../constants/interdictBoons.js';
 import { getMainWeapon, effectiveStats, calcAC, profBonus, allItems, effectiveMaxHp, modStr } from '../hooks/useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
@@ -102,8 +103,9 @@ export const buildCharBlock = (char) => {
     : '';
   const raceCtx     = RACE_TRAIT_STRINGS[char.race?.name] ? `\n- RACE TRAITS (${char.race.name}): ${RACE_TRAIT_STRINGS[char.race.name]}` : '';
   const playstyle = playstyleLine(char);
-  const abilities   = char.abilities || { cantrips:[], spells:[], infusions:[] };
+  const abilities   = normalizeInterdictAbilities(char.abilities || {}, classLevels);
   const abilitiesLine = [
+    abilities.interdictBoons?.length ? `Interdict Boons (Baleful Interdict upgrades, not spells): ${abilities.interdictBoons.map(name => `${name}${INTERDICT_BOONS[name] ? ': ' + INTERDICT_BOONS[name].desc : ''}`).join('; ')}` : '',
     abilities.martial?.length   ? `Techniques: ${abilities.martial.join(', ')}` : '',
     abilities.cantrips?.length  ? `Cantrips: ${abilities.cantrips.join(', ')}` : '',
     abilities.spells?.length    ? `Spells: ${abilities.spells.join(', ')}` : '',
@@ -240,3 +242,4 @@ export const buildCtxSections = (char) => {
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
+

@@ -1,3 +1,4 @@
+import { normalizeInterdictAbilities } from '../../constants/interdictBoons.js';
 import { ITEM_DB, EMPTY_SLOTS } from '../../constants/items.js';
 import { SAVE_VERSION } from '../../constants/progression.js';
 import { resolveArcLocation } from '../../constants/encounters.js';
@@ -272,7 +273,9 @@ export const migrateCharacter = (char) => {
   // salvaging, or deletes that removed the last owned copy. Clean them once on
   // load as well as preventing new orphans below.
   c = pruneDeadItemDefinitions(c);
+  c.abilities = normalizeInterdictAbilities(c.abilities || {}, c.classLevels || { [c.cls?.name]: c.level });
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
+
 
