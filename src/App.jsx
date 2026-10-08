@@ -322,6 +322,8 @@ export default function App() {
       const modelConfig = MODEL_CONFIGS[selectedModel];
       let seedPrompt;
       let arcAntagonist;
+      let openingArc = null;
+      let startingArea = null;
       let situationSeed = null;
       if (situationMode) {
         situationSeed = situationOverride || rollSituationAdventure(char.completedAdventures || []);
@@ -345,13 +347,20 @@ Use the STARTING CONTEXT because it was chosen specifically for this premise; do
         arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level, null, char.defeatedAntagonists);
         seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. PLAYER AGENCY IS ABSOLUTE: do not invent any action, decision, conversation, combat, agreement, relationship, knowledge, or item acquisition for the player beyond what the player's opening explicitly states. Begin before the first unresolved action and let the player make it. Establish why the player is present and what they actually know before introducing mysteries that depend on context. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}\n\nThe character's backstory is background only — do NOT open in their history or build the scene around it unless the player's opening above says to.`;
       } else {
-        const seed = rollAdventureSeed(char.level);
-        arcAntagonist = antagonistOverride?.trim() || seed.antagonist;
+        const seed = rollAdventureSeed(char.level, {
+          antagonist: antagonistOverride,
+          arcLocation: arcLocationOverride,
+          defeated: char.defeatedAntagonists || [],
+        });
+        arcAntagonist = seed.antagonist;
+        openingArc = seed.arc;
+        startingArea = seed.startingArea;
         seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
-You MUST open the adventure using ALL of the following parameters exactly as given. This is not a suggestion. Do not substitute, reinterpret, or ignore any field.
+The antagonist and geographic anchor below are authoritative and were selected together. Build ONE coherent opening from them. Setting, weather, scene location, hook, and wildcard are creative ingredients: adapt incompatible details to the geography and antagonist rather than moving the adventure or inventing a separate conflict.
 
 STORY SCOPE (the player is level ${char.level} — match the SIZE and stakes of the story to this): ${seed.scope}
 
+GEOGRAPHIC ANCHOR (start here, not across the continent): ${seed.startingArea}
 SETTING: ${seed.setting}
 TIME OF DAY: ${seed.time}
 WEATHER: ${seed.weather}
@@ -360,9 +369,9 @@ OPENING LOCATION (the specific place the scene starts): ${seed.location}
 OPENING STYLE (HOW to open the scene — follow this structure, do not default to a generic establishing shot): ${seed.openingStyle}
 WILDCARD (a distinctive detail to work into the opening): ${seed.wildcard}
 ADVENTURE HOOK (what draws the player in): ${seed.hook}
-ANTAGONIST (do NOT reveal or name yet — plant subtle setup only): ${arcAntagonist}
+ANTAGONIST (identity hidden; the opening hook must arise from this antagonist): ${arcAntagonist}
 
-REQUIRED: Set the opening in a real Faerûn location — a canon city or region of the Forgotten Realms (e.g. a tavern in Baldur's Gate, the docks of Waterdeep, a roadhouse on the Trade Way near Daggerford). You may invent a specific local spot (a named inn, shrine, or alley) but it must sit inside a real canon place. Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock "you stand in X" description. Emit a [LOCATION:] tag with the canon place name.
+REQUIRED: Set the opening inside the GEOGRAPHIC ANCHOR or its immediate approaches. The playable conflict must be accessible locally, within the same kingdom or region at minimum; never require cross-continent travel merely to begin. For a required lair such as Undermountain, start there or at its nearby entrance in Waterdeep. Planar anchors use their actual plane rather than an unrelated Faerûn city. Invent local inns, shrines, settlements, or alleys where appropriate. Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock "you stand in X" description. Emit a [LOCATION:] tag with the canon place name.
 
 PLAYER AGENCY AT THE OPENING IS ABSOLUTE. NEVER BEGIN IN THE MIDDLE OF AN EVENT THE PLAYER DID NOT PLAY. NEVER INVENT ACTIONS, DECISIONS, CONVERSATIONS, COMBAT, INVESTIGATIONS, AGREEMENTS, RELATIONSHIPS, PURCHASES, TRAVEL, OR KNOWLEDGE FOR THE PLAYER CHARACTER IN ORDER TO CREATE AN EXCITING OPENING. Do not say the player already accepted a job, arrived mid-ambush, killed or fought anyone, questioned someone, agreed to help, took an item, followed a lead, met an NPC, or learned information unless that fact exists in supplied character/history context. The opening begins BEFORE the inciting event reaches the point where the player must act.
 
@@ -388,7 +397,11 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         log(`[ADVENTURE] Situation start — ${situationSeed.title}; previous location hidden`);
       } else {
         const { adventure, ...rest } = char;
-        charWithArc = { ...rest, arc: makeArc(arcAntagonist, arcLocationOverride) };
+        charWithArc = {
+          ...rest,
+          ...(startingArea ? { currentLocation: startingArea } : {}),
+          arc: openingArc || makeArc(arcAntagonist, arcLocationOverride, openingOverride ? '' : char.currentLocation),
+        };
         log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
       }
       const system = selectedModel === 'haiku'
@@ -407,7 +420,9 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         system,
         modelConfig,
         null,
-        log
+        log,
+        null,
+        charWithArc
       );
       if (usage) appendTokenCostEntry('campaign opening', usage, { includeCacheChanges:true });
       armCacheTimer();
@@ -1274,7 +1289,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
               log('[ARC] Cleared by player — no antagonist, story is open');
             }}
             onRollArc={() => {
-              const arc = rollArc(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists);
+              const arc = rollArc(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists, charRef.current.currentLocation);
               const { adventure, ...rest } = charRef.current;
               updateChar({ ...rest, arc });
               log(`[ARC] Rolled by player — new antagonist: ${arc.antagonist} @ ${arc.arcLocation}; Adventure cleared`);
@@ -1289,7 +1304,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             }}
             onSetArc={(text) => {
               const { adventure, ...rest } = charRef.current;
-              updateChar({ ...rest, arc: makeArc(text) });
+              updateChar({ ...rest, arc: makeArc(text, null, charRef.current.currentLocation) });
               log(`[ARC] Custom antagonist set by player: ${text}; Adventure cleared`);
             }}
             onToggleContextExclusion={toggleContextExclusion}
@@ -1446,3 +1461,4 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     </div>
   );
 }
+

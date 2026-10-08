@@ -146,7 +146,10 @@ export const stackInventory = (inventory) => stackCounts(inventory);
 // ── The Hook ───────────────────────────────────────────────────────────────────
 export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
 
-  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null, onPrompt = null) => {
+  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null, onPrompt = null, requestCharacter = null) => {
+    // Opening generation uses a prepared character before React state updates.
+    // All providers must read that same snapshot, not the previous campaign.
+    const requestChar = requestCharacter || charRef.current;
     const provider = modelConfig.provider || 'anthropic';
     const key = provider === 'openai'
       ? (openAiApiKey || import.meta.env.VITE_OPENAI_KEY)
@@ -206,13 +209,13 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       if (hooksIdx >= 0) liveState = liveState.slice(0, hooksIdx);
       liveState = liveState.trim();
 
-      const arc = charRef.current?.arc;
+      const arc = requestChar?.arc;
       const gptArc = arc?.antagonist ? [
         '',
         'ACTIVE ARC (HIDDEN): ' + arc.antagonist,
-        'ARC LOCATION (HIDDEN): ' + (arc.arcLocation || 'Faerûn'),
+        'ARC LOCATION (HIDDEN): ' + (arc.arcLocation || arc.localArea || requestChar?.currentLocation || 'the opening area') + (arc.arcLocation ? ' (required or player-selected destination)' : ' (local arc; no separate travel destination)'),
         'This assigned antagonist is the one active campaign arc. Do not replace it with a different recurring villain, conspiracy, or quest chain. Small self-contained side events may be unrelated, but any multi-scene threat or continuing villain must connect to this antagonist.',
-        'Build toward the antagonist through believable leads, people, places, operations, evidence, and consequences. Investigation and travel before confrontation are desirable. Do not rush the reveal or spawn the antagonist beside the player.',
+        'Build toward the antagonist through connected events, people, operations, evidence, and consequences. Flexible arcs develop in the supplied local area; do not assign a distant destination or require travel before engagement. Keep the identity hidden until discovered without hiding the playable conflict.',
         'If the player is away from the arc location, their current location may provide a brief believable lead toward it, but the substantive arc remains at or genuinely connected to the assigned arc location.',
         'Use the character’s supplied disposition when motivating involvement; do not assume altruism. If the player ignores the arc, do not nag them every turn.',
         'When the antagonist is resolved — defeated, captured, dismantled, permanently driven off, or the player concludes their business through a deal, truce, alliance, payment, or deliberate disengagement — emit [ARC COMPLETE] in that same response. Do not invent a hidden superior or deeper layer to keep the arc alive.'
@@ -238,7 +241,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       // xAI Responses API is OpenAI-compatible, but its prompt cache is automatic.
       // Keep the same stable-prefix ordering and provide a sticky prompt_cache_key
       // without sending OpenAI-specific explicit cache breakpoint fields.
-      const grokCtx = hasSplit ? buildCtxSections(charRef.current) : null;
+      const grokCtx = hasSplit ? buildCtxSections(requestChar) : null;
       const grokLocationContext = grokCtx
         ? [grokCtx.npcSection, grokCtx.townsSection].filter(Boolean).join('\n')
         : '';
@@ -273,7 +276,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
           input,
           max_output_tokens: modelConfig.max_tokens,
           reasoning: { effort: modelConfig.reasoning_effort || 'low' },
-          prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`,
+          prompt_cache_key: `ai-dnd:${modelConfig.model}:${requestChar?.name || 'character'}`,
           store: false,
         }),
       });
@@ -311,7 +314,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       // Location-tiered NPC/town context is intentionally removed from the first
       // cache layer and reinserted after its breakpoint below. A [LOCATION:] tag
       // can therefore change nearby/distant detail without invalidating ~13k rules.
-      const gptCtx = hasSplit ? buildCtxSections(charRef.current) : null;
+      const gptCtx = hasSplit ? buildCtxSections(requestChar) : null;
       const gptLocationContext = gptCtx
         ? [gptCtx.npcSection, gptCtx.townsSection].filter(Boolean).join('\n')
         : '';
@@ -383,7 +386,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
           max_output_tokens: modelConfig.max_tokens,
           reasoning: { effort: modelConfig.reasoning_effort || 'low' },
           text: { verbosity: 'low' },
-          prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`,
+          prompt_cache_key: `ai-dnd:${modelConfig.model}:${requestChar?.name || 'character'}`,
           prompt_cache_options: { mode: 'explicit', ttl: '30m' },
           store: false,
         }),
@@ -648,4 +651,5 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
 
   return { callDM, buildActionContext, interceptRollRequest, pingCache };
 }
+
 

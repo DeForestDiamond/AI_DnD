@@ -1,6 +1,7 @@
-import { rollAntagonist } from '../../constants/encounters.js';
+import { rollAntagonist } from '../../constants/encounters/antagonists.js';
+import { makeArc, FAERUN_LOCATION_POOLS } from '../../constants/encounters/arcLocations.js';
 
-export const rollAdventureSeed = (level = 1) => {
+export const rollAdventureSeed = (level = 1, { antagonist = null, arcLocation = null, defeated = [] } = {}) => {
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
   const settings = [
@@ -46,13 +47,13 @@ export const rollAdventureSeed = (level = 1) => {
     'someone calls in an old favor', 'the wagon or ship the player is travelling on stops unexpectedly',
   ];
   const openingStyles = [
-    'in media res: the player is already mid-action (a chase, a brawl, fleeing, or a task going wrong) when the scene opens',
+    'an external event begins at first contact (a pursuit approaches, a confrontation erupts, or a task goes wrong nearby); stop before deciding the player reacts',
     'open on dialogue: someone is already mid-sentence talking to the player as the scene begins',
     'a quiet, grounded moment (eating, resting, mending gear, working) that gets interrupted',
     'the player has just arrived somewhere new and is taking it in',
     'the immediate aftermath of something that already happened (a fight just ended, a deal collapsed, a storm just broke)',
     'a discovery: the player stumbles onto something they did not expect',
-    'mid-task: the player is actively working, haggling, or travelling when things shift',
+    'an ordinary activity nearby is interrupted; do not assume the player accepted a task or made a decision',
     'a tense standoff or confrontation already underway',
     'a calm, atmospheric establishing beat before anything happens',
   ];
@@ -86,16 +87,25 @@ export const rollAdventureSeed = (level = 1) => {
     : level <= 16 ? 'REALM-SHAKING STORY. Powerful factions, old secrets, and large threats are appropriate; stakes can reach across a kingdom.'
     :               'LEGENDARY STORY. World-shaking and planar stakes suit a hero of this power — but the enemies themselves stay concrete: armies, dragons, archmages, fiend lords with names and agendas. Epic scale comes from the SIZE of the threat, not its age. No sealed entities, no slumbering ancients.';
 
+  // Select the antagonist and geography together, once. The DM fits local scene
+  // details to this anchor; it must not independently choose another region.
+  const arc = makeArc(antagonist?.trim() || rollAntagonist(level, null, defeated), arcLocation);
+  const startingArea = arc.arcLocation || pick(FAERUN_LOCATION_POOLS.general);
+  arc.localArea = startingArea;
+
   return {
+    arc,
+    startingArea,
     scope,
     setting: pick(settings),
     time: pick(times),
     weather: pick(weathers),
     tone: pick(tones),
     hook: pick(hooks),
-    antagonist: rollAntagonist(level),
+    antagonist: arc.antagonist,
     location: pick(locations),
     openingStyle: pick(openingStyles),
     wildcard: pick(wildcards),
   };
 };
+

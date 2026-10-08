@@ -118,7 +118,7 @@ export const buildCharBlock = (char) => {
   // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
   const arcLine = char.arc?.antagonist
     ? `\nACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}.
-ARC LOCATION (HIDDEN CAMPAIGN STATE): ${char.arc.arcLocation || 'Faerûn'}.`
+ARC LOCATION (HIDDEN CAMPAIGN STATE): ${char.arc.arcLocation || char.arc.localArea || char.currentLocation || 'the opening area (establish locally)'}${char.arc.arcLocation ? ' (required or player-selected destination)' : ' (local arc; no separate travel destination)'}.`
     : '';
   const dynamicPart = `CURRENT STATE:
 Level ${char.level} | ${char.xp||0} XP | Coins: ${coinsToString(char.coins)}
@@ -242,6 +242,7 @@ export const buildCtxSections = (char) => {
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
+
 
 
 

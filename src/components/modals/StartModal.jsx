@@ -116,10 +116,10 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
         ) : (
           <div>
             <div style={{fontSize:12,color:colors.textGhost,marginBottom:6,lineHeight:1.5}}>Choose where <span style={{color:colors.gold}}>{pendingAntagonist}</span> is based for this arc.</div>
-            <div style={{fontSize:10,color:colors.textGhost,marginBottom:10,lineHeight:1.45}}>Antagonists with a fixed canon location skip this step automatically. Choose Random to keep the normal location roll.</div>
+            <div style={{fontSize:10,color:colors.textGhost,marginBottom:10,lineHeight:1.45}}>Antagonists with a required location skip this step automatically. Otherwise choose an opening area, or let the game choose one. The conflict starts in that same area.</div>
             <input value={locationSearch} onChange={e=>setLocationSearch(e.target.value)} autoFocus placeholder="Search locations..." style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:10}} />
             <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,maxHeight:'48vh',overflowY:'auto',marginBottom:12}}>
-              <div onClick={()=>onChooseAntagonist(pendingAntagonist, null)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',color:colors.gold}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>🎲 Random compatible location</div>
+              <div onClick={()=>onChooseAntagonist(pendingAntagonist, null)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',color:colors.gold}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>🎲 Choose a shared opening area</div>
               {visibleLocations.map(loc => <div key={loc} onClick={()=>onChooseAntagonist(pendingAntagonist, loc)} style={{padding:'9px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',fontSize:12,color:colors.textDim}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>{loc}</div>)}
               {!visibleLocations.length && <div style={{padding:18,textAlign:'center',fontSize:11,color:colors.textGhost}}>No locations match this filter.</div>}
             </div>
@@ -130,3 +130,4 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
     </div>
   );
 }
+

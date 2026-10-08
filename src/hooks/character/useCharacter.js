@@ -136,7 +136,14 @@ export function useCharacter(log) {
 
     // Location tracking -- updates currentLocation for tiered context system
     const locMatch = text.match(/\[LOCATION:\s*([^\]]+)\]/i);
-    if (locMatch) c.currentLocation = locMatch[1].trim();
+    if (locMatch) {
+      c.currentLocation = locMatch[1].trim();
+      // Player-written openings establish their anchor on the first response.
+      // Once anchored, later travel must not move the antagonist's operation.
+      if (c.arc?.antagonist && !c.arc.arcLocation && !c.arc.localArea) {
+        c.arc = { ...c.arc, localArea: c.currentLocation };
+      }
+    }
 
     // Arc resolved — roll a fresh antagonist (never the one just defeated);
     // the DM sees it next turn and starts seeding
@@ -167,7 +174,7 @@ export function useCharacter(log) {
         defeated.push(finished);
       }
       c.defeatedAntagonists = defeated;
-      c.arc = rollArc(c.level, finished, defeated);
+      c.arc = rollArc(c.level, finished, defeated, c.currentLocation);
     }
 
     // Legacy [UPDATE: old | new] support. New prompts no longer teach this;
@@ -555,3 +562,4 @@ export function useCharacter(log) {
     toggleContextExclusion,
   };
 }
+
