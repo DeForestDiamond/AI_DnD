@@ -1,3 +1,4 @@
+import { CRAFTING_PRESERVATION_RULES } from '../craftingPreservation.js';
 // Grok-specific crafting helper prompt, request path, and output contracts.
 // Provider-specific request handling lives here; inventory mutation remains shared game logic.
 
@@ -105,8 +106,8 @@ MATERIAL RULES
 UPGRADING FINISHED ITEMS — ADD OR IMPROVE, NEVER TRADE AWAY
 - A finished selected item being modified is consumed and replaced. Preserve its identity/name lineage unless the requested transformation clearly changes what it is.
 - Preserve its TYPE by default. A construct remains construct, weapon remains weapon, armor remains armor, etc., unless the requested transformation genuinely changes category.
-- EXISTING FUNCTIONALITY IS A HARD FLOOR. Every current bonus, AC value, damage component, function, effect, capability, defense, sense, movement mode, command authority, integrated weapon/system, immunity/resistance, utility, and other meaningful property remains present in the result unless the PLAYER EXPLICITLY asks to remove or replace that specific thing.
-- New crafting is ADDITIVE: add a new capability, or upgrade an existing overlapping capability. Never delete, weaken, merge away, summarize away, or exchange an unrelated existing capability to make room for the new one. Adding a shield does not remove a sword; adding flight does not remove teleportation; improving armor does not erase sensors; adding a weapon does not remove another weapon.
+- EXISTING FUNCTIONALITY IS A HARD FLOOR. Every current bonus, AC value, damage component, function, effect, capability, defense, sense, movement mode, command authority, integrated weapon/system functions and operational capacity, immunity/resistance, utility, and other meaningful property remains present in the result unless the PLAYER EXPLICITLY asks to remove or replace that specific thing.
+- New crafting is ADDITIVE: add a new capability, or upgrade an existing overlapping capability. Never delete, weaken, merge away capabilities, summarize away functions, or exchange an unrelated existing capability to make room for the new one. Adding a shield does not remove a sword; adding flight does not remove teleportation; improving armor does not erase sensors; adding a weapon does not remove another weapon.
 - If the new material improves something the base item already does, upgrade that capability in place and preserve its identity. If it provides a genuinely new function, add that function alongside everything already present.
 - Every current bonus key is a floor; armour AC stays equal or rises; weapon base/enchantment/extra damage stays equal or rises. Do not move bonuses between fields or pieces and call it an upgrade.
 - LABEL COMPLETENESS OVERRIDES BREVITY. You may tighten wording only when every distinct function/effect remains unambiguously represented. If preserving all capabilities makes the label long, KEEP IT LONG. Never remove functionality merely to hit a length target or produce a cleaner label.
@@ -177,7 +178,7 @@ export function buildGrokCraftingPrompt({ materialsText, characterLevel, intent 
   const request = intent.trim()
     ? `PLAYER REQUEST\n${intent.trim()}\n\nIMPORTANT: Treat this as the design target, not a suggestion. Keep every proposal focused on fulfilling it.`
     : 'PLAYER REQUEST\nNo specific design requested. Propose what these materials most naturally support.';
-  return `${BASE_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${batchRules}${batchRules ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
+  return `${BASE_RULES}\n\n${CRAFTING_PRESERVATION_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${batchRules}${batchRules ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
 }
 
 export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {
@@ -213,4 +214,5 @@ export async function callGrokCrafting({ apiKey, model = GROK_CRAFTING_MODEL, ma
   try { parsed = JSON.parse(raw); } catch { throw new Error('Grok crafting returned unreadable structured output'); }
   return { parsed, usage: data.usage, rawData: data };
 }
+
 

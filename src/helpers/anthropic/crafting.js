@@ -1,3 +1,4 @@
+import { CRAFTING_PRESERVATION_RULES } from '../craftingPreservation.js';
 export const ANTHROPIC_CRAFTING_MODEL = 'claude-sonnet-4-5';
 
 export async function callAnthropicCrafting({ apiKey, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
@@ -30,7 +31,7 @@ CRAFTING A MATCHED SET: propose exactly 2 alternative sets. Normally 3-6 pieces 
 - Names must share a coherent set lineage/motif.
 - UPGRADING AN EXISTING SET: selected finished equipment is BASE EQUIPMENT. Consume it and return upgraded versions preserving identity/name lineage.
 - EXISTING FUNCTIONALITY IS A HARD FLOOR: every old bonus, AC value, weapon damage component, function, effect, capability, defense, sense, movement mode, immunity/resistance, utility, and other meaningful property remains unless the PLAYER EXPLICITLY asks to remove or replace that specific thing.
-- New crafting is ADDITIVE: add a new capability or improve an overlapping one. Never delete, weaken, merge away, summarize away, or trade an unrelated old capability to fund a new one. Adding a shield does not remove a sword; improving armor does not erase sensors.
+- New crafting is ADDITIVE: add a new capability or improve an overlapping one. Never delete, weaken, merge away capabilities, summarize away functions, or trade an unrelated old capability to fund a new one. Adding a shield does not remove a sword; improving armor does not erase sensors.
 - Every old stat key remains equal or higher; armor AC stays equal or rises; weapons keep or raise base/enchantment/extra damage. Do not move bonuses between pieces and call it an upgrade.
 - LABEL COMPLETENESS OVERRIDES BREVITY. Rewrite wording if useful, but every distinct old function/effect must remain unambiguously represented, plus the new additions/upgrades. If the complete label is long, KEEP IT LONG.
 - Before returning each upgraded piece, compare OLD → NEW. If any old capability vanished or weakened without explicit player-requested replacement, correct it.` : '';
@@ -44,7 +45,7 @@ RULES:
 - Every magical item needs a real mechanical effect: weapon +N/extra damage and/or supported stat:N bonuses. Never use "Enchanted X" as a substitute for an actual effect.
 
 UPGRADING FINISHED ITEMS — ADD OR IMPROVE, NEVER TRADE AWAY:
-- EXISTING FUNCTIONALITY IS A HARD FLOOR. Preserve every current bonus, AC value, damage component, function, effect, capability, defense, sense, movement mode, command authority, integrated weapon/system, immunity/resistance, utility, and meaningful property unless the PLAYER EXPLICITLY asks to remove or replace that specific thing.
+- EXISTING FUNCTIONALITY IS A HARD FLOOR. Preserve every current bonus, AC value, damage component, function, effect, capability, defense, sense, movement mode, command authority, integrated weapon/system functions and operational capacity, immunity/resistance, utility, and meaningful property unless the PLAYER EXPLICITLY asks to remove or replace that specific thing.
 - A modification is additive by default. Add a new function or upgrade an overlapping existing function. NEVER remove or weaken an unrelated capability to make room, shorten a label, balance the result, or pay for another improvement.
 - Adding a shield does not remove the sword. Adding flight does not remove teleportation. Improving armor does not erase sensors. Adding a weapon does not remove another weapon.
 - Every existing bonus key is a floor; armor AC stays equal or rises; weapon base/enchantment/extra damage stays equal or rises.
@@ -63,11 +64,12 @@ TYPE AND MECHANICS:
 - Labels may be concise for simple items, but there is NO hard label length target for upgraded/complex items. Preserve all distinct capabilities first; remove only redundant prose, not functions/effects.
 - Charges/per-day effects are narrative text; there is no charge counter.
 - ${levelNote}${constructRules}${setRules}${batchRules}
-Respond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`;
+${CRAFTING_PRESERVATION_RULES}\n\nRespond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`;
 
   const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:ANTHROPIC_CRAFTING_MODEL,max_tokens:asSet||asConstruct?4000:3000,system,messages:[{role:'user',content:`MATERIALS AVAILABLE:\n${materialsText}\n\n${wantNote}\n\nRespond with ONLY the JSON now.`}]})});
   const data=await res.json(); if(!res.ok)throw new Error(`API error ${res.status}`);
   const raw=(data.content?.[0]?.text||'').replace(/```json|```/g,'').trim(); let parsed; try{parsed=JSON.parse(raw);}catch{const truncated=data.stop_reason==='max_tokens'||!/[}\]]\s*$/.test(raw);throw new Error(truncated?'The forge ran long and the answer was cut off — select fewer materials, or try again':'Crafting returned unreadable JSON — try again');}
   return { parsed, usage:data.usage, rawData:data };
 }
+
 
