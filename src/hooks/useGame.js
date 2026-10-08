@@ -1,3 +1,4 @@
+import { normalizeWeaponDamage } from '../utils/weaponDamage.js';
 import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod, allItems, effectiveMaxHp } from './useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
@@ -65,6 +66,7 @@ export const performSkillCheck = (statValue, difficulty, addProfBonus = false, l
 };
 
 export const performAttack = (weapon, stats, level) => {
+  weapon = normalizeWeaponDamage(weapon);
   const profBonusValue = profBonus(level);
   const atkRoll         = rollDie(20);
   const statBonus       = weapon.statBonus || 0;
@@ -73,7 +75,7 @@ export const performAttack = (weapon, stats, level) => {
   const atkBonus        = statBonus + profBonusValue + weaponBonus;
   const totalAtk        = atkRoll + atkBonus;
   const dmgRoll         = rollDice(weapon.damage);
-  const dmgBonus        = statBonus + weaponBonus;
+  const dmgBonus        = statBonus + weaponBonus + weapon.damageBonus;
   const crit     = atkRoll === 20;
   const fumble   = atkRoll === 1;
   // Extra damage dice of another type (1d4 radiant, 2d6 fire...). Rolled
@@ -646,3 +648,4 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
 
   return { callDM, buildActionContext, interceptRollRequest, pingCache };
 }
+

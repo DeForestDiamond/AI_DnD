@@ -1,3 +1,4 @@
+import { normalizeWeaponDamage } from '../../utils/weaponDamage.js';
 import { SLOTS } from '../../constants/items.js';
 import { stackHas, stackNames } from '../../utils/itemStacks.js';
 import { statMod } from './stats.js';
@@ -156,7 +157,7 @@ export const getMainWeapon = (slots, stats, customItems) => {
     attackAbility = 'str';
   }
   const statBonus = statMod(effStats[attackAbility]);
-  return { name, ...w, statBonus, attackAbility };
+  return normalizeWeaponDamage({ name, ...w, statBonus, attackAbility });
 };
 
 export const equippableInSlot = (char, slotId) => {
@@ -176,4 +177,5 @@ export const equippableInSlot = (char, slotId) => {
     return true;
   });
 };
+
 

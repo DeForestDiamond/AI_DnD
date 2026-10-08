@@ -1,3 +1,4 @@
+import { INTERDICT_BOONS, normalizeInterdictAbilities } from '../constants/interdictBoons.js';
 import { getMainWeapon, effectiveStats, calcAC, profBonus, allItems, effectiveMaxHp, modStr } from '../hooks/useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
@@ -53,7 +54,7 @@ export const buildCharBlock = (char) => {
   const classDesc   = Object.entries(classLevels).map(([c,l]) => `${c} ${l}`).join(' / ');
   const db          = allItems(char.items || {});
   const equippedList = Object.entries(char.slots).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join(', ') || 'nothing';
-  const weaponLine  = weapon ? `${weapon.name} (${weapon.damage}${weapon.bonus?`+${weapon.bonus}`:''}${(weapon.extras||[]).map(e=>` plus ${e.dice} ${e.type}`).join('')}, Attack bonus +${weapon.statBonus+pb+(weapon.bonus||0)}, ${(weapon.attackAbility || 'str').toUpperCase()}${weapon.finesse && weapon.range !== 'ranged' ? '/finesse' : ''}${weapon.label?', '+weapon.label:''})` : 'Unarmed (1 damage)';
+  const weaponLine  = weapon ? `${weapon.name} (${weapon.damage}${weapon.damageBonus ? (weapon.damageBonus > 0 ? `+${weapon.damageBonus}` : weapon.damageBonus) : ''}${weapon.bonus?`+${weapon.bonus}`:''}${(weapon.extras||[]).map(e=>` plus ${e.dice} ${e.type}`).join('')}, Attack bonus +${weapon.statBonus+pb+(weapon.bonus||0)}, ${(weapon.attackAbility || 'str').toUpperCase()}${weapon.finesse && weapon.range !== 'ranged' ? '/finesse' : ''}${weapon.label?', '+weapon.label:''})` : 'Unarmed (1 damage)';
   const sneakLine   = char.sneakAttackDice ? `\n- SNEAK ATTACK: ${char.sneakAttackDice} extra damage when attacking with advantage or from hiding` : '';
   const offhandData = char.slots.offhand ? db[char.slots.offhand] : null;
   const focusLine   = offhandData?.type==='focus' ? `\n- HOLY FOCUS: ${char.slots.offhand} equipped (${offhandData.label})` : '';
@@ -102,8 +103,9 @@ export const buildCharBlock = (char) => {
     : '';
   const raceCtx     = RACE_TRAIT_STRINGS[char.race?.name] ? `\n- RACE TRAITS (${char.race.name}): ${RACE_TRAIT_STRINGS[char.race.name]}` : '';
   const playstyle = playstyleLine(char);
-  const abilities   = char.abilities || { cantrips:[], spells:[], infusions:[] };
+  const abilities   = normalizeInterdictAbilities(char.abilities || {}, classLevels);
   const abilitiesLine = [
+    abilities.interdictBoons?.length ? `Interdict Boons (Baleful Interdict upgrades, not spells): ${abilities.interdictBoons.map(name => `${name}${INTERDICT_BOONS[name] ? ': ' + INTERDICT_BOONS[name].desc : ''}`).join('; ')}` : '',
     abilities.martial?.length   ? `Techniques: ${abilities.martial.join(', ')}` : '',
     abilities.cantrips?.length  ? `Cantrips: ${abilities.cantrips.join(', ')}` : '',
     abilities.spells?.length    ? `Spells: ${abilities.spells.join(', ')}` : '',
@@ -170,10 +172,10 @@ export const buildCtxSections = (char) => {
       const fields = [data.trueName?`True name: ${data.trueName}`:'',data.race?`Race: ${data.race}`:'',data.role?`Role: ${data.role}`:'',data.appearance?`Appearance: ${data.appearance}`:'',data.personality?`Personality: ${data.personality}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join(' | ');
       const desc = [fields, data.desc].filter(Boolean).join(' | ');
       const ab = data.abilities ? (Array.isArray(data.abilities)?data.abilities.join(', '):data.abilities) : '';
-      present.push(`- ${name}: ${desc}${ab?` | Abilities: ${ab}`:''}${data.notes?` | ${data.notes}`:''}`);
+      present.push(`- ${name}: ${desc}${ab?` | Abilities: ${ab}`:''}${data.relationship?` | Relationship: ${data.relationship}`:''}${data.notes?` | ${data.notes}`:''}`);
     });
     const parts = [];
-    if (present.length) parts.push(`COMPANIONS (with the player, always):\n${present.join('\n')}\nCOMPANION AGENCY: Companions are active party members, not passive observers. Their personality, beliefs, profession, relationships, and current circumstances must influence their behavior in scenes. They may independently speak, react, investigate, heal, intervene, object, joke, argue, assist, or take other reasonable actions without waiting for the player to address them first. Protecting player agency means never controlling the player character; it does not mean NPCs must wait for player permission to act. When an event strongly intersects a companion's established values or expertise, that companion should normally react unless there is a character-specific reason not to.`);
+    if (present.length) parts.push(`COMPANIONS (with the player, always):\n${present.join('\n')}\nPROFILE BALANCE: Preferences, favorite objects, fears and habits are facets of a companion, not their entire personality or mandatory recurring beats. Use them when relevant, with varied behavior grounded in the full profile.\nCOMPANION AGENCY: Companions are active party members, not passive observers. Their personality, beliefs, profession, relationships, and current circumstances must influence their behavior in scenes. They may independently speak, react, investigate, heal, intervene, object, joke, argue, assist, or take other reasonable actions without waiting for the player to address them first. Protecting player agency means never controlling the player character; it does not mean NPCs must wait for player permission to act. When an event strongly intersects a companion's established values or expertise, that companion should normally react unless there is a character-specific reason not to.`);
     companionSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
@@ -240,3 +242,6 @@ export const buildCtxSections = (char) => {
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
+
+
+

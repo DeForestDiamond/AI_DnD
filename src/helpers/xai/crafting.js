@@ -1,3 +1,4 @@
+import { CRAFTING_PRESERVATION_RULES } from '../craftingPreservation.js';
 // Grok-specific crafting helper prompt, request path, and output contracts.
 // Provider-specific request handling lives here; inventory mutation remains shared game logic.
 
@@ -20,12 +21,12 @@ export const singleItemSchema = {
       type: 'array', minItems: 2, maxItems: 3,
       items: {
         type: 'object', additionalProperties: false,
-        required: ['name', 'type', 'slot', 'damage', 'ac', 'heavy', 'maxDex', 'bonuses', 'label', 'count', 'consumes', 'reason'],
+        required: ['name', 'type', 'slot', 'damage', 'bonus', 'range', 'finesse', 'ac', 'heavy', 'maxDex', 'bonuses', 'label', 'count', 'consumes', 'reason'],
         properties: {
           name: { type: 'string' },
           type: { type: 'string', enum: ['weapon', 'armor', 'magic', 'consumable', 'construct', 'misc'] },
           slot: { type: ['string', 'null'], enum: [...CRAFTING_SLOTS, null] },
-          damage: { type: ['string', 'null'] }, ac: { type: ['number', 'null'] },
+          damage: { type: ['string', 'null'] }, bonus: { type: ['number', 'null'] }, range: { type: ['string', 'null'], enum: ['melee', 'ranged', null] }, finesse: { type: ['boolean', 'null'] }, ac: { type: ['number', 'null'] },
           heavy: { type: ['boolean', 'null'] }, maxDex: { type: ['number', 'null'] },
           bonuses: { type: 'string' }, label: { type: 'string' },
           count: { type: 'integer', minimum: 1 },
@@ -49,11 +50,11 @@ export const setSchema = {
             type: 'array', minItems: 3, maxItems: 20,
             items: {
               type: 'object', additionalProperties: false,
-              required: ['name', 'type', 'slot', 'damage', 'ac', 'heavy', 'maxDex', 'bonuses', 'label'],
+              required: ['name', 'type', 'slot', 'damage', 'bonus', 'range', 'finesse', 'ac', 'heavy', 'maxDex', 'bonuses', 'label'],
               properties: {
                 name: { type: 'string' }, type: { type: 'string', enum: ['weapon', 'armor', 'magic'] },
                 slot: { type: ['string', 'null'], enum: [...CRAFTING_SLOTS, null] },
-                damage: { type: ['string', 'null'] }, ac: { type: ['number', 'null'] },
+                damage: { type: ['string', 'null'] }, bonus: { type: ['number', 'null'] }, range: { type: ['string', 'null'], enum: ['melee', 'ranged', null] }, finesse: { type: ['boolean', 'null'] }, ac: { type: ['number', 'null'] },
                 heavy: { type: ['boolean', 'null'] }, maxDex: { type: ['number', 'null'] },
                 bonuses: { type: 'string' }, label: { type: 'string' },
               },
@@ -105,8 +106,8 @@ MATERIAL RULES
 UPGRADING FINISHED ITEMS — ADD OR IMPROVE, NEVER TRADE AWAY
 - A finished selected item being modified is consumed and replaced. Preserve its identity/name lineage unless the requested transformation clearly changes what it is.
 - Preserve its TYPE by default. A construct remains construct, weapon remains weapon, armor remains armor, etc., unless the requested transformation genuinely changes category.
-- EXISTING FUNCTIONALITY IS A HARD FLOOR. Every current bonus, AC value, damage component, function, effect, capability, defense, sense, movement mode, command authority, integrated weapon/system, immunity/resistance, utility, and other meaningful property remains present in the result unless the PLAYER EXPLICITLY asks to remove or replace that specific thing.
-- New crafting is ADDITIVE: add a new capability, or upgrade an existing overlapping capability. Never delete, weaken, merge away, summarize away, or exchange an unrelated existing capability to make room for the new one. Adding a shield does not remove a sword; adding flight does not remove teleportation; improving armor does not erase sensors; adding a weapon does not remove another weapon.
+- EXISTING FUNCTIONALITY IS A HARD FLOOR. Every current bonus, AC value, damage component, function, effect, capability, defense, sense, movement mode, command authority, integrated weapon/system functions and operational capacity, immunity/resistance, utility, and other meaningful property remains present in the result unless the PLAYER EXPLICITLY asks to remove or replace that specific thing.
+- New crafting is ADDITIVE: add a new capability, or upgrade an existing overlapping capability. Never delete, weaken, merge away capabilities, summarize away functions, or exchange an unrelated existing capability to make room for the new one. Adding a shield does not remove a sword; adding flight does not remove teleportation; improving armor does not erase sensors; adding a weapon does not remove another weapon.
 - If the new material improves something the base item already does, upgrade that capability in place and preserve its identity. If it provides a genuinely new function, add that function alongside everything already present.
 - Every current bonus key is a floor; armour AC stays equal or rises; weapon base/enchantment/extra damage stays equal or rises. Do not move bonuses between fields or pieces and call it an upgrade.
 - LABEL COMPLETENESS OVERRIDES BREVITY. You may tighten wording only when every distinct function/effect remains unambiguously represented. If preserving all capabilities makes the label long, KEEP IT LONG. Never remove functionality merely to hit a length target or produce a cleaner label.
@@ -127,6 +128,7 @@ Use only mainhand, offhand, armor, face, head, neck, shoulders, cloak, torso, ar
 
 MECHANICS
 - bonuses is comma-separated calculable keys only: ac,str,dex,con,int,wis,cha, or skill names. Example ac:2,con:1.
+- WEAPON MECHANICS: damage uses base dice plus DAMAGE-ONLY flat modifier and typed dice, e.g. "2d6+9 plus 3d8 necrotic plus 3d8 fire". The +9 NEVER changes attack rolls. bonus is the separate numeric enchantment added to BOTH attack and damage (0 if none); do not include it again in damage. range is "ranged" for pistols/bows and ranged arcane weapons, otherwise "melee". finesse is a boolean. Always return bonus, range and finesse for weapons; null for other types. Keep all rolled damage in damage, never only in label. Preserve existing enchantment bonuses separately when upgrading.
 - Resistances, immunities, senses, movement and narrative powers go in label, not fake bonus keys.
 - Armour protection uses armor.ac, not bonuses.ac. Non-armour wearable protection may use ac:N.
 - WEAPON DAMAGE HAS ONE CANONICAL FORMAT. Before returning ANY weapon, normalize its damage field to: ONE untyped base dice expression with its modifier, followed by ZERO OR MORE typed bonus expressions, with EACH damage type appearing AT MOST ONCE. Canonical example: "7d8+14 plus 10d10 radiant plus 4d6 fire plus 3d6 cold". The base damage MUST be one dice size only: never "2d10+4d6+1d8+14"; convert mixed base dice to the closest single expression with approximately the same average, e.g. "7d8+14". NEVER put a damage type on the base expression: "7d8+14 piercing" is wrong. EVERY bonus expression MUST have a type: "plus 10d10" is wrong. COLLAPSE all bonus dice of the same type into one closest equivalent expression: "plus 10d10 radiant plus 6d6 radiant" is WRONG and must become one radiant group; "plus 1d4 force plus 1d6 force" is WRONG and should become approximately "plus 1d10 force". Preserve approximate average damage rather than exact dice distribution. When upgrading an existing weapon, first normalize all of its old base and bonus damage, then add the upgrade, then normalize again. FINAL SELF-CHECK: if the base contains more than one d-expression, or any damage type word appears more than once in the damage field, the answer is invalid and MUST be rewritten before output.
@@ -176,7 +178,7 @@ export function buildGrokCraftingPrompt({ materialsText, characterLevel, intent 
   const request = intent.trim()
     ? `PLAYER REQUEST\n${intent.trim()}\n\nIMPORTANT: Treat this as the design target, not a suggestion. Keep every proposal focused on fulfilling it.`
     : 'PLAYER REQUEST\nNo specific design requested. Propose what these materials most naturally support.';
-  return `${BASE_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${batchRules}${batchRules ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
+  return `${BASE_RULES}\n\n${CRAFTING_PRESERVATION_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${batchRules}${batchRules ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
 }
 
 export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {
@@ -212,3 +214,5 @@ export async function callGrokCrafting({ apiKey, model = GROK_CRAFTING_MODEL, ma
   try { parsed = JSON.parse(raw); } catch { throw new Error('Grok crafting returned unreadable structured output'); }
   return { parsed, usage: data.usage, rawData: data };
 }
+
+

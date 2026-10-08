@@ -1,3 +1,4 @@
+import { npcRecordFields } from './npcRecords.js';
 import { callGptNpcManager } from '../openai/npcs.js';
 import { callGptTownManager } from '../openai/towns.js';
 import { callGrokNpcManager } from '../xai/npcs.js';
@@ -41,7 +42,7 @@ export const createExtractionManager = ({ apiKey, openAiApiKey, xAiApiKey, fullL
       const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
       const { found: gptFound, usage: gptUsage } = await callGptNpcManager({
         model: MODEL_CONFIGS[selectedModel].model,
-        apiKey: gptKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
+        apiKey: gptKey, playerName, transcript, name: trimmedName, existing: existingRecord, note, asCompanion: asCompanion || Boolean(existing && char.companions?.[existing[0]]),
       });
       const gIn = gptUsage?.input_tokens || 0;
       const gOut = gptUsage?.output_tokens || 0;
@@ -51,7 +52,7 @@ export const createExtractionManager = ({ apiKey, openAiApiKey, xAiApiKey, fullL
       const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions } };
       const applied = [];
       for (const [n, e] of Object.entries(gptFound)) {
-        const entry = { location: String(e?.location ?? ''), relationship: String(e?.relationship ?? ''), desc: String(e?.desc ?? '') };
+        const entry = npcRecordFields(e);
         const inComp = Object.keys(c.companions).find(k => k.toLowerCase() === n.toLowerCase());
         const inNpc = Object.keys(c.npcs).find(k => k.toLowerCase() === n.toLowerCase());
         if (inComp) c.companions[inComp] = { ...c.companions[inComp], ...entry };
@@ -70,7 +71,7 @@ export const createExtractionManager = ({ apiKey, openAiApiKey, xAiApiKey, fullL
       const existingRecord = existing ? { [existing[0]]: existing[1] } : null;
       const { found: grokFound, usage: grokUsage } = await callGrokNpcManager({
         model: MODEL_CONFIGS[selectedModel].model,
-        apiKey: xaiKey, playerName, transcript, name: trimmedName, existing: existingRecord, note,
+        apiKey: xaiKey, playerName, transcript, name: trimmedName, existing: existingRecord, note, asCompanion: asCompanion || Boolean(existing && char.companions?.[existing[0]]),
       });
       log(`[HELPER] NPC manager via Grok ${(grokUsage?.input_tokens || 0).toLocaleString()} in / ${(grokUsage?.output_tokens || 0).toLocaleString()} out`);
       const names = Object.keys(grokFound || {});
@@ -78,7 +79,7 @@ export const createExtractionManager = ({ apiKey, openAiApiKey, xAiApiKey, fullL
       const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions } };
       const applied = [];
       for (const [n, e] of Object.entries(grokFound)) {
-        const entry = { location: String(e?.location ?? ''), relationship: String(e?.relationship ?? ''), desc: String(e?.desc ?? '') };
+        const entry = npcRecordFields(e);
         const inComp = Object.keys(c.companions).find(k => k.toLowerCase() === n.toLowerCase());
         const inNpc = Object.keys(c.npcs).find(k => k.toLowerCase() === n.toLowerCase());
         if (inComp) c.companions[inComp] = { ...c.companions[inComp], ...entry };
@@ -93,22 +94,18 @@ export const createExtractionManager = ({ apiKey, openAiApiKey, xAiApiKey, fullL
     }
     const { found, usage: anthropicUsage } = await callAnthropicNpcManager({
       apiKey: key, playerName, messages: apiMsgs, name: trimmedName,
-      existing: existing ? { [existing[0]]: existing[1] } : null, note,
+      existing: existing ? { [existing[0]]: existing[1] } : null, note, asCompanion: asCompanion || Boolean(existing && char.companions?.[existing[0]]),
     });
     if (anthropicUsage) logUsage('NPC extraction', { usage: anthropicUsage });
     const names = Object.keys(found);
     if (!names.length) { log('[NPC] Nothing found in range'); return { applied: [] }; }
 
-    // Sanitize to the three core keys and write. If a name already exists in
+    // Sanitize profile fields and preserve equipment/runtime fields on merge. If a name already exists in
     // the OTHER group, update it there instead of duplicating across groups.
     const c = { ...charRef.current, npcs: { ...charRef.current.npcs }, companions: { ...charRef.current.companions } };
     const applied = [];
     for (const [n, e] of Object.entries(found)) {
-      const entry = {
-        location: String(e?.location ?? ''),
-        relationship: String(e?.relationship ?? ''),
-        desc: String(e?.desc ?? ''),
-      };
+      const entry = npcRecordFields(e);
       const inComp = Object.keys(c.companions).find(k => k.toLowerCase() === n.toLowerCase());
       const inNpc  = Object.keys(c.npcs).find(k => k.toLowerCase() === n.toLowerCase());
       if (inComp)      c.companions[inComp] = { ...c.companions[inComp], ...entry };
@@ -221,3 +218,4 @@ export const createExtractionManager = ({ apiKey, openAiApiKey, xAiApiKey, fullL
 
   return { extractNPCs, extractTowns };
 };
+

@@ -7,7 +7,7 @@ const salvageSchema = {
   type: 'object', additionalProperties: false, required: ['results'], properties: {
     results: { type: 'array', minItems: 1, items: { type: 'object', additionalProperties: false, required: ['source','recovers','note'], properties: {
       source: { type: 'string' },
-      recovers: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['name','count'], properties: { name: { type: 'string' }, count: { type: 'integer', minimum: 1 } } } },
+      recovers: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['name','count','label'], properties: { name: { type: 'string' }, count: { type: 'integer', minimum: 1 }, label: { type: ['string', 'null'] } } } },
       note: { type: 'string' },
     } } },
   },
@@ -78,6 +78,17 @@ MATERIAL NAMING
 - Ordinary construction usually becomes raw material, not intact working subassemblies. Preserve named components only when genuinely precision, magical, mechanical, or independently reusable AND they clear the specialized-component high bar above.
 - Do NOT merge biologically different creature materials into generic monster parts.
 
+RECOVERED ITEM LABELS — DEFAULT TO NULL; DESCRIBE WHAT SURVIVES AND DOES NOW
+- A label is NOT mandatory prose. Return label:null for ordinary bulk materials, recognizable creature materials, and any entry whose name adequately describes it. Most recovered entries should have no label. Magical origin, high value, rarity, or a powerful source does not by itself justify a label.
+- Add a short label ONLY when the recovered item retains a specific useful property, working function, limitation, or exceptional condition that its name does not communicate. Ask: what does THIS recovered item do now, or what unusual property does it still have? If the source does not establish an answer, use null.
+- NEVER label former uses, former locations, construction roles, or dismantling history. "Keel and citadel frame", "reactor-adjacent stock", "armored hull stock", "skull-mounted navigation elements", and "segregated structural stock" describe where material WAS or what it DID in the source, not a retained property. They must NOT become labels. Put source recovery commentary in the overall note if needed.
+- Do not suggest what ordinary material could be used to craft. Do not repeat the name in a sentence, list source subsystems, or describe generic construction stock. Dragon Bone, Dragon Fang, Dragon Hide, ordinary scales, stone, fiber, scrap metal, and other bulk stock normally get label:null.
+- For an intact specialized component, state its surviving function explicitly, rather than naming its former job. A retained working repair core might say "Fabricates mundane replacement fittings." A retained biological foundry might say "Cultivates non-sapient repair tissue." These are examples of wording, NOT abilities to grant automatically.
+- An unusual material property can warrant a label only when established and retained: for example, "Regrows damaged sections while supplied with blood." Do not infer that material retains every ability of its donor or of the assembled source.
+- Ground every label in the supplied description and salvage outcome. Never invent enchantments, resistances, powers, intact functionality, or continued containment/stasis merely because the source once provided them. If a function depended on removed power, controls, wards, or interconnected systems, do not describe it as independently working.
+- Keep labels concise and names generic/stackable. Preserve distinct useful retained properties when combining identical names, without repetition or implying that a property of some units applies to all.
+- FINAL LABEL AUDIT: remove any label that only describes origin, former use, location, generic condition, or an obvious fact already in the name. Replace it with null; do not rewrite it into a speculative new power.
+
 OUTPUT
 - Return ONE result object for EACH submitted source item/stack, in the same order as the submitted list.
 - source must be the submitted item's exact name without quantity or descriptive suffixes.
@@ -89,6 +100,7 @@ const responseText = (data) => (data?.output || []).filter(item => item?.type ==
 
 const stackResults = (results) => {
   const counts = new Map();
+  const labels = new Map();
   const destroyed = [];
   const notes = [];
   for (const result of results || []) {
@@ -99,10 +111,15 @@ const stackResults = (results) => {
       const count = Math.max(1, Number(recovered?.count) || 1);
       if (!name) continue;
       counts.set(name, (counts.get(name) || 0) + count);
+      const label = typeof recovered.label === 'string' ? recovered.label.trim() : '';
+      if (label) {
+        if (!labels.has(name)) labels.set(name, new Set());
+        labels.get(name).add(label);
+      }
     }
   }
   return {
-    recovers: [...counts.entries()].map(([name, count]) => ({ name, count })),
+    recovers: [...counts.entries()].map(([name, count]) => ({ name, count, ...(labels.has(name) ? { label: [...labels.get(name)].join(' ') } : {}) })),
     destroyed,
     note: notes.join(' '),
   };

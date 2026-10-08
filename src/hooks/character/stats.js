@@ -6,9 +6,17 @@ export const modStr    = (v) => { const m = statMod(v); return m >= 0 ? `+${m}` 
 export const profBonus = (level) => 1 + Math.ceil(level / 4);
 export const rollDie   = (sides) => Math.floor(Math.random() * sides) + 1;
 export const rollDice  = (notation) => {
-  const [n, s] = notation.split('d').map(Number);
-  let t = 0; for (let i = 0; i < n; i++) t += rollDie(s);
-  return t;
+  // Roll only explicit dice and signed flat terms; malformed prose cannot
+  // turn the total into NaN. Weapon types are handled before this layer.
+  let total = 0;
+  for (const m of String(notation || '').matchAll(/([+-]?)\s*(\d*)d\s*(\d+)|([+-])\s*(\d+)(?!\s*d)/gi)) {
+    if (m[3]) {
+      const n = Number(m[2] || 1), sides = Number(m[3]);
+      if (n > 10000 || sides < 1 || sides > 1000000) continue;
+      for (let i = 0; i < n; i++) total += (m[1] === '-' ? -1 : 1) * rollDie(sides);
+    } else total += (m[4] === '-' ? -1 : 1) * Number(m[5]);
+  }
+  return total;
 };
 
 export const calcMaxHp = (clsName, con, level = 1) => {
@@ -39,4 +47,5 @@ export const applyRaceBonus = (baseStats, race) => {
   for (const k of Object.keys(r)) r[k] = (r[k] || 0) + (b[k] || 0);
   return r;
 };
+
 

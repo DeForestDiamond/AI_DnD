@@ -268,23 +268,20 @@ export const CLASS_ABILITIES = {
 
   Illrigger: {
     cantrips: [],
-    // Illrigger uses Invoke Hell (subclass abilities) and Interdict Boons, not traditional spells.
-    // Spells list below represents Invoke Hell options and key class features available at level.
     martial: {
-      1: ['Baleful Interdict', 'Forked Tongue', 'Command'],
-      2: ['Combat Mastery', 'Interdiction', 'Abating Seal'],
-      3: ['Bedevil', 'Soul Eater', "Styx's Apathy"],
-      4: ['Swift Retribution', 'Invoke Hell'],
-      5: ['Extra Attack', 'Diabolic Contract'],
+      1: ['Baleful Interdict', 'Forked Tongue'],
+      2: ['Combat Mastery', 'Interdiction'],
+      3: ['Diabolic Contract', 'Invoke Hell'],
+      5: ['Extra Attack'],
       6: ['Infernal Conduit - Invigorate', 'Infernal Conduit - Devour'],
-      7: ["Acheron's Chain", 'Conflagrant Channel'],
-      8: ['Eyes of the Gate', 'Shadow Shroud'],
-      9: ['Unleash Hell', 'Vengeful Shot'],
-      10: ['Infernal Ascendancy'],
+      10: ['Blood Price'],
+      11: ['Terrorizing Force'],
+      14: ['Superior Interdict'],
+      17: ['Infernal Majesty'],
+      20: ['Master of Hell'],
     },
-    martialKnown: { 1: 2, 2: 2, 3: 2, 4: 2, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1 },
+    martialKnown: { 1:2, 2:2, 3:2, 5:1, 6:2, 10:1, 11:1, 14:1, 17:1, 20:1 },
     cantripsKnown: {},
-    martialKnown: { 1:2, 2:5, 3:2, 4:1, 5:1, 6:2, 7:6, 8:0, 9:0, 10:1 },
     infusionsKnown: {},
   },
   Sorcerer: {
@@ -531,3 +528,4 @@ export const getAvailableAbilities = (className, level, deity = null) => {
     domainSpells,
   };
 };
+
