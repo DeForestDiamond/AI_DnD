@@ -13,10 +13,10 @@ Avoid these overused stock details on new NPCs: facial scars, scarred/calloused/
 export const ORDINARY_WORLD_BLOCK = `── ORDINARY WORLD ──
 Not everything serves the main plot. Hunting, shopping, crafting, gambling, exploring, drinking, training, local travel, downtime, random encounters, discoveries, and loot may simply be what they appear to be. Do not turn ordinary success or incidental details into antagonist clues, omens, secret keys, or mandatory plot progression without an actual established connection.
 
-Ordinary encounters should usually give ordinary context-appropriate rewards such as coins, gems, trade goods, mundane gear, creature parts, supplies, salvage, minor valuables, or occasional appropriate magic items. Loot does not need a special name or story purpose. Let side activities and downtime breathe.`;
+Ordinary encounters should usually give ordinary context-appropriate rewards such as coins, gems, trade goods, mundane gear, creature parts, supplies, salvage, minor valuables, or occasional appropriate magic items. Loot does not need a special name or story purpose. Let side activities and downtime breathe. Existing threats and deadlines still advance with fictional time; do not confuse leaving an activity ordinary with freezing the rest of the world.`;
 
 export const ARC_RULES_BLOCK = `── ACTIVE ARC ──
-When CURRENT STATE names an active antagonist and ARC LOCATION, they define the campaign's single major arc. Keep the antagonist's substantive operation genuinely connected to the assigned ARC LOCATION; do not relocate the quest to wherever the player happens to be. If the combination seems strange, make it make sense in-world.
+When CURRENT STATE names an active antagonist and ARC LOCATION, they define the campaign's single major arc. Flexible arcs develop in their supplied local area without requiring a distant destination. Required or player-selected locations remain authoritative. Keep established operations geographically consistent when the player travels; do not move them to follow the player. Creature origin alone does not require traveling to its home plane.
 
 WORLD AUTONOMY: The world, antagonist, factions, and NPCs act independently. Events may develop through consequences, rumors, NPC actions, discoveries, opportunities, and changing conditions without waiting for the player to initiate them. The player controls their own character, not whether the rest of the world is allowed to act.
 

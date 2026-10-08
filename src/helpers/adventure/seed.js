@@ -27,9 +27,9 @@ export const rollAdventureSeed = (level = 1, { antagonist = null, arcLocation = 
     'humid and still before a storm', 'a fine drizzle', 'unseasonable warmth', 'the first frost of the season',
   ];
   const tones = [
-    'lighthearted and fun', 'gritty and grounded', 'tense and political', 'mysterious but not dark',
+    'lighthearted and fun', 'gritty and grounded', 'tense and political', 'dark fantasy with tangible local danger',
     'comedic with real stakes', 'action-packed from the start', 'slow burn intrigue',
-    'warm and hopeful', 'eerie and unsettling (not horror)', 'bittersweet', 'rowdy and chaotic',
+    'warm and hopeful', 'eerie and unsettling, with menace that can become real', 'bittersweet', 'rowdy and chaotic',
     'somber and reflective',
   ];
   const hooks = [

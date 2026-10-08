@@ -1,3 +1,4 @@
+import { worldPressureContext } from '../helpers/worldPressures.js';
 import { INTERDICT_BOONS, normalizeInterdictAbilities } from '../constants/interdictBoons.js';
 import { getMainWeapon, effectiveStats, calcAC, profBonus, allItems, effectiveMaxHp, modStr } from '../hooks/useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
@@ -125,7 +126,7 @@ Level ${char.level} | ${char.xp||0} XP | Coins: ${coinsToString(char.coins)}
 HP: ${char.hp}/${effectiveMaxHp(char)} | AC: ${ac} | Proficiency: +${pb}
 Stats: Strength ${effStats.str}(${modStr(effStats.str)}) Dexterity ${effStats.dex}(${modStr(effStats.dex)}) Constitution ${effStats.con}(${modStr(effStats.con)}) Intelligence ${effStats.int}(${modStr(effStats.int)}) Wisdom ${effStats.wis}(${modStr(effStats.wis)}) Charisma ${effStats.cha}(${modStr(effStats.cha)})
 Weapon: ${weaponLine}${sneakLine}${focusLine}
-(Equipped gear, inventory and item descriptions are listed above.)${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${arcLine}`;
+(Equipped gear, inventory and item descriptions are listed above.)${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${worldPressureContext(char)}${arcLine}`;
 
   return { staticPart, dynamicPart, gearBlock, itemsBlock };
 };

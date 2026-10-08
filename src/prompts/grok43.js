@@ -1,3 +1,4 @@
+import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './sharedLow.js';
 import { TAGS_BLOCK } from './tags.js';
@@ -38,6 +39,8 @@ ${TAGS_BLOCK}
 ${ORDINARY_WORLD_BLOCK}
 ${ARC_RULES_BLOCK}
 ${WORLD_INTEGRITY_BLOCK}
+
+${WORLD_DYNAMICS_BLOCK}
 ${SETTING_BLOCK}
 
 ── PROVIDER TUNING ──
@@ -53,3 +56,4 @@ Run the scene forward naturally from the player's full intent. Keep the world an
 
   return { static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart };
 };
+

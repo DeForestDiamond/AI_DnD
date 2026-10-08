@@ -1,3 +1,4 @@
+import { applyWorldPressures } from '../../helpers/worldPressures.js';
 import { useState, useRef, useEffect } from 'react';
 import { ITEM_DB, SLOTS, EMPTY_SLOTS, parseDMItem } from '../../constants/items.js';
 import { STARTING_GEAR } from '../../constants/classes.js';
@@ -45,6 +46,8 @@ export function useCharacter(log) {
   // Apply all DM game effect tags to character
   const applyEffects = (text, currentChar, skipLevelUp = false, itemDestination = 'inventory') => {
     let c = { ...currentChar, items:{ ...(currentChar.items||{}) }, inventory:normalizeStacks(currentChar.inventory), stash:normalizeStacks(currentChar.stash), slots:{ ...(currentChar.slots||EMPTY_SLOTS) } };
+
+    c.worldPressures = applyWorldPressures(text, c.worldPressures);
 
     // Coins — [GOLD:] and [COIN:]/[COINS:] both accepted; bare numbers are gp,
     // denominations pp/gp/sp/cp all work ([GOLD: -5sp], [COIN: +2pp], [GOLD: +3gp 5sp]).

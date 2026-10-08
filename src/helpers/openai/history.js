@@ -35,6 +35,7 @@ The user input is divided into three explicitly labelled blocks. ONLY "MESSAGES 
 LENGTH: Aim for roughly 400 words for a normal summary entry. Dense, multi-threaded chunks may use up to about 800 words. Do not pad simple events to reach 400 words, but NEVER delete continuity-critical detail merely to stay short. Completeness and future usability beat compression inside the live summary layer.
 
 CORE RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD.
+Preserve irreversible losses, threat progress, active pursuit, witnesses, revised bargains, and established timing or triggers. Never summarize a planned death or attack as completed.
 Compression is subordinate to continuity. The entry may be longer when the campaign contains more unresolved state. Never omit, merge, generalize, or tidy away an unresolved thread merely to save words.
 
 PRESERVE CONCRETE STATE AND CAUSALITY. Keep where important people, vessels, objects, and groups physically are; why characters are present or acting; who asked, told, sent, hired, or paid whom to do something; and the causal link between setup and later action. A detail that seems mundane must remain when removing it would make a later location, action, conversation, motivation, or consequence appear unexplained. Do not turn "the spelljammer remained off the coast" into "the spelljammer was in the city," and do not preserve an NPC's presence while deleting the reason they were sent there.
@@ -74,6 +75,7 @@ INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD.
 - ENUMERATED / FINITE SETS: preserve every still-unresolved member and its associated detail — opponents and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, etc. Resolved members may collapse into outcome-level history.
 
 PRESERVE ABOVE ALL:
+- irreversible losses, active pursuits, witnesses, revised bargains, threat progress, and established timing or triggers; distinguish planned actions from completed events;
 - unresolved tasks, dangers, mysteries, meetings, leads, negotiations, contests, planned actions, expected arrivals and pending consequences;
 - obligations both directions: debts, promises, bargains, favours, contracts, terms and wagers;
 - relationship changes and the resulting current relationship state;
@@ -89,3 +91,4 @@ DROP ENTIRELY once resolved or nonessential: scene descriptions, atmosphere, dia
 Do not repeat the same fact in multiple phrasings. Do not add interpretation or new facts. On first mention of a named NPC, retain pronoun and race only when established by the source. Facts only. Past tense. Plain text only; no headings, bullets, preamble, or markdown.`;
   return callText({ apiKey, model, developer, user: `ARCHIVE THESE ENTRIES:\n\n${entriesText}`, maxOutputTokens: 1600 });
 }
+

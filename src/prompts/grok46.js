@@ -1,3 +1,4 @@
+import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
 import { CONFLICT_RESISTANCE_BLOCK } from './conflict.js';
@@ -36,6 +37,8 @@ ${ORDINARY_WORLD_BLOCK}
 ${ARC_RULES_BLOCK}
 ${WORLD_INTEGRITY_BLOCK}
 
+${WORLD_DYNAMICS_BLOCK}
+
 ${CONFLICT_RESISTANCE_BLOCK}
 ${SETTING_BLOCK}
 
@@ -54,3 +57,4 @@ Check that you did not speak, think, feel, or act for the player. If the player 
 
   return { static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart };
 };
+

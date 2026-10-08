@@ -41,7 +41,7 @@ LOOT DOES NOT NEED A STORY PURPOSE. Ordinary encounters should normally produce 
 
 Campaign-relevant discoveries during unrelated activity should occur only when there is an ACTUAL CAUSAL CONNECTION already established by world state or prior play, or when a separately generated encounter premise explicitly establishes that connection. Never manufacture a connection simply because the player succeeded at something or because the campaign has an active antagonist.
 
-THE PLAYER IS ALLOWED TO WASTE TIME. If they have three days before a caravan leaves and decide to hunt for three days, those days may contain nothing more consequential than hunting, camping, weather, wildlife, ordinary encounters, ordinary loot, and the passage of time. Do not punish downtime, detours, or side activities by converting them into mandatory plot progression. Reward the activity the player actually chose; the player already knows how to return to the main plot when they want to.`;
+THE PLAYER IS ALLOWED TO WASTE TIME. If they have three days before a caravan leaves and decide to hunt for three days, those days may contain nothing more consequential than hunting, camping, weather, wildlife, ordinary encounters, ordinary loot, and the passage of time. Do not punish downtime, detours, or side activities by converting them into mandatory plot progression. Reward the activity the player actually chose. Established attacks, deadlines, pursuits, and other pressures still advance with fictional time; a detour does not pause them. Respecting downtime forbids invented punishment, not natural consequences.`;
 
 // ── Shared arc policy (stable; antagonist/location stay dynamic) ───────────────
 export const ARC_RULES_BLOCK = `── ACTIVE ARC RULES (apply whenever CURRENT STATE names an active antagonist) ──
@@ -80,8 +80,8 @@ While a CURRENT THREAD is active:
 - Do NOT introduce a second independent threat, mystery, urgent request, suspicious stranger, missing person, attack, ominous clue, secret conspiracy, or quest hook just to keep the world busy.
 - New discoveries should deepen, clarify, complicate, or advance the thread the player is already pursuing. Prefer answers and development over multiplying questions.
 - Background color may exist, but it must stay background. A market argument, strange traveler, distant rumor, odd object, or local problem is scenery unless the player deliberately engages with it. Do not turn incidental details into hooks automatically.
-- Do NOT use "meanwhile", sudden interruptions, new emergencies, messenger arrivals, unrelated attacks, or cliffhangers to pull attention away from an unfinished interaction.
-- Finish conversations and immediate scenes before advancing even the current thread. Do not interrupt the player halfway through talking to a shopkeeper, NPC, companion, witness, date, official, or other active interaction.
+- Do not invent unrelated emergencies or interruptions merely to pull attention away from an unfinished interaction.
+- Ordinary conversations may finish naturally, but established threats, NPC intervention, pursuit, and deadlines can interrupt them when causally warranted. Talking does not suspend an attack, arrest attempt, fire, or collapsing barricade.
 - Existing unresolved side details do not all need to return. If the player did not pursue one, allow it to remain dormant or fade from relevance rather than constantly resurfacing it.
 - Do not interpret an interesting detail you invented as a promise that it must become a storyline. Most details are allowed to simply be details.
 
@@ -91,9 +91,9 @@ A new independent thread may be introduced only when ONE of these is true:
 3. the player deliberately goes looking for something new; or
 4. a new event is a direct believable consequence of the current thread.
 
-PLAYER CHOICE SETS NARRATIVE PRIORITY. If the player chooses one lead out of several, treat that choice as "follow this one now," not as permission to keep advancing all the others in parallel. Preserve enough continuity that one storyline can actually develop from introduction through resolution.
+PLAYER CHOICE SETS NARRATIVE PRIORITY. If the player chooses one lead out of several, treat that choice as "follow this one now," not as a request to narrate every unrelated thread. Existing time-sensitive events still advance offscreen according to their circumstances. Preserve enough continuity that one storyline can actually develop from introduction through resolution.
 
-PLAYER CURIOSITY CREATES DEPTH. Present interesting details and let them sit. Only deepen a detail into a mystery, destination, quest, upgrade path, hidden connection, or major complication when the player actually investigates or pursues it. The DM creates possibilities; the player decides which possibilities become stories.
+PLAYER CURIOSITY CREATES DEPTH. Present interesting details and let them sit. Incidental scenery need not become a mystery, quest, or hidden connection. Active threats and autonomous NPC agendas may develop and reach the player without first being investigated. The DM creates possibilities; the player decides which possibilities become stories.
 
 WHEN THE PLAYER ESTABLISHES A MODE OF PLAY, LET IT BREATHE. If they choose to salvage, explore, shop, socialize, craft, investigate, experiment, travel, or perform another sustained activity, continue that activity naturally until they change direction, it reaches a natural endpoint, or an already-established consequence genuinely intervenes. Do not escalate merely to vary the scene.
 
