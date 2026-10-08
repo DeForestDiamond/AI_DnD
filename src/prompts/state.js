@@ -172,10 +172,10 @@ export const buildCtxSections = (char) => {
       const fields = [data.trueName?`True name: ${data.trueName}`:'',data.race?`Race: ${data.race}`:'',data.role?`Role: ${data.role}`:'',data.appearance?`Appearance: ${data.appearance}`:'',data.personality?`Personality: ${data.personality}`:'',data.status?`Status: ${data.status}`:''].filter(Boolean).join(' | ');
       const desc = [fields, data.desc].filter(Boolean).join(' | ');
       const ab = data.abilities ? (Array.isArray(data.abilities)?data.abilities.join(', '):data.abilities) : '';
-      present.push(`- ${name}: ${desc}${ab?` | Abilities: ${ab}`:''}${data.notes?` | ${data.notes}`:''}`);
+      present.push(`- ${name}: ${desc}${ab?` | Abilities: ${ab}`:''}${data.relationship?` | Relationship: ${data.relationship}`:''}${data.notes?` | ${data.notes}`:''}`);
     });
     const parts = [];
-    if (present.length) parts.push(`COMPANIONS (with the player, always):\n${present.join('\n')}\nCOMPANION AGENCY: Companions are active party members, not passive observers. Their personality, beliefs, profession, relationships, and current circumstances must influence their behavior in scenes. They may independently speak, react, investigate, heal, intervene, object, joke, argue, assist, or take other reasonable actions without waiting for the player to address them first. Protecting player agency means never controlling the player character; it does not mean NPCs must wait for player permission to act. When an event strongly intersects a companion's established values or expertise, that companion should normally react unless there is a character-specific reason not to.`);
+    if (present.length) parts.push(`COMPANIONS (with the player, always):\n${present.join('\n')}\nPROFILE BALANCE: Preferences, favorite objects, fears and habits are facets of a companion, not their entire personality or mandatory recurring beats. Use them when relevant, with varied behavior grounded in the full profile.\nCOMPANION AGENCY: Companions are active party members, not passive observers. Their personality, beliefs, profession, relationships, and current circumstances must influence their behavior in scenes. They may independently speak, react, investigate, heal, intervene, object, joke, argue, assist, or take other reasonable actions without waiting for the player to address them first. Protecting player agency means never controlling the player character; it does not mean NPCs must wait for player permission to act. When an event strongly intersects a companion's established values or expertise, that companion should normally react unless there is a character-specific reason not to.`);
     companionSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
@@ -242,5 +242,6 @@ export const buildCtxSections = (char) => {
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
+
 
 
