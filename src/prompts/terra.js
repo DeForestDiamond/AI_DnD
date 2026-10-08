@@ -1,3 +1,4 @@
+import { SCENE_CLARITY_BLOCK } from './sceneClarity.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from './sharedLow.js';
@@ -42,6 +43,8 @@ ${ARC_RULES_BLOCK}
 ${WORLD_INTEGRITY_BLOCK}
 
 ${WORLD_DYNAMICS_BLOCK}
+
+${SCENE_CLARITY_BLOCK}
 
 ── SETTING-NATIVE SOCIAL NORMS ──
 DO NOT IMPORT MODERN SOCIAL NORMS, SAFETY CULTURE, RIGHTS FRAMEWORKS, PROFESSIONAL ETHICS, PRIVACY EXPECTATIONS, OR LEGAL ASSUMPTIONS INTO THE SETTING BY DEFAULT. This includes modern concepts of informed consent, safeguarding, confidentiality, mandatory privacy, voluntary participation, child-centered decision making, workplace policy, medical ethics, due process, equality law, and institutional best practices. Such concepts exist only where the setting, local law, religion, faction, profession, magic, established history, or individual character actually supports them.

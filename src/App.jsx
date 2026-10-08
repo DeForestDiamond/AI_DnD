@@ -356,7 +356,7 @@ Use the STARTING CONTEXT because it was chosen specifically for this premise; do
         openingArc = seed.arc;
         startingArea = seed.startingArea;
         seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
-The antagonist and geographic anchor below are authoritative and were selected together. Build ONE coherent opening from them. Setting, weather, scene location, hook, and wildcard are creative ingredients: adapt incompatible details to the geography and antagonist rather than moving the adventure or inventing a separate conflict.
+The antagonist and geographic anchor below are authoritative and were selected together. Build ONE coherent opening from them. Setting, weather, scene location, hook, and wildcard are creative ingredients: adapt incompatible details to the geography and antagonist rather than moving the adventure or inventing a separate conflict. Keep rich atmospheric scene-setting. Setting and wildcard details can remain background; they do not each need a plot explanation or actionable mystery.
 
 STORY SCOPE (the player is level ${char.level} — match the SIZE and stakes of the story to this): ${seed.scope}
 
@@ -369,6 +369,7 @@ OPENING LOCATION (the specific place the scene starts): ${seed.location}
 OPENING STYLE (HOW to open the scene — follow this structure, do not default to a generic establishing shot): ${seed.openingStyle}
 WILDCARD (a distinctive detail to work into the opening): ${seed.wildcard}
 ADVENTURE HOOK (adapt to this character and antagonist): ${seed.hook}
+OPENING CLARITY: Establish one understandable immediate conflict or opportunity. Make visible actions, requests, immediate stakes, and any offered benefit concrete before adding deeper lore or complications. Several NPCs may take opposing sides in that conflict. Do not cram the antagonist's whole scheme into the first exchange. If the hook suggests a prior debt, favor, enemy, or relationship, use it only when supplied history supports it; otherwise adapt it into a present-day offer, dispute, or intrusion. Completed service and resolved obligations remain closed.
 OPENING CONTACT: Begin with a concrete unfolding situation, direct offer, intrusion, or opportunity arising from this antagonist. Give this character something they can act on now, not merely a rumor about an optional distant quest. Do not assume heroic motives or prior acceptance. If urgent danger is established, show its present state and plausible next development, and record its pressure.
 ANTAGONIST (identity hidden; the opening hook must arise from this antagonist): ${arcAntagonist}
 

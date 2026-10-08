@@ -1,3 +1,4 @@
+import { SCENE_CLARITY_BLOCK } from './sceneClarity.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from './shared.js';
@@ -43,6 +44,8 @@ ${ARC_RULES_BLOCK}
 ${WORLD_INTEGRITY_BLOCK}
 
 ${WORLD_DYNAMICS_BLOCK}
+
+${SCENE_CLARITY_BLOCK}
 
 ${CONFLICT_RESISTANCE_BLOCK}
 
