@@ -1,5 +1,5 @@
 import { INTERDICT_BOONS, interdictBoonCount, availableInterdictBoons, normalizeInterdictAbilities } from '../../constants/interdictBoons.js';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
 import { SPELL_INFO, ROLES, ROLE_ORDER } from '../../constants/spellInfo.js';
 import { getAvailableAbilities, getAbilityCounts } from '../../constants/abilities.js';
@@ -24,6 +24,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
     martial:   [...(existing.martial   || [])],
     infusions: [...(existing.infusions || [])],
   });
+  const boonSectionRef = useRef(null);
   const [showRaceTraits, setShowRaceTraits] = useState(false);
   const [openDesc, setOpenDesc] = useState(null);   // which ability's description is expanded
   const [showSubclass, setShowSubclass] = useState(false);
@@ -51,7 +52,13 @@ export function AbilitiesModal({ character, onSave, onClose }) {
     (avail.domainSpells   || []).forEach(s => domainSet.spells.add(s));
   });
 
-  const invalidBoons = selected.interdictBoons.some(name => !available.interdictBoons.has(name));
+  const unavailableBoons = selected.interdictBoons.filter(name => !available.interdictBoons.has(name));
+  const invalidBoons = unavailableBoons.length > 0;
+  const excessBoons = Math.max(0, selected.interdictBoons.length - totals.interdictBoons);
+  const boonError = [
+    excessBoons ? `You have ${selected.interdictBoons.length}/${totals.interdictBoons} Interdict Boons selected. Deselect ${excessBoons} to confirm.` : '',
+    invalidBoons ? `Deselect unavailable boons: ${unavailableBoons.join(', ')}.` : '',
+  ].filter(Boolean).join(' ');
   const toggle = (type, name) => {
     setSelected(prev => {
       const current = prev[type];
@@ -148,7 +155,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
             </div>
           )}
           {sections.map(({ key, label, list }) => (
-            <div key={key} style={{marginBottom:16}}>
+            <div key={key} ref={key === 'interdictBoons' ? boonSectionRef : undefined} style={{marginBottom:16}}>
               <div style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:6,display:'flex',justifyContent:'space-between'}}>
                 <span>{label}</span>
                 <span style={{color:selected[key].length >= totals[key] ? colors.green : colors.textGhost}}>
@@ -231,10 +238,20 @@ export function AbilitiesModal({ character, onSave, onClose }) {
           ))}
         </div>
 
+        {boonError && (
+          <div role="alert" style={{color:colors.gold,fontSize:12,lineHeight:1.5,marginTop:12}}>
+            {boonError}
+            <button type="button" style={{...btn(false),width:'100%',marginTop:6,fontSize:11}}
+              onClick={() => boonSectionRef.current?.scrollIntoView({behavior:'smooth',block:'start'})}>
+              Review Interdict Boons
+            </button>
+          </div>
+        )}
         <button
-          style={{...btn(true),width:'100%',marginTop:12,fontSize:11}}
-          disabled={selected.interdictBoons.length > totals.interdictBoons || invalidBoons}
-          onClick={() => onSave(selected)}>
+          type="button"
+          style={{...btn(true),width:'100%',marginTop:12,fontSize:11,opacity:boonError ? 0.45 : 1,cursor:boonError ? 'not-allowed' : 'pointer'}}
+          disabled={!!boonError}
+          onClick={() => { if (!boonError) onSave(selected); }}>
           Confirm Abilities
         </button>
         {onClose && (
