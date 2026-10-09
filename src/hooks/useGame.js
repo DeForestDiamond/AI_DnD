@@ -1,3 +1,4 @@
+import { arcContext } from '../prompts/arcPacing.js';
 import { normalizeWeaponDamage } from '../utils/weaponDamage.js';
 import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod, allItems, effectiveMaxHp } from './useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
@@ -209,17 +210,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       if (hooksIdx >= 0) liveState = liveState.slice(0, hooksIdx);
       liveState = liveState.trim();
 
-      const arc = requestChar?.arc;
-      const gptArc = arc?.antagonist ? [
-        '',
-        'ACTIVE ARC (HIDDEN): ' + arc.antagonist,
-        'ARC LOCATION (HIDDEN): ' + (arc.arcLocation || arc.localArea || requestChar?.currentLocation || 'the opening area') + (arc.arcLocation ? ' (required or player-selected destination)' : ' (local arc; no separate travel destination)'),
-        'This assigned antagonist is the one active campaign arc. Do not replace it with a different recurring villain, conspiracy, or quest chain. Small self-contained side events may be unrelated, but any multi-scene threat or continuing villain must connect to this antagonist.',
-        'Build toward the antagonist through connected events, people, operations, evidence, and consequences. Flexible arcs develop in the supplied local area; do not assign a distant destination or require travel before engagement. Keep the identity hidden until discovered without hiding the playable conflict.',
-        'If the player is away from the arc location, their current location may provide a brief believable lead toward it, but the substantive arc remains at or genuinely connected to the assigned arc location.',
-        'Use the character’s supplied disposition when motivating involvement; do not assume altruism. If the player ignores the arc, do not nag them every turn.',
-        'When the antagonist is resolved — defeated, captured, dismantled, permanently driven off, or the player concludes their business through a deal, truce, alliance, payment, or deliberate disengagement — emit [ARC COMPLETE] in that same response. Do not invent a hidden superior or deeper layer to keep the arc alive.'
-      ].join('\n') : '';
+      const gptArc = arcContext(requestChar);
 
       dynamicTail = liveState + gptArc;
     }
@@ -651,5 +642,6 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
 
   return { callDM, buildActionContext, interceptRollRequest, pingCache };
 }
+
 
 

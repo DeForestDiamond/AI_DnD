@@ -31,7 +31,7 @@ const ARC_TABLES = { hostile: ARC_HOSTILE, social: ARC_SOCIAL, weird: ARC_WEIRD 
 export const rollEncounterDirective = (char) => {
   const r = Math.random();
   const type = r < 0.60 ? 'hostile' : r < 0.85 ? 'social' : 'weird';
-  const arcTied = !!char?.arc?.antagonist && Math.random() < (1 / 3);
+  const arcTied = !!char?.arc?.antagonist && char.arc.status !== 'reserved' && Math.random() < (1 / 3);
   const cap = encounterCRCap(char?.level);
 
   let desc, crNote = '', npcNote = '';
@@ -66,3 +66,4 @@ export const rollEncounterDirective = (char) => {
     `End with your usual 4 numbered choices.]`;
   return { type, arcTied, desc, directive };
 };
+

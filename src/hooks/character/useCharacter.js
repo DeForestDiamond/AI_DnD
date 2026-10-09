@@ -169,15 +169,18 @@ export function useCharacter(log) {
       c.arc = { ...(c.arc || {}), objectives: [...objs, { text: t, done: false }] };
     });
 
-    if (/\[ARC COMPLETE\]/i.test(text)) {
-      // Record the finished foe so it's never rolled again, then pick the next.
+    if (/\[ARC COMPLETE\]/i.test(text) && c.arc?.antagonist && c.arc.status !== 'reserved') {
+      // Resolve the central conflict, but keep the next foe reserved during aftermath.
       const finished = c.arc?.antagonist;
       const defeated = [...(c.defeatedAntagonists || [])];
       if (finished && !defeated.some(d => d.toLowerCase() === finished.toLowerCase())) {
         defeated.push(finished);
       }
       c.defeatedAntagonists = defeated;
-      c.arc = rollArc(c.level, finished, defeated, c.currentLocation);
+      c.arc = { ...rollArc(c.level, finished, defeated, c.currentLocation), status: 'reserved', previousAntagonist: finished };
+    } else if (!/\[ARC COMPLETE\]/i.test(text) && /\[ARC START\]/i.test(text) && c.arc?.status === 'reserved') {
+      // The DM emits this only after the player chooses a discovered new opportunity.
+      c.arc = { ...c.arc, status: 'active' };
     }
 
     // Legacy [UPDATE: old | new] support. New prompts no longer teach this;
@@ -565,4 +568,5 @@ export function useCharacter(log) {
     toggleContextExclusion,
   };
 }
+
 

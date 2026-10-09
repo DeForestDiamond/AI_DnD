@@ -116,11 +116,12 @@ ${GPT_EXTRA_RULES}`;
   const dynamicPart = `── CURRENT STATE (changes every message) ──
 ${cb.dynamicPart}
 
-HOOKS — ARC OR NO ARC: Give this character a concrete reason to engage based on their disposition and demonstrated interests. Danger to strangers does not automatically motivate them. Offer meaningful opportunities, relationships, knowledge, access, leverage, amusement, revenge, or gain where plausible; do not reduce every motive to coin or assume altruism.
+HOOKS — ARC OR NO ARC: During reserved-arc aftermath, focus on existing business; offer the next hook only when the player seeks a new opportunity. When a hook is appropriate, give this character a concrete reason to engage based on their disposition and demonstrated interests. Danger to strangers does not automatically motivate them. Offer meaningful opportunities, relationships, knowledge, access, leverage, amusement, revenge, or gain where plausible; do not reduce every motive to coin or assume altruism.
 
 ── BEFORE YOU WRITE ──
 Check that you did not speak, think, feel, or act for the player. If the player gained anything, emit every required [ITEM:] or [GOLD:] tag now. Follow [ROLL:] termination exactly.`;
 
   return { static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart };
 };
+
 

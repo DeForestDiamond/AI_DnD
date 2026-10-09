@@ -1,3 +1,4 @@
+import { arcContext } from './arcPacing.js';
 import { worldPressureContext } from '../helpers/worldPressures.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { getMainWeapon, effectiveStats, calcAC, profBonus, allItems, effectiveMaxHp, modStr } from '../hooks/useCharacter.js';
@@ -241,7 +242,7 @@ RETIRED ENEMY FLAVOR — never describe an ENEMY with: "ancient", "primordial", 
 9 of every 10 enemies were alive last week and want something simple. A rare major villain may have history — measured in years, not eons. (This rule is for ENEMIES — established allies and world figures keep their existing lore.)
 
 ── DON'T ESCALATE ──
-A quest is a quest. It does not need to escalate. LET IT END.
+A quest can develop through several meaningful scenes. Escalation is not compulsory every turn; honor progress and let the actual central conflict end when resolved.
 STORY SCOPE: scale the SIZE of the story to the player's level, not just monster CR. A low-level character gets small, local problems with mundane motives — a caravan, a village, a missing person — never ancient evils, sealed entities, prophecies, or world-ending stakes. Epic scope is earned by leveling into it.
 Most encounters are self-contained: bandits are just bandits, a wolf is just hungry, a rude merchant is just rude. Not every fight hides a bigger one. Not every NPC has an agenda. Let small things stay small.
 POWER DOES NOT SNOWBALL: One victory does not make the player a lord, a chosen one, a ruler, or the owner of land or armies. Titles, territory, and rulership are earned slowly across many sessions, and only when the player deliberately pursues them. Never hand out escalating status unprompted.
@@ -251,21 +252,17 @@ When a creature is far below the player's demonstrated capability — judged by 
 This cuts both ways. Against something that genuinely outmatches the player, do not soften it either. The narration should tell the player where they truly stand, every time.
 
 ── WHEN A FIGHT ENDS ──
-When the player wins, the threat is OVER. The scene goes quiet: loot, catch breath, travel, talk. Do NOT reveal that the thing they just beat was a guardian, a fragment, a servant, or a herald of something worse below. Do not invent a successor threat merely to prolong victory. Other already-established pressures and autonomous actors still continue.`;
+When the player resolves the central threat, honor that ending and give room for loot, payment, rest, and conversation. Winning a skirmish does not automatically end an unresolved arc; already-established opposition can adapt within that same conflict. Do NOT reveal that the thing they just beat was a guardian, a fragment, a servant, or a herald of something worse below. Do not invent a successor threat merely to prolong victory. Other already-established pressures and autonomous actors still continue.`;
 
   const dynamicPart = `── CURRENT STATE (changes every message) ──
 CHARACTER: ${char.name} | ${char.race?.name} ${classDesc} | Total Level ${char.level} | ${char.xp||0} XP
 STATS: STR ${effStats.str}(${modStr(effStats.str)}) DEX ${effStats.dex}(${modStr(effStats.dex)}) CON ${effStats.con}(${modStr(effStats.con)}) INT ${effStats.int}(${modStr(effStats.int)}) WIS ${effStats.wis}(${modStr(effStats.wis)}) CHA ${effStats.cha}(${modStr(effStats.cha)})
 COMBAT: Hit Points ${char.hp}/${effectiveMaxHp(char)} | Armor Class ${ac} | Proficiency Bonus +${pb} | Weapon: ${weaponLine}${sneakLine}${focusLine}
-COINS: ${coinsToString(char.coins)}  (equipped gear, inventory and item descriptions are listed above)${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${playstyle}${clericDeity}${raceContext}${subclassPromptLines(char)}${worldPressureContext(char)}${char.arc?.antagonist ? `
-
-ACTIVE ARC ANTAGONIST (HIDDEN): ${char.arc.antagonist}
-ARC LOCATION (HIDDEN): ${char.arc.arcLocation || char.arc.localArea || char.currentLocation || 'the opening area'} (${char.arc.arcLocation ? 'required or player-selected destination' : 'local arc; no separate travel destination'}).
-Apply ACTIVE ARC rules without assuming that awareness alone creates motivation. Do not name the antagonist until play reveals them.` : ''}
+COINS: ${coinsToString(char.coins)}  (equipped gear, inventory and item descriptions are listed above)${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${playstyle}${clericDeity}${raceContext}${subclassPromptLines(char)}${worldPressureContext(char)}${arcContext(char)}
 
 ${directivesBlock(char)}
 
-HOOKS — ARC OR NO ARC: Give this character a concrete reason to engage based on their disposition and demonstrated interests. Danger to strangers does not automatically motivate them. Offer meaningful opportunities, relationships, knowledge, access, leverage, amusement, revenge, or gain where plausible; do not reduce every motive to coin or assume altruism.
+HOOKS — ARC OR NO ARC: During reserved-arc aftermath, focus on existing business; offer the next hook only when the player seeks a new opportunity. When a hook is appropriate, give this character a concrete reason to engage based on their disposition and demonstrated interests. Danger to strangers does not automatically motivate them. Offer meaningful opportunities, relationships, knowledge, access, leverage, amusement, revenge, or gain where plausible; do not reduce every motive to coin or assume altruism.
 
 ── BEFORE YOU WRITE — the last check ──
 1. LENGTH: Usually 250–450 words of focused narrative, flexing shorter for simple actions and longer when a complex scene genuinely needs it. Complete characterization and relevant companion/NPC reactions matter more than hitting a number. (Choices and tags are extra — never cut those.)
@@ -281,4 +278,5 @@ HOOKS — ARC OR NO ARC: Give this character a concrete reason to engage based o
 // ── GPT-only DM rules ──────────────────────────────────────────────────────────
 // These are written directly into the GPT prompt. Do not mutate the finished
 // prompt with runtime .replace() chains; what appears here is what Sol/Terra see.
+
 

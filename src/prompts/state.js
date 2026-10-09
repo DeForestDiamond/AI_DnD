@@ -1,3 +1,4 @@
+import { arcContext } from './arcPacing.js';
 import { worldPressureContext } from '../helpers/worldPressures.js';
 import { INTERDICT_BOONS, normalizeInterdictAbilities } from '../constants/interdictBoons.js';
 import { getMainWeapon, effectiveStats, calcAC, profBonus, allItems, effectiveMaxHp, modStr } from '../hooks/useCharacter.js';
@@ -117,10 +118,7 @@ export const buildCharBlock = (char) => {
   const staticPart = `CHARACTER: ${char.name} | ${char.race?.name} ${classDesc}${char.deity ? ` | ${hasWarlock?'Patron':'Deity'}: ${char.deity.name}` : ''}${playstyle}${deityLine}${raceCtx}${subclassPromptLines(char)}${abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : ''}`;
 
   // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
-  const arcLine = char.arc?.antagonist
-    ? `\nACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}.
-ARC LOCATION (HIDDEN CAMPAIGN STATE): ${char.arc.arcLocation || char.arc.localArea || char.currentLocation || 'the opening area (establish locally)'}${char.arc.arcLocation ? ' (required or player-selected destination)' : ' (local arc; no separate travel destination)'}.`
-    : '';
+  const arcLine = arcContext(char);
   const dynamicPart = `CURRENT STATE:
 Level ${char.level} | ${char.xp||0} XP | Coins: ${coinsToString(char.coins)}
 HP: ${char.hp}/${effectiveMaxHp(char)} | AC: ${ac} | Proficiency: +${pb}
@@ -243,6 +241,7 @@ export const buildCtxSections = (char) => {
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
+
 
 
 
