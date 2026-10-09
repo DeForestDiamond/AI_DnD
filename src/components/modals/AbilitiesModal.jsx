@@ -42,7 +42,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
     totals.infusions += counts.infusions;
     // Pass deity name for Cleric and Warlock (patron system)
     const deity = (cls === 'Cleric' || cls === 'Warlock') ? deityName : null;
-    const avail = getAvailableAbilities(cls, lvl, deity);
+    const avail = getAvailableAbilities(cls, lvl, deity, character.subclasses?.[cls]);
     avail.cantrips.forEach(s  => available.cantrips.add(s));
     avail.spells.forEach(s    => available.spells.add(s));
     (avail.martial||[]).forEach(s => available.martial.add(s));
@@ -87,6 +87,9 @@ export function AbilitiesModal({ character, onSave, onClose }) {
         </div>
         <div style={{fontSize:11,color:colors.textFaint,marginBottom:4,textAlign:'center',lineHeight:1.5}}>
           Choose your abilities based on your class and level.
+          {character.subclasses?.Sorcerer === 'Divine Soul' && classLevels.Sorcerer > 0 && (
+            <div>Divine Soul: cleric spells and cantrips are available as sorcerer choices and share your normal selection limits.</div>
+          )}
           {Object.entries(totals).map(([type, count]) =>
             count > 0 ? ` ${count} ${type === 'interdictBoons' ? 'Interdict Boons' : type}` : ''
           ).filter(Boolean).join(' ·')}

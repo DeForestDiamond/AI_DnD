@@ -861,7 +861,7 @@ export const SUBCLASSES = {
       "features": [
         {
           "name": "Divine Magic",
-          "desc": "Add cleric spells to your known list, blending faith with raw sorcery."
+          "desc": "When choosing sorcerer spells or cantrips, you may also choose from the cleric list. These choices count as sorcerer magic and use your normal known-spell and cantrip allowances."
         },
         {
           "name": "Favored by the Gods",

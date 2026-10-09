@@ -473,13 +473,27 @@ export const WARLOCK_PATRON_SPELLS = {
     },
   },
 };
-export const getAvailableAbilities = (className, level, deity = null) => {
+// Subclasses that expand the source list without granting extra known spells.
+export const SUBCLASS_SPELL_ACCESS = {
+  Sorcerer: { 'Divine Soul': 'Cleric' },
+};
+
+export const getAvailableAbilities = (className, level, deity = null, subclass = null) => {
   const cls = CLASS_ABILITIES[className];
   if (!cls) return { cantrips: [], spells: [], martial: [], infusions: [] };
   // Show all spells unlocked at or below current level
   const spells = [];
   for (let l = 1; l <= level; l++) {
     if (cls.spells?.[l]) spells.push(...cls.spells[l]);
+  }
+
+  const subclassCantrips = [];
+  const extraClass = CLASS_ABILITIES[SUBCLASS_SPELL_ACCESS[className]?.[subclass]];
+  if (extraClass) {
+    subclassCantrips.push(...(extraClass.cantrips || []));
+    for (let l = 1; l <= level; l++) {
+      spells.push(...(extraClass.spells?.[l] || []));
+    }
   }
 
   const domainCantrips = [];
@@ -518,7 +532,7 @@ export const getAvailableAbilities = (className, level, deity = null) => {
   const martial = [];
   for (let l = 1; l <= level; l++) if (cls.martial?.[l]) martial.push(...cls.martial[l]);
   return {
-    cantrips:  [...new Set([...(cls.cantrips || []), ...domainCantrips])],
+    cantrips:  [...new Set([...(cls.cantrips || []), ...subclassCantrips, ...domainCantrips])],
     spells:    [...new Set(spells)],
     martial:   [...new Set(martial)],
     infusions: infusions,
