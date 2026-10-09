@@ -157,7 +157,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
               </div>
               {key === 'interdictBoons' && (
                 <div style={{fontSize:12,color:colors.textFaint,lineHeight:1.5,marginBottom:8}}>
-                  Boons enhance Baleful Interdict; they are not spells. Choose one at level 2, two at 7, three at 13, and four at 18. Only one non-passive boon can activate per turn. You may replace one boon when gaining an Illrigger level. Descriptions summarize effects; use the class rules for saves and ranges.
+                  Boons enhance Baleful Interdict; they are not spells. Choose one at Illrigger level 1, two at 4, three at 7, and four at 9. App class levels use a compressed ten-level progression. Only one non-passive boon can activate per turn. You may replace one boon when gaining an Illrigger level. Descriptions summarize effects; use the class rules for saves and ranges.
                   {(selected[key].length > totals[key] || invalidBoons) && <div style={{color:colors.gold}}>Some saved boons exceed your count or level allowance. Remove those choices before confirming.</div>}
                 </div>
               )}
