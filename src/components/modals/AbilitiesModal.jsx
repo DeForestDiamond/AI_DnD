@@ -1,8 +1,9 @@
+import { LAND_SPELLS, DIVINE_AFFINITIES } from '../../constants/subclassAbilities.js';
 import { INTERDICT_BOONS, interdictBoonCount, availableInterdictBoons, normalizeInterdictAbilities } from '../../constants/interdictBoons.js';
 import { useRef, useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
 import { SPELL_INFO, ROLES, ROLE_ORDER } from '../../constants/spellInfo.js';
-import { getAvailableAbilities, getAbilityCounts } from '../../constants/abilities.js';
+import { getAvailableAbilities, getAbilityCounts, magicalSecretsCount, availableMagicalSecrets, grantedSubclassMagic } from '../../constants/abilities.js';
 import { RACE_TRAITS } from '../../constants/raceTraits.js';
 import { SUBCLASSES } from '../../constants/subclasses.js';
 
@@ -19,6 +20,8 @@ export function AbilitiesModal({ character, onSave, onClose }) {
   const [selected, setSelected] = useState({
     ...existing,
     interdictBoons: [...(existing.interdictBoons || [])],
+    magicalSecrets: [...(existing.magicalSecrets || [])],
+    subclassOptions: existing.subclassOptions || {},
     cantrips:  [...(existing.cantrips  || [])],
     spells:    [...(existing.spells    || [])],
     martial:   [...(existing.martial   || [])],
@@ -30,12 +33,12 @@ export function AbilitiesModal({ character, onSave, onClose }) {
   const [showSubclass, setShowSubclass] = useState(false);
 
   // Calculate totals across all classes
-  const totals = { cantrips:0, spells:0, martial:0, infusions:0, interdictBoons: interdictBoonCount(classLevels.Illrigger || 0) };
-  const available = { cantrips:new Set(), spells:new Set(), martial:new Set(), infusions:new Set(), interdictBoons:new Set(availableInterdictBoons(classLevels.Illrigger || 0)) };
+  const totals = { cantrips:0, spells:0, martial:0, infusions:0, interdictBoons: interdictBoonCount(classLevels.Illrigger || 0), magicalSecrets: magicalSecretsCount(classLevels.Bard || 0, character.subclasses?.Bard) };
+  const available = { cantrips:new Set(), spells:new Set(), martial:new Set(), infusions:new Set(), interdictBoons:new Set(availableInterdictBoons(classLevels.Illrigger || 0)), magicalSecrets:new Set(availableMagicalSecrets(classLevels.Bard || 0)) };
   const domainSet = { cantrips: new Set(), spells: new Set() };
 
   Object.entries(classLevels).forEach(([cls, lvl]) => {
-    const counts = getAbilityCounts(cls, lvl);
+    const counts = getAbilityCounts(cls, lvl, character.subclasses?.[cls]);
     totals.cantrips  += counts.cantrips;
     totals.spells    += counts.spells;
     totals.martial   += counts.martial || 0;
@@ -59,6 +62,9 @@ export function AbilitiesModal({ character, onSave, onClose }) {
     excessBoons ? `You have ${selected.interdictBoons.length}/${totals.interdictBoons} Interdict Boons selected. Deselect ${excessBoons} to confirm.` : '',
     invalidBoons ? `Deselect unavailable boons: ${unavailableBoons.join(', ')}.` : '',
   ].filter(Boolean).join(' ');
+  const grantedMagic = grantedSubclassMagic({ ...character, abilities:selected });
+  const grantedNames = new Set(grantedMagic.map(x => x.name));
+  const selectionCount = (type, names) => names.filter(name => !(['spells','cantrips'].includes(type) && grantedNames.has(name))).length;
   const toggle = (type, name) => {
     setSelected(prev => {
       const current = prev[type];
@@ -66,12 +72,13 @@ export function AbilitiesModal({ character, onSave, onClose }) {
         return { ...prev, [type]: current.filter(n => n !== name) };
       }
       if (type === 'interdictBoons' && !available.interdictBoons.has(name)) return prev;
-      if (current.length >= totals[type]) return prev; // at max
+      if (selectionCount(type, current) >= totals[type]) return prev; // at max
       return { ...prev, [type]: [...current, name] };
     });
   };
 
   const sections = [
+    { key:'magicalSecrets', label:'📚 Magical Secrets', list:[...new Set([...available.magicalSecrets, ...selected.magicalSecrets])].sort() },
     { key:'interdictBoons', label:'🔥 Interdict Boons', list:[...new Set([...available.interdictBoons, ...selected.interdictBoons])].sort() },
     { key:'martial',   label:'⚔️ Techniques', list:[...available.martial].sort()   },
     { key:'cantrips',  label:'✨ Cantrips',   list:[...available.cantrips].sort()  },
@@ -102,6 +109,36 @@ export function AbilitiesModal({ character, onSave, onClose }) {
 
         <div style={{overflowY:'auto',flex:1}}>
 
+          {character.subclasses?.Sorcerer === 'Divine Soul' && (
+            <label style={{display:'block',color:colors.gold,fontSize:13,marginBottom:12}}>
+              Divine Soul affinity
+              <select value={selected.subclassOptions.Sorcerer?.affinity || ''} style={{display:'block',width:'100%',marginTop:6}}
+                onChange={e => { const affinity = e.target.value; setSelected(prev => ({...prev,subclassOptions:{...prev.subclassOptions,Sorcerer:{...prev.subclassOptions.Sorcerer,affinity}}})); }}>
+                <option value="">Choose your affinity</option>
+                {Object.entries(DIVINE_AFFINITIES).map(([affinity,spell]) => <option key={affinity} value={affinity}>{affinity} — {spell}</option>)}
+              </select>
+            </label>
+          )}
+          {character.subclasses?.Druid === 'Circle of the Land' && (
+            <label style={{display:'block',color:colors.gold,fontSize:13,marginBottom:12}}>
+              Circle of the Land terrain
+              <select value={selected.subclassOptions.Druid?.land || ''} style={{display:'block',width:'100%',marginTop:6}}
+                onChange={e => { const land = e.target.value; setSelected(prev => ({...prev,subclassOptions:{...prev.subclassOptions,Druid:{...prev.subclassOptions.Druid,land}}})); }}>
+                <option value="">Choose your land</option>
+                {Object.keys(LAND_SPELLS).map(land => <option key={land} value={land}>{land}</option>)}
+              </select>
+            </label>
+          )}
+          {grantedMagic.length > 0 && (
+            <div style={{marginBottom:16}}>
+              <div style={{color:colors.gold,fontFamily:fonts.display,fontSize:12}}>SUBCLASS GRANTED MAGIC</div>
+              <div style={{color:colors.textFaint,fontSize:12,marginTop:4}}>Available automatically; does not consume your selectable spell or cantrip allowance. Subclass resource costs still apply.</div>
+              {grantedMagic.map(({name,cls,sub}) => <div key={cls+name} style={{color:colors.textFaint,fontSize:13,marginTop:6}}>
+                <strong>{name}</strong> — {sub}
+                {abilityInfo[name]?.desc && <div>{abilityInfo[name].desc}</div>}
+              </div>)}
+            </div>
+          )}
           {/* Racial Traits */}
           {raceTraits.length > 0 && (
             <div style={{marginBottom:16}}>
@@ -161,8 +198,8 @@ export function AbilitiesModal({ character, onSave, onClose }) {
             <div key={key} ref={key === 'interdictBoons' ? boonSectionRef : undefined} style={{marginBottom:16}}>
               <div style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:6,display:'flex',justifyContent:'space-between'}}>
                 <span>{label}</span>
-                <span style={{color:selected[key].length >= totals[key] ? colors.green : colors.textGhost}}>
-                  {selected[key].length}/{totals[key]}
+                <span style={{color:selectionCount(key, selected[key]) >= totals[key] ? colors.green : colors.textGhost}}>
+                  {selectionCount(key, selected[key])}/{totals[key]}
                 </span>
               </div>
               {key === 'interdictBoons' && (
@@ -254,7 +291,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
           type="button"
           style={{...btn(true),width:'100%',marginTop:12,fontSize:11,opacity:boonError ? 0.45 : 1,cursor:boonError ? 'not-allowed' : 'pointer'}}
           disabled={!!boonError}
-          onClick={() => { if (!boonError) onSave(selected); }}>
+          onClick={() => { if (!boonError) onSave({...selected,subclassSpells:[...new Set(grantedMagic.map(x => x.name))]}); }}>
           Confirm Abilities
         </button>
         {onClose && (

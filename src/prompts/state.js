@@ -1,3 +1,4 @@
+import { grantedSubclassMagic } from '../constants/abilities.js';
 import { arcContext } from './arcPacing.js';
 import { worldPressureContext } from '../helpers/worldPressures.js';
 import { INTERDICT_BOONS, normalizeInterdictAbilities } from '../constants/interdictBoons.js';
@@ -106,7 +107,12 @@ export const buildCharBlock = (char) => {
   const raceCtx     = RACE_TRAIT_STRINGS[char.race?.name] ? `\n- RACE TRAITS (${char.race.name}): ${RACE_TRAIT_STRINGS[char.race.name]}` : '';
   const playstyle = playstyleLine(char);
   const abilities   = normalizeInterdictAbilities(char.abilities || {}, classLevels);
+  const grantedMagic = grantedSubclassMagic(char);
   const abilitiesLine = [
+    grantedMagic.length ? `Subclass granted magic (not charged against known selections; subclass costs apply): ${grantedMagic.map(x => `${x.name} (${x.sub})`).join(', ')}` : '',
+    abilities.magicalSecrets?.length ? `Magical Secrets: ${abilities.magicalSecrets.join(', ')}` : '',
+    abilities.subclassOptions?.Sorcerer?.affinity ? `Divine Soul affinity: ${abilities.subclassOptions.Sorcerer.affinity}` : '',
+    abilities.subclassOptions?.Druid?.land ? `Circle of the Land terrain: ${abilities.subclassOptions.Druid.land}` : '',
     abilities.interdictBoons?.length ? `Interdict Boons (Baleful Interdict upgrades, not spells): ${abilities.interdictBoons.map(name => `${name}${INTERDICT_BOONS[name] ? ': ' + INTERDICT_BOONS[name].desc : ''}`).join('; ')}` : '',
     abilities.martial?.length   ? `Techniques: ${abilities.martial.join(', ')}` : '',
     abilities.cantrips?.length  ? `Cantrips: ${abilities.cantrips.join(', ')}` : '',

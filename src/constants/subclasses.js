@@ -987,7 +987,7 @@ export const owedSubclasses = (char) => {
 export const subclassBlurb = (className, subName) => {
   const sc = SUBCLASSES[className]?.[subName];
   if (!sc) return '';
-  const feats = sc.features.map(f => f.name).join(', ');
+  const feats = sc.features.map(f => `${f.name}: ${f.desc}`).join('; ');
   return `${subName} (${className}): ${sc.desc} Key features: ${feats}.`;
 };
 
