@@ -1,3 +1,4 @@
+import { applyStoryOptions } from './storyOptions.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { CHARACTER_CHOICES_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK, ARC_RULES_BLOCK } from './shared.js';
@@ -97,6 +98,7 @@ ${cb.gearBlock}
 ${cb.itemsBlock}
 ${cb.dynamicPart}`;
 
-  return { static: staticPart, dynamic: dynamicPart };
+  return applyStoryOptions({ static: staticPart, dynamic: dynamicPart }, char);
 };
+
 

@@ -1,3 +1,4 @@
+import { applyStoryOptions } from './storyOptions.js';
 import { SCENE_CLARITY_BLOCK } from './sceneClarity.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
@@ -121,7 +122,8 @@ HOOKS — ARC OR NO ARC: During reserved-arc aftermath, focus on existing busine
 ── BEFORE YOU WRITE ──
 Check that you did not speak, think, feel, or act for the player. If the player gained anything, emit every required [ITEM:] or [GOLD:] tag now. Follow [ROLL:] termination exactly.`;
 
-  return { static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart };
+  return applyStoryOptions({ static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart }, char);
 };
+
 
 

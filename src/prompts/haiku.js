@@ -1,3 +1,4 @@
+import { applyStoryOptions } from './storyOptions.js';
 import { arcContext } from './arcPacing.js';
 import { worldPressureContext } from '../helpers/worldPressures.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
@@ -272,11 +273,12 @@ HOOKS — ARC OR NO ARC: During reserved-arc aftermath, focus on existing busine
 6. An NPC asked the player something? Your message ENDS on that question.
 7. Did the player GAIN anything this message — loot, a reward, payment, a gift, something taken off a body or a shelf? Every single thing you described them receiving needs its own [ITEM:] tag, itemised, right now. Coin needs [GOLD:]. Describing a thing without tagging it means the player never actually gets it, and they have to ask you for it afterwards.`;
 
-  return { static: staticPart, gear: gearBlock, items: itemsBlock, dynamic: dynamicPart };
+  return applyStoryOptions({ static: staticPart, gear: gearBlock, items: itemsBlock, dynamic: dynamicPart }, char);
 };
 
 // ── GPT-only DM rules ──────────────────────────────────────────────────────────
 // These are written directly into the GPT prompt. Do not mutate the finished
 // prompt with runtime .replace() chains; what appears here is what Sol/Terra see.
+
 
 

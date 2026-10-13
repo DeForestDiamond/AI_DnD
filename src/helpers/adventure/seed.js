@@ -1,7 +1,7 @@
 import { rollAntagonist } from '../../constants/encounters/antagonists.js';
 import { makeArc, FAERUN_LOCATION_POOLS } from '../../constants/encounters/arcLocations.js';
 
-export const rollAdventureSeed = (level = 1, { antagonist = null, arcLocation = null, defeated = [] } = {}) => {
+export const rollAdventureSeed = (level = 1, { antagonist = null, arcLocation = null, defeated = [], continuous = false, openScale = false } = {}) => {
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
   const settings = [
@@ -89,23 +89,24 @@ export const rollAdventureSeed = (level = 1, { antagonist = null, arcLocation = 
 
   // Select the antagonist and geography together, once. The DM fits local scene
   // details to this anchor; it must not independently choose another region.
-  const arc = makeArc(antagonist?.trim() || rollAntagonist(level, null, defeated), arcLocation);
-  const startingArea = arc.arcLocation || pick(FAERUN_LOCATION_POOLS.general);
-  arc.localArea = startingArea;
+  const arc = continuous ? null : makeArc(antagonist?.trim() || rollAntagonist(level, null, defeated), arcLocation);
+  const startingArea = arc?.arcLocation || pick(FAERUN_LOCATION_POOLS.general);
+  if (arc) arc.localArea = startingArea;
 
   return {
     arc,
     startingArea,
-    scope,
+    scope: (continuous || openScale) ? 'OPEN STORY SCALE. Scale and connections emerge from play, without a level-based story ceiling.' : scope,
     setting: pick(settings),
     time: pick(times),
     weather: pick(weathers),
     tone: pick(tones),
     hook: pick(hooks),
-    antagonist: arc.antagonist,
+    antagonist: arc?.antagonist || null,
     location: pick(locations),
     openingStyle: pick(openingStyles),
     wildcard: pick(wildcards),
   };
 };
+
 

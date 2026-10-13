@@ -1,3 +1,5 @@
+import { isContinuousStory } from '../helpers/storyOptions.js';
+
 export const ARC_PACING_BLOCK = `── ARC DEVELOPMENT AND AFTERMATH ──
 AN ARC HAS NO SCENE QUOTA. Escalation is possible, not mandatory every turn. Develop the same unresolved conflict through plausible tactics, preparations, agents, setbacks, retreats, reinforcements, changing objectives, and consequences. A won skirmish or defeated lieutenant need not resolve the antagonist. A retreat is not permanent defeat. Give successes tangible effects: weaker defenses, rescued people, lost resources, time bought, or changed bargaining power. Quiet scenes and planning are part of an arc. Do not erase progress with stronger replacement enemies or inflate every local problem into a world-ending conspiracy. Once the actual central conflict is resolved, honor the victory and emit [ARC COMPLETE]; never retcon a hidden superior to prolong it.
 
@@ -10,7 +12,7 @@ THE PLAYER OPENS THE NEXT ARC. When the player has finished or deliberately left
 // Shared by every model and the compact OpenAI/xAI transport.
 export const arcContext = (char) => {
   const arc = char?.arc;
-  if (!arc?.antagonist) return '';
+  if (isContinuousStory(char) || !arc?.antagonist) return '';
   const location = arc.arcLocation || arc.localArea || char.currentLocation || 'the opening area';
   if (arc.status === 'reserved') return `\nACTIVE ARC ANTAGONIST (HIDDEN): NONE — AFTERMATH / BETWEEN ARCS.
 Previous resolved antagonist: ${arc.previousAntagonist || 'the previous conflict'}.
@@ -21,3 +23,4 @@ Continue rewards and loose ends. Withhold the reserved antagonist until the play
 ARC LOCATION (HIDDEN CAMPAIGN STATE): ${location} (${arc.arcLocation ? 'required or player-selected destination' : 'local arc; no separate travel destination'}).
 Develop this single major conflict locally unless a required location is supplied; keep established operations geographically consistent. Ordinary side activities can remain unrelated. Give concrete leads and motives that fit this character, without assuming altruism or nagging. Let unresolved opposition adapt plausibly; no scene quota or mandatory escalation. When the central conflict truly ends, emit [ARC COMPLETE] that response, then allow its aftermath. Do not invent a hidden superior or launch the next antagonist.`;
 };
+

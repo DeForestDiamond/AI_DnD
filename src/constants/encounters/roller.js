@@ -1,3 +1,4 @@
+import { isContinuousStory, hasOpenStoryScale } from '../../helpers/storyOptions.js';
 import { HOSTILE, SOCIAL_BY_ENV, WEIRD_BY_ENV } from './environments/index.js';
 import { encounterCRCap } from './pacing.js';
 import { rollNpcDescriptor, NATIVE_ONLY_ENVIRONMENTS } from './npcRaces.js';
@@ -31,8 +32,8 @@ const ARC_TABLES = { hostile: ARC_HOSTILE, social: ARC_SOCIAL, weird: ARC_WEIRD 
 export const rollEncounterDirective = (char) => {
   const r = Math.random();
   const type = r < 0.60 ? 'hostile' : r < 0.85 ? 'social' : 'weird';
-  const arcTied = !!char?.arc?.antagonist && char.arc.status !== 'reserved' && Math.random() < (1 / 3);
-  const cap = encounterCRCap(char?.level);
+  const arcTied = !isContinuousStory(char) && !!char?.arc?.antagonist && char.arc.status !== 'reserved' && Math.random() < (1 / 3);
+  const cap = hasOpenStoryScale(char) ? Infinity : encounterCRCap(char?.level);
 
   let desc, crNote = '', npcNote = '';
   if (arcTied) {
@@ -45,7 +46,7 @@ export const rollEncounterDirective = (char) => {
     if (!pool.length && !NATIVE_ONLY_ENVIRONMENTS.has(envHere)) pool = HOSTILE.filter(e => e.cr <= cap); // material safety net
     const entry = pick(pool);
     desc = entry.desc;
-    crNote = `This is a CR ${entry.label} threat — keep it at exactly that power, do not escalate it into something bigger. `;
+    crNote = hasOpenStoryScale(char) ? `The initial encounter is a CR ${entry.label} creature. Use its actual capabilities; further developments follow the fiction and the player’s choices. ` : `This is a CR ${entry.label} threat — keep it at exactly that power, do not escalate it into something bigger. `;
   } else {
     const envHere = char?.environment || 'wilderness';
     const envTable = TABLES[type]?.[envHere] || TABLES[type]?.wilderness || [];
@@ -62,8 +63,9 @@ export const rollEncounterDirective = (char) => {
     `\n\n[ENCOUNTER — MANDATORY: This turn, the following occurs: ${desc}. ` +
     `OPEN the encounter at the MOMENT OF FIRST CONTACT — the creature appears, the stranger steps out, the thing is noticed — and then STOP for the player's choice. Do NOT start the scene already in progress, do NOT narrate the player dodging, drawing, striking, or reacting, and do NOT resolve any of it. Do NOT call any [ROLL:] in this message — the player has made no choice yet, so there is nothing to roll for; the roll (if any) comes AFTER they state what they do. Describe only what happens TO them and around them, then hand control back. ` +
     crNote + npcNote +
-    (arcTied ? `This connects to the active arc antagonist — let that show without naming them outright. Scale any threat to the player's level. ` : '') +
+    (arcTied ? `This connects to the active arc antagonist — let that show without naming them outright. ${hasOpenStoryScale(char) ? 'Use the established threat’s actual capabilities.' : "Scale any threat to the player's level."} ` : '') +
     `End with your usual 4 numbered choices.]`;
   return { type, arcTied, desc, directive };
 };
+
 

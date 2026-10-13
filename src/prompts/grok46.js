@@ -1,3 +1,4 @@
+import { applyStoryOptions } from './storyOptions.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
@@ -55,6 +56,7 @@ ${cb.dynamicPart}
 ── BEFORE YOU WRITE ──
 Check that you did not speak, think, feel, or act for the player. If the player gained anything, emit every required item or gold tag. Follow roll termination exactly.`;
 
-  return { static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart };
+  return applyStoryOptions({ static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart }, char);
 };
+
 

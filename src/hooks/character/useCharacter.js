@@ -1,3 +1,4 @@
+import { isContinuousStory } from '../../helpers/storyOptions.js';
 import { applyWorldPressures } from '../../helpers/worldPressures.js';
 import { useState, useRef, useEffect } from 'react';
 import { ITEM_DB, SLOTS, EMPTY_SLOTS, parseDMItem } from '../../constants/items.js';
@@ -169,7 +170,7 @@ export function useCharacter(log) {
       c.arc = { ...(c.arc || {}), objectives: [...objs, { text: t, done: false }] };
     });
 
-    if (/\[ARC COMPLETE\]/i.test(text) && c.arc?.antagonist && c.arc.status !== 'reserved') {
+    if (/\[ARC COMPLETE\]/i.test(text) && !isContinuousStory(c) && c.arc?.antagonist && c.arc.status !== 'reserved') {
       // Resolve the central conflict, but keep the next foe reserved during aftermath.
       const finished = c.arc?.antagonist;
       const defeated = [...(c.defeatedAntagonists || [])];
@@ -178,7 +179,7 @@ export function useCharacter(log) {
       }
       c.defeatedAntagonists = defeated;
       c.arc = { ...rollArc(c.level, finished, defeated, c.currentLocation), status: 'reserved', previousAntagonist: finished };
-    } else if (!/\[ARC COMPLETE\]/i.test(text) && /\[ARC START\]/i.test(text) && c.arc?.status === 'reserved') {
+    } else if (!/\[ARC COMPLETE\]/i.test(text) && /\[ARC START\]/i.test(text) && !isContinuousStory(c) && c.arc?.status === 'reserved') {
       // The DM emits this only after the player chooses a discovered new opportunity.
       c.arc = { ...c.arc, status: 'active' };
     }
@@ -568,5 +569,6 @@ export function useCharacter(log) {
     toggleContextExclusion,
   };
 }
+
 
 
