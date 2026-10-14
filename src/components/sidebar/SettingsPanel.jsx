@@ -80,7 +80,6 @@ export function SettingsPanel({
     : (antagonistOptions || []).filter(name => !defeatedAntagonistNames.has(name));
 
   return <>
-    <StoryOptions character={character} onChange={onChangeStoryOptions} />
     <button onClick={onSaveClick} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0'}}>💾 Save / Load</button>
 
     {onToggleModel && (
@@ -90,6 +89,9 @@ export function SettingsPanel({
     )}
 
     {voiceSettings && <VoiceSettings {...voiceSettings} />}
+    <CollapsibleSection title="🎭 STORY OPTIONS" defaultOpen={false}>
+      <StoryOptions character={character} onChange={onChangeStoryOptions} embedded />
+    </CollapsibleSection>
 
     <CollapsibleSection title="⚔️ ENCOUNTERS" defaultOpen={false}>
       {onTogglePacing && (

@@ -1,8 +1,8 @@
 import { colors } from '../styles/theme.js';
 
-export function StoryOptions({ character = {}, onChange }) {
+export function StoryOptions({ character = {}, onChange, embedded = false }) {
   const selectStyle = { width:'100%', boxSizing:'border-box', background:colors.bgDark, color:colors.textDim, border:`1px solid ${colors.borderDim}`, borderRadius:4, padding:'8px', fontSize:12, marginTop:5 };
-  return <div style={{padding:12,border:`1px solid ${colors.borderDim}`,borderRadius:6,background:colors.bgDark}}>
+  return <div style={embedded ? {padding:'8px 0'} : {padding:12,border:`1px solid ${colors.borderDim}`,borderRadius:6,background:colors.bgDark}}>
     <label style={{display:'block',fontSize:12,color:colors.gold}}>Story structure
       <select value={character.storyMode || 'arcs'} onChange={e=>onChange?.({storyMode:e.target.value})} style={selectStyle}>
         <option value="arcs">Structured stories</option>
