@@ -17,5 +17,10 @@ export function StoryOptions({ character = {}, onChange }) {
       </select>
     </label>
     <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5,marginTop:5}}>{character.fantasyTone === 'full-dark' ? 'Cruelty, corruption, horror, and lasting loss. No guaranteed rescue or fair fight. Victories and refuge still matter.' : 'The opening and ongoing events establish the tone.'}</div>
+    <label style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:colors.gold,marginTop:14,cursor:'pointer'}}>
+      <input type="checkbox" checked={character.combatFirst === true} onChange={e=>onChange?.({combatFirst:e.target.checked})} />
+      Combat-first encounters
+    </label>
+    <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5,marginTop:5}}>Hostile encounters default to a fight. Enemies act first when appropriate; talking your way out requires a credible reason for them to stop.</div>
   </div>;
 }
