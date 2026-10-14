@@ -628,4 +628,11 @@ export const SPELL_INFO = {
   'Animal Shapes':           { role:'utility', desc:'Turn your whole party into beasts at once, for a day.' },
   'Storm of Vengeance':      { role:'damage',  desc:'A storm three hundred feet across that escalates each turn — thunder, acid rain, lightning, hail, then freezing wind.' },
   'Archdruid':               { role:'utility', desc:'Wild Shape without limit, and you stop ageing entirely. The druid becomes part of the natural order rather than a practitioner of it.' },
+
+  // Revised Illrigger core features, available in the ten-level progression.
+  "Blood Price": {"role":"defense","desc":"When you fail a saving throw, spend a Hit Die and add its roll to the result."},
+  "Terrorizing Force": {"role":"damage","desc":"Weapon hits deal an extra 1d8 cold, fire, necrotic, or poison damage. Choose the type after a long rest."},
+  "Superior Interdict": {"role":"damage","desc":"Seal damage bypasses resistance. If you have no seals left, regain one as a bonus action once per long rest."},
+  "Infernal Majesty": {"role":"defense","desc":"Bonus action, once per long rest: transform for 10 minutes. Gain fire, cold, and necrotic resistance, 60-foot flight, and 2d8 Terrorizing Force damage. Blood Price can also damage a nearby enemy. If slain during the transformation, you may reform in Hell after 1d6 days."},
+  "Master of Hell": {"role":"damage","desc":"Action, once per long rest: unleash a hellstorm within 150 feet in a 50-foot-radius sphere. Choose Inferno (fire and necrotic damage with lingering burns), Pestilence (poison and necrotic damage with poisoning), or Darkness (cold damage and blinding gloom). Saves reduce damage."},
 };

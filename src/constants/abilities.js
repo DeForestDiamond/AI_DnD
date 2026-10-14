@@ -1,3 +1,4 @@
+import { SUBCLASS_CASTERS, SUBCLASS_EXPANDED_SPELLS, subclassBonusSpells, spellsThrough } from './subclassAbilities.js';
 // ── Class abilities by level ───────────────────────────────────────────────────
 // Defines what spells, cantrips, and infusions are available per class per level
 
@@ -334,7 +335,7 @@ export const CLASS_ABILITIES = {
 // Rogue, Monk, Barbarian, Blood Hunter, Illrigger) have no spells at all; the
 // half-casters carry both.
 
-export const getAbilityCounts = (className, level) => {
+export const getAbilityCounts = (className, level, subclass = null) => {
   const cls = CLASS_ABILITIES[className];
   if (!cls) return { cantrips: 0, spells: 0, martial: 0, infusions: 0 };
   // Sum up all counts from level 1 to current level
@@ -344,6 +345,12 @@ export const getAbilityCounts = (className, level) => {
     spells    += cls.spellsKnown?.[l]    || 0;
     martial   += cls.martialKnown?.[l]   || 0;
     infusions += cls.infusionsKnown?.[l] || 0;
+  }
+  if (className === 'Druid' && subclass === 'Circle of the Land' && level >= 2) cantrips += 1;
+  const caster = SUBCLASS_CASTERS[className]?.[subclass];
+  if (caster && level >= caster.start) {
+    cantrips += caster.cantrips + (level >= 6 ? 1 : 0);
+    spells += caster.spells + level - caster.start;
   }
   // For a purely martial class the spell allowance IS the technique allowance.
   // A mixed class gets a small separate budget for its own features.
@@ -473,7 +480,12 @@ export const WARLOCK_PATRON_SPELLS = {
     },
   },
 };
-export const getAvailableAbilities = (className, level, deity = null) => {
+// Subclasses that expand the source list without granting extra known spells.
+export const SUBCLASS_SPELL_ACCESS = {
+  Sorcerer: { 'Divine Soul': 'Cleric' },
+};
+
+export const getAvailableAbilities = (className, level, deity = null, subclass = null) => {
   const cls = CLASS_ABILITIES[className];
   if (!cls) return { cantrips: [], spells: [], martial: [], infusions: [] };
   // Show all spells unlocked at or below current level
@@ -481,6 +493,24 @@ export const getAvailableAbilities = (className, level, deity = null) => {
   for (let l = 1; l <= level; l++) {
     if (cls.spells?.[l]) spells.push(...cls.spells[l]);
   }
+
+  const subclassCantrips = [];
+  const extraClass = CLASS_ABILITIES[SUBCLASS_SPELL_ACCESS[className]?.[subclass]];
+  if (extraClass) {
+    subclassCantrips.push(...(extraClass.cantrips || []));
+    for (let l = 1; l <= level; l++) {
+      spells.push(...(extraClass.spells?.[l] || []));
+    }
+  }
+
+  const caster = SUBCLASS_CASTERS[className]?.[subclass];
+  if (caster && level >= caster.start) {
+    const source = CLASS_ABILITIES[caster.source];
+    const tier = Math.min(caster.maxTier, 1 + Math.floor((level - caster.start) / (caster.maxTier === 6 ? 1.4 : 2)));
+    subclassCantrips.push(...(source.cantrips || []));
+    spells.push(...spellsThrough(source.spells, tier));
+  }
+  spells.push(...spellsThrough(SUBCLASS_EXPANDED_SPELLS[className]?.[subclass], level));
 
   const domainCantrips = [];
   // Cleric - merge deity domain spells
@@ -518,7 +548,7 @@ export const getAvailableAbilities = (className, level, deity = null) => {
   const martial = [];
   for (let l = 1; l <= level; l++) if (cls.martial?.[l]) martial.push(...cls.martial[l]);
   return {
-    cantrips:  [...new Set([...(cls.cantrips || []), ...domainCantrips])],
+    cantrips:  [...new Set([...(cls.cantrips || []), ...subclassCantrips, ...domainCantrips])],
     spells:    [...new Set(spells)],
     martial:   [...new Set(martial)],
     infusions: infusions,
@@ -527,3 +557,15 @@ export const getAvailableAbilities = (className, level, deity = null) => {
   };
 };
 
+
+export const magicalSecretsCount = (level, subclass) =>
+  (level >= 9 ? 6 : level >= 7 ? 4 : level >= 5 ? 2 : 0) +
+  (subclass === 'College of Lore' && level >= 3 ? 2 : 0);
+export const availableMagicalSecrets = level => [...new Set(Object.values(CLASS_ABILITIES)
+  .flatMap(cls => spellsThrough(cls.spells, Math.min(level, 9))))];
+export function grantedSubclassMagic(char) {
+  const levels = char.classLevels || { [char.cls?.name]: char.level };
+  const options = char.abilities?.subclassOptions || {};
+  return Object.entries(char.subclasses || {}).flatMap(([cls, sub]) =>
+    subclassBonusSpells(cls, sub, levels[cls] || 0, options[cls] || {}).map(name => ({name, cls, sub})));
+}

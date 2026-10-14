@@ -19,7 +19,7 @@ async function callAnthropic({ apiKey, maxTokens, system, messages }) {
 }
 
 export async function callAnthropicArchive({ apiKey, entriesText }) {
-  const system = `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. This is the ONLY record that will survive of these events, so what you keep matters more than how you say it. Facts only, no scene-setting or atmosphere.
+  const system = `You are archiving a section of a D&D campaign log into a permanent frozen reference of 200-300 words. This is the ONLY record that will survive of these events, so what you keep matters more than how you say it. Facts only, no scene-setting or atmosphere. Preserve irreversible losses, active pursuits, witnesses, revised bargains, threat progress, and established timing or triggers. Keep intended next actions distinct from completed events.
 
 ARCHIVE COMPRESSION RULE: Target 200-300 words and make this archive substantially smaller than the source summaries. Merge related resolved events and preserve durable outcomes rather than intermediate steps. INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD: unresolved threads and unresolved members of finite sets must remain specific enough to resume correctly, even if that occasionally requires exceeding the target. Do not use that exception for resolved history, flavor, dialogue, combat detail, repeated explanations, or routine loot.
 
@@ -50,6 +50,8 @@ The user input has three labelled blocks. ONLY MESSAGES TO BE SUMMARIZED is targ
 
 LENGTH: Aim for roughly 400 words for a normal entry. Dense, multi-threaded chunks may use up to about 800 words. Do not pad simple events, but never delete continuity-critical detail merely to stay short. Completeness and future usability beat compression in the live summary layer.
 
+Preserve irreversible losses, active pursuits, witnesses, revised bargains, threat progress, and established timing or triggers. Keep intended next actions distinct from completed events.
+
 PRESERVE CONCRETE STATE AND CAUSALITY. Keep where important people, vessels, objects, and groups physically are; why characters are present or acting; who asked, told, sent, hired, or paid whom to do something; and causal links between setup and later action. A mundane-seeming detail stays if removing it would make a later location, action, conversation, motivation, or consequence appear unexplained.
 
 CORE CONTINUITY RULE — INFORMATION EXPIRES WHEN IT RESOLVES, NOT WHEN IT GETS OLD. Compression is subordinate to continuity. Never omit, merge, generalize, or tidy away unresolved state merely to reduce length. If the story establishes a finite/enumerated set — opponents and wagers, suspects and clues, trials and prizes, contract clauses, objectives, promised rewards, destinations, components, or similar — preserve EVERY unresolved member and its associated detail until individually resolved. Open threads must retain who/what/where and their latest known state. Once genuinely resolved, they may be compressed aggressively into the outcome. There is no fixed length target when unresolved state requires more space.
@@ -69,3 +71,4 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
   const user = `PRIOR SUMMARY FOR REFERENCE:\n${priorSummary || '(none — this is the first summary entry)'}\n\n---\nMESSAGES TO BE SUMMARIZED:\n${transcript}\n\n---\nEVENTS AFTER SUMMARY CHUNK:\n${followingTranscript || '(none available)'}\n\nWrite only the new story-log entry for MESSAGES TO BE SUMMARIZED.`;
   return callAnthropic({ apiKey, maxTokens: 800, system, messages: [{ role: 'user', content: user }] });
 }
+

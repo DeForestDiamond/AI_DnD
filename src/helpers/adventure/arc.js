@@ -111,13 +111,17 @@ export async function generateAdventureArc({ antagonist, character, modelConfig,
     },
     body: JSON.stringify({
       model: config.model,
-      max_tokens: 700,
+      max_tokens: config.output_config ? 2048 : 700,
+      ...(config.output_config ? { output_config: config.output_config } : {}),
       system,
       messages: [{ role: 'user', content: user }],
     }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(`API error ${res.status}`);
-  const result = parseArc(data.content?.[0]?.text || '', data.stop_reason === 'max_tokens');
+  if (data.stop_reason === 'refusal') throw new Error('Anthropic declined this arc request.');
+  const text = (data.content || []).filter(block => block.type === 'text').map(block => block.text || '').join('\n');
+  const result = parseArc(text, data.stop_reason === 'max_tokens');
   return { ...result, usage: data.usage, rawData: data };
 }
+

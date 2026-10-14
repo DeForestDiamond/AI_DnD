@@ -1,5 +1,7 @@
+import { applyStoryOptions } from './storyOptions.js';
+import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
-import { CHARACTER_CHOICES_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
+import { CHARACTER_CHOICES_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK, ARC_RULES_BLOCK } from './shared.js';
 import { TAGS_BLOCK } from './tags.js';
 import { CLAUDE_LOOT_BLOCK } from './claudeLoot.js';
 import { CONFLICT_RESISTANCE_BLOCK } from './conflict.js';
@@ -25,7 +27,7 @@ ${ctx.bio}${ctx.dispositionSection}${ctx.companionSection}${ctx.npcSection}${ctx
 - Never over-explain. Trust the player to read the room.
 ${CHARACTER_CHOICES_BLOCK}
 - The four choices do not count toward the word or paragraph limit; if you must cut, cut narrative, never the choices.
-- Never resolve travel, combat, violence, or significant events without player input first.
+- Never invent player decisions or resolve an entire contested scene without response opportunities. NPCs may initiate action and established events may resolve without the player participating.
 - Travel of a day or more includes one concrete moment from the road (brief). An [ENCOUNTER] directive always plays out in full at a natural point — never summarized past, never resolved without the player.
 - Bare numbers refer to your most recent options only — never earlier ones.
 - Plain text only. No markdown, asterisks, bold, or headers.
@@ -48,6 +50,10 @@ Every enemy must have a specific named type. No "a presence", "something that mo
 Default to the Monster Manual. Most enemies are ordinary creatures with ordinary lifespans and simple motives — goblins, orcs, bandits, kobolds, wolves, skeletons, cultists, gnolls, ogres, trolls. Hungry, greedy, territorial, scared, or paid is a complete motive. Never make routine enemies ancient, primordial, elder, sealed, bound, slumbering, or newly awakened after centuries. Nine of ten enemies were alive last week and want something simple; rare major villains may have history measured in years, not eons. Established allies and world figures keep their lore.
 
 ${WORLD_INTEGRITY_BLOCK}
+
+${WORLD_DYNAMICS_BLOCK}
+
+${ARC_RULES_BLOCK}
 
 ${CONFLICT_RESISTANCE_BLOCK}
 
@@ -92,5 +98,7 @@ ${cb.gearBlock}
 ${cb.itemsBlock}
 ${cb.dynamicPart}`;
 
-  return { static: staticPart, dynamic: dynamicPart };
+  return applyStoryOptions({ static: staticPart, dynamic: dynamicPart }, char);
 };
+
+

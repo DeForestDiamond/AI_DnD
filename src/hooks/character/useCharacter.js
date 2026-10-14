@@ -1,3 +1,5 @@
+import { isContinuousStory } from '../../helpers/storyOptions.js';
+import { applyWorldPressures } from '../../helpers/worldPressures.js';
 import { useState, useRef, useEffect } from 'react';
 import { ITEM_DB, SLOTS, EMPTY_SLOTS, parseDMItem } from '../../constants/items.js';
 import { STARTING_GEAR } from '../../constants/classes.js';
@@ -45,6 +47,8 @@ export function useCharacter(log) {
   // Apply all DM game effect tags to character
   const applyEffects = (text, currentChar, skipLevelUp = false, itemDestination = 'inventory') => {
     let c = { ...currentChar, items:{ ...(currentChar.items||{}) }, inventory:normalizeStacks(currentChar.inventory), stash:normalizeStacks(currentChar.stash), slots:{ ...(currentChar.slots||EMPTY_SLOTS) } };
+
+    c.worldPressures = applyWorldPressures(text, c.worldPressures);
 
     // Coins — [GOLD:] and [COIN:]/[COINS:] both accepted; bare numbers are gp,
     // denominations pp/gp/sp/cp all work ([GOLD: -5sp], [COIN: +2pp], [GOLD: +3gp 5sp]).
@@ -136,7 +140,14 @@ export function useCharacter(log) {
 
     // Location tracking -- updates currentLocation for tiered context system
     const locMatch = text.match(/\[LOCATION:\s*([^\]]+)\]/i);
-    if (locMatch) c.currentLocation = locMatch[1].trim();
+    if (locMatch) {
+      c.currentLocation = locMatch[1].trim();
+      // Player-written openings establish their anchor on the first response.
+      // Once anchored, later travel must not move the antagonist's operation.
+      if (c.arc?.antagonist && !c.arc.arcLocation && !c.arc.localArea) {
+        c.arc = { ...c.arc, localArea: c.currentLocation };
+      }
+    }
 
     // Arc resolved — roll a fresh antagonist (never the one just defeated);
     // the DM sees it next turn and starts seeding
@@ -159,15 +170,18 @@ export function useCharacter(log) {
       c.arc = { ...(c.arc || {}), objectives: [...objs, { text: t, done: false }] };
     });
 
-    if (/\[ARC COMPLETE\]/i.test(text)) {
-      // Record the finished foe so it's never rolled again, then pick the next.
+    if (/\[ARC COMPLETE\]/i.test(text) && !isContinuousStory(c) && c.arc?.antagonist && c.arc.status !== 'reserved') {
+      // Resolve the central conflict, but keep the next foe reserved during aftermath.
       const finished = c.arc?.antagonist;
       const defeated = [...(c.defeatedAntagonists || [])];
       if (finished && !defeated.some(d => d.toLowerCase() === finished.toLowerCase())) {
         defeated.push(finished);
       }
       c.defeatedAntagonists = defeated;
-      c.arc = rollArc(c.level, finished, defeated);
+      c.arc = { ...rollArc(c.level, finished, defeated, c.currentLocation), status: 'reserved', previousAntagonist: finished };
+    } else if (!/\[ARC COMPLETE\]/i.test(text) && /\[ARC START\]/i.test(text) && !isContinuousStory(c) && c.arc?.status === 'reserved') {
+      // The DM emits this only after the player chooses a discovered new opportunity.
+      c.arc = { ...c.arc, status: 'active' };
     }
 
     // Legacy [UPDATE: old | new] support. New prompts no longer teach this;
@@ -555,3 +569,6 @@ export function useCharacter(log) {
     toggleContextExclusion,
   };
 }
+
+
+

@@ -1,3 +1,4 @@
+import { StoryOptions } from '../StoryOptions.jsx';
 import { useState } from 'react';
 import { PACING, ENVIRONMENTS } from '../../constants/encounters.js';
 import { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/encounters/arcLocations.js';
@@ -9,6 +10,7 @@ import { BioEditor, TownManager, NPCManager } from './world/Panels.jsx';
 
 export function SettingsPanel({
   character,
+  onChangeStoryOptions,
   onSaveClick,
   selectedModel,
   onToggleModel,
@@ -87,6 +89,9 @@ export function SettingsPanel({
     )}
 
     {voiceSettings && <VoiceSettings {...voiceSettings} />}
+    <CollapsibleSection title="🎭 STORY OPTIONS" defaultOpen={false}>
+      <StoryOptions character={character} onChange={onChangeStoryOptions} embedded />
+    </CollapsibleSection>
 
     <CollapsibleSection title="⚔️ ENCOUNTERS" defaultOpen={false}>
       {onTogglePacing && (
@@ -103,7 +108,7 @@ export function SettingsPanel({
       )}
     </CollapsibleSection>
 
-    {onRollAdventure && (
+    {onRollAdventure && character.storyMode !== 'continuous' && (
       <CollapsibleSection title="🎭 ADVENTURE" defaultOpen={false}>
         <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>ADVENTURE</div>
         <div style={{fontSize:12,color:adventure?colors.textDim:colors.textFaint,fontStyle:'italic',marginBottom:6,lineHeight:1.35}}>
@@ -129,7 +134,7 @@ export function SettingsPanel({
       </CollapsibleSection>
     )}
 
-    {onClearArc && (
+    {onClearArc && character.storyMode !== 'continuous' && (
       <CollapsibleSection title="👁️ ANTAGONIST" defaultOpen={false}>
         <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>ANTAGONIST ARC</div>
         <div style={{display:'flex',gap:6,marginBottom:4}}>
@@ -258,3 +263,4 @@ export function SettingsPanel({
     {debugLog !== undefined && <DebugViewer debugLog={debugLog} debugStatus={debugStatus} onExportDebug={onExportDebug} onCopyDebug={onCopyDebug} />}
   </>;
 }
+

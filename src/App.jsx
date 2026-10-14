@@ -1,3 +1,5 @@
+import { changeStoryOptions, isContinuousStory, isFullDarkFantasy } from './helpers/storyOptions.js';
+import { prepareContinuousOpening } from './helpers/adventure/continuous.js';
 import { useState, useRef, useEffect } from 'react';
 import { animations, colors, fonts, btn, panel, cardStyle } from './styles/theme.js';
 import { CLASSES, RACES, STAT_NAMES, STAT_DESC } from './constants/classes.js';
@@ -322,15 +324,21 @@ export default function App() {
       const modelConfig = MODEL_CONFIGS[selectedModel];
       let seedPrompt;
       let arcAntagonist;
+      let openingArc = null;
+      let startingArea = null;
       let situationSeed = null;
-      if (situationMode) {
+      const continuousOpening = isContinuousStory(char) ? prepareContinuousOpening(char, openingOverride || '', situationOverride || (situationMode ? rollSituationAdventure(char.completedAdventures || []) : null)) : null;
+      if (continuousOpening) {
+        seedPrompt = continuousOpening.prompt;
+        arcAntagonist = null;
+      } else if (situationMode) {
         situationSeed = situationOverride || rollSituationAdventure(char.completedAdventures || []);
         arcAntagonist = null;
         seedPrompt = `[SITUATION ADVENTURE — OPENING]
 TITLE: ${situationSeed.title}
 PREMISE: ${situationSeed.premise}
 STARTING CONTEXT: ${situationSeed.location}
-TONE: ${situationSeed.tone}
+TONE: ${isFullDarkFantasy(char) ? 'Full Dark Fantasy — uncompromising darkness and tangible danger' : situationSeed.tone}
 OPENING STYLE: ${situationSeed.openingStyle}
 
 This Adventure is a persistent BACKGROUND SITUATION, not an opening quest dump and not a predetermined plot. Establish the player naturally in the STARTING CONTEXT first. Let them arrive, look around, eat, drink, shop, travel, socialize, attend an event, or otherwise exist in the location before the Adventure demands attention. The premise may surface immediately only when that is genuinely natural; otherwise let it emerge through ordinary play.
@@ -343,26 +351,36 @@ Use the STARTING CONTEXT because it was chosen specifically for this premise; do
       } else if (openingOverride && openingOverride.trim()) {
         // Player wrote the opening — use their antagonist if given, else roll a hidden one.
         arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level, null, char.defeatedAntagonists);
-        seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. PLAYER AGENCY IS ABSOLUTE: do not invent any action, decision, conversation, combat, agreement, relationship, knowledge, or item acquisition for the player beyond what the player's opening explicitly states. Begin before the first unresolved action and let the player make it. Establish why the player is present and what they actually know before introducing mysteries that depend on context. Open the scene there with vivid physical detail, keep it within the story scope appropriate to a level ${char.level} character, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}\n\nThe character's backstory is background only — do NOT open in their history or build the scene around it unless the player's opening above says to.`;
+        seedPrompt = `[ADVENTURE START — PLAYER-SPECIFIED OPENING]\nBegin the adventure exactly as the player describes below. Do NOT randomize the setting, location, or situation — use what they wrote. PLAYER AGENCY IS ABSOLUTE: do not invent any action, decision, conversation, combat, agreement, relationship, knowledge, or item acquisition for the player beyond what the player's opening explicitly states. Begin before the first unresolved action and let the player make it. Establish why the player is present and what they actually know before introducing mysteries that depend on context. Open the scene there with vivid physical detail, ${isFullDarkFantasy(char) ? 'let scope follow the chosen setting and actual dangers without a level-based ceiling' : `keep it within the story scope appropriate to a level ${char.level} character`}, and end with exactly 4 numbered choices (at least one chaotic or unconventional, at least one ruthless or self-serving, all written neutrally).\n\nPLAYER'S OPENING:\n${openingOverride.trim()}\n\nThe character's backstory is background only — do NOT open in their history or build the scene around it unless the player's opening above says to.`;
       } else {
-        const seed = rollAdventureSeed(char.level);
-        arcAntagonist = antagonistOverride?.trim() || seed.antagonist;
+        const seed = rollAdventureSeed(char.level, {
+          openScale: isFullDarkFantasy(char),
+          antagonist: antagonistOverride,
+          arcLocation: arcLocationOverride,
+          defeated: char.defeatedAntagonists || [],
+        });
+        arcAntagonist = seed.antagonist;
+        openingArc = seed.arc;
+        startingArea = seed.startingArea;
         seedPrompt = `[ADVENTURE SEED — MANDATORY COMPLIANCE REQUIRED]
-You MUST open the adventure using ALL of the following parameters exactly as given. This is not a suggestion. Do not substitute, reinterpret, or ignore any field.
+The antagonist and geographic anchor below are authoritative and were selected together. Build ONE coherent opening from them. Setting, weather, scene location, hook, and wildcard are creative ingredients: adapt incompatible details to the geography and antagonist rather than moving the adventure or inventing a separate conflict. Keep rich atmospheric scene-setting. Setting and wildcard details can remain background; they do not each need a plot explanation or actionable mystery.
 
 STORY SCOPE (the player is level ${char.level} — match the SIZE and stakes of the story to this): ${seed.scope}
 
+GEOGRAPHIC ANCHOR (start here, not across the continent): ${seed.startingArea}
 SETTING: ${seed.setting}
 TIME OF DAY: ${seed.time}
 WEATHER: ${seed.weather}
-TONE: ${seed.tone}
+TONE: ${isFullDarkFantasy(char) ? 'Full Dark Fantasy — uncompromising darkness and tangible danger' : seed.tone}
 OPENING LOCATION (the specific place the scene starts): ${seed.location}
 OPENING STYLE (HOW to open the scene — follow this structure, do not default to a generic establishing shot): ${seed.openingStyle}
 WILDCARD (a distinctive detail to work into the opening): ${seed.wildcard}
-ADVENTURE HOOK (what draws the player in): ${seed.hook}
-ANTAGONIST (do NOT reveal or name yet — plant subtle setup only): ${arcAntagonist}
+ADVENTURE HOOK (adapt to this character and antagonist): ${seed.hook}
+OPENING CLARITY: Establish one understandable immediate conflict or opportunity. Make visible actions, requests, immediate stakes, and any offered benefit concrete before adding deeper lore or complications. Several NPCs may take opposing sides in that conflict. Do not cram the antagonist's whole scheme into the first exchange. If the hook suggests a prior debt, favor, enemy, or relationship, use it only when supplied history supports it; otherwise adapt it into a present-day offer, dispute, or intrusion. Completed service and resolved obligations remain closed.
+OPENING CONTACT: Begin with a concrete unfolding situation, direct offer, intrusion, or opportunity arising from this antagonist. Give this character something they can act on now, not merely a rumor about an optional distant quest. Do not assume heroic motives or prior acceptance. If urgent danger is established, show its present state and plausible next development, and record its pressure.
+ANTAGONIST (identity hidden; the opening hook must arise from this antagonist): ${arcAntagonist}
 
-REQUIRED: Set the opening in a real Faerûn location — a canon city or region of the Forgotten Realms (e.g. a tavern in Baldur's Gate, the docks of Waterdeep, a roadhouse on the Trade Way near Daggerford). You may invent a specific local spot (a named inn, shrine, or alley) but it must sit inside a real canon place. Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock "you stand in X" description. Emit a [LOCATION:] tag with the canon place name.
+REQUIRED: Set the opening inside the GEOGRAPHIC ANCHOR or its immediate approaches. The playable conflict must be accessible locally, within the same kingdom or region at minimum; never require cross-continent travel merely to begin. For a required lair such as Undermountain, start there or at its nearby entrance in Waterdeep. Planar anchors use their actual plane rather than an unrelated Faerûn city. Invent local inns, shrines, settlements, or alleys where appropriate. Ground the scene in physical details matching the weather and time, and open it in the OPENING STYLE above rather than a stock "you stand in X" description. Emit a [LOCATION:] tag with the canon place name.
 
 PLAYER AGENCY AT THE OPENING IS ABSOLUTE. NEVER BEGIN IN THE MIDDLE OF AN EVENT THE PLAYER DID NOT PLAY. NEVER INVENT ACTIONS, DECISIONS, CONVERSATIONS, COMBAT, INVESTIGATIONS, AGREEMENTS, RELATIONSHIPS, PURCHASES, TRAVEL, OR KNOWLEDGE FOR THE PLAYER CHARACTER IN ORDER TO CREATE AN EXCITING OPENING. Do not say the player already accepted a job, arrived mid-ambush, killed or fought anyone, questioned someone, agreed to help, took an item, followed a lead, met an NPC, or learned information unless that fact exists in supplied character/history context. The opening begins BEFORE the inciting event reaches the point where the player must act.
 
@@ -378,17 +396,23 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
       // The Adventure persists in the save until the DM emits [ADVENTURE COMPLETE]
       // or the player clears/replaces it from Settings. Completion never auto-rolls another.
       let charWithArc;
-      if (situationMode) {
+      if (continuousOpening) {
+        charWithArc = continuousOpening.character;
+      } else if (situationMode) {
         // A new Adventure is a fresh opening, not a continuation of wherever the
         // previous campaign happened to end. Remove currentLocation before building
         // the player/system data so the DM cannot anchor itself to the old scene.
         // The opening response will establish the new place with [LOCATION: ...].
-        const { arc, adventure, currentLocation, ...rest } = char;
+        const { arc, adventure, currentLocation, worldPressures, ...rest } = char;
         charWithArc = { ...rest, currentLocation: '', adventure: situationSeed };
         log(`[ADVENTURE] Situation start — ${situationSeed.title}; previous location hidden`);
       } else {
-        const { adventure, ...rest } = char;
-        charWithArc = { ...rest, arc: makeArc(arcAntagonist, arcLocationOverride) };
+        const { adventure, worldPressures, ...rest } = char;
+        charWithArc = {
+          ...rest,
+          ...(startingArea ? { currentLocation: startingArea } : {}),
+          arc: openingArc || makeArc(arcAntagonist, arcLocationOverride, openingOverride ? '' : char.currentLocation),
+        };
         log(`[ARC] Adventure start — antagonist rolled: ${arcAntagonist}`);
       }
       const system = selectedModel === 'haiku'
@@ -407,7 +431,9 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         system,
         modelConfig,
         null,
-        log
+        log,
+        null,
+        charWithArc
       );
       if (usage) appendTokenCostEntry('campaign opening', usage, { includeCacheChanges:true });
       armCacheTimer();
@@ -618,9 +644,9 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
 
     const objectiveCtx = objectiveNoteRef.current;
     objectiveNoteRef.current = '';
-    const adv = charRef.current.adventure;
+    const adv = isContinuousStory(charRef.current) ? null : charRef.current.adventure;
     const adventureCtx = adv
-      ? `\n\n[ACTIVE ADVENTURE — BACKGROUND SITUATION]\nTITLE: ${adv.title}\nPREMISE: ${adv.premise}\nSTARTING CONTEXT: ${adv.location || ''}\n\nThis is the current story driver, but it is NOT the player's mandatory immediate objective. Introduce or advance it only when organic. It may sit dormant through unrelated conversations, shopping, crafting, travel activities, romance, social scenes, exploration, or player-chosen tangents. NEVER interrupt an active interaction merely to pull the player back to this Adventure. Do not repeatedly remind them it exists. Once the player engages, let their choices determine its pace and shape. Do not force a villain, combat, or predetermined solution.\n\nWhen the situation has ACTUALLY reached a natural resolution, emit [ADVENTURE COMPLETE] exactly once. Do not emit it merely because the player walks away, delays it, or changes subjects.`
+      ? `\n\n[ACTIVE ADVENTURE — BACKGROUND SITUATION]\nTITLE: ${adv.title}\nPREMISE: ${adv.premise}\nSTARTING CONTEXT: ${adv.location || ''}\n\nThis is the current story driver, but it is NOT the player's mandatory immediate objective. Introduce or advance it only when organic. A stable situation may sit quietly through unrelated activities. Established attacks, deadlines, pursuits, and other pressures continue with fictional time even during conversations or detours. Do not invent an interruption merely to pull the player back, but let established danger interrupt when its timing warrants it. Do not repeatedly remind them it exists. Once the player engages, let their choices determine its pace and shape. Do not force a villain, combat, or predetermined solution.\n\nWhen the situation has ACTUALLY reached a natural resolution, emit [ADVENTURE COMPLETE] exactly once. Do not emit it merely because the player walks away, delays it, or changes subjects.`
       : '';
     const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx + objectiveCtx + adventureCtx;
 
@@ -719,7 +745,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         : finalText;
 
       let newChar = applyEffects(effectsText, charRef.current, false, charRef.current.lootDestination === 'stash' ? 'stash' : 'inventory');
-      if (/\[ADVENTURE COMPLETE\]/i.test(effectsText) && newChar.adventure) {
+      if (!isContinuousStory(newChar) && /\[ADVENTURE COMPLETE\]/i.test(effectsText) && newChar.adventure) {
         const completed = newChar.adventure;
         const finished = completed.title || 'Adventure';
         const prior = Array.isArray(newChar.completedAdventures) ? newChar.completedAdventures : [];
@@ -1136,6 +1162,8 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
 
       {adventureStartChar && (
         <AdventureStartModal
+          character={adventureStartChar}
+          onChangeStoryOptions={options => setAdventureStartChar(c => changeStoryOptions(c, options))}
           selectedModel={selectedModel}
           onSelectModel={setSelectedModel}
           hasAnthropic={!!(apiKey || import.meta.env.VITE_ANTHROPIC_KEY)}
@@ -1228,6 +1256,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             onDeleteItem={deleteItem}
             onRenameItem={renameItem}
             onDeleteFromBag={deleteFromBag}
+            onChangeStoryOptions={options => updateChar(changeStoryOptions(charRef.current, options))}
             selectedModel={selectedModel}
             onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : m === 'gpt' ? 'terra' : m === 'terra' ? 'grok' : m === 'grok' ? 'grok46' : 'sonnet')}
             pacing={character.pacing || 'normal'}
@@ -1274,7 +1303,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
               log('[ARC] Cleared by player — no antagonist, story is open');
             }}
             onRollArc={() => {
-              const arc = rollArc(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists);
+              const arc = rollArc(charRef.current.level, charRef.current.arc?.antagonist, charRef.current.defeatedAntagonists, charRef.current.currentLocation);
               const { adventure, ...rest } = charRef.current;
               updateChar({ ...rest, arc });
               log(`[ARC] Rolled by player — new antagonist: ${arc.antagonist} @ ${arc.arcLocation}; Adventure cleared`);
@@ -1289,7 +1318,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             }}
             onSetArc={(text) => {
               const { adventure, ...rest } = charRef.current;
-              updateChar({ ...rest, arc: makeArc(text) });
+              updateChar({ ...rest, arc: makeArc(text, null, charRef.current.currentLocation) });
               log(`[ARC] Custom antagonist set by player: ${text}; Adventure cleared`);
             }}
             onToggleContextExclusion={toggleContextExclusion}
@@ -1446,3 +1475,5 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     </div>
   );
 }
+
+

@@ -208,10 +208,10 @@ export const migrateCharacter = (char) => {
     if (c.abilities && !Array.isArray(c.abilities.martial)) c.abilities.martial = [];
   }
   if (v < 18) {
-    // v18: persist a destination for the current arc. Old saves roll it once here.
+    // v18: restore required destinations only; flexible arcs need no travel destination.
     if (c.arc?.antagonist && !c.arc.arcLocation) {
       c.arc = { ...c.arc, arcLocation: resolveArcLocation(c.arc.antagonist) };
-      notes.push(`Arc location assigned: ${c.arc.arcLocation}`);
+      if (c.arc.arcLocation) notes.push(`Arc location assigned: ${c.arc.arcLocation}`);
     }
   }
 
@@ -277,5 +277,6 @@ export const migrateCharacter = (char) => {
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };
+
 
 

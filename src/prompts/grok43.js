@@ -1,3 +1,5 @@
+import { applyStoryOptions } from './storyOptions.js';
+import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './sharedLow.js';
 import { TAGS_BLOCK } from './tags.js';
@@ -38,6 +40,8 @@ ${TAGS_BLOCK}
 ${ORDINARY_WORLD_BLOCK}
 ${ARC_RULES_BLOCK}
 ${WORLD_INTEGRITY_BLOCK}
+
+${WORLD_DYNAMICS_BLOCK}
 ${SETTING_BLOCK}
 
 ── PROVIDER TUNING ──
@@ -51,5 +55,7 @@ ${cb.dynamicPart}
 ── BEFORE YOU WRITE ──
 Run the scene forward naturally from the player's full intent. Keep the world and NPCs active. If the player gained anything, emit every required item or gold tag. Follow roll termination exactly.`;
 
-  return { static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart };
+  return applyStoryOptions({ static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart }, char);
 };
+
+

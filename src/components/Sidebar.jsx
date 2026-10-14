@@ -88,6 +88,7 @@ export function Sidebar(props) {
 
       {activeTab==='settings' && <SettingsPanel
         character={character}
+        onChangeStoryOptions={props.onChangeStoryOptions}
         onSaveClick={onSaveClick}
         selectedModel={props.selectedModel}
         onToggleModel={props.onToggleModel}
@@ -144,3 +145,4 @@ export function Sidebar(props) {
     </div>
   );
 }
+

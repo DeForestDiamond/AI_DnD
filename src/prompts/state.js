@@ -1,3 +1,6 @@
+import { grantedSubclassMagic } from '../constants/abilities.js';
+import { arcContext } from './arcPacing.js';
+import { worldPressureContext } from '../helpers/worldPressures.js';
 import { INTERDICT_BOONS, normalizeInterdictAbilities } from '../constants/interdictBoons.js';
 import { getMainWeapon, effectiveStats, calcAC, profBonus, allItems, effectiveMaxHp, modStr } from '../hooks/useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
@@ -104,7 +107,12 @@ export const buildCharBlock = (char) => {
   const raceCtx     = RACE_TRAIT_STRINGS[char.race?.name] ? `\n- RACE TRAITS (${char.race.name}): ${RACE_TRAIT_STRINGS[char.race.name]}` : '';
   const playstyle = playstyleLine(char);
   const abilities   = normalizeInterdictAbilities(char.abilities || {}, classLevels);
+  const grantedMagic = grantedSubclassMagic(char);
   const abilitiesLine = [
+    grantedMagic.length ? `Subclass granted magic (not charged against known selections; subclass costs apply): ${grantedMagic.map(x => `${x.name} (${x.sub})`).join(', ')}` : '',
+    abilities.magicalSecrets?.length ? `Magical Secrets: ${abilities.magicalSecrets.join(', ')}` : '',
+    abilities.subclassOptions?.Sorcerer?.affinity ? `Divine Soul affinity: ${abilities.subclassOptions.Sorcerer.affinity}` : '',
+    abilities.subclassOptions?.Druid?.land ? `Circle of the Land terrain: ${abilities.subclassOptions.Druid.land}` : '',
     abilities.interdictBoons?.length ? `Interdict Boons (Baleful Interdict upgrades, not spells): ${abilities.interdictBoons.map(name => `${name}${INTERDICT_BOONS[name] ? ': ' + INTERDICT_BOONS[name].desc : ''}`).join('; ')}` : '',
     abilities.martial?.length   ? `Techniques: ${abilities.martial.join(', ')}` : '',
     abilities.cantrips?.length  ? `Cantrips: ${abilities.cantrips.join(', ')}` : '',
@@ -116,16 +124,13 @@ export const buildCharBlock = (char) => {
   const staticPart = `CHARACTER: ${char.name} | ${char.race?.name} ${classDesc}${char.deity ? ` | ${hasWarlock?'Patron':'Deity'}: ${char.deity.name}` : ''}${playstyle}${deityLine}${raceCtx}${subclassPromptLines(char)}${abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : ''}`;
 
   // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
-  const arcLine = char.arc?.antagonist
-    ? `\nACTIVE ARC ANTAGONIST (HIDDEN — never name or reveal them directly until the story does): ${char.arc.antagonist}.
-ARC LOCATION (HIDDEN CAMPAIGN STATE): ${char.arc.arcLocation || 'Faerûn'}.`
-    : '';
+  const arcLine = arcContext(char);
   const dynamicPart = `CURRENT STATE:
 Level ${char.level} | ${char.xp||0} XP | Coins: ${coinsToString(char.coins)}
 HP: ${char.hp}/${effectiveMaxHp(char)} | AC: ${ac} | Proficiency: +${pb}
 Stats: Strength ${effStats.str}(${modStr(effStats.str)}) Dexterity ${effStats.dex}(${modStr(effStats.dex)}) Constitution ${effStats.con}(${modStr(effStats.con)}) Intelligence ${effStats.int}(${modStr(effStats.int)}) Wisdom ${effStats.wis}(${modStr(effStats.wis)}) Charisma ${effStats.cha}(${modStr(effStats.cha)})
 Weapon: ${weaponLine}${sneakLine}${focusLine}
-(Equipped gear, inventory and item descriptions are listed above.)${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${arcLine}`;
+(Equipped gear, inventory and item descriptions are listed above.)${char.currentLocation ? `\nLocation: ${char.currentLocation}` : ''}${worldPressureContext(char)}${arcLine}`;
 
   return { staticPart, dynamicPart, gearBlock, itemsBlock };
 };
@@ -242,6 +247,8 @@ export const buildCtxSections = (char) => {
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
+
+
 
 
 

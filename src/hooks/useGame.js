@@ -1,3 +1,4 @@
+import { arcContext } from '../prompts/arcPacing.js';
 import { normalizeWeaponDamage } from '../utils/weaponDamage.js';
 import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod, allItems, effectiveMaxHp } from './useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
@@ -101,9 +102,11 @@ export const MODEL_CONFIGS = {
   },
   haiku: {
     provider: 'anthropic',
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1536,
-    label: 'Haiku',
+    model: 'claude-haiku-5-5',
+    // New tokenizer and adaptive thinking share this output budget.
+    max_tokens: 4096,
+    output_config: { effort: 'low' },
+    label: 'Haiku 5.5',
     emoji: '⚡',
   },
   gpt: {
@@ -146,7 +149,10 @@ export const stackInventory = (inventory) => stackCounts(inventory);
 // ── The Hook ───────────────────────────────────────────────────────────────────
 export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
 
-  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null, onPrompt = null) => {
+  const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null, onPrompt = null, requestCharacter = null) => {
+    // Opening generation uses a prepared character before React state updates.
+    // All providers must read that same snapshot, not the previous campaign.
+    const requestChar = requestCharacter || charRef.current;
     const provider = modelConfig.provider || 'anthropic';
     const key = provider === 'openai'
       ? (openAiApiKey || import.meta.env.VITE_OPENAI_KEY)
@@ -206,17 +212,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       if (hooksIdx >= 0) liveState = liveState.slice(0, hooksIdx);
       liveState = liveState.trim();
 
-      const arc = charRef.current?.arc;
-      const gptArc = arc?.antagonist ? [
-        '',
-        'ACTIVE ARC (HIDDEN): ' + arc.antagonist,
-        'ARC LOCATION (HIDDEN): ' + (arc.arcLocation || 'Faerûn'),
-        'This assigned antagonist is the one active campaign arc. Do not replace it with a different recurring villain, conspiracy, or quest chain. Small self-contained side events may be unrelated, but any multi-scene threat or continuing villain must connect to this antagonist.',
-        'Build toward the antagonist through believable leads, people, places, operations, evidence, and consequences. Investigation and travel before confrontation are desirable. Do not rush the reveal or spawn the antagonist beside the player.',
-        'If the player is away from the arc location, their current location may provide a brief believable lead toward it, but the substantive arc remains at or genuinely connected to the assigned arc location.',
-        'Use the character’s supplied disposition when motivating involvement; do not assume altruism. If the player ignores the arc, do not nag them every turn.',
-        'When the antagonist is resolved — defeated, captured, dismantled, permanently driven off, or the player concludes their business through a deal, truce, alliance, payment, or deliberate disengagement — emit [ARC COMPLETE] in that same response. Do not invent a hidden superior or deeper layer to keep the arc alive.'
-      ].join('\n') : '';
+      const gptArc = arcContext(requestChar);
 
       dynamicTail = liveState + gptArc;
     }
@@ -238,7 +234,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       // xAI Responses API is OpenAI-compatible, but its prompt cache is automatic.
       // Keep the same stable-prefix ordering and provide a sticky prompt_cache_key
       // without sending OpenAI-specific explicit cache breakpoint fields.
-      const grokCtx = hasSplit ? buildCtxSections(charRef.current) : null;
+      const grokCtx = hasSplit ? buildCtxSections(requestChar) : null;
       const grokLocationContext = grokCtx
         ? [grokCtx.npcSection, grokCtx.townsSection].filter(Boolean).join('\n')
         : '';
@@ -273,7 +269,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
           input,
           max_output_tokens: modelConfig.max_tokens,
           reasoning: { effort: modelConfig.reasoning_effort || 'low' },
-          prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`,
+          prompt_cache_key: `ai-dnd:${modelConfig.model}:${requestChar?.name || 'character'}`,
           store: false,
         }),
       });
@@ -311,7 +307,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       // Location-tiered NPC/town context is intentionally removed from the first
       // cache layer and reinserted after its breakpoint below. A [LOCATION:] tag
       // can therefore change nearby/distant detail without invalidating ~13k rules.
-      const gptCtx = hasSplit ? buildCtxSections(charRef.current) : null;
+      const gptCtx = hasSplit ? buildCtxSections(requestChar) : null;
       const gptLocationContext = gptCtx
         ? [gptCtx.npcSection, gptCtx.townsSection].filter(Boolean).join('\n')
         : '';
@@ -383,7 +379,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
           max_output_tokens: modelConfig.max_tokens,
           reasoning: { effort: modelConfig.reasoning_effort || 'low' },
           text: { verbosity: 'low' },
-          prompt_cache_key: `ai-dnd:${modelConfig.model}:${charRef.current?.name || 'character'}`,
+          prompt_cache_key: `ai-dnd:${modelConfig.model}:${requestChar?.name || 'character'}`,
           prompt_cache_options: { mode: 'explicit', ttl: '30m' },
           store: false,
         }),
@@ -427,6 +423,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       body: JSON.stringify({
         model: modelConfig.model,
         max_tokens: modelConfig.max_tokens,
+        ...(modelConfig.output_config ? { output_config: modelConfig.output_config } : {}),
         system: systemBlocks,
         // Cache the stable history (everything except the last 2 messages)
         // The last message before the tail gets the cache checkpoint
@@ -460,7 +457,10 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
     }
     const data = await res.json();
     if (promptRecord) onPrompt({ ...promptRecord, usage: data.usage || null });
-    return { text: data.content?.[0]?.text || '...', usage: data.usage || null };
+    if (data.stop_reason === 'refusal') throw new Error('Anthropic declined this request.');
+    const text = (data.content || []).filter(block => block.type === 'text').map(block => block.text || '').join('\n').trim();
+    if (!text) throw new Error(data.stop_reason === 'max_tokens' ? 'The model used its output budget before producing narration. Please retry.' : 'Anthropic returned no narration. Please retry.');
+    return { text, usage: data.usage || null };
   };
 
   // Process player action — handle attacks, intercepted skill rolls etc
@@ -625,7 +625,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
   // the block from scratch — about 12x cheaper. Deliberately fired ONCE: pinging
   // continuously overtakes the cost of a single rebuild after roughly 50
   // minutes idle, so a lone extension is the whole of the win.
-  const pingCache = async (systemPrompt) => {
+  const pingCache = async (systemPrompt, modelKey = 'sonnet') => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     if (!key || !systemPrompt?.static) return null;
     try {
@@ -633,7 +633,8 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
-          model: MODEL_CONFIGS.sonnet.model,
+          model: MODEL_CONFIGS[modelKey]?.model || MODEL_CONFIGS.sonnet.model,
+          ...(MODEL_CONFIGS[modelKey]?.output_config ? { output_config: MODEL_CONFIGS[modelKey].output_config } : {}),
           max_tokens: 1,
           // The cached prefix must match the real call EXACTLY or this reads
           // nothing and writes a second entry instead.
@@ -648,4 +649,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
 
   return { callDM, buildActionContext, interceptRollRequest, pingCache };
 }
+
+
+
 

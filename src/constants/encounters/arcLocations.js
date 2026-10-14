@@ -1,13 +1,10 @@
 import { rollAntagonist } from './antagonists.js';
 
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
 // ── Arc locations ──────────────────────────────────────────────────────────────
-// The app owns WHERE an arc happens just as it owns WHO the antagonist is.
-// Resolve once when the arc is created; char.arc.arcLocation is then save state.
+// Only required or player-selected destinations belong in arcLocation.
+// Flexible arcs retain their localArea without rolling a new travel destination.
 export const FAERUN_LOCATION_POOLS = {
-  // Broad continental pool used for ordinary arcs and the 5% chaos roll.
-  // Mix regions and specific destinations so campaigns actually cross Faerûn.
+  // Available opening locations and explicit player destination choices.
   general: [
     'Waterdeep','Neverwinter','Baldur’s Gate','Luskan','Silverymoon','Elturel','Daggerford','Mirabar','Longsaddle','Yartar','Triboar',
     'The Dalelands','Shadowdale','Mistledale','Cormyr','Suzail','Arabel','Marsember','Sembia','Selgaunt','The Moonsea','Hillsfar','Mulmaster','Zhentil Keep',
@@ -64,10 +61,24 @@ export const FIXED_ARC_LOCATIONS = new Map([
   ["a githyanki lich-queen's fleet in the Astral",'Astral Plane'],
   ['the corpse of a dead god, and what is nesting inside it','Astral Plane'],
   ['a Far Realm intrusion that should not have a shape','Far Realm'],
-  ['a shadar-kai raiding party out of the Shadowfell','Shadowfell'],
-  ['an archdevil moving pieces through mortal proxies','Nine Hells'],
-  ["a demon lord's vanguard testing a way through",'Abyss'],
-  ['a darklord extending their domain past its borders','Domains of Dread'],
+  ['a fomorian raiding party hunting escaped servants through the Feywild','Feywild'],
+  ['an azersmith whose stolen forge-heart is destabilizing the Plane of Fire','Elemental Plane of Fire'],
+  ['an archfey court waging a succession war that is rewriting the Feywild around it','Feywild'],
+  ['a shadow dragon carving a kingdom out of the Shadowfell','Shadowfell'],
+  ['a death giant harvesting souls for a fortress in the Shadowfell','Shadowfell'],
+  ['a leviathan elemental awakening in the Plane of Water','Elemental Plane of Water'],
+  ['an elder tempest turning the Plane of Air into a continent-spanning storm','Elemental Plane of Air'],
+  ['a zaratan carrying an enemy fortress across the Plane of Earth','Elemental Plane of Earth'],
+  ['an infernal duke building an illegal fortress between layers of the Nine Hells','Nine Hells'],
+  ['a death slaad gathering fragments of a chaos artifact in Limbo','Limbo'],
+  ['a githzerai anarch whose fortress has become a weapon in Limbo','Limbo'],
+  ['a titan in Carceri trying to trade an entire kingdom for its freedom','Carceri'],
+  ['a yugoloth army turning Gehenna into the staging ground for a private planar war','Gehenna'],
+  ['an empyrean exile trying to conquer a realm in Ysgard','Ysgard'],
+  ['a fallen celestial building a false paradise on Mount Celestia’s border','Mount Celestia'],
+  ['a radiant idol demanding worship in Arborea and punishing cities that refuse','Arborea'],
+  ['an ancient sphinx moving its temple through the Outlands and rewriting history with every stop','Outlands'],
+  ['a spelljammer armada blockading the Astral routes between divine realms','Astral Plane'],
 ]);
 export const locationPoolFor = (antagonist) => {
   const a=String(antagonist||'').toLowerCase();
@@ -97,42 +108,17 @@ export const arcLocationOptionsFor = (antagonist) => {
 
 export const resolveArcLocation = (antagonist, override = null) => {
   if (!antagonist) return null;
-  const fixed=FIXED_ARC_LOCATIONS.get(antagonist); if (fixed) return fixed;
-  if (override && String(override).trim()) return String(override).trim();
-  const a=String(antagonist).toLowerCase();
-  if (/archfey|fey court|wild hunt/.test(a)) return 'Feywild';
-  if (/night hag|gray waste/.test(a)) return 'Hades, the Gray Waste';
-  if (/pit fiend|erinyes|infernal duke|devil contract/.test(a)) return 'Nine Hells';
-  if (/balor|marilith|demon prince|demon cult/.test(a)) return 'Abyss';
-  if (/city of brass|efreeti|azersmith|phoenix/.test(a)) return 'Elemental Plane of Fire';
-  if (/dao|zaratan|xorn/.test(a)) return 'Elemental Plane of Earth';
-  if (/marid|leviathan elemental/.test(a)) return 'Elemental Plane of Water';
-  if (/djinni|elder tempest/.test(a)) return 'Elemental Plane of Air';
-  if (/shadow dragon|death giant|shadar-kai|shadow demon/.test(a)) return 'Shadowfell';
-  if (/fomorian|satyr revel|eladrin war-host|primordial hag/.test(a)) return 'Feywild';
-  if (/astral dreadnought|astral pirate|astral lich|githyanki warlord|spelljammer armada/.test(a)) return 'Astral Plane';
-  if (/slaad|githzerai/.test(a)) return 'Limbo';
-  if (/modron|inevitable|marut/.test(a)) return 'Mechanus';
-  if (/carceri|gehreleth/.test(a)) return 'Carceri';
-  if (/gehenna|ultroloth|yugoloth/.test(a)) return 'Gehenna';
-  if (/empyrean exile/.test(a)) return 'Ysgard';
-  if (/mount celestia|fallen celestial|corrupted celestial/.test(a)) return 'Mount Celestia';
-  if (/arborea|radiant idol/.test(a)) return 'Arborea';
-  if (/outlands|rilmani|gate-town|sphinx moving/.test(a)) return 'Outlands';
-  if (/ethereal/.test(a)) return 'Ethereal Plane';
-  if (/negative plane|nightwalker/.test(a)) return 'Negative Plane';
-  if (/living demiplane/.test(a)) return 'Demiplane';
-  if (/githyanki/.test(a)) return 'Astral Plane';
-  if (/efreeti/.test(a)) return 'Elemental Plane of Fire';
-  if (/dao architect/.test(a)) return 'Elemental Plane of Earth';
-  if (/slaad/.test(a)) return 'Limbo';
-  if (/modron/.test(a)) return 'Mechanus';
-  const sensible=FAERUN_LOCATION_POOLS[locationPoolFor(antagonist)] || FAERUN_LOCATION_POOLS.general;
-  // 5% chaos roll: occasionally a weird location wins and the DM explains why.
-  return pick(Math.random() < 0.05 ? FAERUN_LOCATION_POOLS.general : sensible);
+  const fixed = fixedArcLocationFor(antagonist);
+  if (fixed) return fixed;
+  return override && String(override).trim() ? String(override).trim() : null;
 };
-export const makeArc = (antagonist, arcLocationOverride = null) => ({ antagonist, arcLocation: resolveArcLocation(antagonist, arcLocationOverride) });
-export const rollArc = (level, exclude = null, defeated = []) => {
-  const antagonist=rollAntagonist(level, exclude, defeated);
-  return makeArc(antagonist);
+
+export const makeArc = (antagonist, arcLocationOverride = null, currentLocation = '') => ({
+  antagonist,
+  arcLocation: resolveArcLocation(antagonist, arcLocationOverride),
+  localArea: String(currentLocation || '').trim(),
+});
+export const rollArc = (level, exclude = null, defeated = [], currentLocation = '') => {
+  const antagonist = rollAntagonist(level, exclude, defeated);
+  return makeArc(antagonist, null, currentLocation);
 };

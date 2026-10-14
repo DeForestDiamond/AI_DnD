@@ -1,3 +1,6 @@
+import { applyStoryOptions } from './storyOptions.js';
+import { SCENE_CLARITY_BLOCK } from './sceneClarity.js';
+import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from './sharedLow.js';
 import { TAGS_BLOCK } from './tags.js';
@@ -22,7 +25,7 @@ ${ctx.bio}${ctx.dispositionSection}${ctx.objectivesSection}${ctx.companionSectio
 - Show, don't tell. Prefer one vivid concrete detail to explanation or repetition. Trust the player to read the room.
 ${CHARACTER_CHOICES_BLOCK}
 - If a [ROLL:] ends the response, write no choices after it.
-- Never resolve travel, combat, violence, or significant events without player input first. Travel of a day or more includes one brief concrete road moment; [ENCOUNTER] directives play out at a natural point rather than being summarized past.
+- Never invent player decisions or resolve an entire contested scene without response opportunities. NPCs may initiate action and established events may resolve without the player participating. Travel of a day or more includes one brief concrete road moment; [ENCOUNTER] directives play out at a natural point rather than being summarized past.
 - Bare numbers refer only to your most recent choices.
 - Plain text only: no markdown, asterisks, bold, or headers.
 - Write Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma in full.
@@ -39,6 +42,10 @@ ${ORDINARY_WORLD_BLOCK}
 ${ARC_RULES_BLOCK}
 
 ${WORLD_INTEGRITY_BLOCK}
+
+${WORLD_DYNAMICS_BLOCK}
+
+${SCENE_CLARITY_BLOCK}
 
 ── SETTING-NATIVE SOCIAL NORMS ──
 DO NOT IMPORT MODERN SOCIAL NORMS, SAFETY CULTURE, RIGHTS FRAMEWORKS, PROFESSIONAL ETHICS, PRIVACY EXPECTATIONS, OR LEGAL ASSUMPTIONS INTO THE SETTING BY DEFAULT. This includes modern concepts of informed consent, safeguarding, confidentiality, mandatory privacy, voluntary participation, child-centered decision making, workplace policy, medical ethics, due process, equality law, and institutional best practices. Such concepts exist only where the setting, local law, religion, faction, profession, magic, established history, or individual character actually supports them.
@@ -110,10 +117,13 @@ ${GPT_EXTRA_RULES}`;
   const dynamicPart = `── CURRENT STATE (changes every message) ──
 ${cb.dynamicPart}
 
-HOOKS — ARC OR NO ARC: every job, quest, or hook must put a concrete selfish stake first — pay, a threat to the player's interests, a debt, leverage, a grudge, or gain. Sympathy alone is never the hook, even without an active antagonist.
+HOOKS — ARC OR NO ARC: During reserved-arc aftermath, focus on existing business; offer the next hook only when the player seeks a new opportunity. When a hook is appropriate, give this character a concrete reason to engage based on their disposition and demonstrated interests. Danger to strangers does not automatically motivate them. Offer meaningful opportunities, relationships, knowledge, access, leverage, amusement, revenge, or gain where plausible; do not reduce every motive to coin or assume altruism.
 
 ── BEFORE YOU WRITE ──
 Check that you did not speak, think, feel, or act for the player. If the player gained anything, emit every required [ITEM:] or [GOLD:] tag now. Follow [ROLL:] termination exactly.`;
 
-  return { static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart };
+  return applyStoryOptions({ static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart }, char);
 };
+
+
+

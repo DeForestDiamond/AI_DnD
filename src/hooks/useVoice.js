@@ -11,6 +11,13 @@ const DEFAULT_PRONUNCIATIONS = {
   // stress. Add your own in voice settings if you hit a new one.
   amn: 'Ahmn',
   vyn: 'Vinn',
+  // Default homograph readings: breeze and the present-tense verb.
+  wind: 'winnd',
+  lead: 'leed',
+  battleaxe: 'battle axe',
+  battleaxes: 'battle axes',
+  slaver: 'slayver',
+  slavers: 'slayvers',
 };
 
 const applyPronunciations = (text, custom = {}) => {

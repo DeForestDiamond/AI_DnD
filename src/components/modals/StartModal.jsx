@@ -1,10 +1,11 @@
+import { StoryOptions } from '../StoryOptions.jsx';
 import { useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
 import { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/encounters/arcLocations.js';
 
 // Fresh-campaign chooser. Situation Adventure is deliberately separate from the
 // classic random/antagonist generator: its premise owns the starting context.
-export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAdventure, onManual, onChooseAntagonist, selectedModel = 'sonnet', onSelectModel, hasAnthropic = false, hasOpenAI = false, hasXAI = Boolean(import.meta.env.VITE_XAI_KEY), antagonists = [], defeatedAntagonists = [], adventures = [], completedAdventures = [] }) {
+export function AdventureStartModal({ character, onChangeStoryOptions, onRandom, onSituationAdventure, onChooseAdventure, onManual, onChooseAntagonist, selectedModel = 'sonnet', onSelectModel, hasAnthropic = false, hasOpenAI = false, hasXAI = Boolean(import.meta.env.VITE_XAI_KEY), antagonists = [], defeatedAntagonists = [], adventures = [], completedAdventures = [] }) {
   const [mode, setMode] = useState(null);
   const [text, setText] = useState('');
   const [antagonist, setAntagonist] = useState('');
@@ -53,6 +54,7 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.9)',zIndex:210,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
       <div style={{background:colors.bgPanel,border:`1px solid ${colors.border}`,borderRadius:4,padding:24,maxWidth:640,width:'100%',maxHeight:'90vh',overflow:'auto'}}>
         <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:16,marginBottom:16,textAlign:'center'}}>🎲 How should this adventure begin?</div>
+        <div style={{marginBottom:12}}><StoryOptions character={character} onChange={onChangeStoryOptions} /></div>
         {mode === null ? (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             <div style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:6,padding:12}}>
@@ -64,7 +66,7 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
             </div>
             <div onClick={onRandom} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
               <div style={{fontSize:28,marginBottom:6}}>🎲</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Random Start</div>
-              <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Roll a fresh setting, scene, hook, and antagonist scaled to your level.</div>
+              <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>{character?.storyMode === 'continuous' ? 'Roll a fresh opening for a continuing story, without an assigned antagonist.' : 'Roll a fresh setting, scene, hook, and antagonist scaled to your level.'}</div>
             </div>
             <div onClick={onSituationAdventure} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
               <div style={{fontSize:28,marginBottom:6}}>🎭</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Adventure</div>
@@ -74,10 +76,10 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
               <div style={{fontSize:28,marginBottom:6}}>📜</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Choose Adventure</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Pick a situation premise yourself. Its location, tone, and opening style are still rolled fresh.</div>
             </div>
-            <div onClick={()=>setMode('antagonist')} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
+            {character?.storyMode !== 'continuous' && <div onClick={()=>setMode('antagonist')} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
               <div style={{fontSize:28,marginBottom:6}}>👑</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Choose Antagonist</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Pick the arc foe yourself, then roll a fresh opening built around them.</div>
-            </div>
+            </div>}
             <div onClick={()=>setMode('manual')} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
               <div style={{fontSize:28,marginBottom:6}}>✍️</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Write My Own Opening</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Describe where and how the story starts — pick up where you left off, or begin at a home base.</div>
@@ -88,9 +90,11 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
             <div style={{fontSize:12,color:colors.textGhost,marginBottom:8,lineHeight:1.5}}>Describe the opening. The DM will start exactly here instead of rolling a random scene.</div>
             <textarea value={text} onChange={e=>setText(e.target.value)} autoFocus placeholder={'e.g. I arrive back in Saltmere, my home city, after weeks on the road...'} rows={6}
               style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',resize:'vertical',boxSizing:'border-box',marginBottom:12}} />
+            {character?.storyMode !== 'continuous' && <>
             <div style={{fontSize:12,color:colors.textGhost,marginBottom:6,lineHeight:1.5}}>Arc antagonist <span style={{color:colors.textFaint}}>(optional — leave blank to roll one)</span></div>
             <input value={antagonist} onChange={e=>setAntagonist(e.target.value)} placeholder={'e.g. a smuggling ring run out of the Saltmere docks'}
               style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:12}} />
+            </>}
             <div style={{display:'flex',gap:10}}><button style={{...btn(false),flex:'0 0 auto'}} onClick={()=>setMode(null)}>← Back</button><button style={{...btn(true),flex:1,opacity:text.trim()?1:0.4}} disabled={!text.trim()} onClick={()=>text.trim()&&onManual(text.trim(), antagonist.trim() || null)}>Begin Here →</button></div>
           </div>
         ) : mode === 'adventure' ? (
@@ -116,10 +120,10 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
         ) : (
           <div>
             <div style={{fontSize:12,color:colors.textGhost,marginBottom:6,lineHeight:1.5}}>Choose where <span style={{color:colors.gold}}>{pendingAntagonist}</span> is based for this arc.</div>
-            <div style={{fontSize:10,color:colors.textGhost,marginBottom:10,lineHeight:1.45}}>Antagonists with a fixed canon location skip this step automatically. Choose Random to keep the normal location roll.</div>
+            <div style={{fontSize:10,color:colors.textGhost,marginBottom:10,lineHeight:1.45}}>Antagonists with a required location skip this step automatically. Otherwise choose an opening area, or let the game choose one. The conflict starts in that same area.</div>
             <input value={locationSearch} onChange={e=>setLocationSearch(e.target.value)} autoFocus placeholder="Search locations..." style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:10}} />
             <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,maxHeight:'48vh',overflowY:'auto',marginBottom:12}}>
-              <div onClick={()=>onChooseAntagonist(pendingAntagonist, null)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',color:colors.gold}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>🎲 Random compatible location</div>
+              <div onClick={()=>onChooseAntagonist(pendingAntagonist, null)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',color:colors.gold}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>🎲 Choose a shared opening area</div>
               {visibleLocations.map(loc => <div key={loc} onClick={()=>onChooseAntagonist(pendingAntagonist, loc)} style={{padding:'9px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',fontSize:12,color:colors.textDim}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>{loc}</div>)}
               {!visibleLocations.length && <div style={{padding:18,textAlign:'center',fontSize:11,color:colors.textGhost}}>No locations match this filter.</div>}
             </div>
@@ -130,3 +134,5 @@ export function AdventureStartModal({ onRandom, onSituationAdventure, onChooseAd
     </div>
   );
 }
+
+

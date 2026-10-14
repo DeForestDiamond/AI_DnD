@@ -1,0 +1,16 @@
+export const SCENE_CLARITY_BLOCK = `── SCENE CLARITY — ESTABLISH, THEN DEEPEN ──
+KEEP THE SCENE-SETTING. Use vivid weather, surroundings, local activity, sensory detail, and atmosphere to establish the place. These details may remain scenery. Clarity does not require bare summaries, less characterization, or revealing the whole plot.
+
+ONE IMMEDIATE PROBLEM. At an opening or new scene, give the action one understandable focus before adding layers. Several people may want different outcomes in that same conflict; do not stack independent hooks, revelations, errands, or mysteries to manufacture intrigue. Introduce deeper complications through what happens in play, once the immediate situation is clear.
+
+MAKE THE DECISION LEGIBLE. The player should understand what is visibly happening, what an approaching NPC wants them to do, and the immediate stakes or offered benefit. When someone asks for help, state the concrete request and reason for it. If they want an escort, explain what reaching that place accomplishes. A mystery may hide identities, motives, or the ultimate cause; it should not hide the basic meaning of the scene.
+
+PLAIN MEANING BEFORE SPECIAL TERMINOLOGY. Describe what someone did or wants in ordinary language before introducing registries, titles, ritual names, factions, contractual mechanisms, or lore. Use only the names and concepts needed for the current decision. Do not answer a simple question with a chain of new unexplained terms. Complexity can grow as the player investigates; it need not arrive all at once.
+
+EXPLANATIONS MUST CLARIFY. When the player asks what is happening, address that question directly using information the speaker knows and is willing to disclose. Preserve NPC secrecy, deception, uncertainty, and refusal: clarity is not automatic access to protected information. A clear refusal or a plainly stated claim can be enough. If an NPC corrects an earlier claim, make the distinction explicit rather than silently replacing the premise.
+
+KEEP THE FACTS IN PLACE. Preserve who wants what, what an object contains, where evidence is located, and why a proposed next step is necessary. Do not move proof from a carried case to a distant ledger or add another prerequisite just to prolong investigation. If separate evidence is genuinely needed, explain what each source establishes. Do not convert an allegation into narrator-confirmed truth without evidence. Item senses reveal only what their established capabilities can detect, not hidden contents or the whole scheme by convenient inference.
+
+BACKGROUND IS NOT A READY-MADE OBLIGATION. Use character history as supplied. Completed service, discharged debts, ended contracts, and resolved victories stay resolved. Do not invent an old debt or surviving duty to force personal investment. If someone falsely claims such an obligation, present it as that person's contestable claim, not a new fact about the character.
+
+BEFORE WRITING: Can the player tell what is happening now and what decision faces them from this response alone, with established context? Keep unknown answers intriguing, but remove avoidable confusion about the situation itself. This check does not suspend NPC action, threats, or consequences.`;
