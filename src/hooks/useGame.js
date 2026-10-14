@@ -102,9 +102,11 @@ export const MODEL_CONFIGS = {
   },
   haiku: {
     provider: 'anthropic',
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1536,
-    label: 'Haiku',
+    model: 'claude-haiku-5-5',
+    // New tokenizer and adaptive thinking share this output budget.
+    max_tokens: 4096,
+    output_config: { effort: 'low' },
+    label: 'Haiku 5.5',
     emoji: '⚡',
   },
   gpt: {
@@ -421,6 +423,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       body: JSON.stringify({
         model: modelConfig.model,
         max_tokens: modelConfig.max_tokens,
+        ...(modelConfig.output_config ? { output_config: modelConfig.output_config } : {}),
         system: systemBlocks,
         // Cache the stable history (everything except the last 2 messages)
         // The last message before the tail gets the cache checkpoint
@@ -454,7 +457,10 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
     }
     const data = await res.json();
     if (promptRecord) onPrompt({ ...promptRecord, usage: data.usage || null });
-    return { text: data.content?.[0]?.text || '...', usage: data.usage || null };
+    if (data.stop_reason === 'refusal') throw new Error('Anthropic declined this request.');
+    const text = (data.content || []).filter(block => block.type === 'text').map(block => block.text || '').join('\n').trim();
+    if (!text) throw new Error(data.stop_reason === 'max_tokens' ? 'The model used its output budget before producing narration. Please retry.' : 'Anthropic returned no narration. Please retry.');
+    return { text, usage: data.usage || null };
   };
 
   // Process player action — handle attacks, intercepted skill rolls etc
@@ -619,7 +625,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
   // the block from scratch — about 12x cheaper. Deliberately fired ONCE: pinging
   // continuously overtakes the cost of a single rebuild after roughly 50
   // minutes idle, so a lone extension is the whole of the win.
-  const pingCache = async (systemPrompt) => {
+  const pingCache = async (systemPrompt, modelKey = 'sonnet') => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     if (!key || !systemPrompt?.static) return null;
     try {
@@ -627,7 +633,8 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
-          model: MODEL_CONFIGS.sonnet.model,
+          model: MODEL_CONFIGS[modelKey]?.model || MODEL_CONFIGS.sonnet.model,
+          ...(MODEL_CONFIGS[modelKey]?.output_config ? { output_config: MODEL_CONFIGS[modelKey].output_config } : {}),
           max_tokens: 1,
           // The cached prefix must match the real call EXACTLY or this reads
           // nothing and writes a second entry instead.
@@ -642,6 +649,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
 
   return { callDM, buildActionContext, interceptRollRequest, pingCache };
 }
+
 
 
 

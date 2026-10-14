@@ -1,6 +1,6 @@
 const PRICING = {
   sonnet: { input: 3.0, output: 15.0, cacheWrite: 3.75, cacheRead: 0.30 },
-  haiku: { input: 1.0, output: 5.0, cacheWrite: 1.25, cacheRead: 0.10 },
+  haiku: { input: 0.10, output: 0.50, cacheWrite: 0.125, cacheRead: 0.01 },
   gpt: { input: 5.0, output: 30.0, cacheWrite: 6.25, cacheRead: 0.50 },
   terra: { input: 2.5, output: 15.0, cacheWrite: 3.125, cacheRead: 0.25 },
   grok: { input: 1.25, output: 2.50, cacheWrite: 1.25, cacheRead: 0.20 },
@@ -21,7 +21,9 @@ export function normalizeUsage(modelKey, data) {
   const output = num(u.output_tokens ?? u.completion_tokens);
   const reasoning = num(u.output_tokens_details?.reasoning_tokens ?? u.reasoning_tokens);
   const rate = PRICING[modelKey] || PRICING.sonnet;
-  const estimatedCost = (fresh * rate.input + cacheWrite * rate.cacheWrite + cacheRead * rate.cacheRead + output * rate.output) / 1e6;
+  // Haiku 5.5 charges the long-context tier on the entire request above 100K.
+  const priceMultiplier = modelKey === 'haiku' && fresh + cacheRead + cacheWrite > 100000 ? 5 : 1;
+  const estimatedCost = priceMultiplier * (fresh * rate.input + cacheWrite * rate.cacheWrite + cacheRead * rate.cacheRead + output * rate.output) / 1e6;
   const ticks = u.cost_in_usd_ticks ?? data?.cost_in_usd_ticks;
   const reportedCost = ticks != null ? num(ticks) / 1e10 : null;
   return {
@@ -197,3 +199,4 @@ export function diffCacheState(prev, next) {
   if (prev.history !== next.history) push('history','Story summary generated or compressed');
   return out;
 }
+

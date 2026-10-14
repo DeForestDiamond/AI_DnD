@@ -29,7 +29,7 @@ export function armAnthropicCacheKeepWarm({
     const prompt = buildAnthropicPrompt(selectedModel, char);
     if (!prompt) return;
 
-    const data = await pingCache(prompt);
+    const data = await pingCache(prompt, selectedModel);
     if (data) onUsage?.(data);
   }, ANTHROPIC_CACHE_KEEP_WARM_MS);
 }
@@ -39,3 +39,4 @@ export function cancelAnthropicCacheKeepWarm(timerRef) {
   clearTimeout(timerRef.current);
   timerRef.current = null;
 }
+
