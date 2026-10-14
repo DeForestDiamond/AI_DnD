@@ -31,6 +31,11 @@ export function AbilitiesModal({ character, onSave, onClose }) {
   const [showRaceTraits, setShowRaceTraits] = useState(false);
   const [openDesc, setOpenDesc] = useState(null);   // which ability's description is expanded
   const [showSubclass, setShowSubclass] = useState(false);
+  const [showGrantedMagic, setShowGrantedMagic] = useState(false);
+  const [showSubclassOptions, setShowSubclassOptions] = useState(true);
+  const hasSubclassOptions = character.subclasses?.Sorcerer === 'Divine Soul' || character.subclasses?.Druid === 'Circle of the Land';
+  const sectionHeading = {fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer',userSelect:'none',background:'transparent',border:0,padding:0,width:'100%',textAlign:'left'};
+  const optionSelect = {display:'block',width:'100%',boxSizing:'border-box',marginTop:6,background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:'8px 10px',color:colors.textDim,fontFamily:fonts.body,fontSize:13,colorScheme:'dark'};
 
   // Calculate totals across all classes
   const totals = { cantrips:0, spells:0, martial:0, infusions:0, interdictBoons: interdictBoonCount(classLevels.Illrigger || 0), magicalSecrets: magicalSecretsCount(classLevels.Bard || 0, character.subclasses?.Bard) };
@@ -107,12 +112,19 @@ export function AbilitiesModal({ character, onSave, onClose }) {
           </div>
         )}
 
-        <div style={{overflowY:'auto',flex:1}}>
+        <div style={{overflowY:'auto',flex:1,minHeight:0}}>
 
+          {hasSubclassOptions && (
+            <div style={{marginBottom:16}}>
+              <button type="button" aria-expanded={showSubclassOptions} aria-controls="subclass-options" onClick={()=>setShowSubclassOptions(v=>!v)} style={sectionHeading}>
+                <span>🧭 SUBCLASS CHOICES</span>
+                <span style={{color:colors.textGhost}}>{showSubclassOptions ? '▲' : '▼'}</span>
+              </button>
+              {showSubclassOptions && <div id="subclass-options">
           {character.subclasses?.Sorcerer === 'Divine Soul' && (
             <label style={{display:'block',color:colors.gold,fontSize:13,marginBottom:12}}>
               Divine Soul affinity
-              <select value={selected.subclassOptions.Sorcerer?.affinity || ''} style={{display:'block',width:'100%',marginTop:6}}
+              <select value={selected.subclassOptions.Sorcerer?.affinity || ''} style={optionSelect}
                 onChange={e => { const affinity = e.target.value; setSelected(prev => ({...prev,subclassOptions:{...prev.subclassOptions,Sorcerer:{...prev.subclassOptions.Sorcerer,affinity}}})); }}>
                 <option value="">Choose your affinity</option>
                 {Object.entries(DIVINE_AFFINITIES).map(([affinity,spell]) => <option key={affinity} value={affinity}>{affinity} — {spell}</option>)}
@@ -122,21 +134,30 @@ export function AbilitiesModal({ character, onSave, onClose }) {
           {character.subclasses?.Druid === 'Circle of the Land' && (
             <label style={{display:'block',color:colors.gold,fontSize:13,marginBottom:12}}>
               Circle of the Land terrain
-              <select value={selected.subclassOptions.Druid?.land || ''} style={{display:'block',width:'100%',marginTop:6}}
+              <select value={selected.subclassOptions.Druid?.land || ''} style={optionSelect}
                 onChange={e => { const land = e.target.value; setSelected(prev => ({...prev,subclassOptions:{...prev.subclassOptions,Druid:{...prev.subclassOptions.Druid,land}}})); }}>
                 <option value="">Choose your land</option>
                 {Object.keys(LAND_SPELLS).map(land => <option key={land} value={land}>{land}</option>)}
               </select>
             </label>
           )}
+              </div>}
+            </div>
+          )}
           {grantedMagic.length > 0 && (
             <div style={{marginBottom:16}}>
-              <div style={{color:colors.gold,fontFamily:fonts.display,fontSize:12}}>SUBCLASS GRANTED MAGIC</div>
-              <div style={{color:colors.textFaint,fontSize:12,marginTop:4}}>Available automatically; does not consume your selectable spell or cantrip allowance. Subclass resource costs still apply.</div>
-              {grantedMagic.map(({name,cls,sub}) => <div key={cls+name} style={{color:colors.textFaint,fontSize:13,marginTop:6}}>
-                <strong>{name}</strong> — {sub}
-                {abilityInfo[name]?.desc && <div>{abilityInfo[name].desc}</div>}
-              </div>)}
+              <button type="button" aria-expanded={showGrantedMagic} aria-controls="subclass-granted-magic" onClick={()=>setShowGrantedMagic(v=>!v)} style={sectionHeading}>
+                <span>✨ SUBCLASS GRANTED MAGIC <span style={{color:colors.textGhost}}>({grantedMagic.length})</span></span>
+                <span style={{color:colors.textGhost}}>{showGrantedMagic ? '▲' : '▼'}</span>
+              </button>
+              {showGrantedMagic && <div id="subclass-granted-magic" style={{display:'flex',flexDirection:'column',gap:6}}>
+                <div style={{color:colors.textFaint,fontSize:12,lineHeight:1.5,marginBottom:2}}>Available automatically; does not consume your selectable spell or cantrip allowance. Subclass resource costs still apply.</div>
+                {grantedMagic.map(({name,cls,sub}) => <div key={cls+name} style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:'6px 10px'}}>
+                  <div style={{fontSize:12,color:colors.gold,fontFamily:fonts.display,marginBottom:2}}>{name}</div>
+                  <div style={{fontSize:10,color:colors.textGhost,fontStyle:'italic',marginBottom:3}}>{cls} — {sub}</div>
+                  {abilityInfo[name]?.desc && <div style={{fontSize:12,color:colors.textFaint,lineHeight:1.5}}>{abilityInfo[name].desc}</div>}
+                </div>)}
+              </div>}
             </div>
           )}
           {/* Racial Traits */}
@@ -305,4 +326,5 @@ export function AbilitiesModal({ character, onSave, onClose }) {
     </div>
   );
 }
+
 
