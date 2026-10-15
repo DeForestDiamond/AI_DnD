@@ -16,6 +16,18 @@ export const SUBCLASS_PICK_LEVEL = {
 
 export const SUBCLASSES = {
   Bard: {
+    'College of Creation': {
+      emoji:'🎼',
+      desc:'Shapes the Song of Creation into inspiring motes, temporary objects, and dancing constructs.',
+      // Keep the existing Bard subclass pick at app level 3. Later features use
+      // ceil(tabletop level / 2), never unlocking before the subclass itself.
+      features:[
+        {name:'Mote of Potential',level:3,desc:'Your Bardic Inspiration carries a mote of creative possibility. Its extra benefit depends on how the inspiration is spent: improve an ability check, unleash thunder with an attack, or grant temporary hit points with a saving throw.'},
+        {name:'Performance of Creation',level:3,desc:'Use a performance to conjure a temporary nonmagical object. Its permitted value and size grow with your bard progression; it is a real, usable object rather than an illusion, but disappears when the feature ends. Follow its normal duration, use limits, and spell-slot reuse cost.'},
+        {name:'Animating Performance',level:3,desc:'Bring an eligible inanimate object to life temporarily as a Dancing Item. It follows your commands, can aid exploration or fight beside you, and uses the feature’s action economy and resource limits. Inspiring an ally can accompany directing the item.'},
+        {name:'Creative Crescendo',level:7,desc:'Performance of Creation can produce several objects together and no longer has a gold-value ceiling. Its size, quantity, and duration limits still apply; this does not make the objects permanent or magical. Created valuables can supply eligible spell components.'},
+      ],
+    },
     'College of Lore': {emoji:'📚',desc:'Collector of secrets, skills, and stolen magic.',features:[{name:'Cutting Words',desc:'Spend inspiration to undermine an enemy.'},{name:'Additional Magical Secrets',desc:'Learn magic normally unavailable to bards.'}]},
     'College of Valor': {emoji:'⚔️',desc:'Battlefield bard who turns inspiration into martial courage.',features:[{name:'Combat Inspiration',desc:'Allies can use inspiration for offense or defense.'},{name:'Battle Magic',desc:'Weave spellcasting and weapon attacks together.'}]},
   },
@@ -984,19 +996,24 @@ export const owedSubclasses = (char) => {
 };
 
 // Compact one-line blurb for the system prompt.
-export const subclassBlurb = (className, subName) => {
+export const subclassFeaturesAtLevel = (className, subName, classLevel = Infinity) =>
+  (SUBCLASSES[className]?.[subName]?.features || []).filter(feature => !feature.level || classLevel >= feature.level);
+
+export const subclassBlurb = (className, subName, classLevel = Infinity) => {
   const sc = SUBCLASSES[className]?.[subName];
   if (!sc) return '';
-  const feats = sc.features.map(f => `${f.name}: ${f.desc}`).join('; ');
+  const feats = subclassFeaturesAtLevel(className, subName, classLevel).map(f => `${f.name}: ${f.desc}`).join('; ');
   return `${subName} (${className}): ${sc.desc} Key features: ${feats}.`;
 };
 
 // All chosen subclasses as prompt lines (handles multiclass).
 export const subclassPromptLines = (char) => {
   const chosen = char?.subclasses || {};
+  const levels = char?.classLevels || (char?.cls ? { [char.cls.name]: char.level } : {});
   return Object.entries(chosen)
-    .map(([cls, sub]) => subclassBlurb(cls, sub))
+    .map(([cls, sub]) => subclassBlurb(cls, sub, levels[cls] || 0))
     .filter(Boolean)
     .map(line => `\n- SUBCLASS: ${line}`)
     .join('');
 };
+
