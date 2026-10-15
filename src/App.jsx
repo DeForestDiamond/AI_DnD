@@ -1173,7 +1173,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           defeatedAntagonists={adventureStartChar.defeatedAntagonists || []}
           onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
           onSituationAdventure={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, null, true); }}
-          onChooseAdventure={(title) => { const c = adventureStartChar; const chosen = prepareSituationAdventure(title); if (!chosen) return; setAdventureStartChar(null); startAdventure(c, null, null, true, chosen); }}
+          onChooseAdventure={(title, options) => { const c = adventureStartChar; const chosen = prepareSituationAdventure(title, options); if (!chosen) return; setAdventureStartChar(null); startAdventure(c, null, null, true, chosen); }}
           adventures={ADVENTURES}
           completedAdventures={adventureStartChar?.completedAdventures || []}
           onManual={(text, antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text, antagonist); }}

@@ -2,6 +2,7 @@ import { StoryOptions } from '../StoryOptions.jsx';
 import { useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
 import { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/encounters/arcLocations.js';
+import { adventureDeityCount, DIVINE_POWER_OPTIONS } from '../../constants/adventures.js';
 
 // Fresh-campaign chooser. Situation Adventure is deliberately separate from the
 // classic random/antagonist generator: its premise owns the starting context.
@@ -15,6 +16,15 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
   const [showCompletedAdventures, setShowCompletedAdventures] = useState(false);
   const [pendingAntagonist, setPendingAntagonist] = useState('');
   const [locationSearch, setLocationSearch] = useState('');
+  const [pendingAdventure, setPendingAdventure] = useState(null);
+  const [adventureDeities, setAdventureDeities] = useState(['', '']);
+
+  const chooseAdventure = (adventure) => {
+    if (!adventureDeityCount(adventure)) { onChooseAdventure(adventure.title); return; }
+    setPendingAdventure(adventure);
+    setAdventureDeities(['', '']);
+    setMode('adventure-deities');
+  };
 
   const defeated = new Set((defeatedAntagonists || []).map(x => String(x).toLowerCase()));
   const visibleAntagonists = antagonists
@@ -97,13 +107,32 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
             </>}
             <div style={{display:'flex',gap:10}}><button style={{...btn(false),flex:'0 0 auto'}} onClick={()=>setMode(null)}>← Back</button><button style={{...btn(true),flex:1,opacity:text.trim()?1:0.4}} disabled={!text.trim()} onClick={()=>text.trim()&&onManual(text.trim(), antagonist.trim() || null)}>Begin Here →</button></div>
           </div>
+        ) : mode === 'adventure-deities' ? (
+          <div>
+            <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:14,marginBottom:8}}>{pendingAdventure?.title}</div>
+            <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5,marginBottom:14}}>{pendingAdventure?.premise}</div>
+            <div style={{fontSize:12,color:colors.textGhost,lineHeight:1.5,marginBottom:12}}>Choose the deity involved, or leave it random. This is the Adventure's deity; it does not change your character's faith or patron.</div>
+            {Array.from({length:adventureDeityCount(pendingAdventure)}, (_, index) => (
+              <label key={index} style={{display:'block',fontSize:12,color:colors.gold,marginBottom:14}}>
+                {adventureDeityCount(pendingAdventure) === 2 ? `Deity ${index + 1}` : 'Deity'}
+                <select value={adventureDeities[index]} onChange={e=>setAdventureDeities(current=>current.map((name, i)=>i===index?e.target.value:name))} style={{display:'block',width:'100%',background:colors.bg,color:colors.textDim,border:`1px solid ${colors.borderDim}`,borderRadius:4,fontFamily:'inherit',fontSize:13,padding:'10px',marginTop:6}}>
+                  <option value="">🎲 Random deity</option>
+                  {DIVINE_POWER_OPTIONS.filter(d=>d.name!==adventureDeities[1-index]).map(d=><option key={d.name} value={d.name}>{d.name} — {d.portfolio}</option>)}
+                </select>
+              </label>
+            ))}
+            <div style={{display:'flex',gap:10}}>
+              <button style={{...btn(false),flex:1}} onClick={()=>setMode('adventure')}>← Back</button>
+              <button style={{...btn(true),flex:1}} onClick={()=>onChooseAdventure(pendingAdventure.title, {deities:adventureDeities})}>Begin Adventure →</button>
+            </div>
+          </div>
         ) : mode === 'adventure' ? (
           <div>
             <div style={{fontSize:12,color:colors.textGhost,marginBottom:10,lineHeight:1.5}}>Choose the situation for this Adventure. The premise is fixed, but its compatible starting location, tone, and opening style are rolled fresh.</div>
             <input value={adventureSearch} onChange={e=>setAdventureSearch(e.target.value)} autoFocus placeholder="Search adventures..." style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:10}} />
             <label style={{display:'flex',alignItems:'center',gap:8,fontSize:11,color:colors.textFaint,marginBottom:10,cursor:'pointer'}}><input type="checkbox" checked={showCompletedAdventures} onChange={e=>setShowCompletedAdventures(e.target.checked)} />Show completed adventures ({completedTitles.size})</label>
             <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,maxHeight:'52vh',overflowY:'auto',marginBottom:12}}>
-              {visibleAdventures.length ? visibleAdventures.map(a => { const wasCompleted=completedTitles.has(a.title); return <div key={a.title} onClick={()=>onChooseAdventure(a.title)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',color:wasCompleted?colors.textGhost:colors.textDim,opacity:wasCompleted?0.65:1}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}><div style={{fontSize:12,lineHeight:1.4}}>{wasCompleted&&<span style={{marginRight:6}}>✓</span>}{a.title}{wasCompleted&&<span style={{fontSize:9,marginLeft:8,color:colors.textGhost}}>COMPLETED</span>}</div><div style={{fontSize:10,color:colors.textGhost,lineHeight:1.45,marginTop:4}}>{a.premise}</div></div>; }) : <div style={{padding:18,textAlign:'center',fontSize:11,color:colors.textGhost}}>No adventures match this filter.</div>}
+              {visibleAdventures.length ? visibleAdventures.map(a => { const wasCompleted=completedTitles.has(a.title); return <div key={a.title} onClick={()=>chooseAdventure(a)} style={{padding:'10px 12px',borderBottom:`1px solid ${colors.borderFaint}`,cursor:'pointer',color:wasCompleted?colors.textGhost:colors.textDim,opacity:wasCompleted?0.65:1}} onMouseEnter={e=>e.currentTarget.style.background=colors.bgDark} onMouseLeave={e=>e.currentTarget.style.background='transparent'}><div style={{fontSize:12,lineHeight:1.4}}>{wasCompleted&&<span style={{marginRight:6}}>✓</span>}{a.title}{wasCompleted&&<span style={{fontSize:9,marginLeft:8,color:colors.textGhost}}>COMPLETED</span>}</div><div style={{fontSize:10,color:colors.textGhost,lineHeight:1.45,marginTop:4}}>{a.premise}</div></div>; }) : <div style={{padding:18,textAlign:'center',fontSize:11,color:colors.textGhost}}>No adventures match this filter.</div>}
             </div>
             <button style={{...btn(false),width:'100%'}} onClick={()=>setMode(null)}>← Back</button>
           </div>

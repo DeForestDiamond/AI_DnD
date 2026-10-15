@@ -93,6 +93,15 @@ export function rollDivinePower(excludedNames = []) {
   return { ...deity, rank };
 }
 
+export const DIVINE_POWER_OPTIONS = Object.entries(DIVINE_POWERS)
+  .flatMap(([rank, powers]) => powers.map(power => ({ ...power, rank })))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+export function adventureDeityCount(adventureOrTitle) {
+  const title = typeof adventureOrTitle === 'string' ? adventureOrTitle : adventureOrTitle?.title;
+  return DIVINE_ADVENTURE_TITLES.has(title) ? (title === 'Two Gods, One Problem' ? 2 : 1) : 0;
+}
+
 const ADVENTURES = [
   {
     title: 'The Missing Fey Child',
@@ -371,22 +380,31 @@ const ADVENTURES = [
 const tones = ['lighthearted and social','warm with room for real stakes','comedic with grounded consequences','adventurous and curious','low-key intrigue','lively and character-driven','strange but welcoming'];
 const openingStyles = ['open on dialogue with a stranger','begin during an ordinary social interaction','begin as the player arrives and can freely look around','begin with a small public event already unfolding around the player','begin during food, drink, shopping, travel, or another grounded activity'];
 
-export function prepareSituationAdventure(adventureOrTitle) {
+export function prepareSituationAdventure(adventureOrTitle, { deities = [] } = {}) {
   const a = typeof adventureOrTitle === 'string'
     ? ADVENTURES.find(x => x.title === adventureOrTitle)
     : adventureOrTitle;
   if (!a) return null;
 
   const prepared = { ...a, location: pick(a.locations), tone: pick(tones), openingStyle: pick(openingStyles) };
-  if (!DIVINE_ADVENTURE_TITLES.has(a.title)) return prepared;
+  const deityCount = adventureDeityCount(a);
+  if (!deityCount) return prepared;
 
-  const first = rollDivinePower();
-  const powers = a.title === 'Two Gods, One Problem'
-    ? [first, rollDivinePower([first.name])]
-    : [first];
+  // Reserve all explicit choices before rolling any empty slot, so a random
+  // first deity cannot accidentally duplicate the player's chosen second god.
+  const choices = Array.from({ length:deityCount }, (_, i) => deities[i] || null);
+  const named = choices.filter(Boolean);
+  if (new Set(named).size !== named.length || named.some(name => !DIVINE_POWER_OPTIONS.some(d => d.name === name))) return null;
+  const reserved = [...named];
+  const powers = choices.map(name => {
+    const power = name ? { ...DIVINE_POWER_OPTIONS.find(d => d.name === name) } : rollDivinePower(reserved);
+    reserved.push(power.name);
+    return power;
+  });
+  const first = powers[0];
   const divineDirective = powers.length === 1
-    ? `APP-ROLLED DIVINE POWER: ${first.name} (${first.rank}; ${first.portfolio}). This exact deity is authoritative for this Adventure. Do not substitute a different god.`
-    : `APP-ROLLED DIVINE POWERS: ${powers.map(d => `${d.name} (${d.rank}; ${d.portfolio})`).join(' AND ')}. These exact deities are authoritative for this Adventure. Do not substitute different gods.`;
+    ? `APP-SELECTED DIVINE POWER: ${first.name} (${first.rank}; ${first.portfolio}). This exact deity is authoritative for this Adventure. Do not substitute a different god.`
+    : `APP-SELECTED DIVINE POWERS: ${powers.map(d => `${d.name} (${d.rank}; ${d.portfolio})`).join(' AND ')}. These exact deities are authoritative for this Adventure. Do not substitute different gods.`;
 
   return {
     ...prepared,
@@ -412,3 +430,4 @@ export function rollSituationAdventure(completedAdventures = []) {
 }
 
 export { ADVENTURES };
+
