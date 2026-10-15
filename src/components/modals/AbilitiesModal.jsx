@@ -1,3 +1,4 @@
+import { normalizeSpellSelections, spellChoice, toggleSpellChoice, switchSpellSource } from '../../helpers/spellSelection.js';
 import { LAND_SPELLS, DIVINE_AFFINITIES } from '../../constants/subclassAbilities.js';
 import { INTERDICT_BOONS, interdictBoonCount, availableInterdictBoons, normalizeInterdictAbilities } from '../../constants/interdictBoons.js';
 import { useRef, useState } from 'react';
@@ -9,7 +10,7 @@ import { SUBCLASSES } from '../../constants/subclasses.js';
 
 export function AbilitiesModal({ character, onSave, onClose }) {
   const classLevels = character.classLevels || { [character.cls?.name]: character.level };
-  const existing = normalizeInterdictAbilities(character.abilities || {}, classLevels);
+  const existing = normalizeSpellSelections(normalizeInterdictAbilities(character.abilities || {}, classLevels));
   const abilityInfo = { ...SPELL_INFO, ...INTERDICT_BOONS };
   const deityName = character.deity?.name || null;
   const raceTraits = RACE_TRAITS[character.race?.name]?.traits || [];
@@ -72,6 +73,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
   const selectionCount = (type, names) => names.filter(name => !(['spells','cantrips'].includes(type) && grantedNames.has(name))).length;
   const toggle = (type, name) => {
     setSelected(prev => {
+      if (type === 'spells') return toggleSpellChoice(prev, name, available, totals, grantedNames);
       const current = prev[type];
       if (current.includes(name)) {
         return { ...prev, [type]: current.filter(n => n !== name) };
@@ -83,13 +85,12 @@ export function AbilitiesModal({ character, onSave, onClose }) {
   };
 
   const sections = [
-    { key:'magicalSecrets', label:'📚 Magical Secrets', list:[...new Set([...available.magicalSecrets, ...selected.magicalSecrets])].sort() },
     { key:'interdictBoons', label:'🔥 Interdict Boons', list:[...new Set([...available.interdictBoons, ...selected.interdictBoons])].sort() },
     { key:'martial',   label:'⚔️ Techniques', list:[...available.martial].sort()   },
     { key:'cantrips',  label:'✨ Cantrips',   list:[...available.cantrips].sort()  },
-    { key:'spells',    label:'📖 Spells',     list:[...available.spells].sort()    },
+    { key:'spells',    label:'📖 Spells',     list:[...new Set([...available.spells, ...(totals.magicalSecrets > 0 ? available.magicalSecrets : []), ...selected.spells, ...selected.magicalSecrets])].sort() },
     { key:'infusions', label:'⚙️ Infusions',  list:[...available.infusions].sort() },
-  ].filter(s => s.list.length > 0 && (totals[s.key] > 0 || selected[s.key].length > 0));
+  ].filter(s => s.list.length > 0 && (totals[s.key] > 0 || selected[s.key].length > 0 || (s.key === 'spells' && (totals.magicalSecrets > 0 || selected.magicalSecrets.length > 0))));
 
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.9)',zIndex:160,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
@@ -103,7 +104,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
             <div>Divine Soul: cleric spells and cantrips are available as sorcerer choices and share your normal selection limits.</div>
           )}
           {Object.entries(totals).map(([type, count]) =>
-            count > 0 ? ` ${count} ${type === 'interdictBoons' ? 'Interdict Boons' : type}` : ''
+            count > 0 ? ` ${count} ${type === 'interdictBoons' ? 'Interdict Boons' : type === 'magicalSecrets' ? 'Magical Secrets' : type}` : ''
           ).filter(Boolean).join(' ·')}
         </div>
         {deityName && (
@@ -220,9 +221,10 @@ export function AbilitiesModal({ character, onSave, onClose }) {
               <div style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:6,display:'flex',justifyContent:'space-between'}}>
                 <span>{label}</span>
                 <span style={{color:selectionCount(key, selected[key]) >= totals[key] ? colors.green : colors.textGhost}}>
-                  {selectionCount(key, selected[key])}/{totals[key]}
+                  {selectionCount(key, selected[key])}/{totals[key]}{key === 'spells' && (totals.magicalSecrets > 0 || selected.magicalSecrets.length > 0) && <> · Secrets {selected.magicalSecrets.length}/{totals.magicalSecrets}</>}
                 </span>
               </div>
+              {key === 'spells' && totals.magicalSecrets > 0 && <div style={{fontSize:12,color:colors.textFaint,lineHeight:1.5,marginBottom:8}}>Each spell appears once. Class picks are used first when available; otherwise a Magical Secret is used. Switch a selected spell’s allowance with its button. Magical Secrets have their own counter.</div>}
               {key === 'interdictBoons' && (
                 <div style={{fontSize:12,color:colors.textFaint,lineHeight:1.5,marginBottom:8}}>
                   Boons enhance Baleful Interdict; they are not spells. Choose one at Illrigger level 1, two at 4, three at 7, and four at 9. App class levels use a compressed ten-level progression. Only one non-passive boon can activate per turn. You may replace one boon when gaining an Illrigger level. Descriptions summarize effects; use the class rules for saves and ranges.
@@ -247,8 +249,9 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                     </div>
                     <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
                 {groups[role].map(name => {
-                  const isSelected = selected[key].includes(name);
-                  const atMax = selected[key].length >= totals[key];
+                  const choice = key === 'spells' ? spellChoice(selected, name, available, totals, grantedNames) : null;
+                  const isSelected = choice ? !!choice.source : selected[key].includes(name);
+                  const atMax = choice ? !choice.canUseClass && !choice.canUseSecret : selected[key].length >= totals[key];
                   const isDomain = domainSet[key]?.has(name);
                   return (
                     <div key={name}
@@ -260,6 +263,9 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                         borderRadius:3,
                         fontSize:13,
                         display:'flex',
+                        flexWrap:'wrap',
+                        maxWidth:'100%',
+                        boxSizing:'border-box',
                         alignItems:'center',
                         gap:5,
                         cursor: isSelected || !atMax ? 'pointer' : 'default',
@@ -269,6 +275,15 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                         transition:'all 0.15s',
                       }}>
                       <span>{isDomain ? '✦ ' : ''}{name}{key === 'interdictBoons' ? ` (Lv ${INTERDICT_BOONS[name]?.level || '?'})` : ''}</span>
+                      {choice && (choice.secretEligible || choice.source === 'magicalSecrets') && <span style={{fontSize:10,color:colors.textGhost}}>{choice.source === 'magicalSecrets' ? 'Secret' : choice.source === 'spells' ? 'Class' : choice.classEligible ? 'Class / Secret' : 'Secret'}</span>}
+                      {choice?.source && choice.classEligible && (choice.secretEligible || choice.source === 'magicalSecrets') && <button type="button"
+                        disabled={choice.source === 'spells' ? !choice.canUseSecret : !choice.canUseClass}
+                        title={choice.source === 'spells' ? 'Move this spell to your Magical Secrets allowance' : 'Move this spell to your class spell allowance'}
+                        onKeyDown={e=>e.stopPropagation()}
+                        onClick={e=>{e.stopPropagation();setSelected(prev=>switchSpellSource(prev,name,available,totals,grantedNames));}}
+                        style={{background:'transparent',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textFaint,fontSize:10,padding:'2px 4px',cursor:'pointer',opacity:(choice.source === 'spells' ? choice.canUseSecret : choice.canUseClass)?1:0.4}}>
+                        {choice.source === 'spells' ? 'Use Secret' : 'Use Class'}
+                      </button>}
                       {abilityInfo[name]?.desc && (
                         <span
                           onClick={(e) => { e.stopPropagation(); setOpenDesc(openDesc === name ? null : name); }}
@@ -326,6 +341,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
     </div>
   );
 }
+
 
 
 
