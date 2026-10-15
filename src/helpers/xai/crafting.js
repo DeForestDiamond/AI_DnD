@@ -128,6 +128,7 @@ Use only mainhand, offhand, armor, face, head, neck, shoulders, cloak, torso, ar
 
 MECHANICS
 - bonuses is comma-separated calculable keys only: ac,str,dex,con,int,wis,cha, or skill names. Example ac:2,con:1.
+- INSTRUMENTS AND BARDIC FOCUSES: use the existing magic type for musical instruments, mundane or magical, including bardic spellcasting focuses. Do not introduce an instrument type. Use slot mainhand or offhand for the hand holding it. Put calculable ability/skill bonuses in bonuses (empty if none); describe its musical use, bardic spellcasting focus function, magical effects and limitations in label. Set damage, bonus, range and finesse to null; occupying a hand slot does not make it an attacking weapon. Preserve existing musical/focus capabilities when upgrading.
 - WEAPON MECHANICS: damage uses base dice plus DAMAGE-ONLY flat modifier and typed dice, e.g. "2d6+9 plus 3d8 necrotic plus 3d8 fire". The +9 NEVER changes attack rolls. bonus is the separate numeric enchantment added to BOTH attack and damage (0 if none); do not include it again in damage. range is "ranged" for pistols/bows and ranged arcane weapons, otherwise "melee". finesse is a boolean. Always return bonus, range and finesse for weapons; null for other types. Keep all rolled damage in damage, never only in label. Preserve existing enchantment bonuses separately when upgrading.
 - Resistances, immunities, senses, movement and narrative powers go in label, not fake bonus keys.
 - Armour protection uses armor.ac, not bonuses.ac. Non-armour wearable protection may use ac:N.

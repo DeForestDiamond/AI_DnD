@@ -102,6 +102,9 @@ NEVER NAME AN ITEM "ENCHANTED X" OR "X - ENCHANTED". That tells the player nothi
     fields: ac | dexBonus (true/false) | maxDex (number or null) | label (optional)
     NOTE: only the main chest/body armor piece uses armor type with a flat AC value.
     bonus stats on armor: add after label e.g. | con:1
+  INSTRUMENTS AND BARDIC FOCUSES use the existing magic item format, including mundane instruments; do not invent a separate instrument tag/type. Use mainhand or offhand for the hand holding it. Put calculable ability/skill bonuses in the bonuses field (empty if none), and its musical use, bardic spellcasting focus function, magical effects and limitations in the label. Do not assign weapon damage merely because it occupies a hand slot.
+    Example: [ITEM: Lute | magic | mainhand | | Musical instrument and bardic spellcasting focus]
+    Example: [ITEM: Silver Lyre | magic | offhand | performance:2 | Musical instrument and bardic spellcasting focus; grants +2 to Performance checks while equipped]
   Magic item: [ITEM: Ring of Protection | magic | ring | ac:1 | +1 to AC]
   Magic items can also carry SKILL bonuses that mechanically apply to [ROLL:] checks while equipped — e.g. [ITEM: Cloak of Elvenkind | magic | cloak | stealth:3 | blends into shadow], [ITEM: Eyes of the Eagle | magic | head | perception:5 | distant details leap into focus]. Use skill:N in the bonus field (stealth, perception, persuasion, etc.) so the item's effect is real, not just flavor text.
     fields: slot | bonuses (stat:value, comma separated) | label
