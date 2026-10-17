@@ -22,7 +22,7 @@ import { DeityModal, WARLOCK_PATRONS } from './components/modals/DeityModal.jsx'
 import { SubclassModal } from './components/modals/SubclassModal.jsx';
 import { AdventureStartModal } from './components/modals/StartModal.jsx';
 import { owedSubclasses } from './constants/subclasses.js';
-import { ADVENTURES, rollSituationAdventure, prepareSituationAdventure } from './constants/adventures.js';
+import { ADVENTURES, rollSituationAdventure, prepareSituationAdventure, situationLocationDirective } from './constants/adventures.js';
 import { rollAdventureSeed } from './helpers/adventure/seed.js';
 import { generateAdventureArc } from './helpers/adventure/arc.js';
 import { callGptConsolidate } from './helpers/openai/consolidate.js';
@@ -337,7 +337,7 @@ export default function App() {
         seedPrompt = `[SITUATION ADVENTURE — OPENING]
 TITLE: ${situationSeed.title}
 PREMISE: ${situationSeed.premise}
-STARTING CONTEXT: ${situationSeed.location}
+STARTING CONTEXT: ${situationSeed.location}${situationLocationDirective(situationSeed)}
 TONE: ${isFullDarkFantasy(char) ? 'Full Dark Fantasy — uncompromising darkness and tangible danger' : situationSeed.tone}
 OPENING STYLE: ${situationSeed.openingStyle}
 
@@ -1172,7 +1172,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           antagonists={antagonistsForLevel(adventureStartChar.level)}
           defeatedAntagonists={adventureStartChar.defeatedAntagonists || []}
           onRandom={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c); }}
-          onSituationAdventure={() => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, null, true); }}
+          onSituationAdventure={(options) => { const c = adventureStartChar; const chosen = rollSituationAdventure(c.completedAdventures || [], options); if (!chosen) return; setAdventureStartChar(null); startAdventure(c, null, null, true, chosen); }}
           onChooseAdventure={(title, options) => { const c = adventureStartChar; const chosen = prepareSituationAdventure(title, options); if (!chosen) return; setAdventureStartChar(null); startAdventure(c, null, null, true, chosen); }}
           adventures={ADVENTURES}
           completedAdventures={adventureStartChar?.completedAdventures || []}

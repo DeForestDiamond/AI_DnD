@@ -425,13 +425,19 @@ const ADVENTURES = [
 const tones = ['lighthearted and social','warm with room for real stakes','comedic with grounded consequences','adventurous and curious','low-key intrigue','lively and character-driven','strange but welcoming'];
 const openingStyles = ['open on dialogue with a stranger','begin during an ordinary social interaction','begin as the player arrives and can freely look around','begin with a small public event already unfolding around the player','begin during food, drink, shopping, travel, or another grounded activity'];
 
-export function prepareSituationAdventure(adventureOrTitle, { deities = [] } = {}) {
+export function situationLocationDirective(situation) {
+  if (!situation?.startingLocation) return '';
+  return `\nPLAYER-CHOSEN STARTING LOCATION: ${situation.startingLocation}\nThis location is authoritative for the opening. If it is a kingdom, country, or region, choose a suitable scene within it; if it is a city or specific place, begin there. Adapt the STARTING CONTEXT to fit this location, including any incompatible geographic or planar details, while preserving the Adventure premise. Do not move the opening elsewhere to match a rolled setting. Establish the actual scene with [LOCATION: ...].`;
+}
+
+export function prepareSituationAdventure(adventureOrTitle, { deities = [], startingLocation = '' } = {}) {
   const a = typeof adventureOrTitle === 'string'
     ? ADVENTURES.find(x => x.title === adventureOrTitle)
     : adventureOrTitle;
   if (!a) return null;
 
-  const prepared = { ...a, location: pick(a.locations), tone: pick(tones), openingStyle: pick(openingStyles) };
+  const chosenLocation = startingLocation.trim();
+  const prepared = { ...a, location: pick(a.locations), tone: pick(tones), openingStyle: pick(openingStyles), ...(chosenLocation ? { startingLocation:chosenLocation } : {}) };
   const deityCount = adventureDeityCount(a);
   if (!deityCount) return prepared;
 
@@ -459,7 +465,7 @@ export function prepareSituationAdventure(adventureOrTitle, { deities = [] } = {
   };
 }
 
-export function rollSituationAdventure(completedAdventures = []) {
+export function rollSituationAdventure(completedAdventures = [], options = {}) {
   // completedAdventures may contain full Adventure records (current saves) or
   // title strings (defensive support for older/imported saves). Completed titles
   // stay out of the shuffle until the player removes them from the ledger.
@@ -471,7 +477,7 @@ export function rollSituationAdventure(completedAdventures = []) {
   const available = ADVENTURES.filter(a => !completedTitles.has(a.title));
   if (!available.length) return null;
   const a = pick(available);
-  return prepareSituationAdventure(a);
+  return prepareSituationAdventure(a, options);
 }
 
 export { ADVENTURES };

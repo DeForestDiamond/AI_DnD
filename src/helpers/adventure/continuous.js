@@ -1,5 +1,6 @@
 import { rollAdventureSeed } from './seed.js';
 import { isFullDarkFantasy } from '../storyOptions.js';
+import { situationLocationDirective } from '../../constants/adventures.js';
 
 export const prepareContinuousOpening = (char, opening = '', situation = null) => {
   const seed = rollAdventureSeed(char.level, { continuous: true });
@@ -8,7 +9,7 @@ export const prepareContinuousOpening = (char, opening = '', situation = null) =
   const context = opening.trim()
     ? `PLAYER'S OPENING (use exactly this setting and situation):\n${opening.trim()}`
     : situation
-      ? `STARTING CONTEXT: ${situation.location}\nINITIAL SITUATION: ${situation.premise}`
+      ? `STARTING CONTEXT: ${situation.location}${situationLocationDirective(situation)}\nINITIAL SITUATION: ${situation.premise}`
       : `GEOGRAPHIC ANCHOR: ${seed.startingArea}\nSETTING: ${seed.setting}\nTIME: ${seed.time}\nWEATHER: ${seed.weather}\nSCENE: ${seed.location}\nOPENING STYLE: ${seed.openingStyle}\nDISTINCTIVE DETAIL: ${seed.wildcard}\nINITIAL OPPORTUNITY: ${seed.hook}`;
   const prompt = `[LONG STORY — OPENING]\n${context}\nTONE: ${isFullDarkFantasy(char) ? 'Full Dark Fantasy — uncompromising darkness and tangible danger' : situation?.tone || seed.tone}
 

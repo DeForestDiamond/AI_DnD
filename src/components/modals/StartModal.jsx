@@ -18,9 +18,10 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
   const [locationSearch, setLocationSearch] = useState('');
   const [pendingAdventure, setPendingAdventure] = useState(null);
   const [adventureDeities, setAdventureDeities] = useState(['', '']);
+  const [startingLocation, setStartingLocation] = useState('');
 
   const chooseAdventure = (adventure) => {
-    if (!adventureDeityCount(adventure)) { onChooseAdventure(adventure.title); return; }
+    if (!adventureDeityCount(adventure)) { onChooseAdventure(adventure.title, {startingLocation}); return; }
     setPendingAdventure(adventure);
     setAdventureDeities(['', '']);
     setMode('adventure-deities');
@@ -59,6 +60,13 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
   const card = { background:colors.bg,border:`1px solid ${colors.border}`,borderRadius:6,padding:16,cursor:'pointer',transition:'all 0.15s',textAlign:'left' };
   const hoverOn = e => { e.currentTarget.style.borderColor=colors.gold; e.currentTarget.style.background=colors.bgDark; };
   const hoverOff = e => { e.currentTarget.style.borderColor=colors.border; e.currentTarget.style.background=colors.bg; };
+  const locationField = (
+    <label style={{display:'block',fontSize:12,color:colors.gold,marginBottom:12}}>
+      Adventure starting location (optional)
+      <input value={startingLocation} onChange={e=>setStartingLocation(e.target.value)} placeholder="e.g. Cormyr, Waterdeep, or Suzail" style={{display:'block',width:'100%',background:colors.bg,border:`1px solid ${colors.borderDim}`,borderRadius:4,color:colors.textDim,fontFamily:'inherit',fontSize:13,padding:'10px',boxSizing:'border-box',marginTop:6}} />
+      <span style={{display:'block',fontSize:10,color:colors.textGhost,lineHeight:1.45,marginTop:5}}>For Adventure and Choose Adventure. Enter a kingdom, country, region, or city. Leave blank to let the Adventure choose a fresh location.</span>
+    </label>
+  );
 
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.9)',zIndex:210,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
@@ -78,7 +86,8 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
               <div style={{fontSize:28,marginBottom:6}}>🎲</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Random Start</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>{character?.storyMode === 'continuous' ? 'Roll a fresh opening for a continuing story, without an assigned antagonist.' : 'Roll a fresh setting, scene, hook, and antagonist scaled to your level.'}</div>
             </div>
-            <div onClick={onSituationAdventure} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
+            {locationField}
+            <div onClick={()=>onSituationAdventure({startingLocation})} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
               <div style={{fontSize:28,marginBottom:6}}>🎭</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Adventure</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Start from a social or exploratory situation with no predetermined villain or solution. Let the story emerge through play.</div>
             </div>
@@ -111,6 +120,7 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
           <div>
             <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:14,marginBottom:8}}>{pendingAdventure?.title}</div>
             <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5,marginBottom:14}}>{pendingAdventure?.premise}</div>
+            {locationField}
             <div style={{fontSize:12,color:colors.textGhost,lineHeight:1.5,marginBottom:12}}>Choose the deity involved, or leave it random. This is the Adventure's deity; it does not change your character's faith or patron.</div>
             {Array.from({length:adventureDeityCount(pendingAdventure)}, (_, index) => (
               <label key={index} style={{display:'block',fontSize:12,color:colors.gold,marginBottom:14}}>
@@ -123,12 +133,13 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
             ))}
             <div style={{display:'flex',gap:10}}>
               <button style={{...btn(false),flex:1}} onClick={()=>setMode('adventure')}>← Back</button>
-              <button style={{...btn(true),flex:1}} onClick={()=>onChooseAdventure(pendingAdventure.title, {deities:adventureDeities})}>Begin Adventure →</button>
+              <button style={{...btn(true),flex:1}} onClick={()=>onChooseAdventure(pendingAdventure.title, {deities:adventureDeities, startingLocation})}>Begin Adventure →</button>
             </div>
           </div>
         ) : mode === 'adventure' ? (
           <div>
-            <div style={{fontSize:12,color:colors.textGhost,marginBottom:10,lineHeight:1.5}}>Choose the situation for this Adventure. The premise is fixed, but its compatible starting location, tone, and opening style are rolled fresh.</div>
+            <div style={{fontSize:12,color:colors.textGhost,marginBottom:10,lineHeight:1.5}}>Choose the situation for this Adventure. Set a starting location below, or leave it blank for a fresh location. Tone and opening style are rolled fresh.</div>
+            {locationField}
             <input value={adventureSearch} onChange={e=>setAdventureSearch(e.target.value)} autoFocus placeholder="Search adventures..." style={{width:'100%',background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,borderRadius:3,color:colors.textDim,fontSize:13,fontFamily:'inherit',padding:'8px 10px',boxSizing:'border-box',marginBottom:10}} />
             <label style={{display:'flex',alignItems:'center',gap:8,fontSize:11,color:colors.textFaint,marginBottom:10,cursor:'pointer'}}><input type="checkbox" checked={showCompletedAdventures} onChange={e=>setShowCompletedAdventures(e.target.checked)} />Show completed adventures ({completedTitles.size})</label>
             <div style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,maxHeight:'52vh',overflowY:'auto',marginBottom:12}}>
