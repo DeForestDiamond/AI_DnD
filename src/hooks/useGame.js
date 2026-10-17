@@ -1,4 +1,5 @@
 import { arcContext } from '../prompts/arcPacing.js';
+import { DM_CAPTURE_KEY } from '../helpers/debug/dmRequestCapture.js';
 import { normalizeWeaponDamage } from '../utils/weaponDamage.js';
 import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod, allItems, effectiveMaxHp } from './useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
@@ -147,13 +148,21 @@ export const MODEL_CONFIGS = {
 export const stackInventory = (inventory) => stackCounts(inventory);
 
 // ── The Hook ───────────────────────────────────────────────────────────────────
-export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
+export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey, onRequestCapture }) {
 
   const callDM = async (messages, systemPrompt, modelConfig = MODEL_CONFIGS.sonnet, signal = null, log = null, onPrompt = null, requestCharacter = null) => {
     // Opening generation uses a prepared character before React state updates.
     // All providers must read that same snapshot, not the previous campaign.
     const requestChar = requestCharacter || charRef.current;
     const provider = modelConfig.provider || 'anthropic';
+    const fetchDM = (url, init) => fetch(url, {
+      ...init,
+      ...(onRequestCapture ? { [DM_CAPTURE_KEY]: {
+        provider, onCapture:onRequestCapture,
+        hints:{ 'Rules / character / world':typeof systemPrompt === 'string' ? systemPrompt : systemPrompt.static,
+          'Equipped gear / constructs':systemPrompt.gear, 'Carried items':systemPrompt.items, 'Current state':dynamicTail },
+      } } : {}),
+    });
     const key = provider === 'openai'
       ? (openAiApiKey || import.meta.env.VITE_OPENAI_KEY)
       : provider === 'xai'
@@ -257,7 +266,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
         });
       });
 
-      const res = await fetch('https://api.x.ai/v1/responses', {
+      const res = await fetchDM('https://api.x.ai/v1/responses', {
         method: 'POST',
         signal,
         headers: {
@@ -366,7 +375,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
         });
       });
 
-      const res = await fetch('https://api.openai.com/v1/responses', {
+      const res = await fetchDM('https://api.openai.com/v1/responses', {
         method: 'POST',
         signal,
         headers: {
@@ -411,7 +420,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey }) {
       return { text, usage };
     }
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetchDM('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       signal,
       headers: {

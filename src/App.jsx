@@ -75,6 +75,7 @@ export default function App() {
   const [slotTarget, setSlotTarget] = useState(null);
   const [companionSlotTarget, setCompanionSlotTarget] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
+  const [dmRequests, setDMRequests] = useState([]);
   const debugLogRef = useRef([]);
   const objectiveNoteRef = useRef('');   // queued note for the next API message
 
@@ -136,7 +137,15 @@ export default function App() {
   } = useCharacter(log);
 
   const voice = useVoice();
-  const { callDM, buildActionContext, interceptRollRequest, pingCache } = useGame({ charRef, apiKey, openAiApiKey, xAiApiKey });
+  const { callDM, buildActionContext, interceptRollRequest, pingCache } = useGame({ charRef, apiKey, openAiApiKey, xAiApiKey,
+    onRequestCapture:record => setDMRequests(previous => {
+      const index = previous.findIndex(r=>r.id===record.id);
+      if (index >= 0) return previous.map(r=>r.id===record.id?record:r);
+      // A delayed response must not reinsert a request already evicted.
+      if (previous.length && record.id < previous[0].id) return previous;
+      return [...previous,record].slice(-3);
+    }),
+  });
 
   const appendTokenCostEntry = (requestType, data, { includeCacheChanges=false, modelKey=selectedModel } = {}) => {
     if (!data) return null;
@@ -1215,6 +1224,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             showRawTags={showRawTags}
             onToggleRawTags={()=>setShowRawTags(v=>!v)}
             debugLog={debugLog}
+            dmRequests={dmRequests}
             tokenCostLog={tokenCostLog}
         onExportDebug={() => {
           const blob = new Blob([debugLog.join('\n')], { type:'text/plain' });

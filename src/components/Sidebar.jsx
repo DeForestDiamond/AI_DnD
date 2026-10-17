@@ -135,6 +135,7 @@ export function Sidebar(props) {
         onChangeDirectives={props.onChangeDirectives}
         tokenCostLog={props.tokenCostLog}
         debugLog={props.debugLog}
+        dmRequests={props.dmRequests}
         debugStatus={props.debugStatus}
         onExportDebug={props.onExportDebug}
         onCopyDebug={props.onCopyDebug}

@@ -1,6 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import { installDMCaptureInterceptor } from './helpers/debug/dmRequestCapture.js'
+
+// Install before React mounts the map/image transport wrappers. This layer
+// consequently sees their final, injected request body immediately before send.
+installDMCaptureInterceptor()
 
 // Last-resort crash reporter that lives OUTSIDE React. If the React root itself
 // unmounts or dies before an in-app error boundary can render, paint the browser
@@ -34,3 +39,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
   </React.StrictMode>
 )
+
