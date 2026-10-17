@@ -1,4 +1,7 @@
 export const isContinuousStory = char => char?.storyMode === 'continuous';
+// Match the active story driver: Long Story overrides saved drivers, and an
+// Adventure takes precedence over stale arc data in imported/older saves.
+export const hasAntagonistArc = char => !isContinuousStory(char) && !char?.adventure && Boolean(char?.arc?.antagonist);
 export const isFullDarkFantasy = char => char?.fantasyTone === 'full-dark';
 export const isCombatFirst = char => char?.combatFirst === true;
 export const hasOpenStoryScale = char => isContinuousStory(char) || isFullDarkFantasy(char);

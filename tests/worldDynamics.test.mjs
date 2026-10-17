@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { applyWorldPressures, worldPressureContext } from '../src/helpers/worldPressures.js';
 import { WORLD_DYNAMICS_BLOCK } from '../src/prompts/worldDynamics.js';
+import { ARC_PACING_BLOCK } from '../src/prompts/arcPacing.js';
 import { buildSystemPrompt } from '../src/prompts/haiku.js';
 import { buildSystemPromptSonnet } from '../src/prompts/sonnet.js';
 import { buildSystemPromptSol } from '../src/prompts/sol.js';
@@ -62,7 +63,8 @@ const builders = { haiku: buildSystemPrompt, sonnet: buildSystemPromptSonnet, so
 for (const [model, build] of Object.entries(builders)) {
   test(`${model} includes shared world behavior and saved pressure in the actual prompt`, () => {
     const prompt = build(makeChar());
-    assert.ok(prompt.static.includes(WORLD_DYNAMICS_BLOCK));
+    // No antagonist is assigned here: retain world behavior without arc pacing.
+    assert.ok(prompt.static.includes(WORLD_DYNAMICS_BLOCK.replace(ARC_PACING_BLOCK,'')));
     assert.match(prompt.dynamic, /temple-siege/);
     assert.match(prompt.dynamic, /barricade holding/);
     assert.ok(!prompt.static.includes('Never resolve travel, combat, violence, or significant events without player input first.'));
@@ -85,3 +87,4 @@ test('OpenAI and xAI transport retain the pressure ledger after compacting dynam
     }
   } finally { globalThis.fetch = originalFetch; }
 });
+

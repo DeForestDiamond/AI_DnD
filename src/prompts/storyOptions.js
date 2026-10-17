@@ -1,4 +1,4 @@
-import { isContinuousStory, isFullDarkFantasy, isCombatFirst, hasOpenStoryScale } from '../helpers/storyOptions.js';
+import { isContinuousStory, isFullDarkFantasy, isCombatFirst, hasOpenStoryScale, hasAntagonistArc } from '../helpers/storyOptions.js';
 import { ARC_RULES_BLOCK as FULL_ARC_RULES } from './shared.js';
 import { ARC_RULES_BLOCK as LEAN_ARC_RULES } from './sharedLow.js';
 import { ARC_PACING_BLOCK } from './arcPacing.js';
@@ -26,11 +26,19 @@ export const applyStoryOptions = (prompt, char) => {
   const continuous = isContinuousStory(char);
   const dark = isFullDarkFantasy(char);
   const combat = isCombatFirst(char);
-  if (!continuous && !dark && !combat) return prompt;
+  const arc = hasAntagonistArc(char);
+  if (arc && !dark && !combat) return prompt;
   let text = prompt.static;
-  if (continuous) {
+  let dynamic = prompt.dynamic;
+  if (!arc) {
     for (const block of [FULL_ARC_RULES, LEAN_ARC_RULES, ARC_PACING_BLOCK]) text = text.split(block).join('');
     text = text.replace(/^Story arc resolved.*$/gm, '');
+    text = text.replace(/APEX \(once per arc, earned\)/g, 'APEX (rare, earned)');
+    text = text.replace(/once-per-arc/g, 'rare');
+    dynamic = dynamic.replace('During reserved-arc aftermath, focus on existing business; offer the next hook only when the player seeks a new opportunity. ', '');
+    dynamic = dynamic.replace('HOOKS — ARC OR NO ARC:', 'HOOKS:');
+  }
+  if (continuous) {
     text = text.replace(', and arc-completion rules.', ' rules.');
     text = text.replace(/── DON'T ESCALATE ──[\s\S]*?(?=── NARRATE THE ACTUAL POWER GAP ──)/g, '');
     text = text.replace(/── WHEN A FIGHT ENDS ──\n[^\n]*/g, '');
@@ -52,6 +60,8 @@ export const applyStoryOptions = (prompt, char) => {
     text = text.replace(/^Every scene needs a hook\..*$/gm, '');
     text = text.replace(/^Power does not snowball\..*$/gm, '');
   }
-  const rules = [continuous && CONTINUOUS_STORY_BLOCK, dark && FULL_DARK_FANTASY_BLOCK, combat && COMBAT_FIRST_BLOCK].filter(Boolean).join('\n\n');
-  return { ...prompt, static: text + '\n\n' + rules, dynamic: prompt.dynamic + `\nSTORY OPTIONS: ${continuous ? 'Long Story — continuous, no assigned antagonist' : 'Structured story'}; ${dark ? 'Full Dark Fantasy' : 'Standard tone'}; ${combat ? 'Combat-first encounters — peace must be earned by the player' : 'Standard encounter resolution'}.` };
+  const darkRules = !arc ? FULL_DARK_FANTASY_BLOCK.replace('Apply the selected story structure: dark arc campaigns still honor arc completion and aftermath; Long Story continues organically.', continuous ? 'The Long Story continues organically.' : char?.adventure ? 'Follow the active Adventure situation without inventing an assigned antagonist arc.' : 'Let the story develop without inventing an assigned antagonist arc.') : FULL_DARK_FANTASY_BLOCK;
+  const combatRules = COMBAT_FIRST_BLOCK;
+  const rules = [continuous && CONTINUOUS_STORY_BLOCK, dark && darkRules, combat && combatRules].filter(Boolean).join('\n\n');
+  return { ...prompt, static: text + (rules ? '\n\n' + rules : ''), dynamic: dynamic + `\nSTORY OPTIONS: ${continuous ? 'Long Story — continuous, no assigned antagonist' : char?.adventure ? 'Adventure — background situation, no assigned antagonist arc' : arc ? 'Antagonist arc' : 'Open play — no assigned story driver'}; ${dark ? 'Full Dark Fantasy' : 'Standard tone'}; ${combat ? 'Combat-first encounters — peace must be earned by the player' : 'Standard encounter resolution'}.` };
 };
