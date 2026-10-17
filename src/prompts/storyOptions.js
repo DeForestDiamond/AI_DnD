@@ -2,6 +2,7 @@ import { isContinuousStory, isFullDarkFantasy, isCombatFirst, hasOpenStoryScale,
 import { ARC_RULES_BLOCK as FULL_ARC_RULES } from './shared.js';
 import { ARC_RULES_BLOCK as LEAN_ARC_RULES } from './sharedLow.js';
 import { ARC_PACING_BLOCK } from './arcPacing.js';
+import { adventureContext } from './adventure.js';
 
 export const CONTINUOUS_STORY_BLOCK = `── LONG STORY: CONTINUOUS CAMPAIGN ──
 There is no assigned antagonist, mandatory main quest, arc boundary, or scheduled ending. Do not invent one to replace the disabled arc system. Never emit [ARC COMPLETE], [ARC START], or [ADVENTURE COMPLETE]. Develop one continuing life and world: relationships, ambitions, conflicts, discoveries, bargains, victories, losses, travel, and consequences naturally lead to later situations. Enemies can emerge from play, coexist, change roles, leave, return, or prove connected when the established fiction supports it. No requirement that every clue or problem tie to one villain. No fixed scene budget, one-apex-per-arc quota, or prohibition on escalation, successors, broader conflicts, or discoveries beyond an initial problem.
@@ -61,5 +62,6 @@ export const applyStoryOptions = (prompt, char) => {
   const darkRules = !arc ? FULL_DARK_FANTASY_BLOCK.replace('Apply the selected story structure: dark arc campaigns still honor arc completion and aftermath; Long Story continues organically.', continuous ? 'The Long Story continues organically.' : char?.adventure ? 'Follow the active Adventure situation without inventing an assigned antagonist arc.' : 'Let the story develop without inventing an assigned antagonist arc.') : FULL_DARK_FANTASY_BLOCK;
   const combatRules = COMBAT_FIRST_BLOCK;
   const rules = [continuous && CONTINUOUS_STORY_BLOCK, dark && darkRules, combat && combatRules].filter(Boolean).join('\n\n');
-  return { ...prompt, static: text + (rules ? '\n\n' + rules : ''), dynamic: dynamic + `\nSTORY OPTIONS: ${continuous ? 'Long Story — continuous, no assigned antagonist' : char?.adventure ? 'Adventure — background situation, no assigned antagonist arc' : arc ? 'Antagonist arc' : 'Open play — no assigned story driver'}; ${dark ? 'Full Dark Fantasy' : 'Standard tone'}; ${combat ? 'Combat-first encounters — peace must be earned by the player' : 'Standard encounter resolution'}.` };
+  const stableRules = [rules, adventureContext(char)].filter(Boolean).join('\n\n');
+  return { ...prompt, static: text + (stableRules ? '\n\n' + stableRules : ''), dynamic: dynamic + `\nSTORY OPTIONS: ${continuous ? 'Long Story — continuous, no assigned antagonist' : char?.adventure ? 'Adventure — background situation, no assigned antagonist arc' : arc ? 'Antagonist arc' : 'Open play — no assigned story driver'}; ${dark ? 'Full Dark Fantasy' : 'Standard tone'}; ${combat ? 'Combat-first encounters — peace must be earned by the player' : 'Standard encounter resolution'}.` };
 };

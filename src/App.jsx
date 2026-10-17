@@ -345,7 +345,7 @@ export default function App() {
         arcAntagonist = null;
         seedPrompt = `[SITUATION ADVENTURE — OPENING]
 TITLE: ${situationSeed.title}
-PREMISE: ${situationSeed.premise}
+Use the Adventure premise in the system instructions; do not replace it with a different situation.
 STARTING CONTEXT: ${situationSeed.location}${situationLocationDirective(situationSeed)}
 TONE: ${isFullDarkFantasy(char) ? 'Full Dark Fantasy — uncompromising darkness and tangible danger' : situationSeed.tone}
 OPENING STYLE: ${situationSeed.openingStyle}
@@ -653,11 +653,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
 
     const objectiveCtx = objectiveNoteRef.current;
     objectiveNoteRef.current = '';
-    const adv = isContinuousStory(charRef.current) ? null : charRef.current.adventure;
-    const adventureCtx = adv
-      ? `\n\n[ACTIVE ADVENTURE — BACKGROUND SITUATION]\nTITLE: ${adv.title}\nPREMISE: ${adv.premise}\nSTARTING CONTEXT: ${adv.location || ''}\n\nThis is the current story driver, but it is NOT the player's mandatory immediate objective. Introduce or advance it only when organic. A stable situation may sit quietly through unrelated activities. Established attacks, deadlines, pursuits, and other pressures continue with fictional time even during conversations or detours. Do not invent an interruption merely to pull the player back, but let established danger interrupt when its timing warrants it. Do not repeatedly remind them it exists. Once the player engages, let their choices determine its pace and shape. Do not force a villain, combat, or predetermined solution.\n\nWhen the situation has ACTUALLY reached a natural resolution, emit [ADVENTURE COMPLETE] exactly once. Do not emit it merely because the player walks away, delays it, or changes subjects.`
-      : '';
-    const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx + objectiveCtx + adventureCtx;
+    const outgoing = continuePrefix + userMsg + actionCtx + encounterCtx + objectiveCtx;
 
     const history = buildApiHistory(historyOverride);
 

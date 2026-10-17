@@ -40,8 +40,9 @@ for(const [build,choices,before] of cases) {
         }
       }
     }
-    // Fixed minimal fixture makes this a character count, not a token estimate.
-    const p=build({...character(),adventure:{title:'Test',premise:'Test'}});
+    // Measure core instructions without an Adventure payload: that payload now
+    // lives in the system block rather than on the outgoing user message.
+    const p=build({...character(),arc:null});
     assert.ok(Object.values(p).join('').length < before);
   });
 }
