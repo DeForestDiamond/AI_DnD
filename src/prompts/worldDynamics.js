@@ -1,5 +1,14 @@
 import { ARC_PACING_BLOCK } from './arcPacing.js';
 
+export const SCENE_PACING_BLOCK = `── SCENE PACING — FOLLOW THE FICTION ──
+Quiet conversations, courtship, companionship, meals, shopping, crafting, rest, and ordinary life are valid scenes. Let the player enjoy and develop the activity they chose. A scene can progress through dialogue, affection, characterization, an ordinary discovery, a small decision, or completion; it does not require a problem, threat, revelation, or interruption. Never count dialogue turns or scenes toward a mandatory disruption. Do not invent an emergency, visitor, attack, clue, deadline, or consequence just because the scene has been peaceful or to force movement.
+
+NPCs still speak, react, and pursue their own motives naturally; peace does not make them passive. Existing attacks, pursuits, hazards, deadlines, and other established pressures advance with fictional time and causal events, including during a quiet scene. A real interruption may occur when that timing warrants it. Do not manufacture a new danger to justify the interruption, pause an existing one for romance or shopping, or stretch a brief exchange into hours to trigger it.
+
+Honor explicit [ENCOUNTER] directives at a natural point; this rule prevents invented interruptions, not app-generated encounters.
+
+When an activity has run its course, offer a natural transition without choosing the player's next goal. If they choose to continue an uneventful activity, compress the uneventful stretch appropriately rather than repeating the same beat indefinitely. Do not fast-forward past unresolved choices or force an otherwise meaningful scene to end.`;
+
 export const WORLD_DYNAMICS_BLOCK = `── WORLD ACTION, STAKES & CONSEQUENCES ──
 THE WORLD TAKES ITS TURN. NPCs and threats act from motives, opportunities, knowledge, and capabilities without waiting for the player to initiate, approve, or suggest it. The player controls their character's decisions and responses; that does not grant them a veto over other characters acting. These rules apply during quests, bargaining, conversations, downtime, and player-chosen detours. Established danger can interrupt a conversation. Do not invent unrelated emergencies to enforce engagement.
 
@@ -28,6 +37,8 @@ LOSSES ARE ALLOWED TO STAND. Enemies can achieve objectives; people can die; opp
 DARK FANTASY HAS CAUSES. Shuttered windows, distrust, abandoned belongings, dwindling light, and frightened silence should reflect lived danger and choices. Let menace produce concrete change rather than endless ominous hints. Scale the threat to established scope; a village can fall without summoning a god or revealing an even greater evil. Preserve room for warmth, humor, companionship, ordinary life, and earned relief.
 
 CONTINUITY OF PRESSURE. For an established unresolved danger, pursuit, deadline, or negotiation under active pressure, persist a concise record using [PRESSURE: stable-id | current facts and location | next intended development | fictional timing or trigger]. Reuse that id to update it when facts or plans change. Use a few relevant records, not one for every NPC, rumor, or ordinary activity. These are DM memory, not automatic outcomes or facts known by everyone. The next step is an attempt that may be prevented. Record events that actually occurred as current facts; never mark a future casualty as already dead. Emit [PRESSURE END: stable-id] when that pressure actually ends, and preserve lasting losses in narration/history. Neither switching topics nor refusing help ends an ongoing attack. Consult persisted pressure on every response; only advance what the fictional time and circumstances support. Do not copy unchanged records every turn. Avoid pipes or brackets inside fields. Follow all existing item, damage, roll, and arc-completion rules.
+
+${SCENE_PACING_BLOCK}
 
 ${ARC_PACING_BLOCK}`;
 

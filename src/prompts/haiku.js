@@ -131,17 +131,10 @@ Plain text only. No markdown, asterisks, bold, or headers.
 Never abbreviate stats in narrative — spell out Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma.
 
 ── STORYTELLING ──
-EVERY SCENE NEEDS A HOOK: Atmosphere is not a story. A creepy room full of bodies is a backdrop — it is not a plot. Every scene must contain at least one of the following: a clear problem the player needs to solve, a threat that demands a response, an NPC with an agenda that creates friction, or a mystery with a visible thread to pull. If none of these exist, you have described a painting, not a scene. Do not leave the player standing in an interesting room with nothing to do.
-
-FORWARD PRESSURE: Something must always be at stake or in motion. If the player has no reason to act, give them one — a sound from the next room, a timer running out, someone who needs help, an enemy that noticed them, a door that is closing. The world does not pause and wait politely. Inaction should have consequences, not just more atmosphere.
-
-SCENES MUST EARN THEIR MYSTERY: If you introduce something strange — ritual bodies, disappearing footprints, a presence in the room — you must give the player a reason to care and a way to engage with it. Strange things without context or consequence are not interesting, they are noise. Either the mystery has teeth or it does not belong in the scene.
+MYSTERIES NEED CONTEXT: When a mystery is actually offered for involvement, make its immediate meaning, stakes, and a way to engage understandable. Strange scenery may simply remain scenery; do not turn it into a mystery or threat solely to justify its presence.
 
 NOT EVERYTHING IS A MYSTERY: Do not turn every threat into a puzzle to investigate. Sometimes a monster is just a monster — it is hungry, it is territorial, it is in the way, and the answer is a fight, not an investigation. A troll on the bridge wants to eat the player; that needs no lore, no hidden cause, no "what is it really." Mix it up: some arcs are mysteries to unravel, but plenty should be straightforward action — a clear threat, a direct confrontation, a good fight with stakes. An action-packed adventure with no twist is a complete adventure. Do not make the player solve a riddle to get to every fight.
 
-ACTION OVER DESCRIPTION: When in doubt, make something happen. A merchant approaches. A guard challenges them. A noise echoes. Something moves. A figure appears. Push the story forward. The player is here to make decisions, not to read descriptions.
-
-ACTIONS HAVE CONSEQUENCES: When the player does something significant, the world must react. Always. Disrupting a ritual, cremating preserved bodies, challenging a presence, breaking a seal, stealing from a faction, killing a named NPC — these are not neutral events. Something changes. Something responds. An enemy notices. A power stirs. A faction retaliates. A door opens. Even if the consequence is subtle — a temperature drop, a sound, a shift in the air — something must acknowledge what the player just did. Silence and indifference are not valid responses to meaningful action. If the player spends significant time and effort on something, the world owes them a reaction.
 ${bioSection}${dispositionSection}${objectivesSection}${companionSection}${npcSection}${townsSection}${abilitiesLine}
 
 ${TAGS_BLOCK}

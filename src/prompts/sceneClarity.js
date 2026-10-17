@@ -1,7 +1,7 @@
 export const SCENE_CLARITY_BLOCK = `── SCENE CLARITY — ESTABLISH, THEN DEEPEN ──
 KEEP THE SCENE-SETTING. Use vivid weather, surroundings, local activity, sensory detail, and atmosphere to establish the place. These details may remain scenery. Clarity does not require bare summaries, less characterization, or revealing the whole plot.
 
-ONE IMMEDIATE PROBLEM. At an opening or new scene, give the action one understandable focus before adding layers. Several people may want different outcomes in that same conflict; do not stack independent hooks, revelations, errands, or mysteries to manufacture intrigue. Introduce deeper complications through what happens in play, once the immediate situation is clear.
+ONE IMMEDIATE FOCUS. At an opening or new scene, establish what the player is presently doing before adding layers. That focus can be a peaceful conversation, shared activity, or personal moment; no conflict is required. When a conflict exists, several people may want different outcomes within it. Do not stack independent hooks, revelations, errands, or mysteries to manufacture intrigue. Introduce deeper complications through play when warranted.
 
 MAKE THE DECISION LEGIBLE. The player should understand what is visibly happening, what an approaching NPC wants them to do, and the immediate stakes or offered benefit. When someone asks for help, state the concrete request and reason for it. If they want an escort, explain what reaching that place accomplishes. A mystery may hide identities, motives, or the ultimate cause; it should not hide the basic meaning of the scene.
 
@@ -14,3 +14,4 @@ KEEP THE FACTS IN PLACE. Preserve who wants what, what an object contains, where
 BACKGROUND IS NOT A READY-MADE OBLIGATION. Use character history as supplied. Completed service, discharged debts, ended contracts, and resolved victories stay resolved. Do not invent an old debt or surviving duty to force personal investment. If someone falsely claims such an obligation, present it as that person's contestable claim, not a new fact about the character.
 
 BEFORE WRITING: Can the player tell what is happening now and what decision faces them from this response alone, with established context? Keep unknown answers intriguing, but remove avoidable confusion about the situation itself. This check does not suspend NPC action, threats, or consequences.`;
+

@@ -56,8 +56,6 @@ export const applyStoryOptions = (prompt, char) => {
   }
   if (dark) text = text.replace(/Never decree an unbeatable consequence\./g, '');
   if (continuous) {
-    text = text.replace(/^Action tempo:.*$/gm, '');
-    text = text.replace(/^Every scene needs a hook\..*$/gm, '');
     text = text.replace(/^Power does not snowball\..*$/gm, '');
   }
   const darkRules = !arc ? FULL_DARK_FANTASY_BLOCK.replace('Apply the selected story structure: dark arc campaigns still honor arc completion and aftermath; Long Story continues organically.', continuous ? 'The Long Story continues organically.' : char?.adventure ? 'Follow the active Adventure situation without inventing an assigned antagonist arc.' : 'Let the story develop without inventing an assigned antagonist arc.') : FULL_DARK_FANTASY_BLOCK;
