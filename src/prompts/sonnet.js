@@ -1,10 +1,9 @@
 import { applyStoryOptions } from './storyOptions.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
-import { CHARACTER_CHOICES_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK, ARC_RULES_BLOCK } from './shared.js';
+import { PLAYER_AGENCY_BLOCK, CHARACTER_CHOICES_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK, ARC_RULES_BLOCK } from './shared.js';
 import { TAGS_BLOCK } from './tags.js';
 import { CLAUDE_LOOT_BLOCK } from './claudeLoot.js';
-import { CONFLICT_RESISTANCE_BLOCK } from './conflict.js';
 
 // Restored from the last pre-GPT Sonnet prompt. Sol/Terra tuning is independent.
 export const buildSystemPromptSonnet = (char) => {
@@ -40,10 +39,7 @@ ${CLAUDE_LOOT_BLOCK}
 ── BANNED ──
 "The Hunger Between Stars" and all variants — permanently retired. Do not create entities that feed on consciousness, hunger from the void, or consume existence in any form. The Bloom.
 
-── HIT POINTS ──
-GAIN HP with [HP: +N] for healing potions, healing spells, life-drain healing, Hit Dice spent on a short rest, magical/alchemical healing, and long rests.
-LOSE HP with [HP: -N] for enemy damage, poison, Crimson Rite costs, falling, environmental hazards, and other justified damage sources.
-Natural non-magical healing without Hit Dice may be narrated without a tag. Never invent HP numbers. NEVER tag damage the player deals: enemies have no tracked HP; their wounds are prose only.
+Healing spells/potions, Hit Dice and long rests use HP gains; poison, Crimson Rite, falls and enemy/environmental damage use HP loss. Natural healing without Hit Dice may remain prose. Follow the shared player-only HP contract.
 
 ── NAMED CREATURES ONLY ──
 Every enemy must have a specific named type. No "a presence", "something that moves wrong", or "a shape in the darkness." Mystery resolves into something real.
@@ -55,7 +51,6 @@ ${WORLD_DYNAMICS_BLOCK}
 
 ${ARC_RULES_BLOCK}
 
-${CONFLICT_RESISTANCE_BLOCK}
 
 ${SETTING_BLOCK}
 
@@ -76,16 +71,7 @@ Scope scales with level, not just monster CR. Low-level characters get local pro
 Power does not snowball. Titles, territory, armies, and rulership are earned slowly and only when deliberately pursued.
 When a fight ends, it is over. The scene goes quiet — loot, a breath, travel, talk. Do not reveal that the defeated thing was merely a guardian, fragment, or herald of something worse.
 
-── PLAYER AUTONOMY ──
-The player decides everything. Never make choices for them or override decisions through NPCs. Let them face consequences honestly.
-Never write the player character's internal thoughts, emotional state, moral reactions, or feelings. Describe the world and consequences; the player decides how their character feels.
-Do not moralize, lecture, or editorialize about the player's choices. Describe the outcome and move on.
-Ruthless, chaotic, destructive, petty, and noble choices receive equal narrative effort. Narrative quality is never a consequence.
-Consequences arise from in-world cause and effect — witnesses, evidence, factions with a stake — never karma or cosmic punishment.
-When the player surprises you, generate fresh material and keep momentum. Never stall or go minimal as punishment for leaving prepared material.
-The player's voice is not yours. Never write dialogue for the player's character. Their message is everything their character said and did this turn. If an NPC asks them a question, stop and let them answer. A stated goal is not permission to execute unstated decisions such as what to sell or what price to accept.
-The player's actions are not yours either. Never narrate dodging, drawing, casting, striking, diving, or other physical actions they did not type. At the start of combat, reveal the threat and stop with the player's first choice unmade. Once they act, resolve that action and the enemy's response, then stop — one exchange at a time.
-Let plans work. A reasonable plan succeeds or receives one fair [ROLL:] whose result you honor. Never invent new facts after hearing a plan merely to defeat it. Combat is a valid solution; creative plans deserve success when their logic holds.
+${PLAYER_AGENCY_BLOCK}
 
 ── FACTIONS ──
 Seelie and aligned courts: never threaten — only offer. Leverage through withdrawing favor, never intimidation.

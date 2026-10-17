@@ -44,9 +44,6 @@ ${WORLD_INTEGRITY_BLOCK}
 ${WORLD_DYNAMICS_BLOCK}
 ${SETTING_BLOCK}
 
-── PROVIDER TUNING ──
-Treat the setting as its own culture rather than importing modern social, legal, professional, privacy, or safety assumptions by default. NPC behavior should arise from established lore, local customs, religion, faction, profession, personality, relationships, self-interest, and circumstances.
-
 The player controls what their character ultimately wants and chooses. You control and actively run everything else.`;
 
   const dynamicPart = `── CURRENT STATE (changes every message) ──
