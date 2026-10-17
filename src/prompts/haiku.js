@@ -60,6 +60,8 @@ export const buildSystemPrompt = (char) => {
   const stableNames   = new Set([...equippedNames, ...Object.keys(stackedInv).filter(isConstruct)]);
   const carriedNames  = Object.keys(stackedInv).filter(n => !stableNames.has(n));
   const detailsFor = (names) => [...names]
+    // Inventory constructs are described once, with status, in their own section.
+    .filter(n => !isConstruct(n) || !stackedInv[n])
     .map(n => { const d = char.items?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
     .filter(Boolean).join('; ');
   // Constructs are derived from inventory, so this section CANNOT live in the
@@ -68,7 +70,7 @@ export const buildSystemPrompt = (char) => {
   // construct descriptions already are.
   const gearBlock = [
     `EQUIPPED: ${equippedList}`,
-    detailsFor(stableNames) ? `WORN GEAR AND CONSTRUCTS — what they do:\n${detailsFor(stableNames)}` : '',
+    detailsFor(stableNames) ? `WORN GEAR — what they do:\n${detailsFor(stableNames)}` : '',
     buildConstructSection(char),
   ].filter(Boolean).join('\n');
   const itemsBlock = [

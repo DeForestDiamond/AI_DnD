@@ -76,17 +76,20 @@ export const buildCharBlock = (char) => {
   const carriedNames  = Object.keys(stackedInv).filter(n => !stableNames.has(n));
 
   const detailsFor = (names) => [...names]
+    // Inventory constructs have their complete label and status in the dedicated
+    // section below. Keep the fallback for legacy equipped-only constructs.
+    .filter(n => !isConstruct(n) || !stackedInv[n])
     .map(n => { const d = char.items?.[n]; return d?.label ? `${n}: ${d.label}` : null; })
     .filter(Boolean).join('; ');
 
   // Tier 1 — worn gear and owned constructs. Rarely changes.
   // Constructs are derived from inventory, so this section CANNOT live in the
   // static block — putting it there meant picking up any item rebuilt the whole
-  // ~12,000 token prompt. It belongs with the worn gear, which is where the
-  // construct descriptions already are.
+  // ~12,000 token prompt. Keep their single authoritative description here,
+  // separate from ordinary worn-item descriptions.
   const gearBlock = [
     `EQUIPPED: ${equippedList}`,
-    detailsFor(stableNames) ? `WORN GEAR AND CONSTRUCTS — what they do:\n${detailsFor(stableNames)}` : '',
+    detailsFor(stableNames) ? `WORN GEAR — what they do:\n${detailsFor(stableNames)}` : '',
     buildConstructSection(char),
   ].filter(Boolean).join('\n');
   // Tier 2 — everything carried. Changes whenever loot arrives.
@@ -247,6 +250,7 @@ export const buildCtxSections = (char) => {
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
+
 
 
 
