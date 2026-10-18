@@ -7,6 +7,7 @@ import { parseDMItem } from '../src/constants/items.js';
 import { useCharacter } from '../src/hooks/character/useCharacter.js';
 import { EMPTY_CHAR } from '../src/hooks/character/defaults.js';
 import { stackCount } from '../src/utils/itemStacks.js';
+import { buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46 } from '../src/hooks/useGame.js';
 
 const example = name => {
   const match=[...TAGS_BLOCK.matchAll(/\[ITEM: ([^\]]+)\]/g)].find(m=>m[1].split('|')[0].trim()===name);
@@ -58,4 +59,27 @@ test('quantity-neutral status updates preserve full item labels and all existing
   assert.equal(stackCount(c.inventory,'Bone Colossus'),3);
   c=applyEffects('[REMOVE: Bone Colossus | qty:2]',c);
   assert.equal(stackCount(c.inventory,'Bone Colossus'),1);
+});
+
+test('itemised collection adds every quantity, including additional copies of an owned item',()=>{
+  const label='sealed alchemical quicksilver; keep upright';
+  let c=applyEffects(`[ITEM: Quicksilver Vial | misc | ${label} | qty:3]`,structuredClone(EMPTY_CHAR));
+  const collection=TAGS_BLOCK.match(/Itemise distinct contents[^\n]+/)[0];
+  const tags=collection.match(/\[ITEM:[^\]]+\]/g).join('');
+  c=applyEffects(tags,c);
+  assert.equal(stackCount(c.inventory,'Quicksilver Vial'),7);
+  assert.equal(stackCount(c.inventory,'Powdered Silver'),2);
+  assert.equal(c.items['Quicksilver Vial'].label,label);
+});
+
+test('all six DM prompts retain acquisition requirements across story modes',()=>{
+  const builds=[buildSystemPrompt,buildSystemPromptSonnet,buildSystemPromptSol,buildSystemPromptTerra,buildSystemPromptGrok43,buildSystemPromptGrok46];
+  for(const build of builds) for(const storyMode of ['arcs','continuous']) {
+    const c={...structuredClone(EMPTY_CHAR),name:'Test',race:{name:'Human'},cls:{name:'Fighter'},level:3,storyMode};
+    const p=build(c).static;
+    assert.equal(p.split('ACQUISITIONS ARE MANDATORY — NARRATION IS NOT INVENTORY').length-1,1,build.name);
+    assert.ok(p.includes('qty:0 is only a definition update, NEVER a new acquisition'),build.name);
+    assert.ok(p.includes('FINAL STATE CHECK — BEFORE SENDING'),build.name);
+    assert.ok(p.includes('tag any unrelated gains already completed before that ROLL'),build.name);
+  }
 });
