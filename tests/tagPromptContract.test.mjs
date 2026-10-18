@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
-import { TAGS_BLOCK } from '../src/prompts/tags.js';
+import { TAGS_BLOCK, FIRST_CONTACT_ROLL_RULES } from '../src/prompts/tags.js';
 import { parseDMItem } from '../src/constants/items.js';
 import { useCharacter } from '../src/hooks/character/useCharacter.js';
 import { EMPTY_CHAR } from '../src/hooks/character/defaults.js';
@@ -72,11 +72,14 @@ test('itemised collection adds every quantity, including additional copies of an
   assert.equal(c.items['Quicksilver Vial'].label,label);
 });
 
-test('all six DM prompts retain acquisition requirements across story modes',()=>{
+test('all six DM prompts retain acquisition and first-contact roll requirements across story modes and combat preferences',()=>{
   const builds=[buildSystemPrompt,buildSystemPromptSonnet,buildSystemPromptSol,buildSystemPromptTerra,buildSystemPromptGrok43,buildSystemPromptGrok46];
-  for(const build of builds) for(const storyMode of ['arcs','continuous']) {
-    const c={...structuredClone(EMPTY_CHAR),name:'Test',race:{name:'Human'},cls:{name:'Fighter'},level:3,storyMode};
+  for(const build of builds) for(const storyMode of ['arcs','continuous']) for(const combatFirst of [false,true]) {
+    const c={...structuredClone(EMPTY_CHAR),name:'Test',race:{name:'Human'},cls:{name:'Fighter'},level:3,storyMode,combatFirst};
     const p=build(c).static;
+    assert.equal(p.split(FIRST_CONTACT_ROLL_RULES).length-1,1,build.name);
+    assert.match(p,/numbered choice is NOT a declared attack/);
+    assert.match(p,/Imposed passive perception and saving throws remain allowed/);
     assert.equal(p.split('ACQUISITIONS ARE MANDATORY — NARRATION IS NOT INVENTORY').length-1,1,build.name);
     assert.ok(p.includes('qty:0 is only a definition update, NEVER a new acquisition'),build.name);
     assert.ok(p.includes('FINAL STATE CHECK — BEFORE SENDING'),build.name);

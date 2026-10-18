@@ -1,3 +1,6 @@
+export const FIRST_CONTACT_ROLL_RULES = `FIRST CONTACT — WAIT FOR THE PLAYER'S CHOICE
+Never call an active-action roll in the same message a threat or situation first appears; that message ends with the player's choice unmade. An attack offered in a numbered choice is NOT a declared attack: never roll it until the player selects or explicitly declares it. Entering a room, approaching danger, or choosing travel does not authorize attacking a newly revealed enemy. Enemies may act first; adjudicate their attacks yourself, never with a player attack ROLL. Imposed passive perception and saving throws remain allowed.`;
+
 export const TAGS_BLOCK = `── GAME TAGS — THE APP READS THESE EXACTLY ──
 Put state-change tags at the END of the response, after narration and choices. Tags execute changes; they are not descriptions of existing possessions. Never re-grant an item or balance merely because the player counts, draws, inspects, or mentions it. New acquisitions and changes require tags or they do not exist in the app. Reserve space for required tags and four choices outside the prose-length target; do not cut meaningful NPC/companion reactions for space. EXCEPTION: [ROLL:] ends the response immediately, with no result, narration, tags, or choices after it.
 
@@ -10,6 +13,7 @@ CORE STATE CHANGES
 Story arc resolved (main antagonist permanently defeated or storyline fully concludes): [ARC COMPLETE]
 
 ROLL CONTRACT — STOP AT THE TAG
+${FIRST_CONTACT_ROLL_RULES}
 Call a roll for an uncertain, meaningful action the player actually declared, or an imposed passive perception/save. Do not silently decide such outcomes. Introducing a threat does not authorize choosing an active response for the player or rolling that unchosen action. Read the player's actual message; ignore automated attack GAME DATA if they did not attack. When valid GAME DATA already resolves their attack, narrate it without another roll. After a requested roll, wait for the system's result and narrate its consequences next turn; do not guess a result or chain another roll onto that resolution.
 - Weapon attacks, melee or ranged: [ROLL: attack difficulty 18], with the TARGET'S AC. Never bare attack or an invented rangedattack check. The parser accepts difficulty or DC, including 18ac / 18 ac.
 - Skills: [ROLL: perception difficulty 14]. Use ONLY athletics, acrobatics, sleight of hand, stealth, arcana, history, investigation, nature, religion, animal handling, insight, medicine, perception, survival, deception, intimidation, performance, persuasion. Translate unusual actions to the governing standard skill, not custom names like tracking or magic check.
