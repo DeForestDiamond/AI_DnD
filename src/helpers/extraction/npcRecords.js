@@ -2,6 +2,7 @@ export const NPC_FIELDS = ['location','relationship','desc','race','role','appea
 
 export const NPC_RECORD_RULES = `Maintain reusable character profiles, not campaign recaps. Use only supplied records, transcript and authoritative player notes; never invent facts.
 - Preserve established identity and lasting traits, but rewrite old scene-heavy records into a concise profile. Do not keep adding chronology. Even with no new facts, clean up an existing event-heavy entry.
+- Keep temporary campaign state out of EVERY biography field, including relationship, status and notes: no "has not yet met Luna or Rook", meeting/visit flags, pending introductions or audiences, travel plans, invitations, active-case details, countdowns, temporary escorts/custody, or momentary reactions. These belong in campaign memory, not a reusable bio; never replace an obsolete "has not met" with a permanent "has met" flag. Retain durable trust, affection, family ties, allegiance, employment, preferences and lasting conditions without retelling the encounter that established them. The separate location field may identify the known place, but must not script an unfinished scene.
 - Omit incidental NPC names, places, ship names, villains, rescues, battles, travel, and completed events. Translate their lasting effects into present traits: "wary of cages and rough handling", not who trapped or rescued them and where. Do not carry old campaign plots into a future campaign.
 - Relationship: current trust, affection, allegiance, boundaries and meaningful ongoing commitments toward the player/party, usually 1-2 sentences. Use "the player" or "their trusted companion" rather than binding it to the current player's name. Keep another named companion only when that enduring bond matters; omit incidental third parties.
 - Durable preferences and meaningful possessions may remain, without donor/event attribution. A rope ball may be a favorite toy among several interests; it is not their defining purpose, obsession, automatic response, or entire personality. Do not turn one interaction into a permanent trait or every scene into the same joke. Balance playfulness with other demonstrated traits; do not invent balance by inventing traits.
@@ -21,3 +22,4 @@ export function npcRecordFields(record = {}) {
   }
   return result;
 }
+

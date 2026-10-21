@@ -27,9 +27,13 @@ try {
     assert(!('slots' in result.found.Luna));
     const rules = body.system || body.input[0].content[0].text;
     assert(rules.includes('not campaign recaps'));
+    assert(rules.includes('out of EVERY biography field'));
+    assert(rules.includes('no "has not yet met Luna or Rook"'));
+    assert(rules.includes('These belong in campaign memory'));
     assert(rules.includes('not their defining purpose'));
     assert(rules.includes('Destination: companions'));
     if (body.text) for (const key of NPC_FIELDS) assert(body.text.format.schema.properties.npcs.items.required.includes(key));
   }
 } finally { globalThis.fetch = originalFetch; }
 console.log('NPC helper field and request contract checks passed for all three providers');
+
