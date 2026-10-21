@@ -15,7 +15,8 @@ async function callAnthropic({ apiKey, maxTokens, system, messages }) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(`API error ${res.status}`);
-  return { text: data.content?.[0]?.text || '', usage: data.usage, rawData: data };
+  if (data.stop_reason === 'max_tokens') throw new Error('Anthropic history reply incomplete; previous memory retained');
+  return { text: (data.content || []).filter(x => x.type === 'text').map(x => x.text || '').join('\n'), usage: data.usage, rawData: data };
 }
 
 export async function callAnthropicArchive({ apiKey, entriesText }) {
@@ -72,3 +73,7 @@ NAMED PEOPLE: on first reference in this entry, give pronoun AND race — Harren
   return callAnthropic({ apiKey, maxTokens: 800, system, messages: [{ role: 'user', content: user }] });
 }
 
+
+export async function callAnthropicMemory({ apiKey, developer, user }) {
+  return callAnthropic({ apiKey, maxTokens: 6500, system: developer, messages: [{ role: 'user', content: user }] });
+}

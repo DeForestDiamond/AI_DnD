@@ -29,7 +29,7 @@ import { callGptConsolidate } from './helpers/openai/consolidate.js';
 import { armAnthropicCacheKeepWarm, cancelAnthropicCacheKeepWarm } from './helpers/anthropic/cache.js';
 import { createPromptRecorder } from './helpers/debug/promptLog.js';
 import { makeUsageEntry, snapshotCacheState, diffCacheState } from './helpers/debug/tokenCostLog.js';
-import { createSummaryManager, parseSummary, formatSummaryForApi } from './helpers/history/manager.js';
+import { createSummaryManager, parseSummary, formatSummaryForApi, coveredMessageCount, legacyHistoryStart } from './helpers/history/manager.js';
 import { createExtractionManager } from './helpers/extraction/manager.js';
 import { createItemManager } from './helpers/items/manager.js';
 
@@ -226,7 +226,7 @@ export default function App() {
     storySummaryRef.current = summary;
     setTokenCostLog(savedTokenCostLog); tokenCostLogRef.current = savedTokenCostLog;
     cacheStateRef.current = savedCacheState;
-    initSummarizedAt(msgs.length, summary);
+    initSummarizedAt(msgs.length, summary, msgs);
     queuePostLoadModals(char);
     setPhase('playing');
   };
@@ -271,7 +271,7 @@ export default function App() {
     onLoadCharacter: applyLoadedCharacter,
   });
 
-  const { initSummarizedAt, toggleSummaryEntry, maybeAutoSummarize } = createSummaryManager({
+  const { initSummarizedAt, toggleSummaryEntry, toggleMemoryMode, maybeAutoSummarize } = createSummaryManager({
     lastSummarizedAt, storySummaryRef, setStorySummary, charRef, fullLogRef, save, selectedModel, MODEL_CONFIGS,
     apiKey, openAiApiKey, xAiApiKey, log, logUsage, SUMMARIZE_AFTER, KEEP_RECENT, ENTRIES_BEFORE_COMPRESS, COMPRESS_KEEP_RECENT_ENTRIES,
   });
@@ -596,7 +596,8 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     // summarized, and makes the window append-only between summarizations so
     // the message-prefix cache actually gets hits instead of paying write cost
     // every turn. Guard: always send at least the last KEEP_RECENT messages.
-    const coveredCount = Math.max(0, lastSummarizedAt.current - KEEP_RECENT);
+    const summaryState = parseSummary(rawSummary);
+    const coveredCount = coveredMessageCount(summaryState,base) ?? (summaryState.memoryMode === 'legacy' ? legacyHistoryStart(summaryState,base.length) : 0);
     const start = Math.min(coveredCount, Math.max(0, base.length - KEEP_RECENT));
     const source = base.slice(start);
     const apiMsgs = source.map(m => ({
@@ -620,6 +621,18 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     const controller = new AbortController();
     abortRef.current = controller;
     const signal = controller.signal;
+
+    // First-use migration finishes before any encounter/attack is rolled or
+    // history is sent. On failure keep the old save intact and expose rollback.
+    const pendingMemory = parseSummary(storySummaryRef.current);
+    if (storySummaryRef.current && pendingMemory.memoryMode !== 'legacy' && !pendingMemory.memory) {
+      await maybeAutoSummarize(fullLogRef.current);
+      if (fullLogRef.current.length >= SUMMARIZE_AFTER && !parseSummary(storySummaryRef.current).memory) {
+        setApiError('Campaign memory could not be built. Your original history is intact. Retry, or switch to original archives in Story Log.');
+        abortRef.current = null; setLoading(false); return;
+      }
+    }
+    if (signal.aborted) { abortRef.current = null; setLoading(false); return; }
 
     // Detect "please continue" — skip attack context, inject resume instruction
     const isContinue = /^\s*(please\s+)?(continue|finish|go on|keep going|finish the scene|resume|you got cut off|message got cut off|got cut off|finish the story|finish that|finish your)\b/i.test(userMsg.trim());
@@ -800,7 +813,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     setFullLog(truncated);
     fullLogRef.current = truncated;
     // Reset summarization threshold so it fires correctly at the new log length
-    lastSummarizedAt.current = Math.floor(truncated.length / SUMMARIZE_AFTER) * SUMMARIZE_AFTER;
+    initSummarizedAt(truncated.length, storySummaryRef.current, truncated);
     await handleSend(newText, truncated);
   };
 
@@ -813,7 +826,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     const truncated = log.slice(0, actualIdx);
     setFullLog(truncated);
     fullLogRef.current = truncated;
-    lastSummarizedAt.current = Math.floor(truncated.length / SUMMARIZE_AFTER) * SUMMARIZE_AFTER;
+    initSummarizedAt(truncated.length, storySummaryRef.current, truncated);
     await handleSend(lastUserMsg.text, truncated);
   };
 
@@ -1416,11 +1429,24 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           <div style={{background:'rgba(30,20,5,0.85)',borderBottom:`1px solid ${colors.borderDim}`,padding:'7px 16px',display:'flex',alignItems:'flex-start',gap:8,flexShrink:0,maxHeight:160,overflowY:'auto'}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontFamily:fonts.display,fontSize:10,color:colors.gold,letterSpacing:2,marginBottom:2}}>STORY LOG</div>
-              <div style={{fontSize:9,color:colors.textFaint,marginBottom:6,lineHeight:1.4}}>Uncheck an entry to stop sending it to the DM once it's no longer relevant.</div>
+              <div style={{fontSize:9,color:colors.textFaint,marginBottom:6,lineHeight:1.4}}>Layered memory keeps current facts and lasting memories together. Original records remain available below.</div>
               {(() => {
                 const obj = parseSummary(storySummary);
                 return (
                   <div>
+                    <button onClick={toggleMemoryMode} disabled={loading} style={{background:'transparent',border:`1px solid ${colors.borderDim}`,color:colors.gold,cursor:'pointer',fontSize:11,padding:'4px 8px',marginBottom:8}}>
+                      {obj.memoryMode === 'legacy' ? 'Try layered memory' : 'Switch to original archives'}
+                    </button>
+                    {obj.memoryMode !== 'legacy' && obj.memory && (
+                      <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.6,whiteSpace:'pre-wrap',marginBottom:10}}>
+                        {Object.entries({corrections:'Corrections',continuity:'Current continuity',history:'Lasting memories',recent:'Recent events'}).map(([key,label]) => obj.memory[key] ? (
+                          <div key={key} style={{marginBottom:8}}><strong style={{color:colors.gold}}>{label}</strong><div>{obj.memory[key]}</div></div>
+                        ) : null)}
+                      </div>
+                    )}
+                    {obj.memoryMode !== 'legacy' && !obj.memory && <div style={{fontSize:11,color:colors.textFaint,marginBottom:8}}>Layered memory will build on the next eligible turn. Existing history remains available until it succeeds.</div>}
+                    <details>
+                    <summary style={{fontSize:11,color:colors.gold,cursor:'pointer',marginBottom:8}}>{obj.memoryMode !== 'legacy' && obj.memory ? 'Stored source records (not sent with layered memory)' : 'Original story records'}</summary>
                     {obj.chunks.map((chunk, i) => (
                       <div key={chunk.id || i} style={{marginBottom:8,opacity:chunk.excluded?0.4:1}}>
                         <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
@@ -1439,6 +1465,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
                         <span style={{fontSize:11,color:colors.textFaint,lineHeight:1.6,whiteSpace:'pre-wrap',textDecoration:entry.excluded?'line-through':'none'}}>{entry.text}</span>
                       </div>
                     ))}
+                    </details>
                   </div>
                 );
               })()}
@@ -1452,7 +1479,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           characterEmoji={character.cls?.emoji}
           onEditMessage={handleEditMessage}
           onRegenerate={handleRegenerate}
-          editableFromId={fullLog[lastSummarizedAt.current]?.id ?? fullLog[0]?.id}
+          editableFromId={fullLog[coveredMessageCount(parseSummary(storySummary),fullLog) ?? 0]?.id}
           showRawTags={showRawTags}
         />
 

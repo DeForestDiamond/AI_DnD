@@ -92,3 +92,8 @@ Do not repeat the same fact in multiple phrasings. Do not add interpretation or 
   return callText({ apiKey, model, developer, user: `ARCHIVE THESE ENTRIES:\n\n${entriesText}`, maxOutputTokens: 1600 });
 }
 
+
+// Shared three-layer memory protocol; transport follows this provider's existing helper.
+export async function callGptMemory({ apiKey, model, developer, user }) {
+  return callText({ apiKey, model, developer, user, maxOutputTokens: 6500 });
+}
