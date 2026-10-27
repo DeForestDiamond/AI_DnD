@@ -65,7 +65,7 @@ export function correctionEvidence(messages) {
 // treats this old count-based estimate as committed coverage.
 export const legacyHistoryStart = (obj,length,interval=12,keep=4,perChunk=4) => Math.max(0,Math.min(length-keep,Math.max((obj.chunks.length*perChunk+obj.entries.length)*interval,Math.floor(length/interval)*interval)-keep));
 
-export const transcript = messages => messages.map(m => `${m.role === 'dm' ? 'DM' : 'PLAYER'}: ${m.text || ''}`).join('\n\n');
+export const transcript = (messages, startIndex = null) => messages.map((m,i) => `${startIndex === null ? '' : `MESSAGE ${startIndex+i+1}\n`}${m.role === 'dm' ? 'DM' : 'PLAYER'}: ${m.text || ''}`).join('\n\n');
 
 export function memoryRequest({ obj, messages, start, end, playerName }) {
   const bootstrap = !hasMemory(obj);
@@ -73,9 +73,15 @@ export function memoryRequest({ obj, messages, start, end, playerName }) {
   // corrections from the entire retained transcript. Never re-send all history
   // on every update; ordinary updates use the exact committed coverage boundary.
   const evidenceStart = bootstrap && (obj.chunks.length || obj.entries.length) ? Math.max(0,end-48) : start;
+  // A full rebuild must reconcile old sources with all original corrections.
+  // Incremental updates already have repaired memory: replaying old retcons
+  // forever would turn a historical correction into a permanent world rule.
+  const correctionStart = bootstrap ? 0 : start;
+  const correctionSet = new Set(correctionEvidence(messages.slice(correctionStart)));
+  const corrections = messages.map((m,i) => correctionSet.has(m) ? transcript([m],i) : '').filter(Boolean).join('\n\n');
   return {
     developer: MEMORY_RULES,
-    user: `PLAYER: ${playerName || 'the adventurer'}\n\n${bootstrap ? 'LEGACY HISTORY TO RECONCILE (older snapshots, NOT all current):\n'+formatLegacySummary(obj) : 'PREVIOUS COMPLETE MEMORY:\n'+JSON.stringify(obj.memory)}\n\nMESSAGES TO INCORPORATE${bootstrap ? ' (includes overlap; do not repeat events)' : ''}:\n${transcript(messages.slice(evidenceStart,end))}\n\nPLAYER CORRECTIONS — authoritative, may invalidate any older history:\n${transcript(correctionEvidence(messages)) || '(none)'}\n\nEVENTS AFTER THE COVERAGE BOUNDARY — context/corrections only, not new summarized events:\n${transcript(messages.slice(end)) || '(none)'}\n\nReturn the complete replacement memory JSON, not a patch.`,
+    user: `PLAYER: ${playerName || 'the adventurer'}\n\n${bootstrap ? 'LEGACY HISTORY TO RECONCILE (older snapshots, NOT all current):\n'+formatLegacySummary(obj) : 'PREVIOUS COMPLETE MEMORY:\n'+JSON.stringify(obj.memory)}\n\nMESSAGES TO INCORPORATE${bootstrap ? ' (includes overlap; do not repeat events)' : ''}:\n${transcript(messages.slice(evidenceStart,end),evidenceStart)}\n\nPLAYER CORRECTIONS — authoritative edits at the numbered source position; reconcile later developments:\n${corrections || '(none)'}\n\nEVENTS AFTER THE COVERAGE BOUNDARY — context/corrections only, not new summarized events:\n${transcript(messages.slice(end),end) || '(none)'}\n\nReturn the complete replacement memory JSON, not a patch.`,
   };
 }
 
@@ -87,7 +93,9 @@ HISTORY: preserve enduring outcomes, consequential decisions, irreversible losse
 
 RECENT: a brief bridge of NEW completed developments and the immediate unresolved handoff, normally 80–180 words. Do not retell the previous bridge or import later-context events. An uneventful chunk may be shorter. Preserve why people are present and the causal link needed to continue the scene.
 
-CORRECTIONS: a compact register of explicit player retcons/important fact corrections that must override older material. Remove invalidated events from ALL other fields, even if frozen archives claim otherwise. Record the correction, not the false event as something that happened. Do not confuse in-character lies or speculation with player corrections. Later-context corrections apply immediately; other later events remain unsummarized.
+CORRECTIONS — APPLY, THEN RETIRE: this is a temporary queue for edits that still cannot be fully reconciled, NOT a permanent register. Apply each explicit player correction directly to continuity, history and recent in the SAME replacement: replace wrong facts, remove invalidated events and repair dependent claims. Once those fields reflect the correction, REMOVE its queue entry; return corrections as an empty string when none remain pending. Clean up previously carried correction registers too. Do not retain applied corrections as reminders, repeat them as negative history ("there was no attack"), or keep them just because unused backup archives still contain old errors. Preserve the corrected positive fact where it belongs, when still relevant, rather than discarding the fact along with the reminder. If the evidence cannot resolve a conflict, keep only that specific pending issue until it can be reconciled. Do not confuse in-character lies or speculation with player corrections. Later-context corrections apply immediately; other later events remain unsummarized.
+
+CORRECTION CHRONOLOGY: numbered messages identify WHEN an edit applies. A correction overrides the erroneous claim at that point in the story; it is not a permanent prohibition against later events. Reconcile subsequent established developments in order. Example: "Samira has not met Rook yet" can correct a premature introduction; if she then actually meets him, retain the real meeting and retire the old correction. Do not let that earlier edit undo the later meeting or reset their familiarity.
 
 FACTUAL ACCURACY: source messages and explicit player corrections take precedence over summaries. Distinguish proposals from completed actions, quoted allegations from proven facts, suspicion from guilt, and narrator knowledge from what EACH NPC actually learned and how. Preserve selective disclosure: private knowledge is not automatically shared. Escaping a palace is not escaping its city. Preserve locations, quantities, names, and causal relationships exactly; do not add interpretation. Retain known species/pronouns without inventing unknown ones. Relative dates belong to the moment spoken; anchor them to established events rather than presenting an old countdown as current. Do not advance the calendar without evidence.
 

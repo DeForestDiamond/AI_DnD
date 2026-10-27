@@ -12,6 +12,13 @@ Layered mode sends the latest memory and all messages after committed coverage,
 not the entire accumulated archive. The helper rewrites the full memory using
 new messages, previous memory, and explicit player-correction evidence. Unresolved
 commitments and personal memories have soft length guidance, not deletion limits.
+Corrections are applied to the memory fields and then retired. The correction
+field holds only unresolved reconciliation issues. Normal updates include new
+correction evidence with source-message positions, not the entire old correction
+transcript. Rebuilds still consult all source corrections so unused old archives
+cannot restore a retconned event. Later events may supersede a corrected fact;
+an old "not met yet" correction does not undo a subsequent real introduction.
+
 All providers share the same prompt and JSON validation. No provider/model change
 is part of this feature.
 

@@ -152,3 +152,55 @@ test('original-mode archive failure retains entries and their exact coverage',as
     assert.equal(out.entries.length,6);assert.equal(out.chunks.length,0);assert.equal(out.coverage.count,24);
   } finally {global.fetch=oldFetch;}
 });
+
+test('incremental correction evidence excludes covered edits and numbers new and tail edits',()=>{
+  const ms=messages(28);
+  ms[4].text='DM, correction: OLD RETIRED EDIT.';
+  ms[12].text='DM, correction: NEW EDIT.';
+  ms[26].text='DM, correction: TAIL EDIT.';
+  const obj={chunks:[],entries:[],memory:{...memory(),corrections:''},coverage:coverageFor(ms,12)};
+  const req=memoryRequest({obj,messages:ms,start:12,end:24,playerName:'Cassian'});
+  assert.ok(!req.user.includes('OLD RETIRED EDIT'));
+  const edits=req.user.split('PLAYER CORRECTIONS —')[1].split('EVENTS AFTER THE COVERAGE BOUNDARY')[0];
+  assert.match(edits,/MESSAGE 13\nPLAYER: DM, correction: NEW EDIT/);
+  assert.match(edits,/MESSAGE 27\nPLAYER: DM, correction: TAIL EDIT/);
+  const target=req.user.split('MESSAGES TO INCORPORATE:')[1].split('PLAYER CORRECTIONS')[0];
+  assert.ok(!target.includes('TAIL EDIT'));
+});
+
+test('a full archive rebuild rechecks original corrections even after incremental retirement',()=>{
+  const ms=messages(100);ms[4].text='DM, correction: discard the mistaken early introduction.';
+  const base={chunks:[{text:'A mistaken introduction.',sessions:'old'}],entries:[],memory:{...memory(),corrections:''}};
+  const incremental=memoryRequest({obj:base,messages:ms,start:88,end:96,playerName:'Cassian'});
+  assert.ok(!incremental.user.includes('discard the mistaken early introduction'));
+  const rebuild=memoryRequest({obj:{...base,memory:null},messages:ms,start:88,end:96,playerName:'Cassian'});
+  assert.match(rebuild.user,/MESSAGE 5\nPLAYER: DM, correction: discard the mistaken early introduction/);
+  assert.match(MEMORY_RULES,/not a permanent prohibition against later events/);
+  assert.match(MEMORY_RULES,/retain the real meeting and retire the old correction/);
+});
+
+test('retirement commits with repaired memory, survives reload and does not replay the old edit',async()=>{
+  const oldFetch=global.fetch;
+  const ms=messages(28);ms[4].text='DM, correction: Samira has not met Rook yet.';
+  ms[15].text='Samira meets Rook and he calmly accepts her touch.';
+  const pending={continuity:'Samira and Rook are comfortable together.',history:'Samira met Rook.',recent:'They returned home.',corrections:'Samira has not met Rook yet.'};
+  const obj={chunks:[],entries:[],memory:pending,coverage:coverageFor(ms,12)};
+  const h=harness({raw:JSON.stringify(obj),count:28});h.fullLogRef.current=ms;
+  try {
+    global.fetch=async()=>response('{incomplete');
+    await h.manager.maybeAutoSummarize(ms);
+    assert.deepEqual(parseSummary(h.storySummaryRef.current).memory,pending);
+    const fixed={...pending,corrections:''};
+    global.fetch=async()=>response(JSON.stringify(fixed));
+    await h.manager.maybeAutoSummarize(ms);
+    const saved=parseSummary(h.storySummaryRef.current);
+    assert.equal(saved.memory.corrections,'');assert.equal(saved.coverage.count,24);
+    const formatted=formatSummaryForApi(saved);
+    assert.match(formatted,/Samira met Rook/);assert.ok(!formatted.includes('has not met Rook yet'));
+    assert.ok(!formatted.includes('[AUTHORITATIVE CORRECTIONS]'));
+    const reloaded=parseSummary(JSON.stringify(saved));
+    const next=memoryRequest({obj:reloaded,messages:[...ms,...messages(12)],start:24,end:36,playerName:'Cassian'});
+    assert.ok(!next.user.includes('has not met Rook yet'));
+    assert.match(next.user,/Samira met Rook/);
+  } finally {global.fetch=oldFetch;}
+});
