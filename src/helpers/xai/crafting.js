@@ -1,3 +1,4 @@
+import { CRAFTING_MATERIAL_RULES } from '../craftingMaterials.js';
 import { CRAFTING_PRESERVATION_RULES } from '../craftingPreservation.js';
 // Grok-specific crafting helper prompt, request path, and output contracts.
 // Provider-specific request handling lives here; inventory mutation remains shared game logic.
@@ -179,7 +180,7 @@ export function buildGrokCraftingPrompt({ materialsText, characterLevel, intent 
   const request = intent.trim()
     ? `PLAYER REQUEST\n${intent.trim()}\n\nIMPORTANT: Treat this as the design target, not a suggestion. Keep every proposal focused on fulfilling it.`
     : 'PLAYER REQUEST\nNo specific design requested. Propose what these materials most naturally support.';
-  return `${BASE_RULES}\n\n${CRAFTING_PRESERVATION_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${batchRules}${batchRules ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
+  return `${BASE_RULES}\n\n${CRAFTING_MATERIAL_RULES}\n\n${CRAFTING_PRESERVATION_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${batchRules}${batchRules ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
 }
 
 export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {

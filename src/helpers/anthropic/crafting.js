@@ -1,3 +1,4 @@
+import { CRAFTING_MATERIAL_RULES } from '../craftingMaterials.js';
 import { CRAFTING_PRESERVATION_RULES } from '../craftingPreservation.js';
 export const ANTHROPIC_CRAFTING_MODEL = 'claude-sonnet-4-5';
 
@@ -65,7 +66,7 @@ TYPE AND MECHANICS:
 - Labels may be concise for simple items, but there is NO hard label length target for upgraded/complex items. Preserve all distinct capabilities first; remove only redundant prose, not functions/effects.
 - Charges/per-day effects are narrative text; there is no charge counter.
 - ${levelNote}${constructRules}${setRules}${batchRules}
-${CRAFTING_PRESERVATION_RULES}\n\nRespond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`;
+${CRAFTING_MATERIAL_RULES}\n\n${CRAFTING_PRESERVATION_RULES}\n\nRespond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`;
 
   const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:ANTHROPIC_CRAFTING_MODEL,max_tokens:asSet||asConstruct?4000:3000,system,messages:[{role:'user',content:`MATERIALS AVAILABLE:\n${materialsText}\n\n${wantNote}\n\nRespond with ONLY the JSON now.`}]})});
   const data=await res.json(); if(!res.ok)throw new Error(`API error ${res.status}`);
