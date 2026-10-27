@@ -4,7 +4,7 @@ import { EMPTY_CHAR } from '../src/hooks/character/defaults.js';
 import { CONFLICT_RESISTANCE_BLOCK } from '../src/prompts/conflict.js';
 import { SETTING_SOCIAL_RULES } from '../src/prompts/socialNorms.js';
 import { PLAYER_AGENCY_BLOCK } from '../src/prompts/playerAgency.js';
-import { FIRST_CONTACT_ROLL_RULES } from '../src/prompts/tags.js';
+import { FIRST_CONTACT_ROLL_RULES, ROLL_RESOLUTION_RULES } from '../src/prompts/tags.js';
 import { CHARACTER_CHOICES_BLOCK as fullChoices } from '../src/prompts/shared.js';
 import { CHARACTER_CHOICES_BLOCK as leanChoices } from '../src/prompts/sharedLow.js';
 import { buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46 } from '../src/hooks/useGame.js';
@@ -45,8 +45,8 @@ for(const [build,choices,before] of cases) {
     // lives in the system block rather than on the outgoing user message.
     const p=build({...character(),arc:null});
     // Measure the consolidation against its old baseline, excluding the
-    // deliberately restored first-contact safeguard added after that cleanup.
-    assert.ok(Object.values(p).join('').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').length < before);
+    // deliberately restored roll safeguards added after that cleanup.
+    assert.ok(Object.values(p).join('').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
   });
 }
 
