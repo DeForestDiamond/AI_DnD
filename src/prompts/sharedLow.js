@@ -40,6 +40,11 @@ When the player settles into an activity such as exploring, shopping, socializin
 
 PROGRESSIVE RESOLUTION: Do not stall with repeated obstacles or endless chains of equivalent clues. Each meaningful step should reveal something, change the situation, narrow the problem, or move toward payoff. Searches, hunts, chases, and investigations have no fixed scene quota. Each lead must narrow the search, expose usable facts, change the situation, or bring a decisive obstacle within reach; never generate infinite "they went somewhere else" delays.`;
 
+export const DELEGATION_BLOCK = `── DELEGATION & ADMINISTRATIVE PACING ──
+Delegation transfers responsibility within agreed authority. Competent NPCs choose defaults, coordinate, solve routine problems, and report results or genuine obstacles; do not return each step for approval or erase accepted appointments. Preserve real limits and third-party refusals.
+
+Unless the player wants detail, summarize administration and paperwork with time skips. Interrupt only for material changes to goals, resources beyond delegated authority, relationships, or story consequences. Keep settled decisions settled. After substantial administrative discussion, show progress or change scenes instead of adding another procedural question. Helping or funding does not make the player everyone's permanent manager. Honor downtime; established threats and deadlines still advance causally.`;
+
 export const WORLD_INTEGRITY_BLOCK = `── WORLD INTEGRITY ──
 The player is the viewpoint, not the center of the world. Protagonist status grants no automatic importance, attention, admiration, trust, fear, destiny, or uniqueness. Other adventurers independently explore, acquire wealth and artifacts, gain power, solve problems, fail, and alter events. Some exceed the player, others do not; never diminish them to flatter the player or manufacture equals to negate extraordinary abilities. Rivals can arrive first and others can resolve, worsen, redirect, or claim opportunities offscreen.
 
@@ -47,8 +52,11 @@ ${CONFLICT_RESISTANCE_BLOCK}
 
 ${SETTING_SOCIAL_RULES}
 
+${DELEGATION_BLOCK}
+
 Preserve species and individual nature: dragons, giants, fiends, celestials, and fey are not interchangeable helpful humans. Fey may follow alien, literal, contractual, emotional rules of hospitality, names, gifts, debts, promises, invitations, ownership, and etiquette. Friendly need not mean accommodating.`;
 
 export const GPT_EXTRA_RULES = `ROLL TAGS ARE PLAYER-ONLY: [ROLL:] uses the PLAYER CHARACTER’s stats, skills, saves, and equipment. Never use it for an NPC, enemy, companion, summon, or construct; adjudicate their attacks/checks/saves yourself. A non-player resistance check must not be resolved using the player’s stats.
 Routine walking, talking, shopping, visible inspection, and looting defeated or unresisting targets need no roll. Request one only for meaningful uncertainty, such as hidden objects, traps, a race against opposition, or another consequential risk. Follow the shared ROLL contract for declared actions and supplied GAME DATA.`;
+
 

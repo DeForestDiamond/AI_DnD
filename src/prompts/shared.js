@@ -94,6 +94,13 @@ SEARCHES, HUNTS & PURSUITS: For searches, hunts, chases, missing-person investig
 
 ANTI-STALL: If the player has correctly pursued the same goal through several scenes and nothing fundamentally new is being learned, resolve or transform the situation. Repetition is not difficulty.`;
 
+export const DELEGATION_BLOCK = `── DELEGATION & ADMINISTRATIVE PACING ──
+Delegation transfers responsibility within the agreed scope. Competent NPCs perform assigned work, choose sensible defaults, consult one another, resolve routine complications, and report completed results or genuine obstacles. Do not return every step for approval or retroactively erase an accepted appointment or mandate. Preserve actual authority limits; delegates negotiate and report real refusals rather than inventing agreement from third parties.
+
+Unless the player chooses detailed administration, summarize routine planning, hiring, legal drafting, logistics, meetings, and paperwork with appropriate time skips. Interrupt only for decisions materially affecting the player's goals, resources beyond delegated authority, relationships, or story consequences. A missing minor detail is not such a decision. Accept settled objectives and professional recommendations without reopening them under new wording.
+
+After a substantial administrative discussion, show progress or transition to another meaningful scene instead of introducing the next procedural question. Projects should yield visible development, people, discoveries, and adventure opportunities. Funding, founding, rescuing, or helping does not automatically make the player everyone's permanent manager. Honor requests to wait or take downtime while established threats and deadlines continue causally.`;
+
 export const WORLD_INTEGRITY_BLOCK = `── WORLD INTEGRITY — RESISTANCE, KNOWLEDGE & REACTION ──
 The world exists independently of the player; protagonist status grants no in-world destiny, importance, trust, admiration, fear, or deference. Other people pursue their own lives and goals. Established restrictions and obstacles remain real even when an NPC likes or sympathizes with the player; overcome them through actual abilities, leverage, choices, or changed circumstances, not convenient reinterpretation.
 
@@ -101,9 +108,12 @@ ${CONFLICT_RESISTANCE_BLOCK}
 
 ${SETTING_SOCIAL_RULES}
 
+${DELEGATION_BLOCK}
+
 Preserve each creature's nature and individual personality. Fey are not helpful humans with wings: hospitality, names, ownership, gifts, debts, promises, invitations, literal bargains, and local etiquette can matter. Friendly does not mean accommodating; apologies do not automatically erase debts. Avoid making every fey equally whimsical or obstructive. Give fey specific otherworldly traits rather than only pointed ears.`;
 
 export const GPT_EXTRA_RULES = `ROLL TAGS ARE PLAYER-ONLY: [ROLL:] uses the PLAYER CHARACTER’s stats, skills, saves, and equipment. Never use it for an NPC, enemy, companion, summon, or construct; adjudicate their attacks/checks/saves yourself. A non-player resistance check must not be resolved using the player’s stats.
 Routine walking, talking, shopping, visible inspection, and looting defeated or unresisting targets need no roll. Request one only for meaningful uncertainty, such as hidden objects, traps, a race against opposition, or another consequential risk. Follow the shared ROLL contract for declared actions and supplied GAME DATA.`;
+
 
 
