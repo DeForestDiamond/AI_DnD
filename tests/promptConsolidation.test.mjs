@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EMPTY_CHAR } from '../src/hooks/character/defaults.js';
 import { CONFLICT_RESISTANCE_BLOCK } from '../src/prompts/conflict.js';
-import { SETTING_SOCIAL_RULES } from '../src/prompts/socialNorms.js';
+import { SETTING_SOCIAL_RULES, MORALIZING_RULES } from '../src/prompts/socialNorms.js';
 import { PLAYER_AGENCY_BLOCK } from '../src/prompts/playerAgency.js';
 import { FIRST_CONTACT_ROLL_RULES, ROLL_RESOLUTION_RULES } from '../src/prompts/tags.js';
-import { CHARACTER_CHOICES_BLOCK as fullChoices } from '../src/prompts/shared.js';
-import { CHARACTER_CHOICES_BLOCK as leanChoices } from '../src/prompts/sharedLow.js';
+import { CHARACTER_CHOICES_BLOCK as fullChoices, DELEGATION_BLOCK as fullDelegation } from '../src/prompts/shared.js';
+import { CHARACTER_CHOICES_BLOCK as leanChoices, DELEGATION_BLOCK as leanDelegation } from '../src/prompts/sharedLow.js';
 import { buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46 } from '../src/hooks/useGame.js';
 
 const character=()=>({...structuredClone(EMPTY_CHAR),name:'Test',race:{name:'Human'},cls:{name:'Fighter'},level:3,hp:12,maxHp:12});
@@ -29,6 +29,10 @@ for(const [build,choices,before] of cases) {
           const p=build(c);
           assert.equal(copies(p.static,CONFLICT_RESISTANCE_BLOCK),1);
           assert.equal(copies(p.static,SETTING_SOCIAL_RULES),1);
+          assert.equal(copies(p.static,MORALIZING_RULES),1);
+          const delegation=[buildSystemPromptSonnet,buildSystemPromptSol,buildSystemPromptGrok46].includes(build) ? fullDelegation : leanDelegation;
+          assert.equal(copies(p.static,delegation),1);
+          assert.equal(copies(p.static,'── DELEGATION & ADMINISTRATIVE PACING ──'),1);
           assert.equal(copies(p.static,'NPC KNOWLEDGE HAS A SOURCE.'),1);
           assert.equal(copies(p.static,'GENDER BALANCE APPLIES WITHIN ROLES'),1);
           assert.equal(copies(p.static,PLAYER_AGENCY_BLOCK),choices?1:0);
@@ -45,8 +49,9 @@ for(const [build,choices,before] of cases) {
     // lives in the system block rather than on the outgoing user message.
     const p=build({...character(),arc:null});
     // Measure the consolidation against its old baseline, excluding the
-    // deliberately restored roll safeguards added after that cleanup.
-    assert.ok(Object.values(p).join('').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
+    // deliberately restored roll safeguards and new behavioral rules added
+    // after that cleanup. Their single inclusion is checked above.
+    assert.ok(Object.values(p).join('').replace(`\n\n${MORALIZING_RULES}`,'').replace(`\n\n${fullDelegation}`,'').replace(`\n\n${leanDelegation}`,'').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
   });
 }
 
@@ -65,3 +70,4 @@ test('model-specific narration and pacing choices survive consolidation',()=>{
   assert.match(grok43,/NO target paragraph count/);
   assert.ok(!grok43.includes(PLAYER_AGENCY_BLOCK));
 });
+
