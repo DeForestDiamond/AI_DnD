@@ -90,6 +90,7 @@ export const buildCharBlock = (char) => {
   const gearBlock = [
     `EQUIPPED: ${equippedList}`,
     detailsFor(stableNames) ? `WORN GEAR — what they do:\n${detailsFor(stableNames)}` : '',
+    buildCompanionGearSection(char),
     buildConstructSection(char),
   ].filter(Boolean).join('\n');
   // Tier 2 — everything carried. Changes whenever loot arrives.
@@ -140,6 +141,42 @@ Weapon: ${weaponLine}${sneakLine}${focusLine}
 
 // ── Shared context sections (bio, companions, NPCs, towns) ─────────────────────
 // Arc objectives are disabled; see DISABLED_arc_objectives.md for the retained UI/storage/tag machinery.
+
+// Companion slots contain item names; their shared definitions remain in
+// char.items after equipping removes them from the player's inventory. Keep
+// this with gear rather than biographies so gear changes preserve that cache.
+export const buildCompanionGearSection = (char) => {
+  const excluded = char.contextExclusions?.companions || {};
+  const lines = [];
+  const names = new Set();
+  for (const [name, companion] of Object.entries(char.companions || {})) {
+    if (excluded[name]) continue;
+    const slots = Object.entries(companion?.slots || {}).filter(([, item]) => item);
+    if (!slots.length) continue;
+    lines.push(`- ${name}: ${slots.map(([slot, item]) => `${slot}: ${item}`).join(', ')}`);
+    slots.forEach(([, item]) => names.add(item));
+  }
+  if (!lines.length) return '';
+  const details = [...names].map(name => {
+    const item = char.items?.[name];
+    if (!item) return '';
+    const mechanics = [
+      item.damage ? `Base damage: ${item.damage}` : '',
+      item.damageBonus ? `Damage bonus: ${item.damageBonus}` : '',
+      item.bonus ? `Weapon bonus: ${item.bonus}` : '',
+      item.ac != null ? `${item.type === 'shield' ? 'Shield AC bonus' : 'Base AC'}: ${item.ac}` : '',
+      item.dexBonus ? `Adds Dexterity modifier${item.maxDex != null ? ` (maximum ${item.maxDex})` : ''}` : '',
+      item.range ? `Range: ${item.range}` : '',
+      item.finesse ? 'Finesse' : '',
+      ...(item.extras || []).map(extra => `Extra damage: ${extra.dice} ${extra.type}`),
+      ...Object.entries(item.bonuses || {}).map(([stat, bonus]) => `${stat} bonus: ${bonus}`),
+      item.label || '',
+    ].filter(Boolean).join('; ');
+    return mechanics ? `- ${name}: ${mechanics}` : '';
+  }).filter(Boolean);
+  return `COMPANION EQUIPMENT (equipped by the named companion, not the player):\n${lines.join('\n')}` +
+    (details.length ? `\nCOMPANION GEAR — what they do:\n${details.join('\n')}` : '');
+};
 
 // Constructs & bound entities — owned and commanded, not worn. Derived from the
 // carried inventory (the stash is invisible to the DM by design, which is the
@@ -250,6 +287,7 @@ export const buildCtxSections = (char) => {
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────
+
 
 
 

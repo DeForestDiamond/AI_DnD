@@ -7,7 +7,7 @@ import { coinsToString } from '../constants/currency.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
 import { subclassPromptLines } from '../constants/subclasses.js';
 import { stackCounts } from '../utils/itemStacks.js';
-import { buildCtxSections, buildConstructSection, playstyleLine, directivesBlock } from './state.js';
+import { buildCtxSections, buildConstructSection, buildCompanionGearSection, playstyleLine, directivesBlock } from './state.js';
 import { PLAYER_AGENCY_BLOCK, CHARACTER_CHOICES_BLOCK, SETTING_BLOCK, NPC_BLOCK, WORLD_INTEGRITY_BLOCK, ARC_RULES_BLOCK } from './sharedLow.js';
 import { TAGS_BLOCK } from './tags.js';
 
@@ -71,6 +71,7 @@ export const buildSystemPrompt = (char) => {
   const gearBlock = [
     `EQUIPPED: ${equippedList}`,
     detailsFor(stableNames) ? `WORN GEAR — what they do:\n${detailsFor(stableNames)}` : '',
+    buildCompanionGearSection(char),
     buildConstructSection(char),
   ].filter(Boolean).join('\n');
   const itemsBlock = [
@@ -227,6 +228,7 @@ Usually 250–450 words, flexing with complexity; preserve relevant character re
 // ── GPT-only DM rules ──────────────────────────────────────────────────────────
 // These are written directly into the GPT prompt. Do not mutate the finished
 // prompt with runtime .replace() chains; what appears here is what Sol/Terra see.
+
 
 
 
