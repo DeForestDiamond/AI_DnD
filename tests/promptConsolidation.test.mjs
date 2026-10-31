@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EMPTY_CHAR } from '../src/hooks/character/defaults.js';
 import { CONFLICT_RESISTANCE_BLOCK } from '../src/prompts/conflict.js';
-import { SETTING_SOCIAL_RULES, MORALIZING_RULES } from '../src/prompts/socialNorms.js';
+import { SETTING_SOCIAL_RULES, MORALIZING_RULES, PRACTICAL_DECISION_RULES } from '../src/prompts/socialNorms.js';
 import { PLAYER_AGENCY_BLOCK } from '../src/prompts/playerAgency.js';
 import { FIRST_CONTACT_ROLL_RULES, ROLL_RESOLUTION_RULES } from '../src/prompts/tags.js';
 import { CHARACTER_CHOICES_BLOCK as fullChoices, DELEGATION_BLOCK as fullDelegation } from '../src/prompts/shared.js';
@@ -30,6 +30,7 @@ for(const [build,choices,before] of cases) {
           assert.equal(copies(p.static,CONFLICT_RESISTANCE_BLOCK),1);
           assert.equal(copies(p.static,SETTING_SOCIAL_RULES),1);
           assert.equal(copies(p.static,MORALIZING_RULES),1);
+          assert.equal(copies(p.static,PRACTICAL_DECISION_RULES),1);
           const delegation=[buildSystemPromptSonnet,buildSystemPromptSol,buildSystemPromptGrok46].includes(build) ? fullDelegation : leanDelegation;
           assert.equal(copies(p.static,delegation),1);
           assert.equal(copies(p.static,'── DELEGATION & ADMINISTRATIVE PACING ──'),1);
@@ -51,7 +52,7 @@ for(const [build,choices,before] of cases) {
     // Measure the consolidation against its old baseline, excluding the
     // deliberately restored roll safeguards and new behavioral rules added
     // after that cleanup. Their single inclusion is checked above.
-    assert.ok(Object.values(p).join('').replace(`\n\n${MORALIZING_RULES}`,'').replace(`\n\n${fullDelegation}`,'').replace(`\n\n${leanDelegation}`,'').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
+    assert.ok(Object.values(p).join('').replace(`\n\n${MORALIZING_RULES}`,'').replace(`\n\n${PRACTICAL_DECISION_RULES}`,'').replace(`\n\n${fullDelegation}`,'').replace(`\n\n${leanDelegation}`,'').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
   });
 }
 
