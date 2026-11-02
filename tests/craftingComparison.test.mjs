@@ -100,6 +100,8 @@ test('a supported purpose-based recommendation can identify a non-regressive fit
 test('armor restriction changes are detected independently of the ability summary',()=>{
   const f=craftingFixture();f.options[0].heavy=true;
   assert.ok(buildCraftingComparison(f).rows[0].changes.some(c=>c.kind==='weakened'&&c.ability==='Dexterity contribution'));
+  f.options[0].heavy=false;f.materials[0].data.maxDex=null;
+  assert.ok(buildCraftingComparison(f).rows[0].changes.some(c=>c.kind==='weakened'&&c.explanation.includes('uncapped Dexterity')));
 });
 
 for(const [name,call,schema] of [['GPT',callGptCrafting,gptSchema],['Grok',callGrokCrafting,grokSchema],['Anthropic',callAnthropicCrafting,null]]) test(`${name}: all crafting modes request analysis in one call without changing item schemas`,async()=>{

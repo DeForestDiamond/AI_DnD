@@ -69,13 +69,15 @@ function comparePiece(base, result) {
     const addsDex=result.heavy!=null ? !(result.heavy===true||result.heavy==='true') : result.dexBonus;
     if(base.dexBonus===true && addsDex===false) changes.push({kind:'weakened',ability:'Dexterity contribution',explanation:`${result.name}: no longer adds Dexterity to armor protection.`,numeric:true,before:[],after:[]});
     if(base.dexBonus===true && addsDex===true && finite(base.maxDex)&&finite(result.maxDex)) add(numericChange(base,result,'Maximum Dexterity contribution',base.maxDex,result.maxDex));
+    if(base.dexBonus===true && addsDex===true && base.maxDex==null&&finite(result.maxDex)) changes.push({kind:'weakened',ability:'Maximum Dexterity contribution',explanation:`${result.name}: uncapped Dexterity contribution → maximum ${result.maxDex}.`,numeric:true,before:[],after:[]});
+    if(base.dexBonus===true && addsDex===true && finite(base.maxDex)&&result.maxDex===null) changes.push({kind:'improved',ability:'Maximum Dexterity contribution',explanation:`${result.name}: maximum Dexterity contribution ${base.maxDex} → uncapped.`,numeric:true,before:[],after:[]});
   }
   if (base.type === 'weapon') {
     add(numericChange(base,result,'Weapon enchantment',base.bonus,result.bonus));
     const old=damageComponents(base), next=damageComponents(result);
     for (const [key,n] of Object.entries(old)) add(numericChange(base,result,key,n,next[key]));
     for (const key of ['range','finesse']) if (base[key]!=null && result[key]!=null && base[key]!==result[key]) {
-      changes.push({kind:'tradeoff',ability:key,explanation:`${result.name}: ${key} ${base[key]} → ${result[key]}.`,before:[],after:[],numeric:true});
+      changes.push({kind:key==='finesse'&&base[key]===true&&result[key]===false?'weakened':'tradeoff',ability:key,explanation:`${result.name}: ${key} ${base[key]} → ${result[key]}.`,before:[],after:[],numeric:true});
     }
   }
   const old=bonuses(base.bonuses), next=bonuses(result.bonuses);
