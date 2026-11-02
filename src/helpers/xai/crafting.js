@@ -1,3 +1,4 @@
+import { CRAFTING_COMPARISON_RULES, withCraftingComparison } from '../craftingComparisonContract.js';
 import { CRAFTING_MATERIAL_RULES } from '../craftingMaterials.js';
 import { CRAFTING_PRESERVATION_RULES } from '../craftingPreservation.js';
 // Grok-specific crafting helper prompt, request path, and output contracts.
@@ -174,13 +175,13 @@ const CONSTRUCT_RULES = `DEDICATED CONSTRUCT MODE
 const BATCH_RULES = count => count > 1 ? `BATCH RULES
 The player wants ${count} identical copies. Set count to ${count} when materials support it; consumes is TOTAL cost across all copies. Mixed material stacks may support different copies. If impossible, use the largest supported count and explain why.` : '';
 
-export function buildGrokCraftingPrompt({ materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
+export function buildGrokCraftingPrompt({ materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1, includeComparison = false }) {
   const modeRules = asConstruct ? CONSTRUCT_RULES : asSet ? SET_RULES : '';
   const batchRules = asSet ? '' : BATCH_RULES(quantity);
   const request = intent.trim()
     ? `PLAYER REQUEST\n${intent.trim()}\n\nIMPORTANT: Treat this as the design target, not a suggestion. Keep every proposal focused on fulfilling it.`
     : 'PLAYER REQUEST\nNo specific design requested. Propose what these materials most naturally support.';
-  return `${BASE_RULES}\n\n${CRAFTING_MATERIAL_RULES}\n\n${CRAFTING_PRESERVATION_RULES}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${batchRules}${batchRules ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
+  return `${BASE_RULES}\n\n${CRAFTING_MATERIAL_RULES}\n\n${CRAFTING_PRESERVATION_RULES}\n\n${includeComparison ? CRAFTING_COMPARISON_RULES : ''}\n\nCHARACTER LEVEL\n${characterLevel}\n\n${modeRules}${modeRules ? '\n\n' : ''}${batchRules}${batchRules ? '\n\n' : ''}${request}\n\nMATERIALS AVAILABLE\n${materialsText}`;
 }
 
 export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {
@@ -189,17 +190,18 @@ export function craftingSchemaFor({ asSet = false, asConstruct = false } = {}) {
 
 const responseText = data => (data?.output || []).filter(x => x?.type === 'message').flatMap(x => x.content || []).filter(x => x?.type === 'output_text').map(x => x.text || '').join('').trim();
 
-export async function callGrokCrafting({ apiKey, model = GROK_CRAFTING_MODEL, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
+export async function callGrokCrafting({ apiKey, model = GROK_CRAFTING_MODEL, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1, includeComparison = false }) {
   if (!apiKey) throw new Error('xAI API key required for Grok crafting');
-  const prompt = buildGrokCraftingPrompt({ materialsText, characterLevel, intent, asSet, asConstruct, quantity });
-  const schema = craftingSchemaFor({ asSet, asConstruct });
+  const prompt = buildGrokCraftingPrompt({ materialsText, characterLevel, intent, asSet, asConstruct, quantity, includeComparison });
+  const baseSchema = craftingSchemaFor({ asSet, asConstruct });
+  const schema = includeComparison ? withCraftingComparison(baseSchema) : baseSchema;
   const res = await fetch('https://api.x.ai/v1/responses', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model,
       input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }] }],
-      max_output_tokens: asSet ? 12000 : asConstruct ? 8000 : 6000,
+      max_output_tokens: (asSet ? 12000 : asConstruct ? 8000 : 6000) + (includeComparison ? 1800 : 0),
       reasoning: { effort: 'low' },
       text: { format: { type: 'json_schema', name: asConstruct ? 'craft_construct_options' : asSet ? 'craft_set_options' : 'craft_item_options', strict: true, schema } },
     }),
@@ -216,5 +218,6 @@ export async function callGrokCrafting({ apiKey, model = GROK_CRAFTING_MODEL, ma
   try { parsed = JSON.parse(raw); } catch { throw new Error('Grok crafting returned unreadable structured output'); }
   return { parsed, usage: data.usage, rawData: data };
 }
+
 
 

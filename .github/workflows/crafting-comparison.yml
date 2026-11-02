@@ -1,0 +1,54 @@
+name: Crafting comparison
+on:
+  push:
+    paths:
+      - 'src/helpers/**'
+      - 'src/components/sidebar/crafting/**'
+      - 'tests/craftingComparison*'
+      - 'tests/fixtures/craftingComparison*'
+      - '.github/workflows/crafting-comparison.yml'
+      - 'package*.json'
+  pull_request:
+    paths:
+      - 'src/helpers/**'
+      - 'src/components/sidebar/crafting/**'
+      - 'tests/craftingComparison*'
+      - 'tests/fixtures/craftingComparison*'
+      - '.github/workflows/crafting-comparison.yml'
+      - 'package*.json'
+permissions:
+  contents: read
+jobs:
+  comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Comparison and crafting data tests
+        run: node --test tests/craftingComparison.test.mjs tests/craftingMaterials.test.mjs
+      - name: Production build
+        run: npm run build
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Mobile and desktop workflow
+        env:
+          CRAFTING_SCREENSHOT_DIR: test-results/crafting
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/crafting-vite.log 2>&1 &
+          trap 'kill $! 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:5173/tests/fixtures/craftingComparison.html > /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/craftingComparison.browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crafting-comparison-screenshots
+          path: test-results/crafting
+          if-no-files-found: ignore

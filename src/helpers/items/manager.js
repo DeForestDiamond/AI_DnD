@@ -9,6 +9,7 @@ import { callGrokSalvage } from '../xai/salvage.js';
 import { callAnthropicCrafting } from '../anthropic/crafting.js';
 import { callAnthropicConsolidate } from '../anthropic/consolidate.js';
 import { callAnthropicSalvage } from '../anthropic/salvage.js';
+import { buildCraftingComparison } from '../craftingComparison.js';
 
 export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, updateChar, applyEffects, selectedModel, MODEL_CONFIGS, log, logUsage }) => {
   // ── Crafting: propose, then execute ────────────────────────────────────────
@@ -20,10 +21,11 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
   // typo'd quantity from producing something absurd.
   const MAX_CRAFT_BATCH = 100000;
 
-  const proposeCrafting = async ({ materials, intent, asSet, asConstruct, qty }) => {
+  const proposeCrafting = async ({ materials, intent, asSet, asConstruct, qty, includeComparison = false }) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
     const char = charRef.current;
     if (!materials.length) throw new Error('Select at least one material');
+    const comparisonMaterials = includeComparison ? structuredClone(materials) : [];
 
     // Describe each material fully. For FINISHED equipment this is what the model
     // needs in order to upgrade it — without the current numbers it reconstructs
@@ -55,6 +57,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
         asSet,
         asConstruct,
         quantity: batchN,
+        includeComparison,
       });
       parsed = gptParsed;
       const gIn = gptUsage?.input_tokens || 0;
@@ -71,6 +74,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
         asSet,
         asConstruct,
         quantity: batchN,
+        includeComparison,
       });
       parsed = grokParsed;
       const gIn = grokUsage?.input_tokens || 0;
@@ -79,7 +83,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
     } else {
       const { parsed: anthropicParsed, usage: anthropicUsage } = await callAnthropicCrafting({
         apiKey: key, materialsText: matList, characterLevel: char.level, intent,
-        asSet, asConstruct, quantity: batchN,
+        asSet, asConstruct, quantity: batchN, includeComparison,
       });
       parsed = anthropicParsed;
       if (anthropicUsage) logUsage('crafting', { usage: anthropicUsage });
@@ -118,7 +122,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       const list = (parsed.options || []).filter(o => o?.name).map(o => validate({ ...o, isConstruct: true }));
       if (!list.length) throw new Error('Nothing could be forged from those materials');
       log(`[CRAFT] ${list.length} constructs proposed: ${list.map(o => o.name).join(', ')}`);
-      return list;
+      return includeComparison ? {options:list,comparison:buildCraftingComparison({options:list,materials:comparisonMaterials,analysis:parsed.comparison,intent,originalOptions:parsed.options})} : list;
     }
     const options = (parsed.options || []).filter(o => o?.name).map(o => (
       asSet && Array.isArray(o.pieces)
@@ -127,7 +131,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
     ));
     if (!options.length) throw new Error('Nothing could be made from those materials');
     log(`[CRAFT] ${options.length} options proposed: ${options.map(o => o.name).join(', ')}`);
-    return options;
+    return includeComparison ? {options,comparison:buildCraftingComparison({options,materials:comparisonMaterials,analysis:parsed.comparison,intent,originalOptions:parsed.options})} : options;
   };
 
   // Build the [ITEM:] tag for a chosen option and apply it, then remove the
@@ -515,4 +519,5 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
 
   return { proposeCrafting, executeCrafting, proposeConsolidation, executeConsolidation, proposeDismantle, executeDismantle };
 };
+
 

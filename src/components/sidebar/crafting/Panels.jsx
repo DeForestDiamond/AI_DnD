@@ -4,6 +4,8 @@ import { allItems } from '../../../hooks/useCharacter.js';
 import { stackCounts, stackCount, stackHas } from '../../../utils/itemStacks.js';
 import { categorizeItem, CATEGORY_META, hasInspectableItemInfo } from '../inventory/categorization.js';
 import { CollapsibleSection, npcInput } from '../common/index.jsx';
+import { CraftingComparison } from './CraftingComparison.jsx';
+import { buildCraftingComparison } from '../../../helpers/craftingComparison.js';
 
 const SEL_KEY = 'dnd-panel-selections';
 const loadSel = () => { try { return JSON.parse(localStorage.getItem(SEL_KEY)) || {}; } catch { return {}; } };
@@ -11,13 +13,13 @@ const saveSel = (craft, salvage, consolidate) => {
   try { localStorage.setItem(SEL_KEY, JSON.stringify({ craft, salvage, consolidate })); } catch { /* quota, ignore */ }
 };
 const persistedSel = loadSel();
-const craftStore = { selected: persistedSel.craft || {}, intent:'', mode:'item', options:null, status:'', filter:'', source:'both', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1', open:false };
+const craftStore = { selected: persistedSel.craft || {}, intent:'', mode:'item', options:null, comparison:null, status:'', filter:'', source:'both', showAll:false, draft:{}, infoOpen:{}, catClosed:{}, qty:'1', open:false };
 const consolidateStore = { selected: persistedSel.consolidate || {}, filter:'', source:'both', destination:'stash', draft:{}, catClosed:{}, groups:null, status:'', open:false };
 
 // Loading a save replaces the character wholesale, so any proposal or selection
 // still sitting in these stores refers to a world that no longer exists.
 export const resetCraftingPanels = () => {
-  Object.assign(craftStore, { selected:{}, intent:'', options:null, status:'', filter:'', draft:{}, qty:'1' });
+  Object.assign(craftStore, { selected:{}, intent:'', options:null, comparison:null, status:'', filter:'', draft:{}, qty:'1' });
   Object.assign(salvageStore, { selected:{}, result:null, status:'', filter:'', draft:{} });
   Object.assign(consolidateStore, { selected:{}, filter:'', draft:{}, groups:null, status:'' });
   saveSel({}, {}, {});
@@ -41,6 +43,7 @@ export function CraftingPanel({ character, db, onProposeCrafting, onExecuteCraft
   const [mode, setMode]         = useStored(craftStore, 'mode');       // item | set | construct
   const [busy, setBusy]         = useState(false);
   const [options, setOptions]   = useStored(craftStore, 'options');
+  const [comparison, setComparison] = useStored(craftStore, 'comparison');
   const [status, setStatus]     = useStored(craftStore, 'status');
   const [filter, setFilter]     = useStored(craftStore, 'filter');
   const [showAll, setShowAll]   = useStored(craftStore, 'showAll');
@@ -117,13 +120,16 @@ export function CraftingPanel({ character, db, onProposeCrafting, onExecuteCraft
   };
 
   const propose = async () => {
-    setBusy(true); setStatus('Consulting the forge…'); setOptions(null);
+    setBusy(true); setStatus('Consulting the forge…'); setOptions(null); setComparison(null);
     try {
       // Send the full definition, not just the label — when upgrading, the model
       // needs to SEE the existing stats to preserve and exceed them.
       const mats = Object.entries(liveSelected).map(([nm, count]) => ({ name: nm, count, data: stockData(nm) || null }));
-      const opts = await onProposeCrafting({ materials: mats, intent, asSet: mode === 'set', asConstruct: mode === 'construct', qty });
-      setOptions(opts); setStatus('');
+      const proposal = await onProposeCrafting({ materials: mats, intent, asSet: mode === 'set', asConstruct: mode === 'construct', qty, includeComparison:true });
+      const opts = Array.isArray(proposal) ? proposal : proposal.options;
+      setOptions(opts);
+      setComparison(Array.isArray(proposal) ? buildCraftingComparison({options:opts,materials:mats,intent}) : proposal.comparison);
+      setStatus('');
     } catch (e) { setStatus('✗ ' + e.message); }
     setBusy(false);
   };
@@ -132,7 +138,7 @@ export function CraftingPanel({ character, db, onProposeCrafting, onExecuteCraft
     try {
       const made = onExecuteCrafting(opt);
       setStatus(`✓ Crafted ${made}`);
-      setOptions(null); setSelected({}); setDraft({}); setIntent(''); setFilter('');
+      setOptions(null); setComparison(null); setSelected({}); setDraft({}); setIntent(''); setFilter('');
     } catch (e) { setStatus('✗ ' + e.message); }
   };
 
@@ -288,18 +294,21 @@ export function CraftingPanel({ character, db, onProposeCrafting, onExecuteCraft
           {busy ? '…' : `🔨 ${mode==='construct' ? 'WHAT CAN I RAISE' : mode==='set' ? 'WHAT CAN I FORGE AS A SET' : 'WHAT CAN I MAKE'}?${selCount ? ` (${selCount})` : ''}`}
         </button>
         {(selCount > 0 || options || status) && (
-          <button onClick={()=>{ setSelected({}); setDraft({}); setOptions(null); setStatus(''); setIntent(''); setFilter(''); }}
+          <button onClick={()=>{ setSelected({}); setDraft({}); setOptions(null); setComparison(null); setStatus(''); setIntent(''); setFilter(''); }}
             title="Clear the proposal and deselect everything"
             style={{...btn(false), flexShrink:0, fontSize:11, padding:'0 9px'}}>✕</button>
         )}
       </div>
       {status && <div style={{fontSize:12,color:status.startsWith('✗')?'#c96a4c':colors.goldFaint,marginTop:6,lineHeight:1.4}}>{status}</div>}
 
+      {options && <CraftingComparison comparison={comparison}/>}
       {options && options.map((o, i) => (
         <div key={i} style={{border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:8,marginTop:6}}>
           <div style={{fontFamily:fonts.display,fontSize:13,color:colors.gold,marginBottom:2}}>
             {o.name}{o.pieces?.length ? <span style={{color:colors.textGhost,fontSize:10}}> · {o.pieces.length} pieces</span> : null}
           </div>
+          <details>
+          <summary style={{cursor:'pointer',padding:'9px 0',fontSize:12,color:colors.gold}}>Full result description · Option {i+1}</summary>
           {o.isConstruct ? (
             <>
               <div style={{fontSize:10,color:colors.goldFaint,marginBottom:3}}>
@@ -331,6 +340,7 @@ export function CraftingPanel({ character, db, onProposeCrafting, onExecuteCraft
             Consumes: {(o.consumes||[]).map(m=>`${m.name}${m.count>1?` x${m.count}`:''}`).join(', ') || 'nothing'}
             {o.reason ? ` — ${o.reason}` : ''}
           </div>
+          </details>
           {o.unavailable && (
             <div style={{fontSize:10,color:'#c96a4c',marginBottom:6,lineHeight:1.4}}>
               Can't be made — the forge asked for {o.unavailable.join('; ')}. Regenerate for something your materials support.
@@ -763,3 +773,4 @@ export function SalvagePanel({ character, db, onProposeDismantle, onExecuteDisma
 }
 
 // ── Bio editor: view/edit the player's backstory (the DM's behavior anchor) ────
+

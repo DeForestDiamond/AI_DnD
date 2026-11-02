@@ -1,8 +1,9 @@
+import { CRAFTING_COMPARISON_RULES, CRAFTING_COMPARISON_SCHEMA } from '../craftingComparisonContract.js';
 import { CRAFTING_MATERIAL_RULES } from '../craftingMaterials.js';
 import { CRAFTING_PRESERVATION_RULES } from '../craftingPreservation.js';
 export const ANTHROPIC_CRAFTING_MODEL = 'claude-sonnet-4-5';
 
-export async function callAnthropicCrafting({ apiKey, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1 }) {
+export async function callAnthropicCrafting({ apiKey, materialsText, characterLevel, intent = '', asSet = false, asConstruct = false, quantity = 1, includeComparison = false }) {
   const levelNote = `The character is level ${characterLevel}.`;
   const wantNote = intent?.trim()
     ? `The player specifically wants: "${intent.trim()}". Honour this if the materials plausibly allow it; if they do not, say why in the reason field and propose the closest achievable thing.`
@@ -66,12 +67,13 @@ TYPE AND MECHANICS:
 - Labels may be concise for simple items, but there is NO hard label length target for upgraded/complex items. Preserve all distinct capabilities first; remove only redundant prose, not functions/effects.
 - Charges/per-day effects are narrative text; there is no charge counter.
 - ${levelNote}${constructRules}${setRules}${batchRules}
-${CRAFTING_MATERIAL_RULES}\n\n${CRAFTING_PRESERVATION_RULES}\n\nRespond with ONLY valid JSON in exactly this shape, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`;
+${CRAFTING_MATERIAL_RULES}\n\n${CRAFTING_PRESERVATION_RULES}\n\n${includeComparison ? CRAFTING_COMPARISON_RULES + '\nComparison JSON schema: ' + JSON.stringify(CRAFTING_COMPARISON_SCHEMA) : ''}\n\nRespond with ONLY valid JSON with the following item shape${includeComparison ? ' AND the top-level comparison sidecar specified above' : ''}, no prose, no markdown fences: ${asConstruct ? constructShape : asSet ? setShape : shape}`;
 
-  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:ANTHROPIC_CRAFTING_MODEL,max_tokens:asSet||asConstruct?4000:3000,system,messages:[{role:'user',content:`MATERIALS AVAILABLE:\n${materialsText}\n\n${wantNote}\n\nRespond with ONLY the JSON now.`}]})});
+  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:ANTHROPIC_CRAFTING_MODEL,max_tokens:(asSet||asConstruct?4000:3000)+(includeComparison?1800:0),system,messages:[{role:'user',content:`MATERIALS AVAILABLE:\n${materialsText}\n\n${wantNote}\n\nRespond with ONLY the JSON now.`}]})});
   const data=await res.json(); if(!res.ok)throw new Error(`API error ${res.status}`);
   const raw=(data.content?.[0]?.text||'').replace(/```json|```/g,'').trim(); let parsed; try{parsed=JSON.parse(raw);}catch{const truncated=data.stop_reason==='max_tokens'||!/[}\]]\s*$/.test(raw);throw new Error(truncated?'The forge ran long and the answer was cut off — select fewer materials, or try again':'Crafting returned unreadable JSON — try again');}
   return { parsed, usage:data.usage, rawData:data };
 }
+
 
 
