@@ -262,9 +262,9 @@ export function CraftingPanel({ character, db, onProposeCrafting, onExecuteCraft
         <div style={{display:'flex',alignItems:'center',gap:3,flexShrink:0}}>
           <span style={{fontSize:11,color:colors.textGhost}}>×</span>
           <input value={qty} onChange={e=>setQty(e.target.value.replace(/[^0-9]/g,''))}
-            onBlur={()=>setQty(String(Math.max(1, Math.min(1000, parseInt(qty,10)||1))))}
+            onBlur={()=>setQty(String(Math.max(1, Math.min(100000, parseInt(qty,10)||1))))}
             inputMode="numeric" title="How many to make — the forge spreads the materials across them"
-            style={{width:38,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:13,padding:'6px 4px',borderRadius:4,textAlign:'center',outline:'none'}}/>
+            style={{width:64,background:'rgba(0,0,0,0.4)',border:`1px solid ${colors.borderDim}`,color:colors.gold,fontFamily:fonts.mono,fontSize:13,padding:'6px 4px',borderRadius:4,textAlign:'center',outline:'none'}}/>
         </div>
       </div>
 

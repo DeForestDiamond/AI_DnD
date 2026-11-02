@@ -20,7 +20,7 @@ FORGING A CONSTRUCT: propose 2 alternative constructs — golems, war machines, 
 - DESC: what it is, how made, how it behaves. Do not invent action/focus/concentration costs to command it.
 - Give it a real name, not a description-as-name.` : '';
 
-  const batchN = Math.max(1, Math.min(1000, parseInt(quantity, 10) || 1));
+  const batchN = Math.max(1, Math.min(100000, parseInt(quantity, 10) || 1));
   const batchRules = batchN > 1 ? `
 
 MAKING SEVERAL: the player wants ${batchN} COPIES of each proposed design. Set count:${batchN} when materials support it and make consumes cover all copies together. Mixed material stacks may support different copies. If materials cannot stretch to ${batchN}, use the largest supported count and explain why. Every copy is identical.` : '';

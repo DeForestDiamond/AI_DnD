@@ -18,7 +18,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
   // item only after the player confirms a choice.
   // Batch cap. Making things is linear now, so this only exists to stop a
   // typo'd quantity from producing something absurd.
-  const MAX_CRAFT_BATCH = 1000;
+  const MAX_CRAFT_BATCH = 100000;
 
   const proposeCrafting = async ({ materials, intent, asSet, asConstruct, qty }) => {
     const key = apiKey || import.meta.env.VITE_ANTHROPIC_KEY;
