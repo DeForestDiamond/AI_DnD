@@ -24,4 +24,5 @@ export const rollNpcDescriptor = (environment = 'wilderness') => {
   return `${Math.random() < 0.5 ? 'male' : 'female'} ${pick(races)}`;
 };
 
-export const NATIVE_ONLY_ENVIRONMENTS = new Set(['astral', 'shadowfell', 'fire', 'water', 'air', 'earth', 'limbo', 'mechanus', 'sigil', 'hells', 'abyss', 'hades', 'gehenna', 'carceri', 'arborea', 'ysgard', 'celestia', 'elysium', 'ethereal']);
+export const NATIVE_ONLY_ENVIRONMENTS = new Set(['astral', 'shadowfell', 'fire', 'water', 'air', 'earth', 'limbo', 'mechanus', 'sigil', 'hells', 'abyss', 'hades', 'gehenna', 'carceri', 'arborea', 'ysgard', 'celestia', 'elysium', 'ethereal', 'positive', 'negative']);
+

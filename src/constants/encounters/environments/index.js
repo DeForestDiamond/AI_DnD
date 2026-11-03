@@ -23,6 +23,8 @@ import * as ysgard from './ysgard.js';
 import * as celestia from './celestia.js';
 import * as elysium from './elysium.js';
 import * as ethereal from './ethereal.js';
+import * as positive from './positive.js';
+import * as negative from './negative.js';
 import { hostile as faerunCommonHostile } from './faerun/common.js';
 
 const ENV = {
@@ -51,8 +53,12 @@ const ENV = {
   "celestia": celestia,
   "elysium": elysium,
   "ethereal": ethereal,
+  "positive": positive,
+  "negative": negative,
 };
 
 export const HOSTILE = [faerunCommonHostile, ...Object.values(ENV).map(e => e.hostile || [])].flat();
 export const SOCIAL_BY_ENV = Object.fromEntries(Object.entries(ENV).map(([k,v]) => [k, v.social || []]));
 export const WEIRD_BY_ENV = Object.fromEntries(Object.entries(ENV).map(([k,v]) => [k, v.weird || []]));
+export const CONTEXT_BY_ENV = Object.fromEntries(Object.entries(ENV).filter(([,v])=>v.context).map(([k,v])=>[k,v.context]));
+

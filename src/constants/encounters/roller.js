@@ -1,5 +1,5 @@
 import { isContinuousStory, isCombatFirst, hasOpenStoryScale } from '../../helpers/storyOptions.js';
-import { HOSTILE, SOCIAL_BY_ENV, WEIRD_BY_ENV } from './environments/index.js';
+import { HOSTILE, SOCIAL_BY_ENV, WEIRD_BY_ENV, CONTEXT_BY_ENV } from './environments/index.js';
 import { encounterCRCap } from './pacing.js';
 import { rollNpcDescriptor, NATIVE_ONLY_ENVIRONMENTS } from './npcRaces.js';
 
@@ -62,11 +62,12 @@ export const rollEncounterDirective = (char) => {
   const directive =
     `\n\n[ENCOUNTER — MANDATORY: This turn, the following occurs: ${desc}. ` +
     `OPEN the encounter at the MOMENT OF FIRST CONTACT — the creature appears, the stranger steps out, the thing is noticed — and then STOP for the player's choice. Do NOT start the scene already in progress, do NOT narrate the player dodging, drawing, striking, or reacting, and do NOT resolve any of it. Do NOT call any [ROLL:] in this message — the player has made no choice yet, so there is nothing to roll for; the roll (if any) comes AFTER they state what they do. Describe only what happens TO them and around them, then hand control back. ` +
-    crNote + npcNote +
+    crNote + npcNote + (CONTEXT_BY_ENV[char?.environment] ? `${CONTEXT_BY_ENV[char.environment]} ` : '') +
     (type === 'hostile' && isCombatFirst(char) ? `COMBAT-FIRST: This is a genuinely hostile encounter. Open with the opponent's visible hostile move and willingness to fight. Do not recast them as friendly, misunderstood, or immediately willing to negotiate; peace requires a credible player-initiated change. Hand back control before resolving an attack or deciding the player's response. ` : '') +
     (arcTied ? `This connects to the active arc antagonist — let that show without naming them outright. ${hasOpenStoryScale(char) ? 'Use the established threat’s actual capabilities.' : "Scale any threat to the player's level."} ` : '') +
     `End with your usual 4 numbered choices.]`;
   return { type, arcTied, desc, directive };
 };
+
 
 

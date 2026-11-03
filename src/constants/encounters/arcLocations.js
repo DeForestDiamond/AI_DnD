@@ -96,7 +96,7 @@ export const ARC_LOCATION_CHOICES = [...new Set([
   'Feywild','Shadowfell','Astral Plane','Nine Hells','Avernus','Cania, the Eighth Hell','Nessus, the Ninth Hell',
   'Abyss','Hades, the Gray Waste','Gehenna','Carceri','Mechanus','Limbo','Outlands','Mount Celestia','Arborea','Ysgard',
   'Elemental Plane of Fire','Elemental Plane of Water','Elemental Plane of Air','Elemental Plane of Earth','Ethereal Plane',
-  'Negative Plane','Domains of Dread','Far Realm','Demiplane'
+  'Positive Plane','Negative Plane','Domains of Dread','Far Realm','Demiplane'
 ])].sort((a,b)=>a.localeCompare(b));
 
 export const arcLocationOptionsFor = (antagonist) => {
@@ -122,3 +122,4 @@ export const rollArc = (level, exclude = null, defeated = [], currentLocation = 
   const antagonist = rollAntagonist(level, exclude, defeated);
   return makeArc(antagonist, null, currentLocation);
 };
+

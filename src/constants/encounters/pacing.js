@@ -39,6 +39,8 @@ export const ENVIRONMENTS = [
   { id: 'celestia',    label: '✨ Mount Celestia' },
   { id: 'elysium',     label: '🌿 Elysium' },
   { id: 'ethereal',    label: '👻 Ethereal Plane' },
+  { id: 'positive',    label: '☀️ Positive Energy Plane' },
+  { id: 'negative',    label: '⚫ Negative Energy Plane' },
 ];
 
 export const encounterChance = (turnsSince, pacing) => {
@@ -59,3 +61,4 @@ export const encounterCRCap = (level) => {
   if (lvl <= 3) return 1;
   return Math.max(2, Math.floor(lvl * 0.6));
 };
+
