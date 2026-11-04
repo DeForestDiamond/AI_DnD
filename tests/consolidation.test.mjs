@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CONSOLIDATE_RULES, describeConsolidationItems, validateConsolidationGroups } from '../src/helpers/consolidation.js';
+import { CONSOLIDATE_RULES, describeConsolidationItems, validateConsolidationGroups, normalizeConsolidationName } from '../src/helpers/consolidation.js';
 import { createItemManager } from '../src/helpers/items/manager.js';
 import { CONSOLIDATE_RULES as gptRules } from '../src/helpers/openai/consolidate.js';
 import { CONSOLIDATE_RULES as grokRules } from '../src/helpers/xai/consolidate.js';
@@ -99,36 +99,54 @@ test('average-sized result names preserve exceptional bone identity', () => {
 });
 
 test('bulk units can mix and standardize, but their result cannot be a bare material name', () => {
-  const salt=stacks(['Barrel of Salt','Crate of Salt']);
-  assert.deepEqual(validate('Salt',salt),[]);
+  const salt=stacks(['Salt Barrel','Salt Crate']);
+  assert.equal(validate('Salt',salt)[0].name,'Salt Crate');
   assert.equal(validate('Salt (average-sized bulk lot)',salt).length,1);
   const iron=stacks(['Iron Ingot','Scrap Iron']);
-  assert.deepEqual(validate('Iron',iron),[]);
+  assert.equal(validate('Iron',iron)[0].name,'Iron Ingot');
   assert.equal(validate('Iron Ingot (average size)',iron).length,1);
+});
+
+test('lost bolts and ingots are restored locally in material-first order', () => {
+  const silk=stacks(['Red Silk Bolt','Blue Silk Bolt']);
+  for(const name of ['Silk','Silk Lot','Silk (average size)','Bolt of Silk','Silk [average size]']) {
+    assert.equal(validate(name,silk)[0].name,'Silk Bolt');
+  }
+  assert.equal(validate('Iron',stacks(['Iron Ingot','Dwarven Iron Ingot']))[0].name,'Iron Ingot');
+  assert.equal(normalizeConsolidationName('Bolt of Red Silk',silk),'Red Silk Bolt');
+});
+
+test('existing matching stack names win, without brackets or extra size text', () => {
+  const items=stacks(['Elven Red Silk Bolt','Calishite Red Silk Bolt']);
+  const definitions={'Red Silk Bolt':{type:'misc'}};
+  assert.equal(normalizeConsolidationName('Bolt of Red Silk (average size)',items,definitions),'Red Silk Bolt');
+  assert.equal(normalizeConsolidationName('Red Silk [Blessed] Bolt',items),'Red Silk Blessed Bolt');
+  assert.equal(normalizeConsolidationName('Salt (roughly barrel-sized lot)',stacks(['Salt Barrel','Coarse Salt Barrel','Salt Crate'])),'Salt Barrel');
 });
 
 for (const provider of ['openai','xai','anthropic']) test(`${provider}: sized bulk proposals survive approval with summed counts and visible per-unit sizes`, async () => {
   const original=globalThis.fetch;
-  const salt=[{name:'20 lb Salt Sack',count:2},{name:'50 lb Coarse Salt Crate',count:1}];
-  const iron=[{name:'2 lb Iron Ingot',count:10},{name:'8 lb Iron Ingot',count:2}];
-  const mixed=[{name:'Barrel of Salt',count:1},{name:'Barrel of Coarse Salt',count:1},{name:'Crate of Salt',count:1}];
-  const cases=[group('Salt (30 lb lot)',salt),group('Iron Ingot (3 lb)',iron),group('Salt (roughly barrel-sized lot)',mixed)];
+  const salt=[{name:'Salt Sack',count:2},{name:'Coarse Salt Crate',count:1}];
+  const iron=[{name:'Iron Ingot',count:10},{name:'Dwarven Iron Ingot',count:2}];
+  const mixed=[{name:'Salt Barrel',count:1},{name:'Coarse Salt Barrel',count:1},{name:'Salt Crate',count:1}];
+  const silk=[{name:'Red Silk Bolt',count:6},{name:'Blue Silk Bolt',count:3}];
+  const cases=[group('Salt Sack',salt),group('Iron Ingot',iron),group('Salt Barrel',mixed),group('Silk Bolt',silk)];
   globalThis.fetch=async (url,init)=>{
     const request=JSON.parse(init.body);
     const rules=provider==='anthropic'?request.system:request.input[0].content[0].text;
-    assert.match(rules,/sum\(source count \* source unit size\) \/ sum\(source counts\)/);
+    assert.match(rules,/taking their counts into account/);
     assert.match(rules,/Do not keep separate barrel\/crate groups/);
-    const text=JSON.stringify({groups:cases});
+    const text=JSON.stringify({groups:cases.map((g,i)=>({...g,name:i===1?'Iron':i===3?'Bolt of Silk (average size)':g.name}))});
     return {ok:true,json:async()=>provider==='anthropic'?{content:[{type:'text',text}]}:{output:[{type:'message',content:[{type:'output_text',text}]}]}};
   };
   try {
     const items=cases.flatMap(g=>g.items);
-    const charRef={current:{inventory:[],stash:items.map(it=>({name:it.name,qty:it.count})),items:{}}};
+    const charRef={current:{inventory:[{name:'Silk Bolt',qty:4}],stash:items.map(it=>({name:it.name,qty:it.count})),items:{'Silk Bolt':{type:'misc'}}}};
     const manager=createItemManager({apiKey:'test',openAiApiKey:'test',xAiApiKey:'test',charRef,updateChar:c=>{charRef.current=c;},applyEffects:(tags,c)=>{assert.equal(tags,'');return c;},selectedModel:'test',MODEL_CONFIGS:{test:{provider,model:'test'}},log:()=>{},logUsage:()=>{}});
     const proposed=await manager.proposeConsolidation({items});
     assert.deepEqual(proposed,cases);
     for(const g of proposed) manager.executeConsolidation({...g,destination:'inventory'});
-    assert.deepEqual(charRef.current.inventory,cases.map(g=>({name:g.name,qty:g.items.reduce((n,it)=>n+it.count,0)})));
+    assert.deepEqual(Object.fromEntries(charRef.current.inventory.map(it=>[it.name,it.qty])),Object.fromEntries(cases.map(g=>[g.name,g.items.reduce((n,it)=>n+it.count,0)+(g.name==='Silk Bolt'?4:0)])));
     assert.deepEqual(charRef.current.stash,[]);
   } finally {globalThis.fetch=original;}
 });
