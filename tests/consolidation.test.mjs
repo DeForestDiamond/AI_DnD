@@ -29,7 +29,26 @@ test('ordinary devil bones can become Infernal Bone; lords and unknown origins c
   for (const name of ['Archdevil Bone','Baphomet Bone','Orcus Bone','Zariel Bone','Tarrasque Bone','Unidentified Bone','Demon Bone']) {
     assert.deepEqual(validate('Infernal Bone', stacks(['Devil Bone',name])), []);
   }
-  assert.deepEqual(validate('Infernal Bone', stacks(['Devil Bone','Iron'])), []);
+});
+
+test('ordinary humanoid and monster families consolidate without a hardcoded species whitelist', () => {
+  assert.equal(validate('Humanoid Bone',stacks(['Human Bone','Dwarf Bone','Elf Bone','Orc Bone','Goblin Bone'])).length,1);
+  assert.equal(validate('Monstrous Bone',stacks(['Gnoll Bone','Minotaur Bone','Warhorse Bone'])).length,1);
+  assert.equal(validate('Infernal Bones',stacks(['Devil Bone','Erinyes Bone','Bone Devil Bone','Pit Fiend Bone'])).length,1);
+  assert.equal(validate('Infernal Skeletal Material',stacks(['Devil Bone','Erinyes Bone'])).length,1);
+  assert.equal(validate('Abyssal Bone',stacks(['Demon Bone','Dretch Bone','Vrock Bone','Balor Bone'])).length,1);
+  assert.equal(validate('Bone',stacks(['Bone','Bone Fragments','Powdered Bone'])).length,1);
+});
+
+test('recorded exceptional provenance and opposed planar families remain protected', () => {
+  assert.deepEqual(validate('Infernal Bone',stacks(['Special Bone','Devil Bone']),{'Special Bone':{label:'Harvested from a demon lord.'}}),[]);
+  assert.deepEqual(validate('Abyssal Bone',stacks(['Infernal Bone','Devil Bone'])),[]);
+  assert.deepEqual(validate('Infernal Bone',stacks(['Abyssal Bone','Demon Bone'])),[]);
+});
+
+test('zero or empty placeholder equipment fields do not block ordinary material proposals', () => {
+  const items=stacks(['Human Bone','Dwarf Bone']);
+  assert.equal(validate('Humanoid Bone',items,{'Human Bone':{type:'misc',ac:0,damage:'none',slot:'none'}}).length,1);
 });
 
 test('same exceptional source can simplify raw forms without losing identity', () => {
@@ -76,8 +95,8 @@ test('descriptions retain recorded properties without transmitting bag contents 
 
 for (const provider of ['openai','xai','anthropic']) test(`${provider}: real proposal path sends descriptions and filters unsafe groups without changing inventory`, async () => {
   const original=globalThis.fetch;
-  const items=stacks(['Tarrasque Bone','Baphomet Bone','Devil Bone','Erinyes Bone']);
-  const groups=[group('Bone',items.slice(0,2)),group('Infernal Bone',items.slice(2))];
+  const items=stacks(['Tarrasque Bone','Baphomet Bone','Devil Bone','Erinyes Bone','Human Bone','Dwarf Bone']);
+  const groups=[group('Bone',items.slice(0,2)),group('Infernal Bones',items.slice(2,4)),group('Humanoid Bone',items.slice(4))];
   const charRef={current:{items:{'Tarrasque Bone':{label:'Legendary regenerative bone.'}},inventory:items.map(it=>({name:it.name,qty:it.count}))}};
   const before=structuredClone(charRef.current);
   let calls=0, request;
@@ -88,7 +107,7 @@ for (const provider of ['openai','xai','anthropic']) test(`${provider}: real pro
   };
   try {
     const manager=createItemManager({apiKey:'test',openAiApiKey:'test',xAiApiKey:'test',charRef,updateChar:()=>assert.fail('Proposal mutated inventory'),selectedModel:'test',MODEL_CONFIGS:{test:{provider,model:'test'}},log:()=>{},logUsage:()=>{}});
-    assert.deepEqual(await manager.proposeConsolidation({items}),[groups[1]]);
+    assert.deepEqual(await manager.proposeConsolidation({items}),groups.slice(1));
     assert.equal(calls,1);
     assert.match(JSON.stringify(request),/Legendary regenerative bone/);
     assert.deepEqual(charRef.current,before);
