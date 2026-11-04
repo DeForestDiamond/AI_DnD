@@ -1,7 +1,7 @@
 import { stackCounts, stackCount, stackHas, addStack, takeStack } from '../../utils/itemStacks.js';
 import { pruneDeadItemDefinitions } from '../../hooks/useCharacter.js';
 import { callGptCrafting } from '../openai/crafting.js';
-import { callGptConsolidate, CONSOLIDATE_RULES } from '../openai/consolidate.js';
+import { callGptConsolidate } from '../openai/consolidate.js';
 import { callGptSalvage } from '../openai/salvage.js';
 import { callGrokCrafting } from '../xai/crafting.js';
 import { callGrokConsolidate } from '../xai/consolidate.js';
@@ -10,6 +10,7 @@ import { callAnthropicCrafting } from '../anthropic/crafting.js';
 import { callAnthropicConsolidate } from '../anthropic/consolidate.js';
 import { callAnthropicSalvage } from '../anthropic/salvage.js';
 import { buildCraftingComparison } from '../craftingComparison.js';
+import { describeConsolidationItems, validateConsolidationGroups } from '../consolidation.js';
 
 export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, updateChar, applyEffects, selectedModel, MODEL_CONFIGS, log, logUsage }) => {
   // ── Crafting: propose, then execute ────────────────────────────────────────
@@ -358,11 +359,11 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
     return isSet ? `${option.name} — ${option.pieces.map(pc => pc.name).join(', ')}` : option.name;
   };
 
-  // ── Inventory consolidation: intentionally erase distinctions between stacks ─
+  // ── Inventory consolidation: simplify forms while preserving material identity ─
   const proposeConsolidation = async ({ items }) => {
-    if (!items?.length) throw new Error('Select at least two stacks');
-    const selected = new Map(items.map(x => [x.name, Math.max(1, Number(x.count) || 1)]));
-    const itemsText = items.map(x => `${x.name} x${x.count}`).join('\n');
+    if (new Set(items?.map(x => x.name)).size < 2) throw new Error('Select at least two stacks');
+    const definitions = charRef.current.items || {};
+    const itemsText = describeConsolidationItems(items, definitions);
     let rawGroups = [];
     if (MODEL_CONFIGS[selectedModel]?.provider === 'openai') {
       const gptKey = openAiApiKey || import.meta.env.VITE_OPENAI_KEY;
@@ -383,19 +384,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       if (out.usage) logUsage('smart grouping', { usage: out.usage });
     }
 
-    const used = new Set();
-    const groups = [];
-    for (const g of rawGroups) {
-      const members=[];
-      for (const it of g.items || []) {
-        const exact=[...selected.keys()].find(n=>canonicalItemName(n)===canonicalItemName(it.name));
-        if(!exact || used.has(exact)) continue;
-        const count=Math.min(selected.get(exact),Math.max(1,Number(it.count)||1));
-        members.push({name:exact,count}); used.add(exact);
-      }
-      if(members.length>=2 && String(g.name||'').trim()) groups.push({name:String(g.name).trim(),items:members,reason:String(g.reason||'').trim()});
-      else members.forEach(x=>used.delete(x.name));
-    }
+    const groups = validateConsolidationGroups(rawGroups, items, definitions);
     log(`[CONSOLIDATE] Smart grouping proposed ${groups.length} group(s)`);
     return groups;
   };

@@ -428,7 +428,7 @@ export function ConsolidatePanel({ character, db, onProposeConsolidation, onExec
 
   const smart = async () => {
     if(selEntries.length<2) return;
-    setBusy(true); setStatus('Finding things that are secretly the same pile of stuff…'); setGroups(null);
+    setBusy(true); setStatus('Finding compatible materials without losing their useful distinctions…'); setGroups(null);
     try {
       const proposed=await onProposeConsolidation({ items:selEntries });
       setGroups(proposed.map(g=>({...g,target:g.name})));
@@ -440,7 +440,7 @@ export function ConsolidatePanel({ character, db, onProposeConsolidation, onExec
   return (
     <CollapsibleSection title="🧹 CONSOLIDATE" count={Object.keys(liveSelected).length || undefined} open={open} onOpenChange={setOpen}>
       <div style={{fontSize:10,color:colors.textDead,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>
-        Manual combine is local and literal: selected quantities become one plain stack. Smart Group asks the helper to propose aggressive material abstractions, but nothing changes until you approve it.
+        Manual combine is local and literal: selected quantities become one plain stack. Smart Group simplifies matching materials while preserving meaningful origins, potency, and properties. Nothing changes until you approve it.
       </div>
       <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder={`Search ${candidates.length} items…`} style={{...npcInput,marginBottom:4}}/>
       <div style={{display:'flex',gap:4,marginBottom:5}}>

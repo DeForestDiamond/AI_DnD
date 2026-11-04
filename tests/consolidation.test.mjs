@@ -1,0 +1,98 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { CONSOLIDATE_RULES, describeConsolidationItems, validateConsolidationGroups } from '../src/helpers/consolidation.js';
+import { createItemManager } from '../src/helpers/items/manager.js';
+import { CONSOLIDATE_RULES as gptRules } from '../src/helpers/openai/consolidate.js';
+import { CONSOLIDATE_RULES as grokRules } from '../src/helpers/xai/consolidate.js';
+import { CONSOLIDATE_RULES as anthropicRules } from '../src/helpers/anthropic/consolidate.js';
+
+const stacks = names => names.map((name, i) => ({name, count:i+1}));
+const group = (name, items) => ({name, items, reason:'Compatible material.'});
+const validate = (name, items, definitions) => validateConsolidationGroups([group(name, items)], items, definitions);
+
+test('all providers share origin, potency and finished-item preservation rules', () => {
+  assert.equal(gptRules, CONSOLIDATE_RULES);
+  assert.equal(grokRules, CONSOLIDATE_RULES);
+  assert.equal(anthropicRules, CONSOLIDATE_RULES);
+  for (const term of ['Tarrasque', 'Baphomet', 'Orcus', 'Infernal Bone', 'Bone Ritual Knife', 'Unknown origin', 'plain named stack']) assert.ok(CONSOLIDATE_RULES.includes(term));
+});
+
+test('screenshot regression: mixed exceptional bones and bone objects cannot become Bone', () => {
+  const items = stacks(['Tarrasque Bone','Baphomet Bone','Orcus Bone','Archdevil Bone','Devil Bone','Bone Ritual Knife','Bone']);
+  assert.deepEqual(validate('Bone', items), []);
+  for (const source of items.slice(0,-1)) assert.deepEqual(validate('Bone', [source, items.at(-1)]), []);
+});
+
+test('ordinary devil bones can become Infernal Bone; lords and unknown origins cannot', () => {
+  const ordinary = stacks(['Devil Bone','Erinyes Bone','Horned Devil Bone']);
+  assert.equal(validate('Infernal Bone', ordinary).length, 1);
+  for (const name of ['Archdevil Bone','Baphomet Bone','Orcus Bone','Zariel Bone','Tarrasque Bone','Unidentified Bone','Demon Bone']) {
+    assert.deepEqual(validate('Infernal Bone', stacks(['Devil Bone',name])), []);
+  }
+  assert.deepEqual(validate('Infernal Bone', stacks(['Devil Bone','Iron'])), []);
+});
+
+test('same exceptional source can simplify raw forms without losing identity', () => {
+  for (const name of ['Tarrasque','Baphomet','Orcus','Red Dragon','Divine']) {
+    const items = stacks([`${name} Bone`,`${name} Bone Fragments`]);
+    assert.equal(validate(`${name} Bone`,items).length,1);
+  }
+  assert.deepEqual(validate('Dragon Bone', stacks(['Red Dragon Bone','White Dragon Bone'])), []);
+  assert.deepEqual(validate('Bone', stacks(['Bone','Infernal Bone'])), []);
+  assert.deepEqual(validate('Abyssal Bone', stacks(['Orcus Bone','Demon Bone'])), []);
+});
+
+test('ordinary stock still groups; finished equipment is excluded by its definition', () => {
+  const items = stacks(['Iron Ingot','Scrap Iron']);
+  assert.equal(validate('Iron',items).length,1);
+  const equipment = stacks(['Adamantine Blade','Adamantine Stock']);
+  assert.deepEqual(validate('Adamantine',equipment,{'Adamantine Blade':{type:'weapon',damage:'1d8'}}), []);
+});
+
+test('invalid quantities, unknown names, duplicate members and reuse are rejected without reserving sources', () => {
+  const items=stacks(['Mithral Wire','Mithral Plate']);
+  const good=group('Mithral',items);
+  for (const invalid of [
+    group('Mithral',[items[0],items[0]]),
+    group('Mithral',[items[0],{...items[1],count:999}]),
+    group('Mithral',[items[0],{...items[1],count:1}]),
+    group('Mithral',[items[0],{name:'Invented',count:2}]),
+    group('Mithral',[items[0],null]),
+    group('',items),
+  ]) assert.deepEqual(validateConsolidationGroups([invalid,good,good],items),[good]);
+  assert.deepEqual(validateConsolidationGroups(null,items),[]);
+});
+
+test('descriptions retain recorded properties without transmitting bag contents or mutating data', () => {
+  const items=stacks(['Infernal Bone','Devil Bone']);
+  const definitions={'Infernal Bone':{type:'material',label:'Archdevil origin; unique hellfire binding.',rarity:'legendary',contents:{Secret:2}}};
+  const before=structuredClone(definitions);
+  const text=describeConsolidationItems(items,definitions);
+  assert.match(text,/hellfire binding/);
+  assert.match(text,/legendary/);
+  assert.ok(!text.includes('Secret'));
+  assert.deepEqual(definitions,before);
+});
+
+for (const provider of ['openai','xai','anthropic']) test(`${provider}: real proposal path sends descriptions and filters unsafe groups without changing inventory`, async () => {
+  const original=globalThis.fetch;
+  const items=stacks(['Tarrasque Bone','Baphomet Bone','Devil Bone','Erinyes Bone']);
+  const groups=[group('Bone',items.slice(0,2)),group('Infernal Bone',items.slice(2))];
+  const charRef={current:{items:{'Tarrasque Bone':{label:'Legendary regenerative bone.'}},inventory:items.map(it=>({name:it.name,qty:it.count}))}};
+  const before=structuredClone(charRef.current);
+  let calls=0, request;
+  globalThis.fetch=async (url,init) => {
+    calls++; request=JSON.parse(init.body);
+    const text=JSON.stringify({groups});
+    return {ok:true,json:async()=>provider==='anthropic' ? {content:[{type:'text',text}]} : {output:[{type:'message',content:[{type:'output_text',text}]}]}};
+  };
+  try {
+    const manager=createItemManager({apiKey:'test',openAiApiKey:'test',xAiApiKey:'test',charRef,updateChar:()=>assert.fail('Proposal mutated inventory'),selectedModel:'test',MODEL_CONFIGS:{test:{provider,model:'test'}},log:()=>{},logUsage:()=>{}});
+    assert.deepEqual(await manager.proposeConsolidation({items}),[groups[1]]);
+    assert.equal(calls,1);
+    assert.match(JSON.stringify(request),/Legendary regenerative bone/);
+    assert.deepEqual(charRef.current,before);
+    await assert.rejects(manager.proposeConsolidation({items:[items[0]]}),/two stacks/);
+    assert.equal(calls,1);
+  } finally {globalThis.fetch=original;}
+});
