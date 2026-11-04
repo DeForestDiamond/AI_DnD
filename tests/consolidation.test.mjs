@@ -62,8 +62,8 @@ test('same exceptional source can simplify raw forms without losing identity', (
 });
 
 test('ordinary stock still groups; finished equipment is excluded by its definition', () => {
-  const items = stacks(['Iron Ingot','Scrap Iron']);
-  assert.equal(validate('Iron',items).length,1);
+  const items = stacks(['Iron Ingot','Dwarven Iron Ingot']);
+  assert.equal(validate('Iron Ingot (average size)',items).length,1);
   const equipment = stacks(['Adamantine Blade','Adamantine Stock']);
   assert.deepEqual(validate('Adamantine',equipment,{'Adamantine Blade':{type:'weapon',damage:'1d8'}}), []);
 });
@@ -91,6 +91,46 @@ test('descriptions retain recorded properties without transmitting bag contents 
   assert.match(text,/legendary/);
   assert.ok(!text.includes('Secret'));
   assert.deepEqual(definitions,before);
+});
+
+test('average-sized result names preserve exceptional bone identity', () => {
+  assert.equal(validate('Tarrasque Bone (average-sized portion)',stacks(['Tarrasque Bone','Tarrasque Bone Fragments'])).length,1);
+  assert.deepEqual(validate('Bone (average-sized portion)',stacks(['Tarrasque Bone','Baphomet Bone'])),[]);
+});
+
+test('bulk units can mix and standardize, but their result cannot be a bare material name', () => {
+  const salt=stacks(['Barrel of Salt','Crate of Salt']);
+  assert.deepEqual(validate('Salt',salt),[]);
+  assert.equal(validate('Salt (average-sized bulk lot)',salt).length,1);
+  const iron=stacks(['Iron Ingot','Scrap Iron']);
+  assert.deepEqual(validate('Iron',iron),[]);
+  assert.equal(validate('Iron Ingot (average size)',iron).length,1);
+});
+
+for (const provider of ['openai','xai','anthropic']) test(`${provider}: sized bulk proposals survive approval with summed counts and visible per-unit sizes`, async () => {
+  const original=globalThis.fetch;
+  const salt=[{name:'20 lb Salt Sack',count:2},{name:'50 lb Coarse Salt Crate',count:1}];
+  const iron=[{name:'2 lb Iron Ingot',count:10},{name:'8 lb Iron Ingot',count:2}];
+  const mixed=[{name:'Barrel of Salt',count:1},{name:'Barrel of Coarse Salt',count:1},{name:'Crate of Salt',count:1}];
+  const cases=[group('Salt (30 lb lot)',salt),group('Iron Ingot (3 lb)',iron),group('Salt (roughly barrel-sized lot)',mixed)];
+  globalThis.fetch=async (url,init)=>{
+    const request=JSON.parse(init.body);
+    const rules=provider==='anthropic'?request.system:request.input[0].content[0].text;
+    assert.match(rules,/sum\(source count \* source unit size\) \/ sum\(source counts\)/);
+    assert.match(rules,/Do not keep separate barrel\/crate groups/);
+    const text=JSON.stringify({groups:cases});
+    return {ok:true,json:async()=>provider==='anthropic'?{content:[{type:'text',text}]}:{output:[{type:'message',content:[{type:'output_text',text}]}]}};
+  };
+  try {
+    const items=cases.flatMap(g=>g.items);
+    const charRef={current:{inventory:[],stash:items.map(it=>({name:it.name,qty:it.count})),items:{}}};
+    const manager=createItemManager({apiKey:'test',openAiApiKey:'test',xAiApiKey:'test',charRef,updateChar:c=>{charRef.current=c;},applyEffects:(tags,c)=>{assert.equal(tags,'');return c;},selectedModel:'test',MODEL_CONFIGS:{test:{provider,model:'test'}},log:()=>{},logUsage:()=>{}});
+    const proposed=await manager.proposeConsolidation({items});
+    assert.deepEqual(proposed,cases);
+    for(const g of proposed) manager.executeConsolidation({...g,destination:'inventory'});
+    assert.deepEqual(charRef.current.inventory,cases.map(g=>({name:g.name,qty:g.items.reduce((n,it)=>n+it.count,0)})));
+    assert.deepEqual(charRef.current.stash,[]);
+  } finally {globalThis.fetch=original;}
 });
 
 for (const provider of ['openai','xai','anthropic']) test(`${provider}: real proposal path sends descriptions and filters unsafe groups without changing inventory`, async () => {
