@@ -1,3 +1,5 @@
+import { SALVAGE_MATERIAL_RULES } from '../salvageMaterialRules.js';
+
 // Grok-specific salvage helper. Game-side item removal and recovered-material
 // application remain shared in App.jsx; this file only decides what survives.
 
@@ -77,6 +79,8 @@ MATERIAL NAMING
 - Do not mine descriptive item names for fictional parts. Triple-Locked does not mean three recoverable locks.
 - Ordinary construction usually becomes raw material, not intact working subassemblies. Preserve named components only when genuinely precision, magical, mechanical, or independently reusable AND they clear the specialized-component high bar above.
 - Do NOT merge biologically different creature materials into generic monster parts.
+
+${SALVAGE_MATERIAL_RULES}
 
 RECOVERED ITEM LABELS — DEFAULT TO NULL; DESCRIBE WHAT SURVIVES AND DOES NOW
 - A label is NOT mandatory prose. Return label:null for ordinary bulk materials, recognizable creature materials, and any entry whose name adequately describes it. Most recovered entries should have no label. Magical origin, high value, rarity, or a powerful source does not by itself justify a label.

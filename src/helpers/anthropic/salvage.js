@@ -1,7 +1,11 @@
+import { SALVAGE_MATERIAL_RULES } from '../salvageMaterialRules.js';
+
 export const ANTHROPIC_SALVAGE_MODEL = 'claude-sonnet-4-5';
 const shape = `{ "results": [ { "recovers": [{"name":"Material Name","count":2,"label":null}], "destroyed": ["Item Name"], "note": "one sentence on what survived the process and what was lost" } ] }`;
 
 const SYSTEM = `You are a salvager in a D&D 5e game (Forgotten Realms). Given finished items, determine what raw materials are recovered by breaking them down.
+
+${SALVAGE_MATERIAL_RULES}
 
 RECOVERED ITEM LABELS — DEFAULT TO NULL; DESCRIBE WHAT SURVIVES AND DOES NOW
 - A label is NOT mandatory prose. Return label:null for ordinary bulk materials, recognizable creature materials, and any entry whose name adequately describes it. Most recovered entries should have no label. Magical origin, high value, rarity, or a powerful source does not by itself justify a label.

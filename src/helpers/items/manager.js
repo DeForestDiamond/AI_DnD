@@ -481,11 +481,24 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
     // an existing item's mechanical definition through a structured ITEM tag.
     for (const recovered of result.recovers || []) {
       const label = typeof recovered.label === 'string' ? recovered.label.trim() : '';
-      if (!label) continue;
       const itemKey = Object.keys(next.items || {}).find(name => name.toLowerCase() === String(recovered.name || '').trim().toLowerCase());
       if (!itemKey) continue;
       const item = next.items[itemKey];
-      const existingLabel = typeof item.label === 'string' ? item.label.trim() : '';
+      // ITEM additions precede removals, so a same-name recovery can inherit
+      // the old source's label. Replace it only when ALL held source units
+      // were salvaged; never wipe metadata from unsubmitted copies.
+      const sameSources = submitted.filter(it => it.name.toLowerCase() === itemKey.toLowerCase());
+      const otherEquippedCopy = [c.slots, ...Object.values(c.companions || {}).map(comp=>comp?.slots)]
+        .some(slots=>Object.values(slots || {}).some(name=>String(name || '').toLowerCase()===itemKey.toLowerCase()));
+      const replacesSource = !otherEquippedCopy && sameSources.length > 0 && sameSources.reduce((n,it)=>n+it.count,0) >= totalHeld(src[sameSources[0].name]);
+      const existingLabel = !replacesSource && typeof item.label === 'string' ? item.label.trim() : '';
+      if (!label) {
+        if (replacesSource && item.label) {
+          const { label: _oldLabel, ...material } = item;
+          next = { ...next, items: { ...next.items, [itemKey]: material } };
+        }
+        continue;
+      }
       const mergedLabel = existingLabel && existingLabel !== label && !existingLabel.includes(label)
         ? existingLabel + ' ' + label : existingLabel || label;
       next = { ...next, items: { ...next.items, [itemKey]: { ...item, label: mergedLabel } } };
