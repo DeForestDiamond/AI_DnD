@@ -11,6 +11,7 @@ import { callAnthropicConsolidate } from '../anthropic/consolidate.js';
 import { callAnthropicSalvage } from '../anthropic/salvage.js';
 import { buildCraftingComparison } from '../craftingComparison.js';
 import { describeConsolidationItems, validateConsolidationGroups } from '../consolidation.js';
+import { assertSalvageBreakdown } from '../salvageMaterialRules.js';
 
 export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, updateChar, applyEffects, selectedModel, MODEL_CONFIGS, log, logUsage }) => {
   // ── Crafting: propose, then execute ────────────────────────────────────────
@@ -441,6 +442,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       const gOut = gptUsage?.output_tokens || 0;
       log(`[HELPER] salvage via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
       log(`[SALVAGE] Recovers: ${(gptResult.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
+      assertSalvageBreakdown(gptResult, items, db);
       return gptResult;
     }
     if (MODEL_CONFIGS[selectedModel]?.provider === 'xai') {
@@ -454,11 +456,13 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       const gOut = grokUsage?.output_tokens || 0;
       log(`[HELPER] salvage via Grok ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
       log(`[SALVAGE] Recovers: ${(grokResult.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
+      assertSalvageBreakdown(grokResult, items, db);
       return grokResult;
     }
     const { result, usage: anthropicUsage } = await callAnthropicSalvage({ apiKey: key, itemsText: itemList });
     if (anthropicUsage) logUsage('salvage', { usage: anthropicUsage });
     log(`[SALVAGE] Recovers: ${(result.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
+    assertSalvageBreakdown(result, items, db);
     return result;
   };
 
@@ -466,6 +470,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
   // was recovered. Mirrors executeCrafting's split-source handling.
   const executeDismantle = (result, submitted, destination = 'inventory') => {
     const c = charRef.current;
+    assertSalvageBreakdown(result, submitted, c.items || {});
     const src = materialSources(c);
     for (const it of submitted) {
       const held = totalHeld(src[it.name]);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
-import { SALVAGE_MATERIAL_RULES } from '../src/helpers/salvageMaterialRules.js';
+import { SALVAGE_MATERIAL_RULES, assertSalvageBreakdown } from '../src/helpers/salvageMaterialRules.js';
 import { callGptSalvage } from '../src/helpers/openai/salvage.js';
 import { callGrokSalvage } from '../src/helpers/xai/salvage.js';
 import { callAnthropicSalvage } from '../src/helpers/anthropic/salvage.js';
@@ -73,4 +73,51 @@ test('same-name partial salvage and equipped copies retain their shared existing
     manager.executeDismantle({recovers:[{name,count:args.count,label:null}]},[{name,count:args.count}]);
     assert.equal(charRef.current.items[name].label,questLabel);
   }
+});
+
+test('screenshotted finished consumables are not valid salvage, even after generic renaming',()=>{
+  for(const name of ['Vampiric Draught','Stoneblood Elixir','Cloud Giant Marrow Salve','Sleeping Tincture','Hellfire Fuse Cord','Injury Poison','Generic Healing Potion','Explosive Charge']) {
+    assert.throws(()=>assertSalvageBreakdown({recovers:[{name,count:1,label:null}]},[]),/finished items instead of breaking them down/);
+  }
+  assert.doesNotThrow(()=>assertSalvageBreakdown({recovers:[
+    {name:'Bronze Dragon Scale',count:20},
+    {name:'Mith Drannor Crystal',count:1},
+    {name:'Heavy Uraninite Concentrate',count:119},
+    {name:'Spent Elixir Residue',count:1},
+    {name:'Alchemical Solvent',count:1},
+    {name:'Hellfire Ignition Crystal',count:1},
+    {name:'Arcane Actuator',count:1},
+  ]},[]));
+});
+
+test('same-name finished equipment is rejected before any material consumption',()=>{
+  const {charRef,manager}=managerFor();
+  charRef.current.inventory=[{name:'Cleaver',qty:1}];
+  charRef.current.items={Cleaver:{type:'weapon',damage:'1d8',label:'A heavy cleaver.'}};
+  const before=structuredClone(charRef.current);
+  assert.throws(()=>manager.executeDismantle({recovers:[{name:'Cleaver',count:1}]},[{name:'Cleaver',count:1}]),/Nothing was consumed/);
+  assert.deepEqual(charRef.current,before);
+});
+
+for(const provider of ['openai','xai','anthropic']) test(`${provider}: rejects renamed finished output, then accepts actual constituent materials`,async()=>{
+  const original=globalThis.fetch;
+  const source='Royal Vampiric Draught';
+  const initial={...structuredClone(EMPTY_CHAR),inventory:[{name:source,qty:1}],items:{[source]:{type:'consumable',label:'Creates fresh vampirism when consumed.'}}};
+  const charRef={current:structuredClone(initial)};
+  let calls=0;
+  globalThis.fetch=async()=>{
+    const recovers=++calls===1?[{name:'Vampiric Draught',count:1,label:'Creates fresh vampirism when consumed.'}]:[{name:'Glass',count:1,label:null},{name:'Spent Arcane Residue',count:1,label:null}];
+    const text=JSON.stringify({results:[{source,destroyed:[source],recovers,note:'Breakdown.'}]});
+    return {ok:true,json:async()=>provider==='anthropic'?{content:[{text}]}:{output:[{type:'message',content:[{type:'output_text',text}]}]}};
+  };
+  try {
+    const manager=createItemManager({apiKey:'test',openAiApiKey:'test',xAiApiKey:'test',charRef,updateChar:()=>assert.fail('Proposal changed character'),applyEffects,selectedModel:'test',MODEL_CONFIGS:{test:{provider,model:'test'}},log:()=>{},logUsage:()=>{}});
+    const items=[{name:source,count:1}];
+    await assert.rejects(manager.proposeDismantle({items}),/Nothing was consumed/);
+    assert.equal(calls,1); // No automatic extra paid generation.
+    assert.deepEqual(charRef.current,initial);
+    const result=await manager.proposeDismantle({items});
+    assert.deepEqual(result.recovers.map(it=>it.name),['Glass','Spent Arcane Residue']);
+    assert.deepEqual(charRef.current,initial);
+  } finally {globalThis.fetch=original;}
 });
