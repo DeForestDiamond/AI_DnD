@@ -261,6 +261,7 @@ export default function App() {
   const save = useSave({
     charRef,
     messages: fullLog,
+    messagesRef: fullLogRef,
     storySummaryRef,
     debugLogRef,
     promptLogRef,
@@ -287,17 +288,29 @@ export default function App() {
     const t = setTimeout(() => {
       try {
         const t0 = performance.now();
-        save.autoSave(charRef.current, fullLogRef.current);
+        void save.autoSave(charRef.current, fullLogRef.current);
         const ms = performance.now() - t0;
-        // Serialising a long campaign to localStorage runs on the main thread.
-        // If it is costing real time, say so rather than silently stuttering.
+        // Capturing a large snapshot still runs on the main thread; the durable
+        // database commit runs asynchronously and reports failure in the UI.
         if (ms > 150) log(`[SAVE] Autosave took ${Math.round(ms)}ms — ${fullLogRef.current.length} messages`);
       } catch (e) {
         log(`[SAVE] Autosave failed: ${e.message}`);
       }
     }, 2500);
     return () => clearTimeout(t);
-  }, [character, phase, selectedModel, showRawTags, voice.rate, voice.pitch]);
+  }, [character, fullLog, storySummary, phase, selectedModel, showRawTags, voice.rate, voice.pitch]);
+
+  // Mobile browsers may kill a background tab without firing beforeunload.
+  // Flush the latest refs as soon as the page is hidden, before a pending
+  // debounce can be cancelled by closing the app.
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    const flush = () => { void save.autoSave(charRef.current,fullLogRef.current); };
+    const hidden = () => { if (document.visibilityState === 'hidden') flush(); };
+    document.addEventListener('visibilitychange',hidden);
+    window.addEventListener('pagehide',flush);
+    return () => { document.removeEventListener('visibilitychange',hidden); window.removeEventListener('pagehide',flush); };
+  },[phase, selectedModel, showRawTags, voice.rate, voice.pitch]);
 
   // Browsers only allow a generic confirmation, but it is enough to stop a
   // stray back gesture discarding work that has not been written yet.
@@ -904,6 +917,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         loadAutoSave={save.loadAutoSave}
         onLoadFull={applyLoadedFull}
         onLoadCharacter={applyLoadedCharacter}
+        autoSaveStatus={save.autoSaveStatus}
       />}
       <div style={{maxWidth:500,padding:40}}>
         <div style={{fontSize:64,marginBottom:16}}>🐉</div>
@@ -1125,6 +1139,9 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
   return (
     <div style={{...parchment,flexDirection:'row',height:'100vh',overflow:'hidden'}}>
       <style>{animations}</style>
+      {save.autoSaveStatus.state==='error' && <div role="alert" style={{position:'fixed',bottom:76,left:12,right:12,zIndex:95,background:'#382019',border:'1px solid #c96a4c',borderRadius:5,padding:10,fontSize:12,color:'#f2c4b4'}}>
+        {save.autoSaveStatus.message} <button style={{...btn(false),marginLeft:8}} onClick={()=>setShowSave(true)}>SAVE / LOAD</button>
+      </div>}
 
       {showSave && <SaveModal
         onClose={()=>setShowSave(false)}
@@ -1136,6 +1153,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         loadAutoSave={save.loadAutoSave}
         onLoadFull={applyLoadedFull}
         onLoadCharacter={applyLoadedCharacter}
+        autoSaveStatus={save.autoSaveStatus}
       />}
 
       {showAbilitiesModal && (
@@ -1508,5 +1526,6 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     </div>
   );
 }
+
 
 

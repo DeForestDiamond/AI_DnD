@@ -1,5 +1,7 @@
 import { SAVE_VERSION } from '../constants/progression.js';
 import { migrateCharacter } from './character/migration.js';
+import { useRef, useState } from 'react';
+import { browserSaveStore } from '../helpers/browserSave.js';
 
 // ── Tolerant save parser ───────────────────────────────────────────────────────
 // Hand-edited saves on mobile commonly have small JSON slips. Try strict parse
@@ -42,7 +44,9 @@ export function parseSaveJSON(raw) {
   }
 }
 
-export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promptLogRef, tokenCostLogRef, cacheStateRef, getSettings, onLoadFull, onLoadCharacter }) {
+export function useSave({ charRef, messages, messagesRef, storySummaryRef, debugLogRef, promptLogRef, tokenCostLogRef, cacheStateRef, getSettings, onLoadFull, onLoadCharacter }) {
+  const [autoSaveStatus,setAutoSaveStatus] = useState({state:'idle'});
+  const saveSequence = useRef(0);
 
   // Inventory and stash are already compact [{name, qty}] stacks in memory.
   // Save the character exactly as it exists; migration handles older compressed
@@ -59,7 +63,7 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
       ? (({ arc, ...rest }) => compressCharForSave({ ...rest, _v: SAVE_VERSION }))(charRef.current)
       : compressCharForSave({ ...charRef.current, _v: SAVE_VERSION }),
     ...(type === 'fullsave' ? {
-      messages,
+      messages: messagesRef?.current || messages,
       storySummary: storySummaryRef.current || '',
       debugLog: debugLogRef?.current || [],
       promptLog: promptLogRef?.current || null,
@@ -82,7 +86,7 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
   const generateFullSave = () => {
     const state = buildState('fullsave');
     downloadJSON(state, `${charRef.current.name || 'character'}-fullsave-${Date.now()}.json`);
-    try { localStorage.setItem('dnd-autosave', JSON.stringify(state)); } catch {}
+    void autoSave(charRef.current,messagesRef?.current || messages);
     return state;
   };
 
@@ -92,10 +96,12 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
     return state;
   };
 
-  // ── localStorage auto-save ───────────────────────────────────────────────────
-  const autoSave = (char, msgs) => {
+  // ── Browser auto-save ──────────────────────────────────────────────────────
+  const autoSave = async (char, msgs) => {
+    const sequence = ++saveSequence.current;
+    setAutoSaveStatus({state:'saving'});
     try {
-      localStorage.setItem('dnd-autosave', JSON.stringify({
+      const saved = await browserSaveStore.save({
         _type: 'fullsave', _v: SAVE_VERSION,
         settings: getSettings?.() || {},
         character: compressCharForSave({ ...char, _v: SAVE_VERSION }),
@@ -103,25 +109,21 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
         storySummary: storySummaryRef.current || '',
         tokenCostLog: tokenCostLogRef?.current || [],
         cacheStateSnapshot: cacheStateRef?.current || null,
-      }));
-    } catch {}
+      });
+      if (sequence === saveSequence.current) setAutoSaveStatus({state:'saved',savedAt:saved.state._savedAt,messageCount:msgs.length,backend:saved.backend});
+      return true;
+    } catch(error) {
+      if (sequence === saveSequence.current) setAutoSaveStatus({state:'error',message:error.message});
+      console.error('[SAVE]',error);
+      return false;
+    }
   };
 
-  const loadAutoSave = () => {
-    try {
-      const raw = localStorage.getItem('dnd-autosave');
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch { return null; }
-  };
+  const loadAutoSave = () => browserSaveStore.load();
 
-  const hasAutoSave = () => {
-    try { return !!localStorage.getItem('dnd-autosave'); } catch { return false; }
-  };
+  const hasAutoSave = async () => Boolean(await loadAutoSave());
 
-  const clearAutoSave = () => {
-    try { localStorage.removeItem('dnd-autosave'); } catch {}
-  };
+  const clearAutoSave = () => browserSaveStore.clear();
 
   // ── Load ─────────────────────────────────────────────────────────────────────
   const loadFromState = (state) => {
@@ -168,6 +170,7 @@ export function useSave({ charRef, messages, storySummaryRef, debugLogRef, promp
   return {
     generateFullSave, generateCharExport,
     loadFromFile, loadFromCode, loadFromState,
-    autoSave, loadAutoSave, hasAutoSave, clearAutoSave,
+    autoSave, loadAutoSave, hasAutoSave, clearAutoSave, autoSaveStatus,
   };
 }
+

@@ -1,0 +1,45 @@
+name: Browser save durability
+on:
+  push:
+    paths:
+      - 'src/helpers/browserSave.js'
+      - 'src/hooks/useSave.js'
+      - 'src/App.jsx'
+      - 'src/components/modals/SaveModal.jsx'
+      - 'tests/browserSave*'
+      - 'package*.json'
+      - '.github/workflows/browser-save.yml'
+  pull_request:
+    paths:
+      - 'src/helpers/browserSave.js'
+      - 'src/hooks/useSave.js'
+      - 'src/App.jsx'
+      - 'src/components/modals/SaveModal.jsx'
+      - 'tests/browserSave*'
+      - 'package*.json'
+      - '.github/workflows/browser-save.yml'
+permissions:
+  contents: read
+jobs:
+  durability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/browserSave.test.mjs
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Browser quota and reload regression
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/save-vite.log 2>&1 &
+          trap 'kill $! 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:5173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/browserSave.browser.mjs

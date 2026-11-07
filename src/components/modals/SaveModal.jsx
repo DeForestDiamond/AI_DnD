@@ -1,10 +1,18 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { btn, panel, colors, fonts } from '../../styles/theme.js';
 
-export function SaveModal({ onClose, generateFullSave, generateCharExport, loadFromFile, loadFromCode, hasAutoSave, loadAutoSave, onLoadFull, onLoadCharacter }) {
+export function SaveModal({ onClose, generateFullSave, generateCharExport, loadFromFile, loadFromCode, loadAutoSave, onLoadFull, onLoadCharacter, autoSaveStatus }) {
   const [msg, setMsg]           = useState('');
   const [loadCode, setLoadCode] = useState('');
   const fileRef = useRef(null);
+  const [browserSave,setBrowserSave] = useState({loading:true});
+  useEffect(() => {
+    let active=true;
+    Promise.resolve().then(loadAutoSave).then(state=>{
+      if(active) setBrowserSave({loading:false,state});
+    }).catch(error=>{ if(active) setBrowserSave({loading:false,error:error.message}); });
+    return ()=>{active=false;};
+  },[autoSaveStatus?.savedAt]);
 
   const doFullSave = () => {
     generateFullSave();
@@ -37,18 +45,18 @@ export function SaveModal({ onClose, generateFullSave, generateCharExport, loadF
     } catch { setMsg('✗ Invalid save code.'); }
   };
 
-  const doLoadAuto = () => {
+  const doLoadAuto = async () => {
     try {
-      const state = loadAutoSave();
+      const state = await loadAutoSave();
       if (!state) { setMsg('No autosave found.'); return; }
       if (state._type === 'fullsave' || state.messages) {
-        onLoadFull(state.character, state.messages || [], state.storySummary || '', state.settings);
+        onLoadFull(state.character, state.messages || [], state.storySummary || '', state.settings, state.tokenCostLog || [], state.cacheStateSnapshot || null);
       } else {
         onLoadCharacter(state.character, state.settings);
       }
       setMsg('✓ Autosave restored!');
       setTimeout(onClose, 1200);
-    } catch { setMsg('✗ Failed to load autosave.'); }
+    } catch(error) { setMsg(`✗ Failed to load autosave: ${error.message}`); }
   };
 
   const ta = {
@@ -80,13 +88,18 @@ export function SaveModal({ onClose, generateFullSave, generateCharExport, loadF
         </div>
 
         {/* Autosave */}
-        {hasAutoSave() && (
+        <>
           <div style={{borderTop:`1px solid ${colors.borderDim}`,paddingTop:12}}>
             <div style={{fontFamily:fonts.display,fontSize:10,color:colors.textFaint,letterSpacing:2,marginBottom:6}}>AUTOSAVE</div>
-            <div style={{fontSize:11,color:colors.textGhost,marginBottom:6}}>A browser autosave exists from your last session.</div>
-            <button style={{...btn(false),width:'100%'}} onClick={doLoadAuto}>⚡ Restore Autosave</button>
+            <div style={{fontSize:11,color:colors.textGhost,marginBottom:6}}>
+              {browserSave.loading ? 'Checking browser autosave…' : browserSave.error ? `Cannot read browser autosave: ${browserSave.error}` : browserSave.state ?
+                `${browserSave.state.messages?.length || 0} messages${browserSave.state._savedAt ? ` · ${new Date(browserSave.state._savedAt).toLocaleString()}` : ' · older save, timestamp unavailable'}` : 'No browser autosave found.'}
+            </div>
+            {autoSaveStatus?.state==='saving' && <div role="status" style={{fontSize:11,color:colors.textGhost}}>Saving browser backup…</div>}
+            {autoSaveStatus?.state==='error' && <div role="alert" style={{fontSize:11,color:'#e8947b',marginBottom:6}}>{autoSaveStatus.message}</div>}
+            <button disabled={!browserSave.state || browserSave.loading} style={{...btn(false),width:'100%',opacity:browserSave.state?1:0.5}} onClick={doLoadAuto}>⚡ Restore Autosave</button>
           </div>
-        )}
+        </>
 
         {/* Load from file */}
         <div style={{borderTop:`1px solid ${colors.borderDim}`,paddingTop:12}}>
@@ -109,3 +122,4 @@ export function SaveModal({ onClose, generateFullSave, generateCharExport, loadF
     </div>
   );
 }
+
