@@ -1,3 +1,4 @@
+import { ARC_TERMINATION_BLOCK } from './arcTermination.js';
 import { CONFLICT_RESISTANCE_BLOCK } from './conflict.js';
 import { SETTING_SOCIAL_RULES } from './socialNorms.js';
 export { PLAYER_AGENCY_BLOCK } from './playerAgency.js';
@@ -51,7 +52,9 @@ AWARENESS → INVESTMENT → PURSUIT. Present connected events, consequences, ag
 
 DEVELOP, DO NOT RESET. There is no scene quota or mandatory escalation. The same opposition may adapt through tactics, agents, preparations, retreats, reinforcements, or changed objectives. A skirmish or defeated lieutenant need not end the central conflict. Preserve tangible gains: weakened defenses, freed captives, lost resources, time bought, and changed bargaining power. Do not erase progress with stronger replacement enemies or inflate a local problem merely to extend play.
 
-COMPLETION. The player cannot see the assigned arc. After any material confrontation, negotiation, or other effect on its antagonist, check whether the central conflict is resolved. Death, capture, permanent expulsion, dismantling, loss of power, buying off, alliance, or the player's explicit conclusion of their business (deal, truce, accepted payment, or deliberate disengagement) can resolve it. Ignoring a hook alone is not resolution; neither is one won skirmish while the central threat remains. Emit [ARC COMPLETE] in the SAME response that resolves it, not after an epilogue. Living enemies need not be killed when the player settles with them. No hidden superior, successor, revenge faction, larger conspiracy, or deeper layer may retroactively keep this resolved arc alive. Continue actual loose ends under ARC DEVELOPMENT AND AFTERMATH.`;
+COMPLETION. The player cannot see the assigned arc. After any material confrontation, negotiation, or other effect on its antagonist, check whether the central conflict is resolved. Death, capture, permanent expulsion, dismantling, loss of power, buying off, alliance, or the player's explicit conclusion of their business (deal, truce, accepted payment, or deliberate disengagement) can resolve it. Ignoring a hook alone is not resolution; neither is one won skirmish while the central threat remains. Emit [ARC COMPLETE] in the SAME response that resolves it, not after an epilogue. Living enemies need not be killed when the player settles with them. No hidden superior, successor, revenge faction, larger conspiracy, or deeper layer may retroactively keep this resolved arc alive. Continue actual loose ends under ARC DEVELOPMENT AND AFTERMATH.
+
+${ARC_TERMINATION_BLOCK}`;
 
 // ── Shared setting/geography (both models) ─────────────────────────────────────
 export const SETTING_BLOCK = `── SETTING: FAERÛN (FORGOTTEN REALMS) ──

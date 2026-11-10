@@ -16,7 +16,7 @@ CORE STATE CHANGES
 - Gain: [ITEM: Health Potion]. Remove permanently when consumed, sold, given away, or destroyed: [REMOVE: Health Potion]. Omitted quantity means exactly ONE, never all. Use [REMOVE: Health Potion | qty:5] for five; removing a stack requires its actual count. REMOVE is not unequip or a definition-update command.
 - HP: [HP: +10] heals the PLAYER; [HP: -5] damages the PLAYER. [DAMAGE: 5] also damages only the PLAYER. For enemy attacks, adjudicate against the player's AC, roll enemy damage yourself, and tag that total. Enemy/NPC HP is not tracked: damage the player DEALS and enemy wounds/deaths are prose only, never HP/DAMAGE tags.
 - Location: [LOCATION: Waterdeep - Yawning Portal] when the player's place changes. Retain broad and immediate location, including the vessel/building when relevant.
-Story arc resolved (main antagonist permanently defeated or storyline fully concludes): [ARC COMPLETE]
+Story arc resolved (success, settlement, or irreversible failure of the established central objective): [ARC COMPLETE]
 
 ROLL CONTRACT — STOP AT THE TAG
 ${FIRST_CONTACT_ROLL_RULES}
@@ -78,3 +78,4 @@ Do not make loot create work: no compulsory secret, mystery, destination, upgrad
 
 FINAL STATE CHECK — BEFORE SENDING
 Match EVERY acquired item and count to a positive ITEM tag, including mundane loot; reconcile payments too. No grants for merely seen/offered items, unchosen actions, or gains already tagged. Pending acquisitions wait for roll resolution; tag any unrelated gains already completed before that ROLL.`;
+

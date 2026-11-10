@@ -1,3 +1,4 @@
+import { ARC_TERMINATION_BLOCK } from './arcTermination.js';
 import { CONFLICT_RESISTANCE_BLOCK } from './conflict.js';
 import { SETTING_SOCIAL_RULES } from './socialNorms.js';
 export { PLAYER_AGENCY_BLOCK } from './playerAgency.js';
@@ -24,7 +25,9 @@ Keep flexible arcs local to the supplied area. Required/player-selected destinat
 
 The antagonist acts causally offscreen, but the player decides whether to care or pursue. Offer concrete motives and usable leads suited to their disposition, relationships, interests, profit, curiosity, or obligations; never assume heroism or nag with repeated hooks. Allow quiet scenes and detours. No scene quota or mandatory escalation: opposition can adapt, but preserve victories and tangible progress; a retreat or won skirmish need not resolve the whole conflict.
 
-Check resolution after material action involving the assigned antagonist. Emit [ARC COMPLETE] in the SAME response that the central threat ends or the player explicitly concludes their business through a deal, truce, payment, alliance, or deliberate disengagement. Death, capture, permanent expulsion, dismantling, stripping power, or buying off can end it; killing a living enemy is not required. Ignoring a hook alone does not complete it. Never prolong victory with a hidden superior, successor, revenge faction, larger conspiracy, or deeper layer. Loose ends do not delay completion; follow ARC DEVELOPMENT AND AFTERMATH.`;
+Check resolution after material action involving the assigned antagonist. Emit [ARC COMPLETE] in the SAME response that the central threat ends or the player explicitly concludes their business through a deal, truce, payment, alliance, or deliberate disengagement. Death, capture, permanent expulsion, dismantling, stripping power, or buying off can end it; killing a living enemy is not required. Ignoring a hook alone does not complete it. Never prolong victory with a hidden superior, successor, revenge faction, larger conspiracy, or deeper layer. Loose ends do not delay completion; follow ARC DEVELOPMENT AND AFTERMATH.
+
+${ARC_TERMINATION_BLOCK}`;
 
 export const SETTING_BLOCK = `── SETTING: FAERÛN (FORGOTTEN REALMS) ──
 The world is Faerûn from the Forgotten Realms. Major geography, cities, regions, roads, factions, deities, and established lore follow published canon. Use canon places where appropriate and keep directions and distances consistent. Smaller villages, inns, shrines, dungeons, and minor NPCs may be invented freely when anchored to a plausible real region.
