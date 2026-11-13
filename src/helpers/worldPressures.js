@@ -14,8 +14,20 @@ export const applyWorldPressures = (text, existing = {}) => {
   return pressures;
 };
 
+// Editing/regenerating discards a story branch. Rebuild this derived ledger
+// from the retained DM messages, never from the current (future) character.
+// Replay only pressure tags; replaying all effects would duplicate loot/XP/HP.
+export const restoreWorldPressuresForHistory = (char, messages) => ({
+  ...char,
+  worldPressures: (messages || []).reduce((pressures,message) =>
+    message.role === 'dm' || message.role === 'assistant'
+      ? applyWorldPressures(message.text,pressures)
+      : pressures, {}),
+});
+
 export const worldPressureContext = (char) => {
   const entries = Object.entries(char?.worldPressures || {}).filter(([, p]) => p && typeof p.current === 'string' && typeof p.next === 'string' && typeof p.timing === 'string');
   if (!entries.length) return '';
   return '\nONGOING WORLD PRESSURES (DM MEMORY; plans are not completed outcomes):\n' + entries.map(([id, p]) => JSON.stringify({ id, ...p })).join('\n');
 };
+

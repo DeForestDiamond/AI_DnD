@@ -32,6 +32,7 @@ import { makeUsageEntry, snapshotCacheState, diffCacheState } from './helpers/de
 import { createSummaryManager, parseSummary, formatSummaryForApi, coveredMessageCount, legacyHistoryStart } from './helpers/history/manager.js';
 import { createExtractionManager } from './helpers/extraction/manager.js';
 import { createItemManager } from './helpers/items/manager.js';
+import { restoreWorldPressuresForHistory } from './helpers/worldPressures.js';
 
 function StatBar({ label, value, desc }) {
   return (
@@ -817,16 +818,22 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     setLoading(false);
   };
 
+  const rewindHistory = (log, idx) => {
+    const truncated = log.slice(0, idx);
+    // Restore before summary persistence or handleSend can autosave/build a
+    // prompt. Updates, newly created pressures, and END tags all rewind.
+    updateChar(restoreWorldPressuresForHistory(charRef.current,truncated));
+    setFullLog(truncated);
+    fullLogRef.current = truncated;
+    initSummarizedAt(truncated.length, storySummaryRef.current, truncated);
+    return truncated;
+  };
+
   const handleEditMessage = async (msgId, newText) => {
     const log = fullLogRef.current;
     const idx = log.findIndex(m => m.id === msgId);
     if (idx === -1) return;
-    // Truncate fullLog at the edited message (removes it and everything after)
-    const truncated = log.slice(0, idx);
-    setFullLog(truncated);
-    fullLogRef.current = truncated;
-    // Reset summarization threshold so it fires correctly at the new log length
-    initSummarizedAt(truncated.length, storySummaryRef.current, truncated);
+    const truncated = rewindHistory(log,idx);
     await handleSend(newText, truncated);
   };
 
@@ -836,10 +843,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
     if (lastUserIdx === -1) return;
     const actualIdx = log.length - 1 - lastUserIdx;
     const lastUserMsg = log[actualIdx];
-    const truncated = log.slice(0, actualIdx);
-    setFullLog(truncated);
-    fullLogRef.current = truncated;
-    initSummarizedAt(truncated.length, storySummaryRef.current, truncated);
+    const truncated = rewindHistory(log,actualIdx);
     await handleSend(lastUserMsg.text, truncated);
   };
 
