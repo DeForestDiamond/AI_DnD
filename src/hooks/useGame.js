@@ -1,7 +1,8 @@
+import { declaredAttackHands } from '../helpers/attackHands.js';
 import { arcContext } from '../prompts/arcPacing.js';
 import { DM_CAPTURE_KEY } from '../helpers/debug/dmRequestCapture.js';
 import { normalizeWeaponDamage } from '../utils/weaponDamage.js';
-import { rollDie, rollDice, getMainWeapon, effectiveStats, calcAC, modStr, profBonus, statMod, allItems, effectiveMaxHp } from './useCharacter.js';
+import { rollDie, rollDice, getWeaponInSlot, effectiveStats, calcAC, modStr, profBonus, statMod, allItems, effectiveMaxHp } from './useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
 import { subclassPromptLines } from '../constants/subclasses.js';
@@ -485,48 +486,57 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey, onRequestCap
     // Don't trigger if the attack word is inside quotes (player is speaking dialogue, not acting)
     const insideQuotes = /["'「][^"'「」]*\b(attack|strike|stab|slash|swing|lunge|thrust|smite|bash|cleave|slice|hack|fight|engage|charge|shoot|fire|loose)\b[^"'「」]*["'」]/i;
     if (attackWords.test(userMsg) && !insideQuotes.test(userMsg) && !/\b(don't|dont|not|no|avoid|retreat|run|flee|hide|sneak)\b/i.test(userMsg)) {
-      const weapon = getMainWeapon(char.slots, char.stats, char.items || {});
-      if (!weapon) log?.('[ATTACK] Attack word detected but no weapon equipped in mainhand — no roll made');
-      if (weapon) {
-        const result = performAttack(weapon, char.stats, char.level);
-        const pb     = profBonus(char.level);
+      let sneakApplied = false;
+      const hands = declaredAttackHands(userMsg,char);
+      for (const hand of hands) {
+        const weapon = getWeaponInSlot(char.slots, char.stats, char.items || {}, hand);
+        if (!weapon) log?.(`[ATTACK] No weapon definition in ${hand} — no automated roll made for that hand`);
+        if (weapon) {
+          const result = performAttack(weapon, char.stats, char.level);
 
-        // Check for sneak attack
-        const rogueLevels = (char.classLevels || {}).Rogue || 0;
-        const isStealth   = /\b(hiding|hidden|shadow|stealth|sneak|ambush|surprise|dark|darkness|unseen|undetected|ghost|backstab|behind|silently)\b/i.test(userMsg);
-        let sneakDmg = 0;
-        let sneakDesc = '';
-        if (rogueLevels > 0 && isStealth && !result.fumble) {
-          const sneakDice = ['1d6','1d6','2d6','2d6','3d6'][Math.min(rogueLevels-1,4)];
-          sneakDmg = rollDice(sneakDice);
-          sneakDesc = ` + ${sneakDmg} sneak attack (${sneakDice})`;
-        }
+          // Check for sneak attack
+          const rogueLevels = (char.classLevels || {}).Rogue || 0;
+          const isStealth   = /\b(hiding|hidden|shadow|stealth|sneak|ambush|surprise|dark|darkness|unseen|undetected|ghost|backstab|behind|silently)\b/i.test(userMsg);
+          let sneakDmg = 0;
+          let sneakDesc = '';
+          if (rogueLevels > 0 && isStealth && !result.fumble && !sneakApplied) {
+            sneakApplied = true;
+            const sneakDice = ['1d6','1d6','2d6','2d6','3d6'][Math.min(rogueLevels-1,4)];
+            sneakDmg = rollDice(sneakDice);
+            sneakDesc = ` + ${sneakDmg} sneak attack (${sneakDice})`;
+          }
 
-        if (result.crit) {
-          const bonusDmg = rollDice(weapon.damage);
-          result.totalDmg += bonusDmg + sneakDmg;
-          const extraDesc = result.extras?.length ? result.extras.map(e => `+${e.roll} ${e.type} (${e.dice}, doubled)`).join('') : '';
-          log?.(`[ATTACK] CRIT ${weapon.name}: d20=20 (nat) → dmg ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit${sneakDmg?`+${sneakDmg} sneak`:''}${extraDesc} = ${result.totalDmg}`);
-          context += `\n\n[GAME DATA — CRITICAL HIT with ${weapon.name}. Attack: ${result.atkRoll}(nat20)=${result.totalAtk} to hit. Damage: ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit bonus${sneakDmg?`+${sneakDmg} sneak`:''}${extraDesc} = ${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
-        } else if (result.fumble) {
-          log?.(`[ATTACK] FUMBLE ${weapon.name}: d20=1 (nat) → automatic miss`);
-          context += `\n\n[GAME DATA — FUMBLE with ${weapon.name}. Attack roll: 1 (nat 1) — automatic miss. Narrate the player's action first, then the fumble.]`;
-        } else {
-          result.totalDmg += sneakDmg;
-          const extraDesc2 = result.extras?.length ? result.extras.map(e => `+${e.roll} ${e.type} (${e.dice})`).join('') : '';
-          log?.(`[ATTACK] ${weapon.name}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} to hit → dmg ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}`);
-          context += `\n\n[GAME DATA — ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
+          if (result.crit) {
+            const bonusDmg = rollDice(weapon.damage);
+            result.totalDmg += bonusDmg + sneakDmg;
+            const extraDesc = result.extras?.length ? result.extras.map(e => `+${e.roll} ${e.type} (${e.dice}, doubled)`).join('') : '';
+            log?.(`[ATTACK] CRIT ${weapon.name}: d20=20 (nat) → dmg ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit${sneakDmg?`+${sneakDmg} sneak`:''}${extraDesc} = ${result.totalDmg}`);
+            context += `\n\n[GAME DATA — ${hand} CRITICAL HIT with ${weapon.name}. Attack: ${result.atkRoll}(nat20)=${result.totalAtk} to hit. Damage: ${result.dmgRoll}+${result.dmgBonus}+${bonusDmg} crit bonus${sneakDmg?`+${sneakDmg} sneak`:''}${extraDesc} = ${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
+          } else if (result.fumble) {
+            log?.(`[ATTACK] FUMBLE ${weapon.name}: d20=1 (nat) → automatic miss`);
+            context += `\n\n[GAME DATA — ${hand} FUMBLE with ${weapon.name}. Attack roll: 1 (nat 1) — automatic miss. Narrate the player's action first, then the fumble.]`;
+          } else {
+            result.totalDmg += sneakDmg;
+            const extraDesc2 = result.extras?.length ? result.extras.map(e => `+${e.roll} ${e.type} (${e.dice})`).join('') : '';
+            log?.(`[ATTACK] ${weapon.name}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} to hit → dmg ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}`);
+            context += `\n\n[GAME DATA — ${hand}: ${weapon.name} attack roll: d20=${result.atkRoll}+${result.atkBonus}=${result.totalAtk} to hit; damage if hit: ${result.dmgRoll}+${result.dmgBonus}${extraDesc2}${sneakDesc}=${result.totalDmg}. Narrate the player's action first, then resolve the outcome using this roll. Do NOT output any [HP:] or [DAMAGE:] tag for this attack — those tags hurt the PLAYER. The enemy's wounds are prose only.]`;
+          }
+          rolls.push({
+            hand,
+            weapon: weapon.name,
+            label: `${weapon.name}${sneakDmg?' + Sneak Attack':''}`,
+            value: result.totalAtk,
+            dc: null,
+            dmg: result.totalDmg,
+            crit: result.crit,
+            fumble: result.fumble,
+            sneak: sneakDmg > 0,
+          });
         }
-        rollResult = {
-          label: `${weapon.name}${sneakDmg?' + Sneak Attack':''}`,
-          value: result.totalAtk,
-          dc: null,
-          dmg: result.totalDmg,
-          crit: result.crit,
-          fumble: result.fumble,
-          sneak: sneakDmg > 0,
-        };
       }
+      const equipment = ['mainhand','offhand'].map(hand=>`${hand}: ${char.slots?.[hand] || 'empty'}`).join('; ');
+      context += `\n\n[ATTACK ROLL COVERAGE — Equipped hands: ${equipment}. Declared attack hands: ${hands.join(', ')}. App rolls above cover only ${rolls.map(r=>`${r.hand} (${r.weapon})`).join(', ') || 'none of these attacks'}. Each listed result resolves one attack only, not every attack in a declared sequence. Missing automated data does NOT prohibit an offhand attack or another established capability. For a genuinely uncertain unrolled weapon attack, request [ROLL: offhand attack difficulty N] or [ROLL: mainhand attack difficulty N] for the appropriate hand. Do not reroll attacks already resolved above or add attacks the player did not declare. Judge legal attack counts, action economy, and offhand bonus-attack ability-damage restrictions from established rules/features; do not treat this automation as their limit.]`;
+      rollResult = rolls.length > 1 ? {...rolls[0],attacks:rolls} : rolls[0] || null;
     }
 
     return { context, rollResult };
@@ -538,18 +548,23 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey, onRequestCap
     // "[ROLL: dexterity saving throw difficulty 15]", "[ROLL: perception check DC 14]".
     // Previously only the bare "<stat> difficulty <N>" form matched, so every
     // saving throw silently failed to roll at all.
-    const rollMatch = dmText.match(/\[ROLL:\s*([a-z' ]+?)\s*(saving throw|save|check)?\s*(?:difficulty|dc)\s*(\d+)\s*(?:ac)?\s*\]/i);
+    const rollMatch = dmText.match(/\[ROLL:\s*([a-z' -]+?)\s*(saving throw|save|check)?\s*(?:difficulty|dc)\s*(\d+)\s*(?:ac)?\s*\]/i);
     if (!rollMatch) return { resultText: null, rollResult: null };
 
     const statLabel = rollMatch[1].trim().toLowerCase();          // as written, for display
-    const statName  = statLabel.replace(/\s+/g, '');                // normalised, for lookup
+    const statName  = statLabel.replace(/[\s-]+/g, '');                // normalised, for lookup
     const isSave   = /sav/i.test(rollMatch[2] || '');
     const diff     = parseInt(rollMatch[3]);
     // An "attack" isn't an ability or a skill — it's the equipped weapon's own
     // to-hit bonus. Without this it fell through to a stat that doesn't exist
     // and rolled at +0 regardless of Strength or weapon.
-    if (/^(attack|attackroll|attacks|tohit|hit|melee|ranged|weapon|weaponattack)$/.test(statName)) {
-      const weapon = getMainWeapon(char.slots, char.stats, char.items || {});
+    if (/^(?:(?:mainhand|offhand)(?:attack|attackroll)?|attack|attackroll|attacks|tohit|hit|melee|ranged|weapon|weaponattack)$/.test(statName)) {
+      const hand = statName.startsWith('offhand') ? 'offhand' : 'mainhand';
+      const weapon = getWeaponInSlot(char.slots, char.stats, char.items || {}, hand);
+      if (hand === 'offhand' && !weapon) return {
+        resultText: `[ROLL RESULT: offhand weapon roll unavailable — ${char.slots?.offhand || 'empty offhand'} has no registered weapon mechanics. This is missing automation data, not a rule that the declared action is impossible. Use established item/capability rules; do not substitute the mainhand weapon or invent weapon statistics.]`,
+        rollResult: null,
+      };
       const pb2 = profBonus(char.level);
       const effAtk = effectiveStats(char.stats, char.slots, char.items || {});
       // Whatever happens, an attack must never resolve at +0. If the equipped
@@ -562,7 +577,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey, onRequestCap
         label = weapon.name;
       } else {
         abilityMod = Math.max(statMod(effAtk.str), statMod(effAtk.dex));
-        const held = char.slots?.mainhand;
+        const held = char.slots?.[hand];
         label = held ? `${held} (no stats on file)` : 'unarmed';
         if (held) log?.(`[ROLL] WARNING: "${held}" is equipped but has no entry in the character item registry — attack resolved from raw STR/DEX. Re-issue or re-craft the item to restore its stats.`);
       }
@@ -578,9 +593,11 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey, onRequestCap
       const hit = result.crit || (!result.fumble && result.totalAtk >= diff);
       log?.(`[ROLL] ${statLabel} with ${label}: d20=${result.atkRoll} + ${result.statLabel}(${result.statBonus}) + prof(${result.profBonus})${result.weaponBonus ? ` + weapon(${result.weaponBonus})` : ''} = ${result.totalAtk} vs DC${diff} — ${hit?'HIT':'MISS'}`);
       return {
-        resultText: `[ROLL RESULT: attack roll — d20 ${result.atkRoll} + ${result.statLabel} ${result.statBonus} + proficiency ${result.profBonus}${result.weaponBonus ? ` + equipment ${result.weaponBonus}` : ''} = ${result.totalAtk} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}${hit ? `; damage ${result.totalDmg}` : ''}]`,
+        resultText: `[ROLL RESULT: ${hand} attack with ${label} — d20 ${result.atkRoll} + ${result.statLabel} ${result.statBonus} + proficiency ${result.profBonus}${result.weaponBonus ? ` + equipment ${result.weaponBonus}` : ''} = ${result.totalAtk} vs difficulty ${diff} — ${hit ? 'HIT' : 'MISS'}${hit ? `; damage ${result.totalDmg}` : ''}]`,
         rollResult: {
-          label: 'Attack',
+          label: `${hand}: ${label}`,
+          hand,
+          weapon: label,
           value: result.totalAtk,
           dc: diff,
           dmg: hit ? result.totalDmg : null,
@@ -658,6 +675,7 @@ export function useGame({ charRef, apiKey, openAiApiKey, xAiApiKey, onRequestCap
 
   return { callDM, buildActionContext, interceptRollRequest, pingCache };
 }
+
 
 
 

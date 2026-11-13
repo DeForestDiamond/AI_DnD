@@ -135,10 +135,10 @@ export const calcAC = (slots, baseStats, customItems) => {
   return ac;
 };
 
-export const getMainWeapon = (slots, stats, customItems) => {
+export const getWeaponInSlot = (slots, stats, customItems, slot = 'mainhand') => {
   const db        = allItems(customItems);
   const effStats  = effectiveStats(stats, slots, customItems);
-  const name      = slots.mainhand;
+  const name      = slots?.[slot];
   if (!name) return null;
   const w = db[name];
   if (!w || w.type !== 'weapon') return null;
@@ -160,6 +160,8 @@ export const getMainWeapon = (slots, stats, customItems) => {
   return normalizeWeaponDamage({ name, ...w, statBonus, attackAbility });
 };
 
+export const getMainWeapon = (slots, stats, customItems) => getWeaponInSlot(slots,stats,customItems,'mainhand');
+
 export const equippableInSlot = (char, slotId) => {
   const slot = SLOTS.find(s => s.id === slotId);
   if (!slot) return [];
@@ -177,5 +179,6 @@ export const equippableInSlot = (char, slotId) => {
     return true;
   });
 };
+
 
 

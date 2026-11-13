@@ -4,8 +4,9 @@ import { cleanDisplayText } from '../hooks/useGame.js';
 import { clearPendingOpenAiImage, setPendingOpenAiImage } from '../helpers/openai/pendingImage.js';
 function DiceRollDisplay({ roll }) {
   if (!roll) return null;
+  if (roll.attacks?.length) return <>{roll.attacks.map((attack,i)=><DiceRollDisplay key={`${attack.hand}-${i}`} roll={attack}/>)}</>;
   const hit = roll.dc == null || roll.value >= roll.dc;
-  const displayLabel = roll.dmg != null ? 'Attack' : roll.label;
+  const displayLabel = roll.hand ? `${roll.hand==='offhand'?'Off hand':'Main hand'}: ${roll.weapon}` : roll.dmg != null ? 'Attack' : roll.label;
   return (
     <div style={{marginTop:6,display:'flex',flexWrap:'wrap',gap:6}}>
       {roll.value != null && (
@@ -209,3 +210,4 @@ export function MessageFeed({ messages, loading, characterEmoji, onEditMessage, 
     </div>
   );
 }
+

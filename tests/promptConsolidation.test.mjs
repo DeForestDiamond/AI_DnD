@@ -5,7 +5,7 @@ import { CONFLICT_RESISTANCE_BLOCK } from '../src/prompts/conflict.js';
 import { SETTING_SOCIAL_RULES, MORALIZING_RULES, PRACTICAL_DECISION_RULES } from '../src/prompts/socialNorms.js';
 import { PLAYER_AGENCY_BLOCK } from '../src/prompts/playerAgency.js';
 import { DM_ROLE_BLOCK } from '../src/prompts/dmRole.js';
-import { FIRST_CONTACT_ROLL_RULES, ROLL_RESOLUTION_RULES } from '../src/prompts/tags.js';
+import { FIRST_CONTACT_ROLL_RULES, ROLL_RESOLUTION_RULES, WEAPON_ATTACK_RULES } from '../src/prompts/tags.js';
 import { CHARACTER_CHOICES_BLOCK as fullChoices, DELEGATION_BLOCK as fullDelegation } from '../src/prompts/shared.js';
 import { CHARACTER_CHOICES_BLOCK as leanChoices, DELEGATION_BLOCK as leanDelegation } from '../src/prompts/sharedLow.js';
 import { buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46 } from '../src/hooks/useGame.js';
@@ -58,7 +58,7 @@ for(const [build,choices,before] of cases) {
     // after that cleanup. Their single inclusion is checked above.
     // Restore the old opening for this historical size comparison; dmRole tests
     // separately verify the expanded referee policy remains first and present.
-    assert.ok(Object.values(p).join('').replace(DM_ROLE_BLOCK,originalOpening).replace(`\n\n${MORALIZING_RULES}`,'').replace(`\n\n${PRACTICAL_DECISION_RULES}`,'').replace(`\n\n${fullDelegation}`,'').replace(`\n\n${leanDelegation}`,'').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
+    assert.ok(Object.values(p).join('').replace(DM_ROLE_BLOCK,originalOpening).replace(`${WEAPON_ATTACK_RULES}\n`,'').replace(`\n\n${MORALIZING_RULES}`,'').replace(`\n\n${PRACTICAL_DECISION_RULES}`,'').replace(`\n\n${fullDelegation}`,'').replace(`\n\n${leanDelegation}`,'').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
   });
 }
 
