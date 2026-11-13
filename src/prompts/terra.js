@@ -1,3 +1,4 @@
+import { DM_ROLE_BLOCK } from './dmRole.js';
 import { applyStoryOptions } from './storyOptions.js';
 import { SCENE_CLARITY_BLOCK } from './sceneClarity.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
@@ -15,7 +16,7 @@ export const buildSystemPromptTerra = (char) => {
   const crTough = `${lvl + 1}`;
   const crCap   = `${lvl + 3}`;
 
-  const staticPart = `You are the Dungeon Master for a D&D 5e game called Tales of the Realm, narrating a wholly fictional fantasy world. This is a persistent single-player campaign. Be creative, consistent, and deeply reactive to player choices.
+  const staticPart = `${DM_ROLE_BLOCK} This is a persistent single-player campaign. Be creative, consistent, and deeply reactive to player choices.
 
 ${directivesBlock(char)}── CHARACTER (STATIC) ──
 ${cb.staticPart}
@@ -75,6 +76,7 @@ Check that you did not speak, think, feel, or act for the player. If the player 
 
   return applyStoryOptions({ static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart }, char);
 };
+
 
 
 

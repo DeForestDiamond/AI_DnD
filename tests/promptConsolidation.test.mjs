@@ -4,6 +4,7 @@ import { EMPTY_CHAR } from '../src/hooks/character/defaults.js';
 import { CONFLICT_RESISTANCE_BLOCK } from '../src/prompts/conflict.js';
 import { SETTING_SOCIAL_RULES, MORALIZING_RULES, PRACTICAL_DECISION_RULES } from '../src/prompts/socialNorms.js';
 import { PLAYER_AGENCY_BLOCK } from '../src/prompts/playerAgency.js';
+import { DM_ROLE_BLOCK } from '../src/prompts/dmRole.js';
 import { FIRST_CONTACT_ROLL_RULES, ROLL_RESOLUTION_RULES } from '../src/prompts/tags.js';
 import { CHARACTER_CHOICES_BLOCK as fullChoices, DELEGATION_BLOCK as fullDelegation } from '../src/prompts/shared.js';
 import { CHARACTER_CHOICES_BLOCK as leanChoices, DELEGATION_BLOCK as leanDelegation } from '../src/prompts/sharedLow.js';
@@ -49,10 +50,15 @@ for(const [build,choices,before] of cases) {
     // Measure core instructions without an Adventure payload: that payload now
     // lives in the system block rather than on the outgoing user message.
     const p=build({...character(),arc:null});
+    const originalOpening = build === buildSystemPrompt
+      ? 'You are a Dungeon Master running a D&D 5e adventure, narrating a wholly fictional fantasy world.'
+      : `You are the Dungeon Master for a D&D 5e game called Tales of the Realm, ${[buildSystemPromptGrok43,buildSystemPromptGrok46].includes(build) ? 'running' : 'narrating'} a wholly fictional fantasy world.`;
     // Measure the consolidation against its old baseline, excluding the
     // deliberately restored roll safeguards and new behavioral rules added
     // after that cleanup. Their single inclusion is checked above.
-    assert.ok(Object.values(p).join('').replace(`\n\n${MORALIZING_RULES}`,'').replace(`\n\n${PRACTICAL_DECISION_RULES}`,'').replace(`\n\n${fullDelegation}`,'').replace(`\n\n${leanDelegation}`,'').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
+    // Restore the old opening for this historical size comparison; dmRole tests
+    // separately verify the expanded referee policy remains first and present.
+    assert.ok(Object.values(p).join('').replace(DM_ROLE_BLOCK,originalOpening).replace(`\n\n${MORALIZING_RULES}`,'').replace(`\n\n${PRACTICAL_DECISION_RULES}`,'').replace(`\n\n${fullDelegation}`,'').replace(`\n\n${leanDelegation}`,'').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
   });
 }
 

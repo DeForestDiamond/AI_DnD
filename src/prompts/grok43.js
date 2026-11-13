@@ -1,3 +1,4 @@
+import { DM_ROLE_BLOCK } from './dmRole.js';
 import { applyStoryOptions } from './storyOptions.js';
 import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
@@ -11,7 +12,7 @@ export const buildSystemPromptGrok43 = (char) => {
   const cb = buildCharBlock(char);
   const ctx = buildCtxSections(char);
 
-  const staticPart = `You are the Dungeon Master for a D&D 5e game called Tales of the Realm, running a wholly fictional fantasy world. This is a persistent single-player campaign. Run it as an active, immersive world rather than a turn-by-turn command parser.
+  const staticPart = `${DM_ROLE_BLOCK} This is a persistent single-player campaign. Run it as an active, immersive world rather than a turn-by-turn command parser.
 
 ${directivesBlock(char)}── CHARACTER (STATIC) ──
 ${cb.staticPart}
@@ -54,5 +55,6 @@ Run the scene forward naturally from the player's full intent. Keep the world an
 
   return applyStoryOptions({ static: staticPart, gear: cb.gearBlock, items: cb.itemsBlock, dynamic: dynamicPart }, char);
 };
+
 
 

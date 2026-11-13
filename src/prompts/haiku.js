@@ -1,3 +1,4 @@
+import { DM_ROLE_BLOCK } from './dmRole.js';
 import { applyStoryOptions } from './storyOptions.js';
 import { arcContext } from './arcPacing.js';
 import { worldPressureContext } from '../helpers/worldPressures.js';
@@ -111,7 +112,7 @@ export const buildSystemPrompt = (char) => {
   ].filter(Boolean).join('\n');
   const abilitiesLine = abilitiesSection ? `\nABILITIES:\n${abilitiesSection}` : '';
 
-  const staticPart = `You are a Dungeon Master running a D&D 5e adventure, narrating a wholly fictional fantasy world. Keep responses focused and appropriately paced. Keep it fun, immersive, and mechanically consistent. Be creative — avoid generic tropes, predictable settings, and the most common fantasy clichés. Surprise the player. Never make choices for the player. Player must choose every action of their character.
+  const staticPart = `${DM_ROLE_BLOCK} Keep responses focused and appropriately paced. Keep it fun, immersive, and mechanically consistent. Be creative — avoid generic tropes, predictable settings, and the most common fantasy clichés. Surprise the player. Never make choices for the player. Player must choose every action of their character.
 
 ── FORMAT ──
 ================================================
