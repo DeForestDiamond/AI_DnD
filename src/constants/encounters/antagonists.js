@@ -28,6 +28,21 @@ const LOW_ANTAGONISTS = [ // levels 1+: local, mundane, street-level
   'a nest of giant scorpions under the dunes', 'a harpy flock preying on the cliff road',
   'a cockatrice loose in the vineyards', 'a displacer beast stalking the woods',
   'a giant constrictor in the sewers', 'a hungry pack of worgs with goblin riders',
+  // — classic dungeon threats and settlements under attack —
+  'an ankheg nest undermining a farming village and dragging people below ground',
+  'a rust monster colony devouring a mining settlement\'s tools and iron supports',
+  'a mimic infestation turning a roadside inn and its abandoned cellars into a feeding ground',
+  'gricks stalking miners through the tunnels beneath their working quarry',
+  'darkmantles nesting in the only tunnel connecting an isolated settlement to its supplies',
+  'gargoyles hunting villagers from a ruined watchtower at dusk',
+  'an ettercap and its giant spiders webbing shut a village\'s roads and orchards',
+  'a gelatinous cube consuming the workers sent to clear a town\'s old drains',
+  'goblin sappers undermining a village palisade before a night raid',
+  'kobold raiders occupying the only safe bridge and ambushing village supply wagons',
+  'bugbear raiders taking hostages from outlying farms to break a village\'s resistance',
+  'troglodytes attacking a quarry village from newly opened caves',
+  'bullywug raiders dragging captives from a riverside village into the marsh',
+  'a skeleton warband returning each night to assault a hilltop village',
 ];
 const MID_ANTAGONISTS = [ // levels 5+: regional threats, real monsters
   // — planar —
@@ -76,6 +91,33 @@ const MID_ANTAGONISTS = [ // levels 5+: regional threats, real monsters
   'a gorgon herd trampling the borderlands', 'a roc carrying off livestock and people',
   'a chimera that has claimed the high country', 'a behir hunting the river canyon',
   'an umber hulk collapsing the mine tunnels', 'a remorhaz under the ice fields',
+  // — illithids and their hunting networks —
+  'a renegade mind flayer abducting travelers to build a hidden thrall enclave',
+  'a mind flayer arcanist experimenting on captives in a concealed underground laboratory',
+  'an illithid nautiloid crew raiding isolated villages for living captives',
+  'an ulitharid gathering a breakaway mind flayer colony beneath a frontier settlement',
+  'an intellect devourer nest replacing the defenders of a border fort',
+  'a mindwitness coordinating illithid thrall hunters along a crowded trade road',
+  // — recognizable dungeon monsters with concrete stakes —
+  'an aboleth enslaving lakeside settlements from a flooded ruin',
+  'a beholder eye tyrant turning an abandoned fortress into a hunting preserve',
+  'a beholder zombie guarding a ruined observatory full of trapped explorers',
+  'ropers turning a mountain pass and its shelter caves into a death trap',
+  'a cloaker brood hunting prospectors and refugees in the deep tunnels',
+  'a black pudding infestation eating through a settlement\'s reservoir gates and foundations',
+  'shambling mounds overrunning the causeways and homes of a marsh settlement',
+  'a catoblepas poisoning the grazing land around a struggling village',
+  'a gibbering mouther outbreak spreading through an occupied excavation',
+  'a bone naga commanding the guardians of a buried temple above a living settlement',
+  'flameskulls defending a ruined wizard academy and killing anyone who enters its grounds',
+  'rogue flesh golems raiding a hospital and graveyard for replacement bodies',
+  'helmed horrors enforcing a dead wizard\'s orders against a settlement built on their estate',
+  // — battles, relief efforts, and village defense rather than another lone patrol —
+  'a hundred-strong hobgoblin siege force surrounding a fortified village and cutting off its supplies',
+  'a gnoll warhost burning outlying farms while survivors flee toward a village stockade',
+  'an orc war chief mounting repeated assaults on a border village defended by a battered garrison',
+  'a hill giant raiding band tearing open village granaries before winter',
+  'a troll hunting pack breaking into an isolated settlement faster than its defenders can repair the walls',
 ];
 const HIGH_ANTAGONISTS = [ // levels 9+: campaign-scale villains
   // — planar and beyond —
@@ -146,6 +188,28 @@ const HIGH_ANTAGONISTS = [ // levels 9+: campaign-scale villains
   'a kraken stirring off the coast', 'a purple worm devouring everything beneath a region',
   'a colossal roc that has claimed the mountains', 'a pair of hunting chimeras no army can stop',
   'an ancient guardian beast roused from a ruin', 'a storm giant whose moods are wrecking the coast',
+  // — illithid masterminds and large-scale aberrant threats —
+  'an elder brain directing a mind flayer colony\'s raids on an entire surface region',
+  'an alhoon stealing souls and arcane research to sustain its undeath',
+  'an illithilich ruling a psionic fortress staffed by undead mind flayers and enslaved spellcasters',
+  'a neothelid loose from an abandoned illithid colony and feeding beneath inhabited settlements',
+  'an elder brain dragon spreading illithid infestation across settlements from the air',
+  'an illithid nautiloid flotilla blockading a coastline and taking settlements alive',
+  // — classic major monsters, dungeon rulers, and siege threats —
+  'a lich opening a sealed necropolis to conquer the surrounding living settlements',
+  'a demilich harvesting the souls of explorers in a shifting tomb complex',
+  'a dracolich building a territory of dead villages around its mountain lair',
+  'a death tyrant commanding an undead fortress above a besieged valley',
+  'a mummy lord reclaiming an inhabited desert oasis as part of its buried kingdom',
+  'a dragon turtle destroying harbor defenses and sinking the ships supplying a coastal town',
+  'an ancient red dragon burning a chain of fortified settlements to establish its dominion',
+  'an ancient black dragon hunting the inhabitants of settlements cut off in its expanding swamp territory',
+  'an iron golem army marching from a ruined foundry toward a walled city',
+  'stone golem sentinels awakening beneath several settlements built over the same buried ruin',
+  'a remorhaz brood overrunning the last winter refuge on a mountain migration route',
+  'a behir brood hunting the defenders and refugees sheltering in a mountain fortress',
+  'a giant-led siege army battering a border city while its defenders struggle to evacuate the outer wards',
+  'a purple worm brood tunneling beneath a crowded city and swallowing whole streets',
 ];
 
 
@@ -174,6 +238,7 @@ const NAMED_HIGH = [ // levels 9+
   'Tiamat\'s faithful, working to bring the Dragon Queen through',
 ];
 const NAMED_EPIC = [ // level 10 only — equivalent to D&D level 20
+  'the tarrasque, rampaging toward a populated city while its defenders race to evacuate the surrounding settlements',
   'Vlaakith CLVII, lich-queen of the githyanki and ruler of Tu’narath',
   'Orcus, Demon Prince of Undeath, wielder of the Wand of Orcus',
   'Demogorgon, Prince of Demons, the two-headed terror of the Abyss',
@@ -211,3 +276,4 @@ export const rollAntagonist = (level, exclude = null, defeated = []) => {
 
 // Exposed so the UI can tell a named foe from a generic one.
 export const NAMED_ANTAGONISTS = [...NAMED_MID, ...NAMED_HIGH, ...NAMED_EPIC];
+
