@@ -3,7 +3,7 @@ import { prepareContinuousOpening } from './helpers/adventure/continuous.js';
 import { useState, useRef, useEffect } from 'react';
 import { animations, colors, fonts, btn, panel, cardStyle } from './styles/theme.js';
 import { CLASSES, RACES, STAT_NAMES, STAT_DESC } from './constants/classes.js';
-import { DEITIES } from './constants/deities.js';
+import { DEITIES, filterDeities } from './constants/deities.js';
 import { SLOTS } from './constants/items.js';
 import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, levelUpsAvailable } from './hooks/useCharacter.js';
 import { useVoice } from './hooks/useVoice.js';
@@ -64,6 +64,7 @@ export default function App() {
     }
     setLoading(false);
   };
+  const [deitySearch, setDeitySearch] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [bioInput, setBioInput] = useState('');
   const [appearanceInput, setAppearanceInput] = useState('');
@@ -1041,13 +1042,17 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
       <div style={{maxWidth:700,width:'100%',padding:24}}>
         <p style={{fontFamily:fonts.display,fontSize:10,color:colors.textGhost,letterSpacing:4,marginBottom:8}}>CHARACTER CREATION — STEP 3 OF 4</p>
         <h2 style={{fontFamily:fonts.display,color:colors.gold,fontSize:22,margin:'0 0 6px'}}>{character.cls?.name === 'Warlock' ? 'Choose Your Patron' : 'Choose Your Deity'}</h2>
-        <p style={{color:colors.textGhost,fontSize:13,marginBottom:24}}>{character.cls?.name === 'Warlock' ? 'Who holds the other end of your pact? Choose carefully — your patron shapes your power and your fate.' : 'Which god do you serve? Your deity shapes your divine powers and moral path.'}</p>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
-          {(character.cls?.name === 'Warlock' ? WARLOCK_PATRONS : DEITIES).map(deity => (
+        <p style={{color:colors.textGhost,fontSize:13,marginBottom:24}}>{character.cls?.name === 'Warlock' ? 'Who holds the other end of your pact? Choose carefully — your patron shapes your power and your fate.' : 'Which god do you serve? Your deity shapes your faith and divine calling. Their alignment does not set your character’s alignment.'}</p>
+        <input type="search" aria-label="Search deities or patrons" value={deitySearch} onChange={e=>setDeitySearch(e.target.value)} placeholder="Search name, alignment, domain, or calling…"
+          style={{width:'100%',boxSizing:'border-box',background:colors.bg,color:colors.text,border:`1px solid ${colors.border}`,borderRadius:4,padding:10,marginBottom:12,fontSize:14}} />
+        {filterDeities(character.cls?.name === 'Warlock' ? WARLOCK_PATRONS : DEITIES, deitySearch).length === 0 && <p role="status" style={{color:colors.textGhost}}>No matching deities or patrons. Try another search.</p>}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%, 220px),1fr))',gap:12,marginBottom:24}}>
+          {filterDeities(character.cls?.name === 'Warlock' ? WARLOCK_PATRONS : DEITIES, deitySearch).map(deity => (
             <div key={deity.name} style={cardStyle(character.deity?.name===deity.name)} onClick={()=>selectDeity(deity)}>
               <div style={{fontSize:28,marginBottom:6}}>{deity.emoji}</div>
               <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:2}}>{deity.name}</div>
               <div style={{fontSize:9,color:colors.textGhost,marginBottom:8}}>{deity.alignment}</div>
+              {deity.domains?.length > 0 && <div style={{fontSize:10,color:colors.gold,marginBottom:6}}>Suggested domains: {deity.domains.join(', ')}</div>}
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5,marginBottom:6}}>{deity.desc}</div>
               {character.deity?.name===deity.name && (
                 <div style={{fontSize:10,color:colors.gold,fontStyle:'italic',paddingTop:6,borderTop:`1px solid ${colors.border}`}}>✓ {deity.flavor}</div>

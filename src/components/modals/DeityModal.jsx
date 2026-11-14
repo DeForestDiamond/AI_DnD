@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
-import { DEITIES } from '../../constants/deities.js';
+import { DEITIES, filterDeities } from '../../constants/deities.js';
 import { WARLOCK_PATRON_SPELLS } from '../../constants/abilities.js';
 
 export const WARLOCK_PATRONS = [
@@ -14,6 +14,7 @@ export const WARLOCK_PATRONS = [
 
 export function DeityModal({ onSelectDeity, context = 'multiclass', cls = null }) {
   const [pending, setPending] = useState(null);
+  const [search, setSearch] = useState('');
 
   const isWarlock = cls === 'Warlock';
   const options = isWarlock ? WARLOCK_PATRONS : DEITIES;
@@ -32,8 +33,11 @@ export function DeityModal({ onSelectDeity, context = 'multiclass', cls = null }
         <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:16,marginBottom:4,textAlign:'center'}}>{isWarlock ? '🌑' : '✨'} {title}</div>
         <div style={{fontSize:12,color:colors.textGhost,marginBottom:24,textAlign:'center',lineHeight:1.6}}>{subtitle}</div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
-          {options.map((option) => {
+        <input type="search" aria-label="Search deities or patrons" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, alignment, domain, or calling…"
+          style={{width:'100%',boxSizing:'border-box',background:colors.bg,color:colors.text,border:`1px solid ${colors.border}`,borderRadius:4,padding:10,marginBottom:12,fontSize:14}} />
+        {filterDeities(options, search).length === 0 && <p role="status" style={{color:colors.textGhost}}>No matching deities or patrons. Try another search.</p>}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%, 220px),1fr))',gap:12,marginBottom:24}}>
+          {filterDeities(options, search).map((option) => {
             const isSelected = pending?.name === option.name;
             return (
               <div key={option.name} onClick={() => setPending(option)}
@@ -44,6 +48,7 @@ export function DeityModal({ onSelectDeity, context = 'multiclass', cls = null }
                 <div style={{fontSize:32,marginBottom:6}}>{option.emoji}</div>
                 <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:2}}>{option.name}</div>
                 <div style={{fontSize:9,color:colors.textGhost,marginBottom:8}}>{option.alignment}</div>
+                {option.domains?.length > 0 && <div style={{fontSize:10,color:colors.gold,marginBottom:6}}>Suggested domains: {option.domains.join(', ')}</div>}
                 <div style={{fontSize:10,color:colors.textFaint,lineHeight:1.5,marginBottom:6}}>{option.desc}</div>
                 {isSelected && option.flavor && (
                   <div style={{fontSize:10,color:colors.gold,fontStyle:'italic',paddingTop:6,borderTop:`1px solid ${colors.border}`}}>✓ {option.flavor}</div>
