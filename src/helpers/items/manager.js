@@ -1,3 +1,4 @@
+import { prepareSalvageNames, originalSalvageNames } from '../salvageNames.js';
 import { stackCounts, stackCount, stackHas, addStack, takeStack } from '../../utils/itemStacks.js';
 import { pruneDeadItemDefinitions } from '../../hooks/useCharacter.js';
 import { callGptCrafting } from '../openai/crafting.js';
@@ -443,7 +444,7 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       log(`[HELPER] salvage via GPT ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
       log(`[SALVAGE] Recovers: ${(gptResult.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
       assertSalvageBreakdown(gptResult, items, db);
-      return gptResult;
+      return prepareSalvageNames(gptResult, charRef.current);
     }
     if (MODEL_CONFIGS[selectedModel]?.provider === 'xai') {
       const xaiKey = xAiApiKey || import.meta.env.VITE_XAI_KEY;
@@ -457,20 +458,21 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       log(`[HELPER] salvage via Grok ${gIn.toLocaleString()} in / ${gOut.toLocaleString()} out`);
       log(`[SALVAGE] Recovers: ${(grokResult.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
       assertSalvageBreakdown(grokResult, items, db);
-      return grokResult;
+      return prepareSalvageNames(grokResult, charRef.current);
     }
     const { result, usage: anthropicUsage } = await callAnthropicSalvage({ apiKey: key, itemsText: itemList });
     if (anthropicUsage) logUsage('salvage', { usage: anthropicUsage });
     log(`[SALVAGE] Recovers: ${(result.recovers || []).map(r => `${r.name} x${r.count}`).join(', ') || 'nothing'}`);
     assertSalvageBreakdown(result, items, db);
-    return result;
+    return prepareSalvageNames(result, charRef.current);
   };
 
   // Consume the submitted items (inventory first, then stash) and add whatever
   // was recovered. Mirrors executeCrafting's split-source handling.
   const executeDismantle = (result, submitted, destination = 'inventory') => {
     const c = charRef.current;
-    assertSalvageBreakdown(result, submitted, c.items || {});
+    assertSalvageBreakdown(originalSalvageNames(result), submitted, c.items || {});
+    result = prepareSalvageNames(result, c);
     const src = materialSources(c);
     for (const it of submitted) {
       const held = totalHeld(src[it.name]);
@@ -482,31 +484,13 @@ export const createItemManager = ({ apiKey, openAiApiKey, xAiApiKey, charRef, up
       .join('');
     const { removeTags, apply } = consumeMaterials(c, submitted);
     let next = apply(applyEffects(addTags + removeTags, c));
-    // Store salvage labels directly so descriptive metadata does not overwrite
-    // an existing item's mechanical definition through a structured ITEM tag.
+    // Names were checked against the current global namespace before adding.
+    // Only identical labels share a name; never merge properties into an old item.
     for (const recovered of result.recovers || []) {
-      const label = typeof recovered.label === 'string' ? recovered.label.trim() : '';
-      const itemKey = Object.keys(next.items || {}).find(name => name.toLowerCase() === String(recovered.name || '').trim().toLowerCase());
+      const itemKey = Object.keys(next.items || {}).find(name=>name.toLowerCase() === recovered.name.toLowerCase());
       if (!itemKey) continue;
       const item = next.items[itemKey];
-      // ITEM additions precede removals, so a same-name recovery can inherit
-      // the old source's label. Replace it only when ALL held source units
-      // were salvaged; never wipe metadata from unsubmitted copies.
-      const sameSources = submitted.filter(it => it.name.toLowerCase() === itemKey.toLowerCase());
-      const otherEquippedCopy = [c.slots, ...Object.values(c.companions || {}).map(comp=>comp?.slots)]
-        .some(slots=>Object.values(slots || {}).some(name=>String(name || '').toLowerCase()===itemKey.toLowerCase()));
-      const replacesSource = !otherEquippedCopy && sameSources.length > 0 && sameSources.reduce((n,it)=>n+it.count,0) >= totalHeld(src[sameSources[0].name]);
-      const existingLabel = !replacesSource && typeof item.label === 'string' ? item.label.trim() : '';
-      if (!label) {
-        if (replacesSource && item.label) {
-          const { label: _oldLabel, ...material } = item;
-          next = { ...next, items: { ...next.items, [itemKey]: material } };
-        }
-        continue;
-      }
-      const mergedLabel = existingLabel && existingLabel !== label && !existingLabel.includes(label)
-        ? existingLabel + ' ' + label : existingLabel || label;
-      next = { ...next, items: { ...next.items, [itemKey]: { ...item, label: mergedLabel } } };
+      if (recovered.label && !item.label) next = {...next,items:{...next.items,[itemKey]:{...item,label:recovered.label}}};
     }
     if (destination === 'stash') {
       for (const recovered of result.recovers || []) {

@@ -1,3 +1,4 @@
+import { stackSalvageRecoveries } from '../salvageNames.js';
 import { SALVAGE_MATERIAL_RULES } from '../salvageMaterialRules.js';
 
 // GPT-specific salvage helper. Game-side item removal and recovered-material
@@ -90,7 +91,7 @@ RECOVERED ITEM LABELS — DEFAULT TO NULL; DESCRIBE WHAT SURVIVES AND DOES NOW
 - For an intact specialized component, state its surviving function explicitly, rather than naming its former job. A retained working repair core might say "Fabricates mundane replacement fittings." A retained biological foundry might say "Cultivates non-sapient repair tissue." These are examples of wording, NOT abilities to grant automatically.
 - An unusual material property can warrant a label only when established and retained: for example, "Regrows damaged sections while supplied with blood." Do not infer that material retains every ability of its donor or of the assembled source.
 - Ground every label in the supplied description and salvage outcome. Never invent enchantments, resistances, powers, intact functionality, or continued containment/stasis merely because the source once provided them. If a function depended on removed power, controls, wards, or interconnected systems, do not describe it as independently working.
-- Keep labels concise and names generic/stackable. Preserve distinct useful retained properties when combining identical names, without repetition or implying that a property of some units applies to all.
+- Keep labels concise and names generic/stackable. Combine only entries with the same name AND the same retained properties/label. Keep differently labelled variants in separate recovery entries even when their names match; the app assigns collision-safe names. Never concatenate different units' properties into one shared label.
 - FINAL LABEL AUDIT: remove any label that only describes origin, former use, location, generic condition, or an obvious fact already in the name. Replace it with null; do not rewrite it into a speculative new power.
 
 OUTPUT
@@ -102,32 +103,11 @@ OUTPUT
 
 const responseText = (data) => (data?.output || []).filter(item => item?.type === 'message').flatMap(item => item.content || []).filter(part => part?.type === 'output_text').map(part => part.text || '').join('').trim();
 
-const stackResults = (results) => {
-  const counts = new Map();
-  const labels = new Map();
-  const destroyed = [];
-  const notes = [];
-  for (const result of results || []) {
-    if (result?.source) destroyed.push(result.source);
-    if (result?.note) notes.push(`${result.source}: ${result.note}`);
-    for (const recovered of result?.recovers || []) {
-      const name = String(recovered?.name || '').trim();
-      const count = Math.max(1, Number(recovered?.count) || 1);
-      if (!name) continue;
-      counts.set(name, (counts.get(name) || 0) + count);
-      const label = typeof recovered.label === 'string' ? recovered.label.trim() : '';
-      if (label) {
-        if (!labels.has(name)) labels.set(name, new Set());
-        labels.get(name).add(label);
-      }
-    }
-  }
-  return {
-    recovers: [...counts.entries()].map(([name, count]) => ({ name, count, ...(labels.has(name) ? { label: [...labels.get(name)].join(' ') } : {}) })),
-    destroyed,
-    note: notes.join(' '),
-  };
-};
+const stackResults = (results) => ({
+  recovers: stackSalvageRecoveries((results || []).flatMap(result=>result?.recovers || [])),
+  destroyed: (results || []).map(result=>result?.source).filter(Boolean),
+  note: (results || []).filter(result=>result?.note).map(result=>`${result.source}: ${result.note}`).join(' '),
+});
 
 export async function callGptSalvage({ apiKey, model = GPT_SALVAGE_MODEL, itemsText }) {
   if (!apiKey) throw new Error('OpenAI API key required for GPT salvage');

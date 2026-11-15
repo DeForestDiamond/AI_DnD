@@ -52,14 +52,14 @@ function managerFor({held=20,equipped=false}={}) {
 for(const destination of ['inventory','stash']) test(`${destination}: fully salvaged same-name material does not inherit quest labels`,()=>{
   const {charRef,manager}=managerFor();
   manager.executeDismantle({recovers:[{name,count:20,label:null}]},[{name,count:20}],destination);
-  assert.equal(stackCount(charRef.current[destination],name),20);
-  assert.ok(!charRef.current.items[name].label);
-  assert.equal(charRef.current.items[name].type,'misc');
+  assert.equal(stackCount(charRef.current[destination],`${name} (1)`),20);
+  assert.ok(!charRef.current.items[`${name} (1)`].label);
+  assert.equal(charRef.current.items[`${name} (1)`].type,'misc');
 });
-test('a new surviving material property replaces the fully salvaged source label',()=>{
+test('a new surviving material property receives a separate name from the fully salvaged source',()=>{
   const {charRef,manager}=managerFor();
   manager.executeDismantle({recovers:[{name,count:20,label:'Conducts lightning when inscribed.'}]},[{name,count:20}]);
-  assert.equal(charRef.current.items[name].label,'Conducts lightning when inscribed.');
+  assert.equal(charRef.current.items[`${name} (1)`].label,'Conducts lightning when inscribed.');
 });
 test('partial salvage does not strip labels from unsubmitted inventory copies',()=>{
   const {charRef,manager}=managerFor();
