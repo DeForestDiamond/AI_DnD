@@ -79,6 +79,17 @@ The shared prompts emphasize impartial adjudication, player agency, distinct NPC
 - **Voice** supports spoken DM messages, voice/rate/pitch controls, pronunciation substitutions, and microphone input where browser support is available.
 - **Image attachments** are available with the OpenAI and xAI DM choices.
 
+### Character Tools
+
+Open **Settings → Character Tools → Edit / create character** to:
+
+- Edit the current character's name, race, deity/patron, ability scores, bio, appearance, and disposition while keeping the campaign.
+- Reset progression to level 1, optionally retaining XP as available level-ups. Changing primary class also rebuilds progression. Rebuilds clear subclasses and selected spells/abilities and restore class/racial starting scores, which can be adjusted before applying.
+- Create a completely fresh character without closing the app.
+- Create a character with selected carry-over: inventory and bags, equipped gear, stash, money, companions, NPCs, towns, standing instructions, story settings, and completed-story draw exclusions. XP can be retained independently.
+
+New characters use a new story and opening; active quests, timed pressures, location, conversation, and campaign memory are cleared. Retained bags include their contents and custom definitions, and retained companions keep their gear. Edits stay in a draft until applied. A **Download current Full Save** button preserves the current campaign before replacing the browser's single autosave slot.
+
 ### Crafting, consolidation, and salvage
 
 Craft new items, upgrade equipment, generate equipment sets, or build constructs from selected materials. Item batches support up to **100,000**; construct batches retain a separate **25** limit.

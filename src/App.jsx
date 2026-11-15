@@ -14,6 +14,10 @@ import { fixedArcLocationFor } from './constants/encounters/arcLocations.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
 import { InputBar } from './components/InputBar.jsx';
+import { CharacterToolsModal } from './components/modals/CharacterToolsModal.jsx';
+import { characterEditNote } from './helpers/characterTools.js';
+import { clearPendingOpenAiImage, clearPersistentOpenAiMap } from './helpers/openai/pendingImage.js';
+import { clearPendingXaiImage, clearPersistentXaiMap } from './helpers/xai/pendingImage.js';
 import { SaveModal } from './components/modals/SaveModal.jsx';
 import { stackCount, takeStack } from './utils/itemStacks.js';
 import { ItemPickerModal } from './components/modals/ItemPickerModal.jsx';
@@ -74,6 +78,9 @@ export default function App() {
   const [xAiApiKey, setXAiApiKey] = useState('');
   const [apiError, setApiError] = useState('');
   const [showSave, setShowSave] = useState(false);
+  const [showCharacterTools, setShowCharacterTools] = useState(false);
+  const [characterSession, setCharacterSession] = useState(0);
+  const characterSessionRef = useRef(0);
   const [slotTarget, setSlotTarget] = useState(null);
   const [companionSlotTarget, setCompanionSlotTarget] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
@@ -208,7 +215,10 @@ export default function App() {
       char.abilities.spells?.length === 0 &&
       char.abilities.infusions?.length === 0
     ));
-    if (needsAbilities) setTimeout(() => setShowAbilitiesModal(true), 500);
+    if (needsAbilities) {
+      const session = characterSessionRef.current;
+      setTimeout(() => { if (session === characterSessionRef.current) setShowAbilitiesModal(true); }, 500);
+    }
   };
 
   const applyLoadedSettings = (settings) => {
@@ -260,6 +270,43 @@ export default function App() {
     applyLoadedCharacter(rest);
   };
 
+  const applyCharacterTools = (next, {newStory, resetLevels}) => {
+    if (loading) throw new Error('Wait for the current DM response to finish.');
+    const before = charRef.current;
+    characterSessionRef.current += 1;
+    setCharacterSession(characterSessionRef.current);
+    cancelAnthropicCacheKeepWarm(cacheTimerRef);
+    resetCraftingPanels();
+    voice.stopSpeaking(); voice.stopListening();
+    setShowAbilitiesModal(false); setShowDeityModal(false);
+    setShowSubclassModal(false); setSubclassQueue([]);
+    setSlotTarget(null); setCompanionSlotTarget(null);
+    setAdventureStartChar(null); setApiError('');
+    objectiveNoteRef.current = '';
+    clearPendingOpenAiImage(); clearPendingXaiImage();
+    cacheStateRef.current = null;
+    updateChar(next);
+    if (newStory) {
+      clearPersistentOpenAiMap(); clearPersistentXaiMap();
+      setFullLog([]); fullLogRef.current = [];
+      setStorySummary(''); storySummaryRef.current = '';
+      setTokenCostLog([]); tokenCostLogRef.current = [];
+      setDMRequests([]); setDebugLog([]); debugLogRef.current = [];
+      promptLogRef.current = {blocks:{},turns:[]};
+      turnsSinceEncounter.current = 0;
+      initSummarizedAt(0, '', []);
+      setAdventureStartChar(next);
+    } else {
+      const note = {id:Date.now(),role:'user',text:characterEditNote(before,next)};
+      const messages = [...fullLogRef.current,note];
+      setFullLog(messages); fullLogRef.current = messages;
+      initSummarizedAt(messages.length,storySummaryRef.current,messages);
+      if (resetLevels) queuePostLoadModals(next);
+    }
+    setShowCharacterTools(false);
+    void save.autoSave(next, fullLogRef.current);
+  };
+
   const save = useSave({
     charRef,
     messages: fullLog,
@@ -278,7 +325,12 @@ export default function App() {
     lastSummarizedAt, storySummaryRef, setStorySummary, charRef, fullLogRef, save, selectedModel, MODEL_CONFIGS,
     apiKey, openAiApiKey, xAiApiKey, log, logUsage, SUMMARIZE_AFTER, KEEP_RECENT, ENTRIES_BEFORE_COMPRESS, COMPRESS_KEEP_RECENT_ENTRIES,
   });
-  const { extractNPCs, extractTowns } = createExtractionManager({ apiKey, openAiApiKey, xAiApiKey, fullLogRef, charRef, updateChar, selectedModel, MODEL_CONFIGS, log, logUsage });
+  const helperSession = characterSessionRef.current;
+  const { extractNPCs, extractTowns } = createExtractionManager({ apiKey, openAiApiKey, xAiApiKey, fullLogRef, charRef,
+    updateChar:next => { if (helperSession === characterSessionRef.current) updateChar(next); },
+    selectedModel, MODEL_CONFIGS, log,
+    logUsage:(...args) => { if (helperSession === characterSessionRef.current) logUsage(...args); },
+  });
   const { proposeCrafting, executeCrafting, proposeConsolidation, executeConsolidation, proposeDismantle, executeDismantle } = createItemManager({ apiKey, openAiApiKey, xAiApiKey, charRef, updateChar, applyEffects, selectedModel, MODEL_CONFIGS, log, logUsage });
 
   // Autosave was only triggered by message events, so anything changed BETWEEN
@@ -1165,6 +1217,12 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         autoSaveStatus={save.autoSaveStatus}
       />}
 
+      {showCharacterTools && <CharacterToolsModal character={character}
+        onClose={()=>setShowCharacterTools(false)}
+        onApply={applyCharacterTools}
+        onExport={save.generateFullSave}
+      />}
+
       {showAbilitiesModal && (
         <AbilitiesModal
           character={character}
@@ -1256,7 +1314,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
       {/* Sidebar — hidden on mobile when closed */}
       {(!isMobile || sidebarOpen) && (
         <div style={{position: isMobile ? 'fixed' : 'relative', zIndex: isMobile ? 50 : 'auto', top:0, left:0, height:'100vh', width: isMobile ? '100vw' : 'auto'}}>
-          <Sidebar
+          <Sidebar key={characterSession}
             showRawTags={showRawTags}
             onToggleRawTags={()=>setShowRawTags(v=>!v)}
             debugLog={debugLog}
@@ -1378,6 +1436,8 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             disposition={character.disposition || {}}
             onSaveDisposition={(d) => updateChar({ ...charRef.current, disposition: d })}
             onStartNewCampaign={startNewCampaign}
+            onCharacterTools={()=>{ if (!loading) setShowCharacterTools(true); }}
+            characterToolsDisabled={loading}
             defeatedAntagonists={character.defeatedAntagonists || []}
             onReviveAntagonist={reviveAntagonist}
             completedAdventures={character.completedAdventures || []}
@@ -1510,7 +1570,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
           showRawTags={showRawTags}
         />
 
-        <InputBar
+        <InputBar key={characterSession}
           onSend={handleSend}
           onStop={handleStop}
           loading={loading}

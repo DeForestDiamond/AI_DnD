@@ -37,6 +37,8 @@ export function SettingsPanel({
   defeatedAntagonists,
   onReviveAntagonist,
   onStartNewCampaign,
+  onCharacterTools,
+  characterToolsDisabled = false,
   arcObjectives,
   arcGoal,
   onSetArcGoal,
@@ -215,6 +217,14 @@ export function SettingsPanel({
         </div>)}
       </CollapsibleSection>
     )}
+
+    {onCharacterTools && <CollapsibleSection title="🧬 CHARACTER TOOLS" defaultOpen={false}>
+      <div style={{fontSize:11,color:colors.textDim,lineHeight:1.5,marginBottom:8}}>
+        Edit your identity, reset levels, or create a new character with selected possessions and world records.
+      </div>
+      <button disabled={characterToolsDisabled} onClick={onCharacterTools} style={{...btn(false),width:'100%',fontSize:11,padding:'8px 0',opacity:characterToolsDisabled?0.5:1}}>Edit / create character</button>
+      {characterToolsDisabled && <div style={{fontSize:10,color:colors.textFaint,marginTop:5}}>Available after the DM response finishes.</div>}
+    </CollapsibleSection>}
 
     {onStartNewCampaign && (
       <CollapsibleSection title="🗺️ NEW CAMPAIGN" defaultOpen={false}>

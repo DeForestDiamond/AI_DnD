@@ -1,0 +1,53 @@
+name: Character tools
+on:
+  push:
+    paths:
+      - 'src/helpers/characterTools.js'
+      - 'src/components/modals/CharacterToolsModal.jsx'
+      - 'src/App.jsx'
+      - 'src/components/Sidebar.jsx'
+      - 'src/components/sidebar/SettingsPanel.jsx'
+      - 'tests/characterTools*'
+      - '.github/workflows/character-tools.yml'
+  pull_request:
+    paths:
+      - 'src/helpers/characterTools.js'
+      - 'src/components/modals/CharacterToolsModal.jsx'
+      - 'src/App.jsx'
+      - 'src/components/Sidebar.jsx'
+      - 'src/components/sidebar/SettingsPanel.jsx'
+      - 'tests/characterTools*'
+      - '.github/workflows/character-tools.yml'
+permissions:
+  contents: read
+jobs:
+  character-tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/characterTools.test.mjs tests/browserSave.test.mjs tests/pressureRewind.test.mjs tests/deities.test.mjs
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Mobile and desktop character workflows
+        env:
+          CHARACTER_SCREENSHOT_DIR: test-results/characters
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/character-vite.log 2>&1 &
+          trap 'kill $! 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:5173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/characterTools.browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: character-tools-screenshots
+          path: test-results/characters
+          if-no-files-found: ignore

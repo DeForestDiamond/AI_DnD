@@ -114,6 +114,8 @@ export function Sidebar(props) {
         defeatedAntagonists={props.defeatedAntagonists}
         onReviveAntagonist={props.onReviveAntagonist}
         onStartNewCampaign={props.onStartNewCampaign}
+        onCharacterTools={props.onCharacterTools}
+        characterToolsDisabled={props.characterToolsDisabled}
         arcObjectives={props.arcObjectives}
         arcGoal={props.arcGoal}
         onSetArcGoal={props.onSetArcGoal}
