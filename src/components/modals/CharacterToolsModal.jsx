@@ -47,7 +47,7 @@ export function CharacterToolsModal({ character, onClose, onApply, onExport }) {
         <h2 id="character-tools-title" style={{fontFamily:fonts.display,color:colors.gold,fontSize:18}}>Character Tools</h2>
         <button style={btn(false)} onClick={onClose} aria-label="Close character tools">✕</button>
       </div>
-      <label style={label}>Action<select style={input} value={mode} onChange={e=>changeMode(e.target.value)}>
+      <label style={label}>Action<select aria-label="Action" style={input} value={mode} onChange={e=>changeMode(e.target.value)}>
         <option value="edit">Edit current character / reset levels</option>
         <option value="fresh">Create a fresh character</option>
         <option value="carry">Create a character with selected carry-over</option>
@@ -58,10 +58,10 @@ export function CharacterToolsModal({ character, onClose, onApply, onExport }) {
         {CARRY_OPTIONS.map(([key,text])=><div key={key}>{check(text,keep[key],value=>setKeep(k=>({...k,[key]:value})))}</div>)}
       </fieldset>}
       <label style={label}>Name<input style={input} value={draft.name} onChange={e=>setDraft(d=>({...d,name:e.target.value}))}/></label>
-      <label style={label}>Race<select style={input} value={draft.race?.name || ''} onChange={e=>changeRace(withOriginal(RACES,source.race).find(x=>x.name === e.target.value))}>
+      <label style={label}>Race<select aria-label="Race" style={input} value={draft.race?.name || ''} onChange={e=>changeRace(withOriginal(RACES,source.race).find(x=>x.name === e.target.value))}>
         {withOriginal(RACES,source.race).map(r=><option key={r.name}>{r.name}</option>)}
       </select></label>
-      <label style={label}>Primary class<select style={input} value={draft.cls?.name || ''} onChange={e=>changeClass(withOriginal(CLASSES,source.cls).find(x=>x.name === e.target.value))}>
+      <label style={label}>Primary class<select aria-label="Primary class" style={input} value={draft.cls?.name || ''} onChange={e=>changeClass(withOriginal(CLASSES,source.cls).find(x=>x.name === e.target.value))}>
         {withOriginal(CLASSES,source.cls).map(c=><option key={c.name}>{c.name}</option>)}
       </select></label>
       {mode === 'edit' && check('Reset levels and class choices to level 1',resetLevels,toggleReset)}
@@ -69,7 +69,7 @@ export function CharacterToolsModal({ character, onClose, onApply, onExport }) {
       {mode !== 'fresh' && check(`Keep current XP (${source.xp || 0})`,keepXp,setKeepXp)}
       {mode !== 'edit' && check('Use new class starting equipment',startingGear,setStartingGear,mode === 'carry' && (keep.inventory || keep.equipment))}
       {mode === 'carry' && (keep.inventory || keep.equipment) && <p style={{fontSize:12,color:colors.textFaint}}>Retained inventory/equipment replaces the starter loadout.</p>}
-      {needsDeity && <label style={label}>Deity / patron<select style={input} value={draft.deity?.name || ''} onChange={e=>setDraft(d=>({...d,deity:withOriginal(deityOptions,source.deity).find(x=>x.name === e.target.value) || null}))}>
+      {needsDeity && <label style={label}>Deity / patron<select aria-label="Deity / patron" style={input} value={draft.deity?.name || ''} onChange={e=>setDraft(d=>({...d,deity:withOriginal(deityOptions,source.deity).find(x=>x.name === e.target.value) || null}))}>
         <option value="">Choose deity / patron…</option>
         {withOriginal(deityOptions,source.deity).map(d=><option key={d.name}>{d.name}</option>)}
       </select></label>}
