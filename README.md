@@ -79,6 +79,12 @@ The shared prompts emphasize impartial adjudication, player agency, distinct NPC
 - **Voice** supports spoken DM messages, voice/rate/pitch controls, pronunciation substitutions, and microphone input where browser support is available.
 - **Image attachments** are available with the OpenAI and xAI DM choices.
 
+### Paladin oaths
+
+Paladins choose from nine paths at class level 3: Devotion, Vengeance, Oathbreaker, Ancients, Crown, Conquest, Redemption, Glory, and Watchers. The picker previews vows and features to help build the character's history and ideals; deity selection remains separate.
+
+The six added paths use level-gated features for the ten-level class progression and automatic oath spells at app levels 3, 4, 5, 7, and 9. Oath spells do not consume normal known-spell choices. Their names and unlocked subclass features are provided to all six DM models; the DM adjudicates their effects. The original three subclass names and selections remain compatible with existing saves.
+
 ### Feats
 
 The **Level** tab includes a searchable picker with 35 feats using 2014-style rules. Feat picks are **additional** to the existing +1 ability score per level: most classes grant picks at class levels 4 and 8, Fighter also at 6, and Rogue also at 10. Humans receive their already-listed level 1 bonus feat. Picks use spent class levels, not total XP or overall character level; existing saves receive their earned, unused picks automatically.

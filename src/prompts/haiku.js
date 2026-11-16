@@ -1,3 +1,4 @@
+import { grantedSubclassMagic } from '../constants/abilities.js';
 import { featsContext } from '../constants/feats.js';
 import { DM_ROLE_BLOCK } from './dmRole.js';
 import { applyStoryOptions } from './storyOptions.js';
@@ -105,7 +106,9 @@ export const buildSystemPrompt = (char) => {
 
   // Abilities — spells, cantrips, infusions
   const abilities = char.abilities || { cantrips:[], spells:[], infusions:[] };
+  const grantedMagic = grantedSubclassMagic(char);
   const abilitiesSection = [
+    grantedMagic.length ? `Subclass granted magic (not charged against known selections; subclass costs apply): ${grantedMagic.map(x=>`${x.name} (${x.sub})`).join(', ')}` : '',
     abilities.martial?.length   ? `Techniques: ${abilities.martial.join(', ')}` : '',
     abilities.cantrips?.length  ? `Cantrips: ${abilities.cantrips.join(', ')}` : '',
     abilities.spells?.length    ? `Spells: ${abilities.spells.join(', ')}` : '',

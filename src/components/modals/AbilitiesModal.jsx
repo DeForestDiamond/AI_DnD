@@ -201,7 +201,7 @@ export function AbilitiesModal({ character, onSave, onClose }) {
                       <div style={{fontSize:10,color:colors.textGhost,fontStyle:'italic'}}>{data.emoji} {cls} — {sub}</div>
                       {data.features.map(f => (
                         <div key={f.name} style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:4,padding:'6px 10px'}}>
-                          <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,marginBottom:2}}>{f.name}</div>
+                          <div style={{fontSize:10,color:colors.gold,fontFamily:fonts.display,marginBottom:2}}>{f.name}{f.level ? ` · ${cls} ${f.level}${(classLevels[cls] || 0) < f.level ? ' (not yet unlocked)' : ''}` : ''}</div>
                           <div style={{fontSize:12,color:colors.textFaint,lineHeight:1.5}}>{f.desc}</div>
                         </div>
                       ))}

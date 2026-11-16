@@ -1,10 +1,10 @@
+import { ADDITIONAL_PALADIN_OATHS, PALADIN_OATH_TENETS } from './paladinOaths.js';
 // Subclasses — narrative reference data, mirroring the RACE_TRAITS shape.
 // Each subclass is a name + emoji + short desc + a flat list of {name, desc}
 // features. Consumed by the abilities modal (display) and the system prompt.
 //
 // Curated: a handful of iconic subclasses per class, expandable over time.
-// VERTICAL SLICE: Monk only for now. Add more class keys here and they light
-// up automatically — the level gate and old-save prompt are data-driven.
+// Class choices, level gates, and old-save prompts are data-driven.
 
 // Level at which each class chooses its subclass (5e-accurate).
 export const SUBCLASS_PICK_LEVEL = {
@@ -40,6 +40,7 @@ export const SUBCLASSES = {
     Pistolero: {emoji:'💨',desc:'Aggressive close-range gunfighter built around movement and draw speed.',features:[{name:'Fan the Hammer',desc:'Unleash a rapid burst of close-range shots.'},{name:'Lightning Draw',desc:'React to danger before slower opponents can act.'}]},
   },
   Paladin: {
+    ...ADDITIONAL_PALADIN_OATHS,
     'Oath of Devotion': {
       emoji: '🕊️',
       desc: 'The classic knight — honesty, courage, compassion. A shining ideal made flesh, holding themselves to the highest code.',
@@ -1003,7 +1004,8 @@ export const subclassBlurb = (className, subName, classLevel = Infinity) => {
   const sc = SUBCLASSES[className]?.[subName];
   if (!sc) return '';
   const feats = subclassFeaturesAtLevel(className, subName, classLevel).map(f => `${f.name}: ${f.desc}`).join('; ');
-  return `${subName} (${className}): ${sc.desc} Key features: ${feats}.`;
+  const tenets = className === 'Paladin' ? PALADIN_OATH_TENETS[subName] : sc.tenets;
+  return `${subName} (${className}): ${sc.desc}${tenets?.length ? ` Vows: ${tenets.join(' ')}` : ''} Key features: ${feats}.`;
 };
 
 // All chosen subclasses as prompt lines (handles multiclass).

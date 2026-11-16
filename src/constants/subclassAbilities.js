@@ -1,3 +1,4 @@
+import { ADDITIONAL_PALADIN_SPELLS } from './paladinOaths.js';
 // Narrative subclass magic for the app's ten-level progression.
 // Selection allowances are app budgets, not spell-slot calculations.
 export const SUBCLASS_CASTERS = {
@@ -13,6 +14,7 @@ export const SUBCLASS_BONUS_SPELLS = {
     'War Domain': {1:['Divine Favor','Shield of Faith'],2:['Magic Weapon','Spiritual Weapon'],3:["Crusader's Mantle",'Spirit Guardians'],4:['Freedom of Movement','Stoneskin'],5:['Flame Strike','Hold Monster']},
   },
   Paladin: {
+    ...ADDITIONAL_PALADIN_SPELLS,
     'Oath of Devotion': {3:['Protection from Evil and Good','Sanctuary'],4:['Lesser Restoration','Zone of Truth'],5:['Beacon of Hope','Dispel Magic'],7:['Freedom of Movement','Guardian of Faith'],9:['Commune','Flame Strike']},
     'Oath of Vengeance': {3:['Bane',"Hunter's Mark"],4:['Hold Person','Misty Step'],5:['Haste','Protection from Energy'],7:['Banishment','Dimension Door'],9:['Hold Monster','Scrying']},
     Oathbreaker: {3:['Hellish Rebuke','Inflict Wounds'],4:['Crown of Madness','Darkness'],5:['Animate Dead','Bestow Curse'],7:['Blight','Confusion'],9:['Contagion','Dominate Person']},

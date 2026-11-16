@@ -25,6 +25,9 @@ export const ROLES = {
 export const ROLE_ORDER = ['damage', 'control', 'defense', 'healing', 'utility'];
 
 export const SPELL_INFO = {
+  'Aura of Vitality': {role:'defense',desc:'Concentrate on a healing aura for up to a minute. A bonus action restores 2d6 HP to a creature in its 30-foot reach.'},
+  'Dominate Beast': {role:'control',desc:'A beast that fails its Wisdom save is charmed and follows your telepathic commands while you concentrate. Taking damage gives it another save.'},
+  'Compulsion': {role:'control',desc:'Compel creatures that can hear you and fail Wisdom saves to move in a chosen horizontal direction, avoiding obvious deadly hazards. Bonus actions change the direction; targets repeat their saves after moving.'},
   // ── Paladin ────────────────────────────────────────────────────────────────
   // Class features
   'Lay on Hands':          { role:'healing', desc:'A pool of healing equal to five times your level, spent a few points at a time by touch. Can also cure a disease or neutralise a poison.' },

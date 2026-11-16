@@ -1,0 +1,57 @@
+name: Paladin oaths
+on:
+  push:
+    paths:
+      - 'src/constants/paladinOaths.js'
+      - 'src/constants/subclasses.js'
+      - 'src/constants/subclassAbilities.js'
+      - 'src/constants/spellInfo.js'
+      - 'src/components/modals/SubclassModal.jsx'
+      - 'src/components/modals/AbilitiesModal.jsx'
+      - 'src/prompts/haiku.js'
+      - 'tests/paladinOaths*'
+      - '.github/workflows/paladin-oaths.yml'
+  pull_request:
+    paths:
+      - 'src/constants/paladinOaths.js'
+      - 'src/constants/subclasses.js'
+      - 'src/constants/subclassAbilities.js'
+      - 'src/constants/spellInfo.js'
+      - 'src/components/modals/SubclassModal.jsx'
+      - 'src/components/modals/AbilitiesModal.jsx'
+      - 'src/prompts/haiku.js'
+      - 'tests/paladinOaths*'
+      - '.github/workflows/paladin-oaths.yml'
+permissions:
+  contents: read
+jobs:
+  oaths:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/paladinOaths.test.mjs tests/collegeOfCreation.test.mjs tests/spellSelection.test.mjs tests/feats.test.mjs tests/promptConsolidation.test.mjs
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Mobile and desktop oath selection
+        env:
+          OATH_SCREENSHOT_DIR: test-results/oaths
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/oath-vite.log 2>&1 &
+          trap 'kill $! 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:5173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/paladinOaths.browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paladin-oath-screenshots
+          path: test-results/oaths
+          if-no-files-found: ignore
