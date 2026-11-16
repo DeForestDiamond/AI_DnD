@@ -5,7 +5,7 @@ import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { PLAYER_AGENCY_BLOCK, CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './shared.js';
 import { TAGS_BLOCK } from './tags.js';
 
-// ── System Prompt — Grok 4.6 ───────────────────────────────────────────────────────
+// ── System Prompt — Grok 4.7 ───────────────────────────────────────────────────────
 export const buildSystemPromptGrok46 = (char) => {
   const cb = buildCharBlock(char);
   const ctx = buildCtxSections(char);

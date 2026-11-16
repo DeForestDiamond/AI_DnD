@@ -88,7 +88,7 @@ export function SettingsPanel({
 
     {onToggleModel && (
       <button onClick={onToggleModel} style={{...btn(false),width:'100%',fontSize:12,padding:'6px 0',borderColor:selectedModel==='sonnet'?colors.gold:(selectedModel==='gpt'||selectedModel==='terra')?'#7aa7ff':(selectedModel==='grok'||selectedModel==='grok46')?'#9ad17b':colors.border}}>
-        {selectedModel==='sonnet' ? '✨ DM: Sonnet' : selectedModel==='haiku' ? '⚡ DM: Haiku' : selectedModel==='gpt' ? '🧠 DM: GPT Sol' : selectedModel==='terra' ? '🌍 DM: GPT Terra' : selectedModel==='grok46' ? '🚀 DM: Grok 4.6' : '🚀 DM: Grok 4.3'}
+        {selectedModel==='sonnet' ? '✨ DM: Sonnet' : selectedModel==='haiku' ? '⚡ DM: Haiku' : selectedModel==='gpt' ? '🧠 DM: GPT Sol' : selectedModel==='terra' ? '🌍 DM: GPT Terra' : selectedModel==='grok46' ? '🚀 DM: Grok 4.7' : '🚀 DM: Grok 4.3'}
       </button>
     )}
 

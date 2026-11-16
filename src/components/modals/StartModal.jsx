@@ -54,7 +54,7 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
     { id:'gpt', label:'🧠 GPT Sol', provider:'OpenAI', enabled:hasOpenAI },
     { id:'terra', label:'🌍 GPT Terra', provider:'OpenAI', enabled:hasOpenAI },
     { id:'grok', label:'🚀 Grok 4.3', provider:'xAI', enabled:hasXAI },
-    { id:'grok46', label:'🚀 Grok 4.6', provider:'xAI', enabled:hasXAI },
+    { id:'grok46', label:'🚀 Grok 4.7', provider:'xAI', enabled:hasXAI },
   ];
 
   const card = { background:colors.bg,border:`1px solid ${colors.border}`,borderRadius:6,padding:16,cursor:'pointer',transition:'all 0.15s',textAlign:'left' };

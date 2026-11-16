@@ -14,7 +14,7 @@ Use a modern browser and an API key for at least one supported provider. Enter k
 | --- | --- |
 | Anthropic | Sonnet, Haiku |
 | OpenAI | GPT Sol, GPT Terra |
-| xAI | Grok 4.3, Grok 4.6 |
+| xAI | Grok 4.3, Grok 4.7 |
 
 These are the app's configured choices, not a promise of access for every provider account. Exact model IDs and request settings live in [`MODEL_CONFIGS`](src/hooks/useGame.js). Provider access and billing are managed through your own provider account.
 
