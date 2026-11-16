@@ -115,7 +115,7 @@ export default function App() {
   const [deityModalClass, setDeityModalClass] = useState(null);
   const [showSubclassModal, setShowSubclassModal] = useState(false);
   const [subclassQueue, setSubclassQueue] = useState([]);
-  const [selectedModel, setSelectedModel] = useState('sonnet'); // sonnet, haiku, gpt (Sol), terra, grok, grok46
+  const [selectedModel, setSelectedModel] = useState('sonnet'); // sonnet, haiku, gpt (Sol), terra, grok, grok46, grok47
   const [storySummary, setStorySummary] = useState('');
   const [tokenCostLog, setTokenCostLog] = useState([]);
   const tokenCostLogRef = useRef([]);
@@ -500,7 +500,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         ? buildSystemPromptTerra(charWithArc)
         : selectedModel === 'grok'
         ? buildSystemPromptGrok43(charWithArc)
-        : selectedModel === 'grok46'
+        : (selectedModel === 'grok46' || selectedModel === 'grok47')
         ? buildSystemPromptGrok46(charWithArc)
         : buildSystemPromptSol(charWithArc);
       const { text, usage } = await callDM(
@@ -758,7 +758,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
         ? buildSystemPromptTerra(charRef.current)
         : selectedModel === 'grok'
         ? buildSystemPromptGrok43(charRef.current)
-        : selectedModel === 'grok46'
+        : (selectedModel === 'grok46' || selectedModel === 'grok47')
         ? buildSystemPromptGrok46(charRef.current)
         : buildSystemPromptSol(charRef.current);
       const { text: dmText, usage: dmUsage } = await callDM(
@@ -1365,7 +1365,7 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             onDeleteFromBag={deleteFromBag}
             onChangeStoryOptions={options => updateChar(changeStoryOptions(charRef.current, options))}
             selectedModel={selectedModel}
-            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : m === 'gpt' ? 'terra' : m === 'terra' ? 'grok' : m === 'grok' ? 'grok46' : 'sonnet')}
+            onToggleModel={() => setSelectedModel(m => m === 'sonnet' ? 'haiku' : m === 'haiku' ? 'gpt' : m === 'gpt' ? 'terra' : m === 'terra' ? 'grok' : m === 'grok' ? 'grok46' : m === 'grok46' ? 'grok47' : 'sonnet')}
             pacing={character.pacing || 'normal'}
             lootDestination={character.lootDestination || 'inventory'}
             onToggleLootDestination={() => {

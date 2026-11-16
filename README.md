@@ -14,7 +14,7 @@ Use a modern browser and an API key for at least one supported provider. Enter k
 | --- | --- |
 | Anthropic | Sonnet, Haiku |
 | OpenAI | GPT Sol, GPT Terra |
-| xAI | Grok 4.3, Grok 4.7 |
+| xAI | Grok 4.3, Grok 4.6, Grok 4.7 |
 
 These are the app's configured choices, not a promise of access for every provider account. Exact model IDs and request settings live in [`MODEL_CONFIGS`](src/hooks/useGame.js). Provider access and billing are managed through your own provider account.
 
@@ -83,7 +83,7 @@ The shared prompts emphasize impartial adjudication, player agency, distinct NPC
 
 Paladins choose from nine paths at class level 3: Devotion, Vengeance, Oathbreaker, Ancients, Crown, Conquest, Redemption, Glory, and Watchers. The picker previews vows and features to help build the character's history and ideals; deity selection remains separate.
 
-The six added paths use level-gated features for the ten-level class progression and automatic oath spells at app levels 3, 4, 5, 7, and 9. Oath spells do not consume normal known-spell choices. Their names and unlocked subclass features are provided to all six DM models; the DM adjudicates their effects. The original three subclass names and selections remain compatible with existing saves.
+The six added paths use level-gated features for the ten-level class progression and automatic oath spells at app levels 3, 4, 5, 7, and 9. Oath spells do not consume normal known-spell choices. Their names and unlocked subclass features are provided to all seven DM models; the DM adjudicates their effects. The original three subclass names and selections remain compatible with existing saves.
 
 ### Feats
 
@@ -91,7 +91,7 @@ The **Level** tab includes a searchable picker with 35 feats using 2014-style ru
 
 Picks can be banked. The picker checks implemented ability-score and spellcasting prerequisites, blocks duplicates, and records required options such as Resilient's ability or Magic Initiate's spells. Free-text spell, skill, maneuver, and proficiency choices are passed to the DM for adjudication rather than validated as separate character-sheet selections.
 
-Feat ability increases (capped at 20) and Tough's level-scaling HP apply automatically. Other effects, including conditional attack modifiers, AC, proficiencies, reactions, and extra attacks, are sent with the feat descriptions to all six DM prompts for adjudication. Undo refunds a pick and reverses its sheet bonuses; dependencies can require removing another feat first. Level resets and new characters clear selections. Changing away from Human removes that race's bonus-feat selection.
+Feat ability increases (capped at 20) and Tough's level-scaling HP apply automatically. Other effects, including conditional attack modifiers, AC, proficiencies, reactions, and extra attacks, are sent with the feat descriptions to all DM prompts for adjudication. Undo refunds a pick and reverses its sheet bonuses; dependencies can require removing another feat first. Level resets and new characters clear selections. Changing away from Human removes that race's bonus-feat selection.
 
 ### Character Tools
 

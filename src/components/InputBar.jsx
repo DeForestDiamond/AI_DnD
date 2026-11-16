@@ -10,7 +10,7 @@ export function InputBar({ onSend, onStop, loading, isListening, sttSupported, o
   const inputRef = useRef(null);
   const fileRef = useRef(null);
   const openAiModel = selectedModel === 'terra' || selectedModel === 'gpt';
-  const xaiModel = selectedModel === 'grok' || selectedModel === 'grok46';
+  const xaiModel = selectedModel === 'grok' || selectedModel === 'grok46' || selectedModel === 'grok47';
   const imageModel = openAiModel || xaiModel;
 
   useEffect(() => {

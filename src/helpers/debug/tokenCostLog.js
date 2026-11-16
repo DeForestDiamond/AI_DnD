@@ -5,6 +5,7 @@ const PRICING = {
   terra: { input: 2.5, output: 15.0, cacheWrite: 3.125, cacheRead: 0.25 },
   grok: { input: 1.25, output: 2.50, cacheWrite: 1.25, cacheRead: 0.20 },
   grok46: { input: 2.00, output: 6.00, cacheWrite: 2.00, cacheRead: 0.50 },
+  grok47: { input: 2.00, output: 6.00, cacheWrite: 2.00, cacheRead: 0.50 },
 };
 
 const num = v => Number.isFinite(Number(v)) ? Number(v) : 0;

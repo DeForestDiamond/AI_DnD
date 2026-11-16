@@ -135,8 +135,15 @@ export const MODEL_CONFIGS = {
     label: 'Grok 4.3',
     emoji: '🚀',
   },
-  // Preserve the saved model key when upgrading the API model.
   grok46: {
+    provider: 'xai',
+    model: 'grok-4.6',
+    max_tokens: 2048,
+    reasoning_effort: 'low',
+    label: 'Grok 4.6',
+    emoji: '🚀',
+  },
+  grok47: {
     provider: 'xai',
     model: 'grok-4.7',
     max_tokens: 2048,
