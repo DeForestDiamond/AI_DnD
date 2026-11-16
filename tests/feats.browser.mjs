@@ -39,7 +39,8 @@ try {
     await page.getByLabel('Choose feat',{exact:true}).selectOption('Tough');
     await page.getByRole('button',{name:'Take Tough',exact:true}).click();
     let c=await waitForSave(c=>c.level===4 && c.feats.some(f=>f.name==='Tough'));
-    assert.equal(c.stats.str,initial.stats.str+1);assert.equal(c.xp,900);assert.equal(c.maxHp,37);assert.equal(c.hp,45);
+    // Human CON is 15: the normal Fighter gain is 6 + 2 = 8 HP.
+    assert.equal(c.stats.str,initial.stats.str+1);assert.equal(c.xp,900);assert.equal(c.maxHp,38);assert.equal(c.hp,46);
     assert.equal(c.feats.find(f=>f.name==='Tough').source,'Fighter:4');
     // Loading the feat must not add its HP twice. Advancing again must include
     // its extra +2 current/max HP without taking another feat or spending XP.
@@ -47,14 +48,14 @@ try {
     await page.getByText('Fighter',{exact:true}).click();
     await page.getByText('STRENGTH',{exact:true}).click();
     c=await waitForSave(c=>c.level===5);
-    assert.equal(c.maxHp,44);assert.equal(c.hp,54);assert.equal(c.stats.str,initial.stats.str+2);assert.equal(c.xp,1400);
+    assert.equal(c.maxHp,46);assert.equal(c.hp,56);assert.equal(c.stats.str,initial.stats.str+2);assert.equal(c.xp,1400);
     await page.getByText('Tough',{exact:true}).click();
     await page.getByRole('button',{name:'Undo Tough',exact:true}).click();
     await page.getByLabel('Choose feat',{exact:true}).selectOption('Resilient');
     await page.getByLabel('Feat ability score',{exact:true}).selectOption('con');
     await page.getByRole('button',{name:'Take Resilient',exact:true}).click();
     c=await waitForSave(c=>c.feats.some(f=>f.name==='Resilient'));
-    assert.equal(c.stats.con,initial.stats.con+1);assert.equal(c.maxHp,49);assert.equal(c.hp,49);
+    assert.equal(c.stats.con,initial.stats.con+1);assert.equal(c.maxHp,51);assert.equal(c.hp,51);
     await load(c); // full JSON save/import preserves both choices and spent picks
     await page.getByRole('heading',{name:'✦ FEATS · 0 available',exact:true}).waitFor();
     await page.getByText('Resilient',{exact:true}).click();
@@ -63,7 +64,7 @@ try {
     await page.getByLabel('Feat selections',{exact:true}).fill('Wizard; Mage Hand, Fire Bolt; Shield');
     await page.getByRole('button',{name:'Take Magic Initiate',exact:true}).click();
     c=await waitForSave(c=>c.feats.some(f=>f.name==='Magic Initiate'));
-    assert.equal(c.stats.con,initial.stats.con);assert.equal(c.hp,44);
+    assert.equal(c.stats.con,initial.stats.con);assert.equal(c.hp,46);
     assert.equal(c.feats.find(f=>f.name==='Magic Initiate').choices,'Wizard; Mage Hand, Fire Bolt; Shield');
     const overflow=await page.locator('section[aria-labelledby="feats-title"]').evaluate(el=>el.scrollWidth>el.clientWidth+1);
     assert.equal(overflow,false,`feat panel overflow at ${width}px`);
