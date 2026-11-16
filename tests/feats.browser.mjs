@@ -20,8 +20,15 @@ try {
       await page.locator('input[type="file"][accept=".json"]').setInputFiles({name:'feat-test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(makeSave(character)))});
       await page.getByRole('button',{name:/^⭐ LEVEL(?: ·|$)/}).click();
     };
-    const saved=()=>page.evaluate(async()=>{const {browserSaveStore}=await import('/src/helpers/browserSave.js');return (await browserSaveStore.load()).character;});
-    const waitForSave=async predicate=>{await page.waitForFunction(async text=>{const {browserSaveStore}=await import('/src/helpers/browserSave.js');const c=(await browserSaveStore.load())?.character;return c && Function('c',`return (${text})(c)`)(c);},predicate.toString());return saved();};
+    const saved=()=>page.evaluate(async()=>{const {browserSaveStore}=await import('/src/helpers/browserSave.js');return (await browserSaveStore.load())?.character || null;});
+    const waitForSave=async predicate=>{
+      for(let attempt=0;attempt<100;attempt++) {
+        const c=await saved();
+        if(c && predicate(c)) return c;
+        await page.waitForTimeout(100);
+      }
+      throw new Error(`Autosave did not reach expected character state: ${JSON.stringify(await saved())}; page errors: ${JSON.stringify(errors)}`);
+    };
     await load(initial);
     await page.getByRole('heading',{name:'✦ FEATS · 0 available',exact:true}).waitFor();
     await page.getByText('Fighter',{exact:true}).click();
