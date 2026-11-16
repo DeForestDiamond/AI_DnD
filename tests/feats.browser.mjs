@@ -27,7 +27,8 @@ try {
     await page.getByText('Fighter',{exact:true}).click();
     await page.getByText('STRENGTH',{exact:true}).click();
     await page.getByRole('heading',{name:'✦ FEATS · 1 available',exact:true}).waitFor();
-    assert.equal(await page.getByLabel('Choose feat',{exact:true}).locator('option[value="War Caster"]').isDisabled(),true);
+    const warCaster=page.getByLabel('Choose feat',{exact:true}).locator('option[value="War Caster"]');
+    assert.equal(await warCaster.isDisabled(),true,await warCaster.evaluate(el=>el.outerHTML));
     await page.getByLabel('Choose feat',{exact:true}).selectOption('Tough');
     await page.getByRole('button',{name:'Take Tough',exact:true}).click();
     let c=await waitForSave(c=>c.level===4 && c.feats.some(f=>f.name==='Tough'));

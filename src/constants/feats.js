@@ -36,11 +36,9 @@ export const FEATS = [
   feat('Spell Sniper','Magic','Double the range of spells requiring attack rolls; their ranged spell attacks ignore half and three-quarters cover. Learn one attack-roll cantrip from Bard, Cleric, Druid, Sorcerer, Warlock, or Wizard, using its class’s casting ability.',{spellcasting:true,choiceLabel:'Attack cantrip and its spellcasting class'}),
   feat('Tavern Brawler','Combat','Increase Strength or Constitution by 1, up to 20. Gain proficiency with improvised weapons; unarmed strikes use a d4 damage die. After hitting with an unarmed strike or improvised weapon on your turn, use a bonus action to attempt a grapple.',{abilityOptions:['str','con']}),
   feat('Tough','Defense','Increase maximum HP by twice your character level. Each subsequent level adds another 2 maximum HP. Already included in the app’s displayed HP; do not add it again.'),
-  feat('War Caster','Magic','Gain advantage on Constitution saves to maintain concentration when damaged. Perform somatic components while holding weapons or a shield. When movement provokes your opportunity attack, a reaction can instead cast a one-action spell targeting only that creature.'),
+  feat('War Caster','Magic','Gain advantage on Constitution saves to maintain concentration when damaged. Perform somatic components while holding weapons or a shield. When movement provokes your opportunity attack, a reaction can instead cast a one-action spell targeting only that creature.',{spellcasting:true}),
   feat('Weapon Master','Combat','Increase Strength or Dexterity by 1, up to 20. Gain proficiency with four chosen simple or martial weapons.',{abilityOptions:['str','dex'],choiceLabel:'Four simple or martial weapon proficiencies'}),
 ];
-// War Caster's prerequisite is spellcasting, not a class or character level.
-FEATS.find(f=>f.name === 'War Caster').spellcasting = true;
 export const getFeat = name => FEATS.find(f=>f.name.toLowerCase() === String(name || '').toLowerCase());
 export const featName = record => typeof record === 'string' ? record : record?.name;
 export const hasFeat = (char,name) => (char.feats || []).some(record=>String(featName(record)).toLowerCase() === name.toLowerCase());
