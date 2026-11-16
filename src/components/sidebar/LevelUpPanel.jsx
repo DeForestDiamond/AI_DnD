@@ -1,10 +1,11 @@
+import { FeatsPanel } from './FeatsPanel.jsx';
 import { useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
 import { STAT_NAMES } from '../../constants/classes.js';
 import { MULTICLASS_OPTIONS } from '../../constants/multiclass.js';
 import { modStr } from '../../hooks/useCharacter.js';
 
-export function LevelUpPanel({ character, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect }) {
+export function LevelUpPanel({ character, levelUpsAvailable=0, onLevelClassSelect, onLevelStatSelect, onChooseFeat, onRemoveFeat }) {
   const [levelClassChoice, setLevelClassChoice] = useState(null);
 
   return <>
@@ -95,5 +96,6 @@ export function LevelUpPanel({ character, levelUpsAvailable=0, onLevelClassSelec
         <button onClick={()=>setLevelClassChoice(null)} style={{...btn(false),width:'100%',marginTop:10,fontSize:10}}>← Back to class selection</button>
       </>;
     })()}
+    <FeatsPanel character={character} onChooseFeat={onChooseFeat} onRemoveFeat={onRemoveFeat}/>
   </>;
 }

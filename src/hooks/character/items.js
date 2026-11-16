@@ -1,3 +1,4 @@
+import { hasFeat } from '../../constants/feats.js';
 import { normalizeWeaponDamage } from '../../utils/weaponDamage.js';
 import { SLOTS } from '../../constants/items.js';
 import { stackHas, stackNames } from '../../utils/itemStacks.js';
@@ -79,7 +80,7 @@ export const gearHpBonus = (char) => {
   return modGain * level;
 };
 
-export const effectiveMaxHp = (char) => Math.max(1, (char?.maxHp || 0) + gearHpBonus(char));
+export const effectiveMaxHp = (char) => Math.max(1, (char?.maxHp || 0) + gearHpBonus(char) + (hasFeat(char, 'Tough') ? 2 * Math.max(1,char.level || 1) : 0));
 
 // After anything that changes equipment, keep the player's HP RATIO intact
 // rather than clamping or gifting. Swapping gear shouldn't cost hit points, and

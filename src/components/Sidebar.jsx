@@ -1,3 +1,4 @@
+import { availableFeatSlots } from '../helpers/feats.js';
 import { useState } from 'react';
 import { colors, fonts, btn } from '../styles/theme.js';
 import { allItems } from '../hooks/useCharacter.js';
@@ -17,6 +18,7 @@ export function Sidebar(props) {
   } = props;
   const [activeTab, setActiveTab] = useState('character');
   const db = allItems(character.items || {});
+  const featPicks = availableFeatSlots(character).length;
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const sidebarStyle = {
@@ -37,7 +39,7 @@ export function Sidebar(props) {
       <div style={{display:'flex',gap:6,marginBottom:4}}>
         {[
           ['character','🎲 CHAR'],
-          ['levelup',`⭐ LEVEL${levelUpsAvailable>0?` · ${levelUpsAvailable}`:''}`],
+          ['levelup',`⭐ LEVEL${levelUpsAvailable>0?` · ${levelUpsAvailable}`:''}${featPicks>0?` · F${featPicks}`:''}`],
           ['crafting','🔨 CRAFT'],
           ['settings','⚙️ SET'],
         ].map(([id,label]) => (
@@ -74,6 +76,8 @@ export function Sidebar(props) {
         levelUpsAvailable={levelUpsAvailable}
         onLevelClassSelect={onLevelClassSelect}
         onLevelStatSelect={onLevelStatSelect}
+        onChooseFeat={props.onChooseFeat}
+        onRemoveFeat={props.onRemoveFeat}
       />}
 
       {activeTab==='crafting' && <CraftingTab

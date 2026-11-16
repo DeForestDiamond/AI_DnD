@@ -1,3 +1,4 @@
+import { featsContext } from '../src/constants/feats.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EMPTY_CHAR } from '../src/hooks/character/defaults.js';
@@ -58,7 +59,7 @@ for(const [build,choices,before] of cases) {
     // after that cleanup. Their single inclusion is checked above.
     // Restore the old opening for this historical size comparison; dmRole tests
     // separately verify the expanded referee policy remains first and present.
-    assert.ok(Object.values(p).join('').replace(DM_ROLE_BLOCK,originalOpening).replace(`${WEAPON_ATTACK_RULES}\n`,'').replace(`\n\n${MORALIZING_RULES}`,'').replace(`\n\n${PRACTICAL_DECISION_RULES}`,'').replace(`\n\n${fullDelegation}`,'').replace(`\n\n${leanDelegation}`,'').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
+    assert.ok(Object.values(p).join('').replace(featsContext(character()),'').replace(DM_ROLE_BLOCK,originalOpening).replace(`${WEAPON_ATTACK_RULES}\n`,'').replace(`\n\n${MORALIZING_RULES}`,'').replace(`\n\n${PRACTICAL_DECISION_RULES}`,'').replace(`\n\n${fullDelegation}`,'').replace(`\n\n${leanDelegation}`,'').replace(`${FIRST_CONTACT_ROLL_RULES}\n`,'').replace(`${ROLL_RESOLUTION_RULES}\n`,'').length < before);
   });
 }
 

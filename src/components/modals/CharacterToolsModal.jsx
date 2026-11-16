@@ -65,7 +65,7 @@ export function CharacterToolsModal({ character, onClose, onApply, onExport }) {
         {withOriginal(CLASSES,source.cls).map(c=><option key={c.name}>{c.name}</option>)}
       </select></label>
       {mode === 'edit' && check('Reset levels and class choices to level 1',resetLevels,toggleReset)}
-      {rebuilding && <p style={{fontSize:12,color:colors.textFaint}}>Rebuilds class levels, HP, ability scores, subclasses, and selected spells/abilities. Scores below start from the class and racial defaults and can be edited. Re-select class choices through the Level and Abilities panels.</p>}
+      {rebuilding && <p style={{fontSize:12,color:colors.textFaint}}>Rebuilds class levels, HP, ability scores, subclasses, feats, and selected spells/abilities. Scores below start from the class and racial defaults and can be edited. Re-select class choices through the Level and Abilities panels.</p>}
       {mode !== 'fresh' && check(`Keep current XP (${source.xp || 0})`,keepXp,setKeepXp)}
       {mode !== 'edit' && check('Use new class starting equipment',startingGear,setStartingGear,mode === 'carry' && (keep.inventory || keep.equipment))}
       {mode === 'carry' && (keep.inventory || keep.equipment) && <p style={{fontSize:12,color:colors.textFaint}}>Retained inventory/equipment replaces the starter loadout.</p>}

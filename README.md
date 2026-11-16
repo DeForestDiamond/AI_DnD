@@ -79,6 +79,14 @@ The shared prompts emphasize impartial adjudication, player agency, distinct NPC
 - **Voice** supports spoken DM messages, voice/rate/pitch controls, pronunciation substitutions, and microphone input where browser support is available.
 - **Image attachments** are available with the OpenAI and xAI DM choices.
 
+### Feats
+
+The **Level** tab includes a searchable picker with 35 feats using 2014-style rules. Feat picks are **additional** to the existing +1 ability score per level: most classes grant picks at class levels 4 and 8, Fighter also at 6, and Rogue also at 10. Humans receive their already-listed level 1 bonus feat. Picks use spent class levels, not total XP or overall character level; existing saves receive their earned, unused picks automatically.
+
+Picks can be banked. The picker checks implemented ability-score and spellcasting prerequisites, blocks duplicates, and records required options such as Resilient's ability or Magic Initiate's spells. Free-text spell, skill, maneuver, and proficiency choices are passed to the DM for adjudication rather than validated as separate character-sheet selections.
+
+Feat ability increases (capped at 20) and Tough's level-scaling HP apply automatically. Other effects, including conditional attack modifiers, AC, proficiencies, reactions, and extra attacks, are sent with the feat descriptions to all six DM prompts for adjudication. Undo refunds a pick and reverses its sheet bonuses; dependencies can require removing another feat first. Level resets and new characters clear selections. Changing away from Human removes that race's bonus-feat selection.
+
 ### Character Tools
 
 Open **Settings → Character Tools → Edit / create character** to:

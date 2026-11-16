@@ -9,6 +9,7 @@ export const EMPTY_CHAR = {
   level:1, xp:0,
   classLevels: {},
   subclasses: {},
+  feats: [],
   slots:{ ...EMPTY_SLOTS },
   inventory:[], stash:[], coins:1000, bankedCoins:0, environment:'wilderness', defeatedAntagonists:[],
   disposition: { alignment:'', cares:'', indifferent:'', methods:'', lines:'' },

@@ -1,3 +1,4 @@
+import { featsContext } from '../constants/feats.js';
 import { DM_ROLE_BLOCK } from './dmRole.js';
 import { applyStoryOptions } from './storyOptions.js';
 import { arcContext } from './arcPacing.js';
@@ -110,7 +111,7 @@ export const buildSystemPrompt = (char) => {
     abilities.spells?.length    ? `Spells: ${abilities.spells.join(', ')}` : '',
     abilities.infusions?.length ? `Infusions: ${abilities.infusions.join(', ')}` : '',
   ].filter(Boolean).join('\n');
-  const abilitiesLine = abilitiesSection ? `\nABILITIES:\n${abilitiesSection}` : '';
+  const abilitiesLine = (abilitiesSection ? `\nABILITIES:\n${abilitiesSection}` : '') + featsContext(char);
 
   const staticPart = `${DM_ROLE_BLOCK} Keep responses focused and appropriately paced. Keep it fun, immersive, and mechanically consistent. Be creative — avoid generic tropes, predictable settings, and the most common fantasy clichés. Surprise the player. Never make choices for the player. Player must choose every action of their character.
 

@@ -1,3 +1,4 @@
+import { featsContext } from '../constants/feats.js';
 import { grantedSubclassMagic } from '../constants/abilities.js';
 import { arcContext } from './arcPacing.js';
 import { worldPressureContext } from '../helpers/worldPressures.js';
@@ -125,7 +126,7 @@ export const buildCharBlock = (char) => {
   ].filter(Boolean).join('\n');
 
   // Static — race, class, deity, playstyle, abilities (rarely change)
-  const staticPart = `CHARACTER: ${char.name} | ${char.race?.name} ${classDesc}${char.deity ? ` | ${hasWarlock?'Patron':'Deity'}: ${char.deity.name}` : ''}${playstyle}${deityLine}${raceCtx}${subclassPromptLines(char)}${abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : ''}`;
+  const staticPart = `CHARACTER: ${char.name} | ${char.race?.name} ${classDesc}${char.deity ? ` | ${hasWarlock?'Patron':'Deity'}: ${char.deity.name}` : ''}${playstyle}${deityLine}${raceCtx}${subclassPromptLines(char)}${abilitiesLine ? `\nABILITIES:\n${abilitiesLine}` : ''}${featsContext(char)}`;
 
   // Dynamic — HP, stats, inventory, equipped, gold, location (changes every message)
   const arcLine = arcContext(char);

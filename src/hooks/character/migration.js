@@ -1,3 +1,4 @@
+import { normalizeFeatRecords } from '../../helpers/feats.js';
 import { normalizeInterdictAbilities } from '../../constants/interdictBoons.js';
 import { ITEM_DB, EMPTY_SLOTS } from '../../constants/items.js';
 import { SAVE_VERSION } from '../../constants/progression.js';
@@ -274,6 +275,7 @@ export const migrateCharacter = (char) => {
   // load as well as preventing new orphans below.
   c = pruneDeadItemDefinitions(c);
   c.abilities = normalizeInterdictAbilities(c.abilities || {}, c.classLevels || { [c.cls?.name]: c.level });
+  c.feats = normalizeFeatRecords(c);
   c._v = SAVE_VERSION;
   return { char: c, notes };
 };

@@ -1,3 +1,4 @@
+import { chooseFeat, removeFeat } from './helpers/feats.js';
 import { changeStoryOptions, isContinuousStory, isFullDarkFantasy } from './helpers/storyOptions.js';
 import { prepareContinuousOpening } from './helpers/adventure/continuous.js';
 import { useState, useRef, useEffect } from 'react';
@@ -1344,6 +1345,8 @@ NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begi
             levelUpsAvailable={bankedLevelUps}
             onLevelClassSelect={handleLevelClassSelect}
             onLevelStatSelect={handleLevelStatSelect}
+            onChooseFeat={choice=>updateChar(chooseFeat(charRef.current,choice))}
+            onRemoveFeat={name=>updateChar(removeFeat(charRef.current,name))}
             onSlotClick={handleSlotClick}
             onCompanionSlotClick={handleCompanionSlotClick}
             onCompanionUnequip={unequipCompanionItem}

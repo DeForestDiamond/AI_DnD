@@ -1,3 +1,4 @@
+import { hasFeat } from '../../constants/feats.js';
 import { isContinuousStory } from '../../helpers/storyOptions.js';
 import { applyWorldPressures } from '../../helpers/worldPressures.js';
 import { useState, useRef, useEffect } from 'react';
@@ -38,7 +39,7 @@ export function useCharacter(log) {
       const hpGain     = Math.max(1, hpPerLevel + conMod);
       const newMaxHp   = c.maxHp + hpGain;
       const withMax = { ...c, level:(c.level || 1) + 1, stats:newStats, maxHp:newMaxHp, classLevels };
-      const nc = { ...withMax, hp: Math.min(c.hp + hpGain, effectiveMaxHp(withMax)) };
+      const nc = { ...withMax, hp: Math.min(c.hp + hpGain + (hasFeat(c,'Tough') ? 2 : 0), effectiveMaxHp(withMax)) };
       charRef.current = nc;
       return nc;
     });

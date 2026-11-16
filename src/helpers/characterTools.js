@@ -1,3 +1,4 @@
+import { reconcileFeatSources } from './feats.js';
 import { EMPTY_CHAR } from '../hooks/character/defaults.js';
 import { ABILITY_KEYS, effectiveMaxHp } from '../hooks/character/items.js';
 import { applyRaceBonus, calcMaxHp, statMod } from '../hooks/character/stats.js';
@@ -86,10 +87,12 @@ export const buildCharacterRevision = (source, options) => {
     next.level = 1;
     next.classLevels = {[cls.name]:1};
     next.subclasses = {};
+    next.feats = [];
     next.abilities = structuredClone(EMPTY_CHAR.abilities);
     next.maxHp = Math.max(1, calcMaxHp(cls.name, next.stats.con, 1));
     next.hp = effectiveMaxHp(next);
   } else {
+    next = reconcileFeatSources(next);
     next.maxHp = Math.max(1, source.maxHp + (statMod(next.stats.con) - statMod(source.stats.con)) * source.level);
     const ratio = Math.min(1, Math.max(0, source.hp / effectiveMaxHp(source)));
     next.hp = Math.round(ratio * effectiveMaxHp(next));
@@ -98,7 +101,7 @@ export const buildCharacterRevision = (source, options) => {
 };
 
 export const characterEditNote = (before, after) => {
-  const profile = ['bio','appearance','disposition','subclasses','abilities'].filter(key=>JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+  const profile = ['bio','appearance','disposition','subclasses','abilities','feats'].filter(key=>JSON.stringify(before[key]) !== JSON.stringify(after[key]))
     .map(key=>`${key}: ${JSON.stringify(after[key])}`).join('; ');
   return `CORRECTION — OOC CHARACTER SHEET UPDATE: ${before.name} is now named ${after.name}; race ${after.race.name}; primary class ${after.cls.name}; level ${after.level}; class levels ${JSON.stringify(after.classLevels)}; XP ${after.xp}; ability scores ${JSON.stringify(after.stats)}; deity/patron ${after.deity?.name || 'none'}.${profile ? ` Updated profile/choices: ${profile}.` : ''} The current character sheet, bio, appearance, and disposition are authoritative. Apply these player-authored edits to future play and campaign memory; older descriptions or mechanical values are superseded. This is an out-of-character edit, not an action, conversation, or time passage in the world.`;
 };
