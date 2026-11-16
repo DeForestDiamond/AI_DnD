@@ -24,9 +24,9 @@ try {
       for(const original of ['Oath of Devotion','Oath of Vengeance','Oathbreaker']) assert.equal(await dialog.getByRole('button',{name:original,exact:true}).count(),1);
       for(const addition of Object.keys(ADDITIONAL_PALADIN_OATHS)) assert.equal(await dialog.getByRole('button',{name:addition,exact:true}).count(),1);
       const card=dialog.getByRole('button',{name,exact:true});
-      await card.focus();await page.keyboard.press('Enter');
-      assert.equal(await card.getAttribute('aria-pressed'),'true');
+      await card.press('Enter');
       await card.getByText('Vows:',{exact:true}).waitFor();
+      assert.equal(await card.getAttribute('aria-pressed'),'true');
       assert.ok((await card.innerText()).includes('Paladin 10'));
       assert.equal(await dialog.evaluate(el=>el.scrollWidth>el.clientWidth+1),false,`${name}: overflow at ${width}px`);
       if(process.env.OATH_SCREENSHOT_DIR && name === 'Oath of Conquest') {
