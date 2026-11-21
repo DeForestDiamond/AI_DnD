@@ -1,3 +1,5 @@
+import { TERRA_ARC_RULES } from '../src/prompts/terra.js';
+import { ARC_TERMINATION_BLOCK } from '../src/prompts/arcTermination.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ARC_RULES_BLOCK as fullArc } from '../src/prompts/shared.js';
@@ -11,13 +13,15 @@ for (const build of [buildSystemPrompt,buildSystemPromptSonnet,buildSystemPrompt
     const c={...structuredClone(EMPTY_CHAR),name:'Test',race:{name:'Human'},cls:{name:'Fighter'},level:3,hp:12,maxHp:12,arc:{antagonist:'Black Dragon',arcLocation:'Cormyr - Mere Lair',localArea:'Cormyr'}};
     const before=structuredClone(c);
     const active=build(c);
-    const rules=active.static.includes(fullArc)?fullArc:leanArc;
-    assert.ok(active.static.includes(rules));
+    const candidates = build === buildSystemPromptTerra ? [TERRA_ARC_RULES] : [fullArc, leanArc];
+    const rules = candidates.find(block => active.static.includes(block));
+    assert.ok(rules);
     assert.equal(active.static.split(ARC_PACING_BLOCK).length-1,1);
     assert.match(active.dynamic,/Phase: ACTIVE/);
     assert.match(active.dynamic,/Black Dragon/);
     assert.match(active.dynamic,/Cormyr - Mere Lair/);
-    assert.match(rules,/no scene quota|There is no scene quota/i);
+    if (build === buildSystemPromptTerra) assert.match(rules,/central conflict on its own facts and timing/);
+    else assert.match(rules,/no scene quota|There is no scene quota/i);
     assert.match(rules,/SAME response/);
     assert.match(rules,/deal, truce,.*payment/);
     assert.match(rules,/Ignoring a hook alone/);
@@ -38,6 +42,9 @@ test('arc state stays compact and carries facts rather than duplicating the poli
   const c={arc:{antagonist:'Dragon',localArea:'Cormyr'}};
   assert.ok(arcContext(c).length<400);
   assert.ok(arcContext({...c,arc:{...c.arc,status:'reserved'}}).length<550);
-  assert.ok(fullArc.length+ARC_PACING_BLOCK.length<4500);
-  assert.ok(leanArc.length+ARC_PACING_BLOCK.length<3300);
+  // These original budgets predate the dedicated irreversible-failure contract.
+  for (const [rules, budget] of [[fullArc,4500],[leanArc,3300],[TERRA_ARC_RULES,3300]]) {
+    assert.equal(rules.split(ARC_TERMINATION_BLOCK).length - 1, 1);
+    assert.ok(rules.replace(ARC_TERMINATION_BLOCK,'').length + ARC_PACING_BLOCK.length < budget);
+  }
 });

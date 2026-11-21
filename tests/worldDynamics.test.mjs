@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { applyWorldPressures, worldPressureContext } from '../src/helpers/worldPressures.js';
-import { WORLD_DYNAMICS_BLOCK } from '../src/prompts/worldDynamics.js';
+import { WORLD_DYNAMICS_BLOCK, WORLD_FIRST_MOVE, WORLD_CAST_AND_KNOWLEDGE, THREAT_TIMING, WORLD_LOSSES, PRESSURE_RULES } from '../src/prompts/worldDynamics.js';
 import { ARC_PACING_BLOCK } from '../src/prompts/arcPacing.js';
 import { buildSystemPrompt } from '../src/prompts/haiku.js';
 import { buildSystemPromptSonnet } from '../src/prompts/sonnet.js';
@@ -64,7 +64,13 @@ for (const [model, build] of Object.entries(builders)) {
   test(`${model} includes shared world behavior and saved pressure in the actual prompt`, () => {
     const prompt = build(makeChar());
     // No antagonist is assigned here: retain world behavior without arc pacing.
-    assert.ok(prompt.static.includes(WORLD_DYNAMICS_BLOCK.replace(ARC_PACING_BLOCK,'')));
+    if (model === 'terra') {
+      for (const block of [WORLD_FIRST_MOVE, WORLD_CAST_AND_KNOWLEDGE, THREAT_TIMING, WORLD_LOSSES, PRESSURE_RULES]) {
+        assert.equal(prompt.static.split(block).length - 1, 1);
+      }
+    } else {
+      assert.ok(prompt.static.includes(WORLD_DYNAMICS_BLOCK.replace(ARC_PACING_BLOCK,'')));
+    }
     assert.match(prompt.dynamic, /temple-siege/);
     assert.match(prompt.dynamic, /barricade holding/);
     assert.ok(!prompt.static.includes('Never resolve travel, combat, violence, or significant events without player input first.'));

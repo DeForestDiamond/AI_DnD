@@ -1,3 +1,4 @@
+import { TERRA_LONG_STORY } from '../src/prompts/terra.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
@@ -89,10 +90,11 @@ const builders = [buildSystemPrompt,buildSystemPromptSonnet,buildSystemPromptSol
 for(const build of builders) {
   test(`${build.name} applies independent modes without contradictory arc or power rules`, () => {
     const c=character();
+    const longRules = build === buildSystemPromptTerra ? TERRA_LONG_STORY : CONTINUOUS_STORY_BLOCK;
     const standard=build(c);
-    assert.ok(!standard.static.includes(CONTINUOUS_STORY_BLOCK));
+    assert.ok(!standard.static.includes(longRules));
     const continuous=build({...c,storyMode:'continuous'});
-    assert.ok(continuous.static.includes(CONTINUOUS_STORY_BLOCK));
+    assert.ok(continuous.static.includes(longRules));
     assert.ok(!continuous.static.includes('ONE MAJOR ANTAGONIST:'));
     assert.ok(!continuous.static.includes('ONE ANTAGONIST, AND ONLY ONE.'));
     assert.ok(!continuous.static.includes('RESERVED MEANS NOT ACTIVE.'));
@@ -107,8 +109,12 @@ for(const build of builders) {
     assert.ok(!dark.static.includes('── ENEMY POWER — DEFAULT LOW ──'));
     assert.match(dark.dynamic,/a pack of ghouls/);
     const both=build({...c,storyMode:'continuous',fantasyTone:'full-dark'});
-    assert.ok(both.static.includes(CONTINUOUS_STORY_BLOCK));
-    assert.ok(both.static.includes(FULL_DARK_FANTASY_BLOCK));
+    assert.ok(both.static.includes(longRules));
+    const darkContinuous = FULL_DARK_FANTASY_BLOCK.replace(
+      'Apply the selected story structure: dark arc campaigns still honor arc completion and aftermath; Long Story continues organically.',
+      'The Long Story continues organically.'
+    );
+    assert.ok(both.static.includes(darkContinuous));
   });
 }
 

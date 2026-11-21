@@ -17,7 +17,7 @@ const cases=[
   [buildSystemPrompt,leanChoices,58906],
   [buildSystemPromptSonnet,fullChoices,50506],
   [buildSystemPromptSol,fullChoices,61618],
-  [buildSystemPromptTerra,leanChoices,55899],
+  [buildSystemPromptTerra,'give exactly four numbered suggestions this character could act on now',55899],
   [buildSystemPromptGrok43,null,37798],
   [buildSystemPromptGrok46,fullChoices,45467],
 ];
@@ -34,15 +34,21 @@ for(const [build,choices,before] of cases) {
           assert.equal(copies(p.static,MORALIZING_RULES),1);
           assert.equal(copies(p.static,PRACTICAL_DECISION_RULES),1);
           const delegation=[buildSystemPromptSonnet,buildSystemPromptSol,buildSystemPromptGrok46].includes(build) ? fullDelegation : leanDelegation;
-          assert.equal(copies(p.static,delegation),1);
-          assert.equal(copies(p.static,'── DELEGATION & ADMINISTRATIVE PACING ──'),1);
+          if (build === buildSystemPromptTerra) {
+            assert.equal(copies(p.static,delegation),0);
+            assert.equal(copies(p.static,'Those given a job own routine decisions within their authority.'),1);
+          } else {
+            assert.equal(copies(p.static,delegation),1);
+            assert.equal(copies(p.static,'── DELEGATION & ADMINISTRATIVE PACING ──'),1);
+          }
           assert.equal(copies(p.static,'NPC KNOWLEDGE HAS A SOURCE.'),1);
           assert.equal(copies(p.static,'GENDER BALANCE APPLIES WITHIN ROLES'),1);
           assert.equal(copies(p.static,PLAYER_AGENCY_BLOCK),choices?1:0);
           if(choices) assert.ok(p.static.includes(choices));
           assert.match(p.static,/Half-elves alone do not satisfy/);
           assert.match(p.static,/permission to inspect is not completed inspection/);
-          assert.match(p.static,/undead attack/);
+          if (build === buildSystemPromptTerra) assert.match(p.static,/revise terms within their means or seek another helper/);
+          else assert.match(p.static,/undead attack/);
           assert.match(p.static,/never by message count/);
           assert.match(p.static,/actually witnessed/);
         }

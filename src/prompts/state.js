@@ -236,8 +236,10 @@ export const buildCtxSections = (char) => {
     dp.methods     && `HOW THEY SOLVE PROBLEMS: ${dp.methods}`,
     dp.lines       && `LINES THEY WILL NOT CROSS: ${dp.lines}`,
   ].filter(Boolean);
-  const dispositionSection = dpBits.length
-    ? `\nDISPOSITION — WHO THIS CHARACTER IS:\n${dpBits.join('\n')}\n` +
+  const dispositionFacts = dpBits.length
+    ? `\nDISPOSITION — WHO THIS CHARACTER IS:\n${dpBits.join('\n')}\n` : '';
+  const dispositionSection = dispositionFacts
+    ? dispositionFacts +
       `Every hook, offer and appeal must target what they CARE ABOUT. Do NOT assume heroism. Anything listed as INDIFFERENT genuinely does not move them — an NPC who appeals to it is ignored, dismissed, or exploited, and you should write the scene that way rather than expecting the player to care. NPCs who know them well pitch accordingly; strangers who misjudge them get the real reaction.\n`
     : '';
 
@@ -284,7 +286,7 @@ export const buildCtxSections = (char) => {
     townsSection = parts.length ? '\n'+parts.join('\n')+'\n' : '';
   }
 
-  return { bio, dispositionSection, objectivesSection, companionSection, npcSection, townsSection };
+  return { bio, dispositionFacts, dispositionSection, objectivesSection, companionSection, npcSection, townsSection };
 };
 
 // ── Shared tag reference ───────────────────────────────────────────────────────

@@ -18,16 +18,18 @@ Not everything serves the main plot. Hunting, shopping, crafting, gambling, expl
 
 Ordinary encounters should usually give ordinary context-appropriate rewards such as coins, gems, trade goods, mundane gear, creature parts, supplies, salvage, minor valuables, or occasional appropriate magic items. Loot does not need a special name or story purpose. Let side activities and downtime breathe. Existing threats and deadlines still advance with fictional time; do not confuse leaving an activity ordinary with freezing the rest of the world.`;
 
-export const ARC_RULES_BLOCK = `── ACTIVE ARC ──
+export const buildLeanArcRules = (progress) => `── ACTIVE ARC ──
 CURRENT STATE identifies the single assigned major antagonist and its location. New major arc developments connect to that foe, not a replacement villain or competing campaign plot. Ordinary encounters and player-chosen activities may remain unrelated.
 
 Keep flexible arcs local to the supplied area. Required/player-selected destinations and fixed lairs remain authoritative; maintain enemy operations when the player travels. Creature origin does not require travel to its home plane, and local openings must not become cross-continent errands. Provide believable access to a required destination.
 
-The antagonist acts causally offscreen, but the player decides whether to care or pursue. Offer concrete motives and usable leads suited to their disposition, relationships, interests, profit, curiosity, or obligations; never assume heroism or nag with repeated hooks. Allow quiet scenes and detours. No scene quota or mandatory escalation: opposition can adapt, but preserve victories and tangible progress; a retreat or won skirmish need not resolve the whole conflict.
+${progress}
 
 Check resolution after material action involving the assigned antagonist. Emit [ARC COMPLETE] in the SAME response that the central threat ends or the player explicitly concludes their business through a deal, truce, payment, alliance, or deliberate disengagement. Death, capture, permanent expulsion, dismantling, stripping power, or buying off can end it; killing a living enemy is not required. Ignoring a hook alone does not complete it. Never prolong victory with a hidden superior, successor, revenge faction, larger conspiracy, or deeper layer. Loose ends do not delay completion; follow ARC DEVELOPMENT AND AFTERMATH.
 
 ${ARC_TERMINATION_BLOCK}`;
+
+export const ARC_RULES_BLOCK = buildLeanArcRules(`The antagonist acts causally offscreen, but the player decides whether to care or pursue. Offer concrete motives and usable leads suited to their disposition, relationships, interests, profit, curiosity, or obligations; never assume heroism or nag with repeated hooks. Allow quiet scenes and detours. No scene quota or mandatory escalation: opposition can adapt, but preserve victories and tangible progress; a retreat or won skirmish need not resolve the whole conflict.`);
 
 export const SETTING_BLOCK = `── SETTING: FAERÛN (FORGOTTEN REALMS) ──
 The world is Faerûn from the Forgotten Realms. Major geography, cities, regions, roads, factions, deities, and established lore follow published canon. Use canon places where appropriate and keep directions and distances consistent. Smaller villages, inns, shrines, dungeons, and minor NPCs may be invented freely when anchored to a plausible real region.
@@ -48,6 +50,8 @@ Delegation transfers responsibility within agreed authority. Competent NPCs choo
 
 Unless the player wants detail, summarize administration and paperwork with time skips. Interrupt only for material changes to goals, resources beyond delegated authority, relationships, or story consequences. Keep settled decisions settled. After substantial administrative discussion, show progress or change scenes instead of adding another procedural question. Helping or funding does not make the player everyone's permanent manager. Honor downtime; established threats and deadlines still advance causally.`;
 
+export const CREATURE_NATURE_RULE = `Preserve species and individual nature: dragons, giants, fiends, celestials, and fey are not interchangeable helpful humans. Fey may follow alien, literal, contractual, emotional rules of hospitality, names, gifts, debts, promises, invitations, ownership, and etiquette. Friendly need not mean accommodating.`;
+
 export const WORLD_INTEGRITY_BLOCK = `── WORLD INTEGRITY ──
 The player is the viewpoint, not the center of the world. Protagonist status grants no automatic importance, attention, admiration, trust, fear, destiny, or uniqueness. Other adventurers independently explore, acquire wealth and artifacts, gain power, solve problems, fail, and alter events. Some exceed the player, others do not; never diminish them to flatter the player or manufacture equals to negate extraordinary abilities. Rivals can arrive first and others can resolve, worsen, redirect, or claim opportunities offscreen.
 
@@ -57,7 +61,7 @@ ${SETTING_SOCIAL_RULES}
 
 ${DELEGATION_BLOCK}
 
-Preserve species and individual nature: dragons, giants, fiends, celestials, and fey are not interchangeable helpful humans. Fey may follow alien, literal, contractual, emotional rules of hospitality, names, gifts, debts, promises, invitations, ownership, and etiquette. Friendly need not mean accommodating.`;
+${CREATURE_NATURE_RULE}`;
 
 export const GPT_EXTRA_RULES = `ROLL TAGS ARE PLAYER-ONLY: [ROLL:] uses the PLAYER CHARACTER’s stats, skills, saves, and equipment. Never use it for an NPC, enemy, companion, summon, or construct; adjudicate their attacks/checks/saves yourself. A non-player resistance check must not be resolved using the player’s stats.
 Routine walking, talking, shopping, visible inspection, and looting defeated or unresisting targets need no roll. Request one only for meaningful uncertainty, such as hidden objects, traps, a race against opposition, or another consequential risk. Follow the shared ROLL contract for declared actions and supplied GAME DATA.`;
