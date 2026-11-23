@@ -1,3 +1,4 @@
+import { TERRA_ARC_RULES, TERRA_LONG_STORY } from '../src/prompts/terra.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EMPTY_CHAR } from '../src/hooks/character/defaults.js';
@@ -10,6 +11,7 @@ import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptS
 const character=()=>({...structuredClone(EMPTY_CHAR),name:'Test',race:{name:'Human'},cls:{name:'Fighter'},level:3,hp:12,maxHp:12,arc:{antagonist:'HIDDEN_ARC_SENTINEL',localArea:'Waterdeep'}});
 const adventure={title:'The Princess Chose You',premise:'ADVENTURE_SENTINEL',location:'a palace garden'};
 const noArcRules=p=>{
+  assert.ok(!p.static.includes(TERRA_ARC_RULES));
   assert.ok(!p.static.includes(fullArc));assert.ok(!p.static.includes(leanArc));assert.ok(!p.static.includes(ARC_PACING_BLOCK));
   assert.ok(!p.static.includes('Story arc resolved'));
   assert.ok(!p.dynamic.includes('HIDDEN_ARC_SENTINEL'));
@@ -22,7 +24,7 @@ for(const build of [buildSystemPrompt,buildSystemPromptSonnet,buildSystemPromptS
       for(const combatFirst of [false,true]) {
         const c={...character(),fantasyTone,combatFirst};
         const active=build(c);
-        assert.ok(active.static.includes(fullArc)||active.static.includes(leanArc));
+        assert.ok(build === buildSystemPromptTerra ? active.static.includes(TERRA_ARC_RULES) : active.static.includes(fullArc)||active.static.includes(leanArc));
         assert.ok(active.static.includes(ARC_PACING_BLOCK));
         assert.match(active.dynamic,/HIDDEN_ARC_SENTINEL/);
         const reserved=build({...c,arc:{...c.arc,status:'reserved'}});
@@ -36,8 +38,9 @@ for(const build of [buildSystemPrompt,buildSystemPromptSonnet,buildSystemPromptS
         assert.deepEqual(withAdventure,before);
         const continuous=build({...withAdventure,storyMode:'continuous'});
         noArcRules(continuous);
-        assert.ok(continuous.static.includes(CONTINUOUS_STORY_BLOCK));
-        assert.ok(!situation.static.includes(CONTINUOUS_STORY_BLOCK));
+        const longRules = build === buildSystemPromptTerra ? TERRA_LONG_STORY : CONTINUOUS_STORY_BLOCK;
+        assert.ok(continuous.static.includes(longRules));
+        assert.ok(!situation.static.includes(longRules));
         noArcRules(build({...c,arc:null}));
       }
     }

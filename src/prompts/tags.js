@@ -9,7 +9,7 @@ Resolve ALL declared actions and targets in order unless an earlier result actua
 
 export const WEAPON_ATTACK_RULES = `Weapon rolls are hand-specific: [ROLL: mainhand attack difficulty 15] or [ROLL: offhand attack difficulty 15]. The app uses that hand's equipped weapon and bonuses. A mainhand result does not resolve an offhand attack; missing automated data is not a rule against using the offhand or other established capabilities. Resolve supplied rolls, request only genuinely missing rolls for declared legal attacks, and do not grant extra attacks merely because two weapons are equipped. Honor established action economy and two-weapon fighting features.`;
 
-export const TAGS_BLOCK = `── GAME TAGS — THE APP READS THESE EXACTLY ──
+export const buildTagsBlock = (assignedArc) => `── GAME TAGS — THE APP READS THESE EXACTLY ──
 Put state-change tags at the END of the response, after narration and choices. Tags execute changes; they are not descriptions of existing possessions. Never re-grant an item or balance merely because the player counts, draws, inspects, or mentions it. New acquisitions and changes require tags or they do not exist in the app. Reserve space for required tags and four choices outside the prose-length target; do not cut meaningful NPC/companion reactions for space. EXCEPTION: [ROLL:] ends the response immediately, with no result, narration, tags, or choices after it.
 
 CORE STATE CHANGES
@@ -17,8 +17,7 @@ CORE STATE CHANGES
 - Coins: [GOLD: +250] or [COIN: -5sp]. Bare numbers mean gold; signed pp/gp/sp/cp amounts and mixed denominations work, e.g. [GOLD: +3gp 5sp]. The app makes change. Never emit the current balance as a gain.
 - Gain: [ITEM: Health Potion]. Remove permanently when consumed, sold, given away, or destroyed: [REMOVE: Health Potion]. Omitted quantity means exactly ONE, never all. Use [REMOVE: Health Potion | qty:5] for five; removing a stack requires its actual count. REMOVE is not unequip or a definition-update command.
 - HP: [HP: +10] heals the PLAYER; [HP: -5] damages the PLAYER. [DAMAGE: 5] also damages only the PLAYER. For enemy attacks, adjudicate against the player's AC, roll enemy damage yourself, and tag that total. Enemy/NPC HP is not tracked: damage the player DEALS and enemy wounds/deaths are prose only, never HP/DAMAGE tags.
-- Location: [LOCATION: Waterdeep - Yawning Portal] when the player's place changes. Retain broad and immediate location, including the vessel/building when relevant.
-Story arc resolved (success, settlement, or irreversible failure of the established central objective): [ARC COMPLETE]
+- Location: [LOCATION: Waterdeep - Yawning Portal] when the player's place changes. Retain broad and immediate location, including the vessel/building when relevant.${assignedArc ? `\nStory arc resolved (success, settlement, or irreversible failure of the established central objective): [ARC COMPLETE]` : ''}
 
 ROLL CONTRACT — STOP AT THE TAG
 ${FIRST_CONTACT_ROLL_RULES}
@@ -82,3 +81,4 @@ Do not make loot create work: no compulsory secret, mystery, destination, upgrad
 FINAL STATE CHECK — BEFORE SENDING
 Match EVERY acquired item and count to a positive ITEM tag, including mundane loot; reconcile payments too. No grants for merely seen/offered items, unchosen actions, or gains already tagged. Pending acquisitions wait for roll resolution; tag any unrelated gains already completed before that ROLL.`;
 
+export const TAGS_BLOCK = buildTagsBlock(true);

@@ -14,12 +14,20 @@ for(const build of [buildSystemPrompt,buildSystemPromptSonnet,buildSystemPromptS
         for(const combatFirst of [false,true]) {
           for(const driver of [{arc:{antagonist:'Raiders'}},{adventure:{title:'The Princess Chose You',premise:'Tea and courtship'}}]) {
             const p=build({...character(),...driver,storyMode,fantasyTone,combatFirst});
-            assert.equal(p.static.split(SCENE_PACING_BLOCK).length-1,1);
             assert.ok(!/two dialogue or investigation scenes|Something must force movement|EVERY SCENE NEEDS A HOOK|Every scene needs a hook|Something must always be at stake|ACTION OVER DESCRIPTION/.test(p.static));
-            assert.match(p.static,/Existing attacks, pursuits, hazards, deadlines/);
-            assert.match(p.static,/NPCs still speak, react, and pursue their own motives/);
-            assert.match(p.static,/Honor explicit \[ENCOUNTER\] directives/);
-            assert.match(p.static,/Never count dialogue turns or scenes/);
+            if (build === buildSystemPromptTerra) {
+              assert.equal(p.static.split('FOLLOW THE SCENE.').length - 1, 1);
+              assert.match(p.static,/the activity the player chose for as long as it is meaningful/);
+              assert.match(p.static,/established pressure coming due, or an explicit encounter directive/);
+              assert.match(p.static,/compress uneventful time and stop at their next real decision/);
+              assert.match(p.static,/never by message count/);
+            } else {
+              assert.equal(p.static.split(SCENE_PACING_BLOCK).length-1,1);
+              assert.match(p.static,/Existing attacks, pursuits, hazards, deadlines/);
+              assert.match(p.static,/NPCs still speak, react, and pursue their own motives/);
+              assert.match(p.static,/Honor explicit \[ENCOUNTER\] directives/);
+              assert.match(p.static,/Never count dialogue turns or scenes/);
+            }
             assert.match(p.dynamic,/A barricade is holding/);
             assert.match(p.dynamic,/Ten minutes of sustained attack/);
           }
