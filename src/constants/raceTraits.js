@@ -70,6 +70,14 @@ export const RACE_TRAITS = {
       { name: 'Darkness',            desc: '1/day: create a 15ft sphere of magical darkness.' },
     ],
   },
+  'Cambion': {
+    traits: [
+      { name: 'Darkvision 60ft', desc: 'Within 60ft, see in dim light as if it were bright and in darkness as if it were dim.' },
+      { name: 'Fiendish Wings', desc: 'Your wings grant a flying speed of 30ft while you wear light armor or no armor.' },
+      { name: 'Fire Resistance', desc: 'You have resistance to fire damage.' },
+      { name: 'Alter Self', desc: 'Once per long rest, cast Alter Self without a spell slot. Charisma is your spellcasting ability for it.' },
+    ],
+  },
   'Shadar-kai': {
     traits: [
       { name: 'Darkvision 60ft',     desc: 'See in dim light as if bright, darkness as if dim.' },
@@ -176,6 +184,7 @@ export const RACE_TRAIT_STRINGS = {
   'Halfling':   'Lucky (reroll any attack/ability/save roll of 1, must use new roll). Brave (advantage on saves vs. frightened). Halfling Nimbleness (move through space of larger creatures). Small — 3 feet tall. No darkvision.',
   'Kender':     'Fearless (advantage on saves to avoid or end frightened). Kender Aptitude: proficiency in one of Insight, Investigation, Sleight of Hand, Stealth, or Survival. Taunt: bonus action to provoke a creature within 60ft; on a failed Wisdom save it has disadvantage attacking targets other than you until your next turn. Small, nimble, intensely curious, and notoriously difficult to intimidate.',
   'Tiefling':   'Darkvision 60ft. Resistance to fire damage. Infernal Legacy: Thaumaturgy cantrip, Hellish Rebuke 1/day, Darkness 1/day. Horns, tail, and unusual eye color — may face prejudice.',
+  'Cambion':    'Darkvision 60ft. Fiendish Wings: fly 30ft in light armor or no armor. Resistance to fire damage. Innate Alter Self: cast once per long rest without a spell slot, using Charisma.',
   'Shadar-kai': 'Darkvision 60ft. Resistance to necrotic damage. Blessing of the Raven Queen: teleport up to 30ft as bonus action 1/long rest, briefly become incorporeal. Pale and unnervingly still in appearance.',
   'Half-Elf':   'Darkvision 60ft. Fey Ancestry (advantage on saves vs. charm, immune to magical sleep). Skill Versatility: proficiency in any two skills. Charming and adaptable.',
   'Half-Orc':   'Darkvision 60ft. Relentless Endurance: drop to 1 HP instead of 0 once per rest. Savage Attacks: add one extra weapon damage die on a critical hit. Imposing and battle-hardened.',

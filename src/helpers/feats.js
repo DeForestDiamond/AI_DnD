@@ -33,7 +33,7 @@ const canCast = char => {
   const levels=Object.keys(char.classLevels || {}).length ? char.classLevels : {[char.cls?.name]:char.level};
   return Object.entries(levels).some(([cls,n])=>n >= (['Paladin','Ranger'].includes(cls)?2:1) && ['Artificer','Bard','Cleric','Druid','Paladin','Ranger','Sorcerer','Warlock','Wizard'].includes(cls)) ||
     Boolean(char.abilities?.cantrips?.length || char.abilities?.spells?.length || hasFeat(char,'Magic Initiate') || hasFeat(char,'Ritual Caster')) ||
-    ['Elf','Sun Elf','Moon Elf','Tiefling','Aasimar','Astral Elf','Githyanki'].includes(char.race?.name);
+    ['Elf','Sun Elf','Moon Elf','Tiefling','Cambion','Aasimar','Astral Elf','Githyanki'].includes(char.race?.name);
 };
 export const featPrerequisite = (char,feat) => {
   if(feat.spellcasting && !canCast(char)) return 'Requires the ability to cast at least one spell.';
