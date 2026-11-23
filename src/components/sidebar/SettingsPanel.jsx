@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { PACING, ENVIRONMENTS } from '../../constants/encounters.js';
 import { fixedArcLocationFor, arcLocationOptionsFor } from '../../constants/encounters/arcLocations.js';
 import { colors, fonts, btn } from '../../styles/theme.js';
-import { CollapsibleSection } from './common/index.jsx';
+import { CollapsibleSection, npcInput } from './common/index.jsx';
 import { VoiceSettings, DispositionEditor, ObjectivesPanel, DirectivesEditor, DebugViewer } from './settings/Controls.jsx';
 import { PromptRequestViewer } from './settings/PromptRequestViewer.jsx';
 import { TokenCostViewer } from './settings/TokenCostViewer.jsx';
@@ -20,6 +20,7 @@ export function SettingsPanel({
   onTogglePacing,
   environment,
   onChangeEnvironment,
+  onChangeCustomEncounter,
   adventure,
   arcAntagonist,
   onRollAdventure,
@@ -111,6 +112,26 @@ export function SettingsPanel({
         </select>
       )}
     </CollapsibleSection>
+
+    {onChangeCustomEncounter && (
+      <CollapsibleSection title="🎲 CUSTOM ENCOUNTER" defaultOpen={false}>
+        <label style={{display:'block',color:colors.textDim,fontSize:12}}>Event
+          <textarea rows={3} style={{...npcInput,marginTop:4,resize:'vertical'}}
+            placeholder="An apprentice accidentally summons me to her dorm room."
+            value={character.customEncounter?.description ?? ''}
+            onChange={e => onChangeCustomEncounter({description:e.target.value})} />
+        </label>
+        <label style={{display:'block',color:colors.textDim,fontSize:12,marginTop:6}}>Chance per player turn (%)
+          <input type="number" min="0" max="100" step="any" placeholder="0"
+            style={{...npcInput,marginTop:4}} value={character.customEncounter?.chance ?? ''}
+            onChange={e => {
+              const value = e.target.valueAsNumber;
+              onChangeCustomEncounter({chance:Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null});
+            }} />
+        </label>
+        <div style={{fontSize:11,color:colors.textFaint,marginTop:4}}>0% turns it off. Rolls even when regular encounters are off.</div>
+      </CollapsibleSection>
+    )}
 
     {onRollAdventure && character.storyMode !== 'continuous' && (
       <CollapsibleSection title="🎭 ADVENTURE" defaultOpen={false}>

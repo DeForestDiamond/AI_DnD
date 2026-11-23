@@ -11,7 +11,7 @@ import { useCharacter, modStr, statMod, calcAC, equippableInSlot, allItems, leve
 import { useVoice } from './hooks/useVoice.js';
 import { useSave } from './hooks/useSave.js';
 import { useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptGpt, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46, cleanDisplayText, MODEL_CONFIGS } from './hooks/useGame.js';
-import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, PACING_ORDER } from './constants/encounters.js';
+import { rollAntagonist, rollArc, makeArc, antagonistsForLevel, encounterChance, rollEncounterDirective, rollCustomEncounter, PACING_ORDER } from './constants/encounters.js';
 import { fixedArcLocationFor } from './constants/encounters/arcLocations.js';
 import { Sidebar, resetCraftingPanels } from './components/Sidebar.jsx';
 import { MessageFeed } from './components/MessageFeed.jsx';
@@ -686,8 +686,9 @@ Use the STARTING CONTEXT because it was chosen specifically for this premise; do
     // ── Encounter clock ──────────────────────────────────────────────────────
     // The app decides WHEN an encounter fires and WHAT it is; the DM only narrates.
     // Skips turns where the player is already attacking (don't stack chaos).
-    let encounterCtx = '';
-    if (!isContinue && !actionCtx) {
+    let encounterCtx = isContinue ? '' : rollCustomEncounter(charRef.current.customEncounter);
+    if (encounterCtx) log('[ENCOUNTER] Custom event rolled for this turn.');
+    if (!isContinue && !actionCtx && !encounterCtx) {
       const chance = encounterChance(turnsSinceEncounter.current, charRef.current.pacing || 'normal');
       if (chance > 0 && Math.random() < chance) {
         const enc = rollEncounterDirective(charRef.current);
@@ -1349,6 +1350,10 @@ Use the STARTING CONTEXT because it was chosen specifically for this premise; do
             }}
             environment={character.environment || 'wilderness'}
             onChangeEnvironment={(env)=>updateChar({ ...charRef.current, environment: env })}
+            onChangeCustomEncounter={changes => updateChar({
+              ...charRef.current,
+              customEncounter: { ...charRef.current.customEncounter, ...changes },
+            })}
             onTogglePacing={() => {
               const cur = charRef.current.pacing || 'normal';
               const next = PACING_ORDER[(PACING_ORDER.indexOf(cur) + 1) % PACING_ORDER.length];

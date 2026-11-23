@@ -54,7 +54,7 @@ export const buildCharacterRevision = (source, options) => {
       }
       if (keep.equipment) next.slots = structuredClone(source.slots || EMPTY_SLOTS);
       if (keep.money) { next.coins = source.coins || 0; next.bankedCoins = source.bankedCoins || 0; }
-      if (keep.storySettings) for (const key of ['storyMode','fantasyTone','combatFirst','pacing','environment']) {
+      if (keep.storySettings) for (const key of ['storyMode','fantasyTone','combatFirst','pacing','environment','customEncounter']) {
         if (source[key] !== undefined) next[key] = structuredClone(source[key]);
       }
       if (keep.completed) for (const key of ['completedAdventures','defeatedAntagonists']) next[key] = structuredClone(source[key] || []);

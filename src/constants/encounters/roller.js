@@ -26,6 +26,15 @@ const ARC_WEIRD = [
 const TABLES = { social: SOCIAL_BY_ENV, weird: WEIRD_BY_ENV };
 const ARC_TABLES = { hostile: ARC_HOSTILE, social: ARC_SOCIAL, weird: ARC_WEIRD };
 
+// A custom event has its own chance on each player turn, including during combat.
+export const rollCustomEncounter = (event, random = Math.random) => {
+  const description = typeof event?.description === 'string' ? event.description.trim() : '';
+  const chance = event?.chance;
+  if (!description || !Number.isFinite(chance) || chance <= 0 || chance > 100) return '';
+  if (random() * 100 >= chance) return '';
+  return `\n\n[ENCOUNTER — MANDATORY: The app rolled this custom event for this turn. Introduce it as it happens and leave the player's response to them. Apply any supplied roll result.\n${description}]`;
+};
+
 // ── Roll an encounter directive ────────────────────────────────────────────────
 // Mix: 60% hostile / 25% social / 15% weird. 1-in-3 ties to the active arc.
 // Hostile rolls only from entries at or under the level's CR ceiling.

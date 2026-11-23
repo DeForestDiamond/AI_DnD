@@ -7,4 +7,4 @@ export {
 export {
   PACING, PACING_ORDER, ENVIRONMENTS, encounterChance, encounterCRCap
 } from './pacing.js';
-export { rollEncounterDirective } from './roller.js';
+export { rollEncounterDirective, rollCustomEncounter } from './roller.js';

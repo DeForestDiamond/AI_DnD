@@ -101,6 +101,7 @@ export function Sidebar(props) {
         onTogglePacing={props.onTogglePacing}
         environment={props.environment}
         onChangeEnvironment={props.onChangeEnvironment}
+        onChangeCustomEncounter={props.onChangeCustomEncounter}
         adventure={props.adventure}
         arcAntagonist={props.arcAntagonist}
         onRollAdventure={props.onRollAdventure}
