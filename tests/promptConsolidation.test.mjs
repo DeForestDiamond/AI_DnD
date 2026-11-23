@@ -18,7 +18,8 @@ const cases=[
   [buildSystemPromptSonnet,fullChoices,50506],
   [buildSystemPromptSol,fullChoices,61618],
   [buildSystemPromptTerra,'give exactly four numbered suggestions this character could act on now',55899],
-  [buildSystemPromptGrok43,null,37798],
+  // Grok 4.3 gained a 1,705-character horror guidance section after consolidation.
+  [buildSystemPromptGrok43,null,37798 + 1705],
   [buildSystemPromptGrok46,fullChoices,45467],
 ];
 
@@ -80,6 +81,7 @@ test('model-specific narration and pacing choices survive consolidation',()=>{
   assert.match(buildSystemPromptSol(c).static,/FORWARD MOTION/);
   assert.match(buildSystemPromptGrok46(c).static,/at least 2 narrative paragraphs/);
   const grok43=buildSystemPromptGrok43(c).static;
+  assert.equal(copies(grok43,'── DARK FANTASY / HORROR — UNFLINCHING ──'),1);
   assert.match(grok43,/Freely carry clear intent through ordinary intermediate actions/);
   assert.match(grok43,/NO target paragraph count/);
   assert.ok(!grok43.includes(PLAYER_AGENCY_BLOCK));
