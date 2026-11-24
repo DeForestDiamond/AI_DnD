@@ -44,14 +44,28 @@ export function parseSaveJSON(raw) {
   }
 }
 
+const characterFields = [
+  '_v', 'name', 'race', 'cls', 'deity',
+  'bio', 'appearance', 'disposition', 'directives',
+  'level', 'xp', 'classLevels', 'subclasses', 'hp', 'maxHp', 'stats', 'feats', 'abilities',
+];
+const gearFields = [
+  'coins', 'bankedCoins', 'slots', 'equipped', 'items', 'customItems', 'stashedCustomItems',
+  'inventory', 'stash',
+];
+const positionedFields = new Set([...characterFields, ...gearFields]);
+
+function characterForSave(char) {
+  const data = { ...char, _v: SAVE_VERSION };
+  // Keep campaign data and any unfamiliar fields from imported saves ahead of gear.
+  const middle = Object.keys(data).filter(key => !positionedFields.has(key));
+  const keys = [...characterFields, ...middle, ...gearFields];
+  return Object.fromEntries(keys.filter(key => Object.hasOwn(data, key)).map(key => [key, data[key]]));
+}
+
 export function useSave({ charRef, messages, messagesRef, storySummaryRef, debugLogRef, promptLogRef, tokenCostLogRef, cacheStateRef, getSettings, onLoadFull, onLoadCharacter }) {
   const [autoSaveStatus,setAutoSaveStatus] = useState({state:'idle'});
   const saveSequence = useRef(0);
-
-  // Inventory and stash are already compact [{name, qty}] stacks in memory.
-  // Save the character exactly as it exists; migration handles older compressed
-  // {name:count} and string-array formats on load.
-  const compressCharForSave = (char) => ({ ...char });
 
   const buildState = (type) => ({
     _type: type,
@@ -60,8 +74,8 @@ export function useSave({ charRef, messages, messagesRef, storySummaryRef, debug
     // Character exports are a clean start: the character and world the player
     // built, with no story arc attached. Full saves keep the arc.
     character: type === 'character'
-      ? (({ arc, ...rest }) => compressCharForSave({ ...rest, _v: SAVE_VERSION }))(charRef.current)
-      : compressCharForSave({ ...charRef.current, _v: SAVE_VERSION }),
+      ? (({ arc, ...rest }) => characterForSave(rest))(charRef.current)
+      : characterForSave(charRef.current),
     ...(type === 'fullsave' ? {
       messages: messagesRef?.current || messages,
       storySummary: storySummaryRef.current || '',
@@ -104,7 +118,7 @@ export function useSave({ charRef, messages, messagesRef, storySummaryRef, debug
       const saved = await browserSaveStore.save({
         _type: 'fullsave', _v: SAVE_VERSION,
         settings: getSettings?.() || {},
-        character: compressCharForSave({ ...char, _v: SAVE_VERSION }),
+        character: characterForSave(char),
         messages: msgs,
         storySummary: storySummaryRef.current || '',
         tokenCostLog: tokenCostLogRef?.current || [],
