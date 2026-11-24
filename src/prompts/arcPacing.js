@@ -1,4 +1,5 @@
-import { hasAntagonistArc } from '../helpers/storyOptions.js';
+import { connectedArcContext } from './connectedArc.js';
+import { hasAntagonistArc, isConnectedArc } from '../helpers/storyOptions.js';
 
 export const ARC_PACING_BLOCK = `── ARC DEVELOPMENT AND AFTERMATH ──
 Completion closes the central conflict, not its aftermath. Continue rewards, loot, prisoners, promises, repairs, funerals, conversations, and other loose ends for as long as the player wants; do not skip them, auto-travel onward, or treat collecting payment as accepting another job. Already-established dangers continue causally.
@@ -12,6 +13,7 @@ export const arcContext = (char) => {
   const arc = char?.arc;
   if (!hasAntagonistArc(char)) return '';
   const location = arc.arcLocation || arc.localArea || char.currentLocation || 'the opening area';
+  if (isConnectedArc(arc)) return connectedArcContext(arc, location);
   if (arc.status === 'reserved') return `\nACTIVE ARC ANTAGONIST (HIDDEN): NONE — AFTERMATH / BETWEEN ARCS.
 Previous resolved antagonist: ${arc.previousAntagonist || 'the previous conflict'}.
 NEXT ARC ANTAGONIST (HIDDEN, RESERVED — not active): ${arc.antagonist}.

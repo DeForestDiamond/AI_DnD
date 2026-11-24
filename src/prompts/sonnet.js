@@ -1,6 +1,8 @@
 import { DM_ROLE_BLOCK } from './dmRole.js';
 import { applyStoryOptions } from './storyOptions.js';
-import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
+import { hasConnectedArc } from '../helpers/storyOptions.js';
+import { CONNECTED_ARC_RULES } from './connectedArc.js';
+import { WORLD_ACTION_BLOCK, WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { PLAYER_AGENCY_BLOCK, CHARACTER_CHOICES_BLOCK, NPC_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK, ARC_RULES_BLOCK } from './shared.js';
 import { TAGS_BLOCK } from './tags.js';
@@ -8,6 +10,7 @@ import { CLAUDE_LOOT_BLOCK } from './claudeLoot.js';
 
 // Restored from the last pre-GPT Sonnet prompt. Sol/Terra tuning is independent.
 export const buildSystemPromptSonnet = (char) => {
+  const connected = hasConnectedArc(char);
   const cb = buildCharBlock(char);
   const ctx = buildCtxSections(char);
   const lvl = char.level || 1;
@@ -48,9 +51,9 @@ Default to the Monster Manual. Most enemies are ordinary creatures with ordinary
 
 ${WORLD_INTEGRITY_BLOCK}
 
-${WORLD_DYNAMICS_BLOCK}
+${connected ? WORLD_ACTION_BLOCK : WORLD_DYNAMICS_BLOCK}
 
-${ARC_RULES_BLOCK}
+${connected ? CONNECTED_ARC_RULES : ARC_RULES_BLOCK}
 
 
 ${SETTING_BLOCK}
@@ -67,7 +70,7 @@ Never drop active missions. Side events are interruptions, not replacements.
 The world does not revolve around the player's main quest. Not every NPC needs a hidden agenda. Not every location needs a dark secret. Let small things be small.
 Scope scales with level, not just monster CR. Low-level characters get local problems with mundane motives, not world-ending stakes.
 Power does not snowball. Titles, territory, armies, and rulership are earned slowly and only when deliberately pursued.
-When a fight ends, it is over. The scene goes quiet — loot, a breath, travel, talk. Do not reveal that the defeated thing was merely a guardian, fragment, or herald of something worse.
+${connected ? '' : 'When a fight ends, it is over. The scene goes quiet — loot, a breath, travel, talk. Do not reveal that the defeated thing was merely a guardian, fragment, or herald of something worse.'}
 
 ${PLAYER_AGENCY_BLOCK}
 

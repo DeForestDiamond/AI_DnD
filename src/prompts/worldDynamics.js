@@ -25,7 +25,7 @@ export const WORLD_LOSSES = `LOSSES ARE ALLOWED TO STAND. Enemies can achieve ob
 
 export const PRESSURE_RULES = `CONTINUITY OF PRESSURE. For an established unresolved danger, pursuit, deadline, or negotiation under active pressure, persist a concise record using [PRESSURE: stable-id | current facts and location | next intended development | fictional timing or trigger]. Reuse that id to update it when facts or plans change. Use a few relevant records, not one for every NPC, rumor, or ordinary activity. These are DM memory, not automatic outcomes or facts known by everyone. The next step is an attempt that may be prevented. Record events that actually occurred as current facts; never mark a future casualty as already dead. Emit [PRESSURE END: stable-id] when that pressure actually ends, and preserve lasting losses in narration/history. Neither switching topics nor refusing help ends an ongoing attack. Consult persisted pressure on every response; only advance what the fictional time and circumstances support. Do not copy unchanged records every turn. Avoid pipes or brackets inside fields.`;
 
-export const WORLD_DYNAMICS_BLOCK = `── WORLD ACTION, STAKES & CONSEQUENCES ──
+export const WORLD_ACTION_BLOCK = `── WORLD ACTION, STAKES & CONSEQUENCES ──
 THE WORLD TAKES ITS TURN. NPCs and threats act from motives, opportunities, knowledge, and capabilities without waiting for the player to initiate, approve, or suggest it. The player controls their character's decisions and responses; that does not grant them a veto over other characters acting. These rules apply during quests, bargaining, conversations, downtime, and player-chosen detours. Established danger can interrupt a conversation. Do not invent unrelated emergencies to enforce engagement.
 
 ${WORLD_FIRST_MOVE}
@@ -48,7 +48,7 @@ DARK FANTASY HAS CAUSES. Shuttered windows, distrust, abandoned belongings, dwin
 
 ${PRESSURE_RULES} Follow all existing item, damage, roll, and arc-completion rules.
 
-${SCENE_PACING_BLOCK}
+${SCENE_PACING_BLOCK}`;
 
-${ARC_PACING_BLOCK}`;
+export const WORLD_DYNAMICS_BLOCK = `${WORLD_ACTION_BLOCK}\n\n${ARC_PACING_BLOCK}`;
 

@@ -1,4 +1,4 @@
-import { isContinuousStory, isFullDarkFantasy, isCombatFirst, hasOpenStoryScale, hasAntagonistArc } from '../helpers/storyOptions.js';
+import { isContinuousStory, isFullDarkFantasy, isCombatFirst, hasOpenStoryScale, hasAntagonistArc, hasConnectedArc } from '../helpers/storyOptions.js';
 import { ARC_RULES_BLOCK as FULL_ARC_RULES } from './shared.js';
 import { ARC_RULES_BLOCK as LEAN_ARC_RULES } from './sharedLow.js';
 import { ARC_PACING_BLOCK } from './arcPacing.js';
@@ -72,5 +72,5 @@ export const appendStoryModeRules = (prompt, char, longStoryRules = CONTINUOUS_S
   const darkRules = !arc ? FULL_DARK_FANTASY_BLOCK.replace('Apply the selected story structure: dark arc campaigns still honor arc completion and aftermath; Long Story continues organically.', continuous ? 'The Long Story continues organically.' : char?.adventure ? 'Follow the active Adventure situation without inventing an assigned antagonist arc.' : 'Let the story develop without inventing an assigned antagonist arc.') : FULL_DARK_FANTASY_BLOCK;
   const rules = [continuous && longStoryRules, dark && darkRules, combat && COMBAT_FIRST_BLOCK].filter(Boolean).join('\n\n');
   const stableRules = [rules, adventureContext(char)].filter(Boolean).join('\n\n');
-  return { ...prompt, static: prompt.static + (stableRules ? '\n\n' + stableRules : ''), dynamic: prompt.dynamic + `\nSTORY OPTIONS: ${continuous ? 'Long Story — continuous, no assigned antagonist' : char?.adventure ? 'Adventure — background situation, no assigned antagonist arc' : arc ? 'Antagonist arc' : 'Open play — no assigned story driver'}; ${dark ? 'Full Dark Fantasy' : 'Standard tone'}; ${combat ? 'Combat-first encounters — peace must be earned by the player' : 'Standard encounter resolution'}.` };
+  return { ...prompt, static: prompt.static + (stableRules ? '\n\n' + stableRules : ''), dynamic: prompt.dynamic + `\nSTORY OPTIONS: ${continuous ? 'Long Story — continuous, no assigned antagonist' : char?.adventure ? 'Adventure — background situation, no assigned antagonist arc' : hasConnectedArc(char) ? 'Connected antagonist arc' : arc ? 'Antagonist arc' : 'Open play — no assigned story driver'}; ${dark ? 'Full Dark Fantasy' : 'Standard tone'}; ${combat ? 'Combat-first encounters — peace must be earned by the player' : 'Standard encounter resolution'}.` };
 };

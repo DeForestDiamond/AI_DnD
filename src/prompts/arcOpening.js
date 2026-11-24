@@ -1,4 +1,4 @@
-import { isFullDarkFantasy } from '../helpers/storyOptions.js';
+import { isFullDarkFantasy, isConnectedArc } from '../helpers/storyOptions.js';
 
 const TERRA_MENU = 'End at the first decision with the four current-scene suggestions. Self-serving and unconventional approaches are welcome when they fit.';
 
@@ -45,4 +45,18 @@ THE FIRST MEANINGFUL ACTION BELONGS TO THE PLAYER. You may present an event begi
 ${menu}
 
 NON-COMPLIANCE: If you invent pre-play actions or knowledge for the player, begin after the inciting event has already been acted upon, or open with anything other than the parameters above, you have failed your role as DM.`;
+}
+
+export function prepareConnectedOpening(char, definition, model, opening = '', location = '') {
+  if (!isConnectedArc(definition)) throw new Error('A connected arc needs a title, central conflict, at least two named members with roles, and their relationships.');
+  const { adventure, worldPressures, ...rest } = char;
+  const { title, centralConflict, members, relationships } = definition;
+  const arcLocation = location?.trim() || definition.arcLocation?.trim() || '';
+  const arc = { kind: 'connected', title, centralConflict, members, relationships, arcLocation, status: 'active' };
+  const character = { ...rest, currentLocation: arcLocation, arc };
+  const menu = model === 'terra' ? TERRA_MENU : 'Stop at the first player decision and offer four numbered choices.';
+  const scene = opening?.trim()
+    ? `Begin with the opening the player supplied. Introduce the arc when its activities reach that scene.\nPLAYER'S OPENING:\n${opening.trim()}`
+    : 'Show one observable event arising from a member’s work. Give the character an opportunity they can act on or decline. Reveal only what they could see or learn here.';
+  return { character, prompt: `[CONNECTED ARC OPENING]\n${scene}\n${arcLocation ? 'Use the geographic anchor in CURRENT STATE.' : 'Establish a fitting local starting area.'} Record the actual place with [LOCATION: ...]. Leave the first action to the player. ${menu}` };
 }

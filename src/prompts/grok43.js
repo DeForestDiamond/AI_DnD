@@ -1,6 +1,8 @@
 import { DM_ROLE_BLOCK } from './dmRole.js';
 import { applyStoryOptions } from './storyOptions.js';
-import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
+import { hasConnectedArc } from '../helpers/storyOptions.js';
+import { CONNECTED_ARC_RULES } from './connectedArc.js';
+import { WORLD_ACTION_BLOCK, WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, WORLD_INTEGRITY_BLOCK } from './sharedLow.js';
 import { TAGS_BLOCK } from './tags.js';
@@ -9,6 +11,7 @@ import { TAGS_BLOCK } from './tags.js';
 // Intentionally permissive experiment: Grok 4.3 gets its own narration/agency
 // philosophy instead of inheriting the conservative shared-low guidance.
 export const buildSystemPromptGrok43 = (char) => {
+  const connected = hasConnectedArc(char);
   const cb = buildCharBlock(char);
   const ctx = buildCtxSections(char);
 
@@ -53,10 +56,10 @@ At the end of normal gameplay, provide EXACTLY 4 numbered suggestions for distin
 ${TAGS_BLOCK}
 
 ${ORDINARY_WORLD_BLOCK}
-${ARC_RULES_BLOCK}
+${connected ? CONNECTED_ARC_RULES : ARC_RULES_BLOCK}
 ${WORLD_INTEGRITY_BLOCK}
 
-${WORLD_DYNAMICS_BLOCK}
+${connected ? WORLD_ACTION_BLOCK : WORLD_DYNAMICS_BLOCK}
 ${SETTING_BLOCK}
 
 The player controls what their character ultimately wants and chooses. You control and actively run everything else.`;

@@ -1,4 +1,5 @@
-import { hasAntagonistArc, hasOpenStoryScale, isContinuousStory } from '../helpers/storyOptions.js';
+import { CONNECTED_ARC_RULES } from './connectedArc.js';
+import { hasConnectedArc, hasAntagonistArc, hasOpenStoryScale, isContinuousStory } from '../helpers/storyOptions.js';
 import { ARC_PACING_BLOCK } from './arcPacing.js';
 import { CONFLICT_RESISTANCE_BLOCK } from './conflict.js';
 import { DM_ROLE_BLOCK } from './dmRole.js';
@@ -76,7 +77,7 @@ ${WORLD_LOSSES}
 
 ${PRESSURE_RULES}
 
-${arc ? TERRA_ARC_RULES + '\n\n' + ARC_PACING_BLOCK : ''}
+${hasConnectedArc(char) ? CONNECTED_ARC_RULES : arc ? TERRA_ARC_RULES + '\n\n' + ARC_PACING_BLOCK : ''}
 
 ${SETTING_BLOCK}
 

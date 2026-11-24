@@ -1,4 +1,4 @@
-import { playerArcOpening, seededArcOpening } from './prompts/arcOpening.js';
+import { playerArcOpening, seededArcOpening, prepareConnectedOpening } from './prompts/arcOpening.js';
 import { chooseFeat, removeFeat } from './helpers/feats.js';
 import { changeStoryOptions, isContinuousStory, isFullDarkFantasy } from './helpers/storyOptions.js';
 import { prepareContinuousOpening } from './helpers/adventure/continuous.js';
@@ -394,7 +394,7 @@ export default function App() {
   // Fresh adventures route through a choice: random seed or a player-written opening.
   const beginAdventure = (char) => setAdventureStartChar(char);
 
-  const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false, situationOverride = null, arcLocationOverride = null) => {
+  const startAdventure = async (char, openingOverride = null, antagonistOverride = null, situationMode = false, situationOverride = null, arcLocationOverride = null, connectedDefinition = null) => {
     log('startAdventure', { level: char.level, xp: char.xp, hp: char.hp });
     setLoading(true);
     setApiError('');
@@ -406,6 +406,9 @@ export default function App() {
       let startingArea = null;
       let situationSeed = null;
       const continuousOpening = isContinuousStory(char) ? prepareContinuousOpening(char, openingOverride || '', situationOverride || (situationMode ? rollSituationAdventure(char.completedAdventures || []) : null)) : null;
+      const connectedOpening = connectedDefinition && !continuousOpening && !situationMode
+        ? prepareConnectedOpening(char, connectedDefinition, selectedModel, openingOverride, arcLocationOverride)
+        : null;
       if (continuousOpening) {
         seedPrompt = continuousOpening.prompt;
         arcAntagonist = null;
@@ -426,6 +429,8 @@ The player's PREVIOUS campaign location is deliberately unavailable for this ope
 Do not invent or reveal a villain, culprit, secret master, solution, final objective, or hidden explanation merely to make the premise feel like a quest. Let NPCs, relationships, complications, mysteries, enemies, discoveries, and goals emerge from what the player actually chooses to investigate or engage with. Combat is optional, not the default form of progress. Social interaction, exploration, negotiation, bargains, travel, humor, ordinary life, and unexpected relationships are first-class play.
 
 Use the STARTING CONTEXT because it was chosen specifically for this premise; do not replace it with the generic random-start location generator. Place it in an appropriate real Faerûn/Feywild/planar location as context requires. PLAYER AGENCY IS ABSOLUTE. Never pre-act for the player. End with exactly 4 numbered choices.`;
+      } else if (connectedOpening) {
+        seedPrompt = connectedOpening.prompt;
       } else if (openingOverride && openingOverride.trim()) {
         // Player wrote the opening — use their antagonist if given, else roll a hidden one.
         arcAntagonist = antagonistOverride?.trim() || rollAntagonist(char.level, null, char.defeatedAntagonists);
@@ -448,6 +453,9 @@ Use the STARTING CONTEXT because it was chosen specifically for this premise; do
       let charWithArc;
       if (continuousOpening) {
         charWithArc = continuousOpening.character;
+      } else if (connectedOpening) {
+        charWithArc = connectedOpening.character;
+        log(`[ARC] Connected arc started — ${charWithArc.arc.title}`);
       } else if (situationMode) {
         // A new Adventure is a fresh opening, not a continuation of wherever the
         // previous campaign happened to end. Remove currentLocation before building

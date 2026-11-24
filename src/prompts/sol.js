@@ -1,13 +1,16 @@
 import { DM_ROLE_BLOCK } from './dmRole.js';
 import { applyStoryOptions } from './storyOptions.js';
 import { SCENE_CLARITY_BLOCK } from './sceneClarity.js';
-import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
+import { hasConnectedArc } from '../helpers/storyOptions.js';
+import { CONNECTED_ARC_RULES } from './connectedArc.js';
+import { WORLD_ACTION_BLOCK, WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { buildCharBlock, buildCtxSections, directivesBlock } from './state.js';
 import { PLAYER_AGENCY_BLOCK, CHARACTER_CHOICES_BLOCK, ORDINARY_WORLD_BLOCK, ARC_RULES_BLOCK, SETTING_BLOCK, GPT_THREAD_DISCIPLINE, GPT_EXTRA_RULES, WORLD_INTEGRITY_BLOCK } from './shared.js';
 import { TAGS_BLOCK } from './tags.js';
 
 // ── System Prompt — Sol ────────────────────────────────────────────────────────
 export const buildSystemPromptSol = (char) => {
+  const connected = hasConnectedArc(char);
   const cb  = buildCharBlock(char);
   const ctx = buildCtxSections(char);
   const lvl     = char.level || 1;
@@ -40,11 +43,11 @@ ${TAGS_BLOCK}
 Every enemy has a specific named type; mystery resolves into something real, never merely "a presence" or "a shape." Default to ordinary Monster Manual creatures with ordinary lifespans and simple motives. Hungry, greedy, territorial, scared, or paid is enough. Do not make routine enemies ancient, primordial, elder, sealed, bound, slumbering, or newly awakened after centuries. Nine of ten enemies were alive last week; rare major villains may have history measured in years, not eons. Established allies and world figures keep their lore.
 
 ${ORDINARY_WORLD_BLOCK}
-${ARC_RULES_BLOCK}
+${connected ? CONNECTED_ARC_RULES : ARC_RULES_BLOCK}
 
 ${WORLD_INTEGRITY_BLOCK}
 
-${WORLD_DYNAMICS_BLOCK}
+${connected ? WORLD_ACTION_BLOCK : WORLD_DYNAMICS_BLOCK}
 
 ${SCENE_CLARITY_BLOCK}
 
@@ -81,7 +84,7 @@ ${GPT_EXTRA_RULES}`;
   const dynamicPart = `── CURRENT STATE (changes every message) ──
 ${cb.dynamicPart}
 
-HOOKS — ARC OR NO ARC: During reserved-arc aftermath, focus on existing business; offer the next hook only when the player seeks a new opportunity. When a hook is appropriate, give this character a concrete reason to engage based on their disposition and demonstrated interests. Danger to strangers does not automatically motivate them. Offer meaningful opportunities, relationships, knowledge, access, leverage, amusement, revenge, or gain where plausible; do not reduce every motive to coin or assume altruism.
+HOOKS — ARC OR NO ARC: ${connected ? '' : 'During reserved-arc aftermath, focus on existing business; offer the next hook only when the player seeks a new opportunity. '}When a hook is appropriate, give this character a concrete reason to engage based on their disposition and demonstrated interests. Danger to strangers does not automatically motivate them. Offer meaningful opportunities, relationships, knowledge, access, leverage, amusement, revenge, or gain where plausible; do not reduce every motive to coin or assume altruism.
 
 ── BEFORE YOU WRITE ──
 Check that you did not speak, think, feel, or act for the player. If the player gained anything, emit every required [ITEM:] or [GOLD:] tag now. Follow [ROLL:] termination exactly.`;

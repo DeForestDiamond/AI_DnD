@@ -4,7 +4,9 @@ import { DM_ROLE_BLOCK } from './dmRole.js';
 import { applyStoryOptions } from './storyOptions.js';
 import { arcContext } from './arcPacing.js';
 import { worldPressureContext } from '../helpers/worldPressures.js';
-import { WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
+import { hasConnectedArc } from '../helpers/storyOptions.js';
+import { CONNECTED_ARC_RULES } from './connectedArc.js';
+import { WORLD_ACTION_BLOCK, WORLD_DYNAMICS_BLOCK } from './worldDynamics.js';
 import { getMainWeapon, effectiveStats, calcAC, profBonus, allItems, effectiveMaxHp, modStr } from '../hooks/useCharacter.js';
 import { coinsToString } from '../constants/currency.js';
 import { RACE_TRAIT_STRINGS } from '../constants/raceTraits.js';
@@ -16,6 +18,7 @@ import { TAGS_BLOCK } from './tags.js';
 
 // ── System Prompt — Haiku ──────────────────────────────────────────────────────
 export const buildSystemPrompt = (char) => {
+  const connected = hasConnectedArc(char);
   const ctx = buildCtxSections(char);
 
   // Local variables still needed for Haiku's inline prompt template
@@ -179,9 +182,9 @@ TONE VARIETY: Not every scene is dark and ominous. Use sunny days, busy markets,
 
 ${WORLD_INTEGRITY_BLOCK}
 
-${WORLD_DYNAMICS_BLOCK}
+${connected ? WORLD_ACTION_BLOCK : WORLD_DYNAMICS_BLOCK}
 
-${ARC_RULES_BLOCK}
+${connected ? CONNECTED_ARC_RULES : ARC_RULES_BLOCK}
 
 ${SETTING_BLOCK}
 
@@ -201,18 +204,18 @@ Default enemies are ordinary creatures with ordinary lifespans and simple motive
 RETIRED ENEMY FLAVOR — never describe an ENEMY with: "ancient", "primordial", "elder", "older than", "predates", "sealed", "the binding", "slumbering", "awakened after centuries", "before the gods", "from a forgotten age", "time immemorial". An enemy's age is not interesting. If you are writing an enemy's backstory in geological time, STOP and send an orc instead.
 9 of every 10 enemies were alive last week and want something simple. A rare major villain may have history — measured in years, not eons. (This rule is for ENEMIES — established allies and world figures keep their existing lore.)
 
-── DON'T ESCALATE ──
+${connected ? '── SCOPE OF THE ARC ──' : "── DON'T ESCALATE ──"}
 A quest can develop through several meaningful scenes. Escalation is not compulsory every turn; honor progress and let the actual central conflict end when resolved.
 STORY SCOPE: scale the SIZE of the story to the player's level, not just monster CR. A low-level character gets small, local problems with mundane motives — a caravan, a village, a missing person — never ancient evils, sealed entities, prophecies, or world-ending stakes. Epic scope is earned by leveling into it.
-Most encounters are self-contained: bandits are just bandits, a wolf is just hungry, a rude merchant is just rude. Not every fight hides a bigger one. Not every NPC has an agenda. Let small things stay small.
+${connected ? 'Use the established connections for arc encounters. Side activities can stay self-contained.' : 'Most encounters are self-contained: bandits are just bandits, a wolf is just hungry, a rude merchant is just rude. Not every fight hides a bigger one. Not every NPC has an agenda. Let small things stay small.'}
 POWER DOES NOT SNOWBALL: One victory does not make the player a lord, a chosen one, a ruler, or the owner of land or armies. Titles, territory, and rulership are earned slowly across many sessions, and only when the player deliberately pursues them. Never hand out escalating status unprompted.
 
 ── NARRATE THE ACTUAL POWER GAP ──
 When a creature is far below the player's demonstrated capability — judged by their stats, their gear, and what they have already killed — narrate that gap HONESTLY. Do not manufacture struggle, tension or uncertainty the maths does not support. A one-sided fight is narrated as one-sided: the blow lands and the thing comes apart, the ambush ends before it begins, the veteran realises mid-swing what he has attacked. Bandits do not "barely hold their own" against someone who kills archdevils.
 This cuts both ways. Against something that genuinely outmatches the player, do not soften it either. The narration should tell the player where they truly stand, every time.
 
-── WHEN A FIGHT ENDS ──
-When the player resolves the central threat, honor that ending and give room for loot, payment, rest, and conversation. Winning a skirmish does not automatically end an unresolved arc; already-established opposition can adapt within that same conflict. Do NOT reveal that the thing they just beat was a guardian, a fragment, a servant, or a herald of something worse below. Do not invent a successor threat merely to prolong victory. Other already-established pressures and autonomous actors still continue.`;
+${connected ? '' : `── WHEN A FIGHT ENDS ──
+When the player resolves the central threat, honor that ending and give room for loot, payment, rest, and conversation. Winning a skirmish does not automatically end an unresolved arc; already-established opposition can adapt within that same conflict. Do NOT reveal that the thing they just beat was a guardian, a fragment, a servant, or a herald of something worse below. Do not invent a successor threat merely to prolong victory. Other already-established pressures and autonomous actors still continue.`}`;
 
   const dynamicPart = `── CURRENT STATE (changes every message) ──
 CHARACTER: ${char.name} | ${char.race?.name} ${classDesc} | Total Level ${char.level} | ${char.xp||0} XP
@@ -222,7 +225,7 @@ COINS: ${coinsToString(char.coins)}  (equipped gear, inventory and item descript
 
 ${directivesBlock(char)}
 
-HOOKS — ARC OR NO ARC: During reserved-arc aftermath, focus on existing business; offer the next hook only when the player seeks a new opportunity. When a hook is appropriate, give this character a concrete reason to engage based on their disposition and demonstrated interests. Danger to strangers does not automatically motivate them. Offer meaningful opportunities, relationships, knowledge, access, leverage, amusement, revenge, or gain where plausible; do not reduce every motive to coin or assume altruism.
+HOOKS — ARC OR NO ARC: ${connected ? '' : 'During reserved-arc aftermath, focus on existing business; offer the next hook only when the player seeks a new opportunity. '}When a hook is appropriate, give this character a concrete reason to engage based on their disposition and demonstrated interests. Danger to strangers does not automatically motivate them. Offer meaningful opportunities, relationships, knowledge, access, leverage, amusement, revenge, or gain where plausible; do not reduce every motive to coin or assume altruism.
 
 ── BEFORE YOU WRITE — the last check ──
 Usually 250–450 words, flexing with complexity; preserve relevant character reactions. No invented player speech/actions. Stop for the player’s answer. Four character-aware choices (up to two short sentences each, about 30 words total) and every required state-change tag; a ROLL ends the response immediately with no choices or text after it.`;
