@@ -7,6 +7,7 @@ import { EMPTY_CHAR } from '../src/hooks/character/defaults.js';
 import { migrateCharacter } from '../src/hooks/character/migration.js';
 import { changeStoryOptions, hasConnectedArc } from '../src/helpers/storyOptions.js';
 import { prepareConnectedOpening } from '../src/prompts/arcOpening.js';
+import { CONNECTED_ARCS } from '../src/constants/connectedArcs.js';
 import { CONNECTED_ARC_RULES } from '../src/prompts/connectedArc.js';
 import { ARC_PACING_BLOCK } from '../src/prompts/arcPacing.js';
 import { MODEL_CONFIGS, useGame, buildSystemPrompt, buildSystemPromptSonnet, buildSystemPromptSol, buildSystemPromptTerra, buildSystemPromptGrok43, buildSystemPromptGrok46 } from '../src/hooks/useGame.js';
@@ -98,3 +99,25 @@ for (const [model, build] of Object.entries(builders)) {
     }
   });
 }
+
+test('Empty Cages commissions survive shortcuts, completion and reload, and pay only once', () => {
+  const definition = CONNECTED_ARCS.find(arc => arc.title === 'Empty Cages');
+  const { character, prompt } = prepareConnectedOpening({ ...previous, level: 20, coins: 100 }, definition, 'gpt');
+  assert.match(prompt, /offering 250 gp/);
+  assert.match(prompt, /sealed stacks/);
+  assert.deepEqual(character.arc.commissions.map(c => c.gp), [250, 500, 1000, 2000]);
+  assert.equal(applyEffects('The patron offers 250 gp.', character).coins, 100);
+  const partial = applyEffects('[COMMISSION PAID: 3][COMMISSION PAID: 1][COMMISSION PAID: 1][ARC COMPLETE]', character);
+  assert.equal(partial.coins, 125100);
+  const loaded = migrateCharacter(JSON.parse(JSON.stringify(partial))).char;
+  assert.equal(loaded.arc.status, 'completed');
+  const context = buildSystemPromptTerra(loaded).dynamic;
+  assert.match(context, /250 gp \(paid\)/);
+  assert.match(context, /2000 gp \(unpaid\)/);
+  assert.match(context, /royal favor/);
+  const paid = applyEffects('[COMMISSION PAID: 1][COMMISSION PAID: 2][COMMISSION PAID: 4][COMMISSION PAID: 5]', loaded);
+  assert.equal(paid.coins, 375100);
+  assert.ok(paid.arc.commissions.every(c => c.paid));
+  assert.equal(applyEffects('[COMMISSION PAID: 4]', paid).coins, paid.coins);
+  assert.equal(applyEffects('[COMMISSION PAID: 4]', { ...character, storyMode: 'continuous' }).coins, character.coins);
+});

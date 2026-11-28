@@ -1,10 +1,10 @@
 import { hasFeat } from '../../constants/feats.js';
-import { hasAntagonistArc } from '../../helpers/storyOptions.js';
+import { hasAntagonistArc, hasConnectedArc } from '../../helpers/storyOptions.js';
 import { applyWorldPressures } from '../../helpers/worldPressures.js';
 import { useState, useRef, useEffect } from 'react';
 import { ITEM_DB, SLOTS, EMPTY_SLOTS, parseDMItem } from '../../constants/items.js';
 import { STARTING_GEAR } from '../../constants/classes.js';
-import { parseCoinAmount } from '../../constants/currency.js';
+import { COIN_VALUES, parseCoinAmount } from '../../constants/currency.js';
 import { rollArc } from '../../constants/encounters.js';
 import { normalizeStacks, stackCount, stackHas, stackNames, addStack, takeStack, takeAllStack, renameStack } from '../../utils/itemStacks.js';
 import { calcMaxHp, applyRaceBonus, statMod, levelUpsAvailable } from './stats.js';
@@ -64,6 +64,18 @@ export function useCharacter(log) {
       }
       c.coins = Math.max(0, (c.coins || 0) + delta);
     });
+
+    if (hasConnectedArc(c) && c.arc.status !== 'reserved' && Array.isArray(c.arc.commissions)) {
+      const paid = new Set(Array.from(text.matchAll(/\[COMMISSION PAID:\s*(\d+)\s*\]/gi), match => Number(match[1])));
+      if (paid.size) {
+        const commissions = c.arc.commissions.map((commission, index) => {
+          if (!paid.has(index + 1) || !commission || commission.paid || !Number.isSafeInteger(commission.gp) || commission.gp <= 0) return commission;
+          c.coins = (c.coins || 0) + commission.gp * COIN_VALUES.gp;
+          return { ...commission, paid: true };
+        });
+        c.arc = { ...c.arc, commissions };
+      }
+    }
 
     // HP -- [DAMAGE:] = player takes damage, [HEAL:] = player heals
     // Also supports [HP: +10] for healing and [HP: -5] for damage

@@ -1264,6 +1264,10 @@ Use the STARTING CONTEXT because it was chosen specifically for this premise; do
           adventures={ADVENTURES}
           completedAdventures={adventureStartChar?.completedAdventures || []}
           onManual={(text, antagonist) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, text, antagonist); }}
+          onChooseArc={definition => {
+            setAdventureStartChar(null);
+            startAdventure(adventureStartChar, null, null, false, null, null, definition);
+          }}
           onChooseAntagonist={(antagonist, arcLocation) => { const c = adventureStartChar; setAdventureStartChar(null); startAdventure(c, null, antagonist, false, null, arcLocation); }}
         />
       )}

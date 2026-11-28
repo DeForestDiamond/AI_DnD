@@ -53,10 +53,12 @@ export function prepareConnectedOpening(char, definition, model, opening = '', l
   const { title, centralConflict, members, relationships } = definition;
   const arcLocation = location?.trim() || definition.arcLocation?.trim() || '';
   const arc = { kind: 'connected', title, centralConflict, members, relationships, arcLocation, status: 'active' };
+  if (definition.patron) arc.patron = definition.patron;
+  if (definition.commissions) arc.commissions = definition.commissions.map(({ gp, task }) => ({ gp, task, paid: false }));
   const character = { ...rest, currentLocation: arcLocation, arc };
   const menu = model === 'terra' ? TERRA_MENU : 'Stop at the first player decision and offer four numbered choices.';
   const scene = opening?.trim()
     ? `Begin with the opening the player supplied. Introduce the arc when its activities reach that scene.\nPLAYER'S OPENING:\n${opening.trim()}`
-    : 'Show one observable event arising from a member’s work. Give the character an opportunity they can act on or decline. Reveal only what they could see or learn here.';
+    : definition.opening || 'Show one observable event arising from a member’s work. Give the character an opportunity they can act on or decline. Reveal only what they could see or learn here.';
   return { character, prompt: `[CONNECTED ARC OPENING]\n${scene}\n${arcLocation ? 'Use the geographic anchor in CURRENT STATE.' : 'Establish a fitting local starting area.'} Record the actual place with [LOCATION: ...]. Leave the first action to the player. ${menu}` };
 }

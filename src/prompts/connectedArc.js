@@ -11,9 +11,18 @@ While the arc is active, only emit [ARC COMPLETE] when the central conflict itse
 
 export function connectedArcContext(arc, location) {
   const header = '\nACTIVE ARC ANTAGONIST SET (HIDDEN DM CONTEXT)';
-  if (arc.status === 'completed') return `${header}\nCompleted: ${arc.title}. Phase: AFTERMATH. The central conflict is closed. Honor the outcome and existing leads. Do not restart or repeat completion.`;
+  const payments = Array.isArray(arc.commissions) ? arc.commissions.flatMap((commission, index) => {
+    if (!commission?.task || !Number.isSafeInteger(commission.gp) || commission.gp <= 0) return [];
+    return [`${index + 1}. ${commission.gp} gp (${commission.paid ? 'paid' : 'unpaid'}) — ${commission.task}`];
+  }) : [];
+  const terms = [
+    arc.patron,
+    ...(payments.length ? ['When the patron actually pays, emit [COMMISSION PAID: N] for each delivered finding using its number below. The app credits its gold once. Use the ordinary coin tags only for separate transactions. Offers and promises earn no payment tag.', ...payments] : []),
+  ].filter(Boolean).join('\n');
+  const contract = terms ? '\nPatron and commission terms:\n' + terms : '';
+  if (arc.status === 'completed') return `${header}\nCompleted: ${arc.title}. Phase: AFTERMATH. The central conflict is closed. Honor the outcome and existing leads. Do not restart or repeat completion.${contract}`;
   const phase = arc.status === 'reserved'
     ? "RESERVED. Offer a grounded opening when appropriate. Emit [ARC START] in the response where the player accepts or acts on that opportunity, including a free-text choice. A declined offer stays reserved. Never combine it with [ARC COMPLETE]."
     : "ACTIVE. The arc has already started. Follow the player's lead among the established members.";
-  return `${header}\nTitle: ${arc.title}\nCentral conflict: ${arc.centralConflict}\nLocation: ${location}\nMembers:\n${arc.members.map(member => `- ${member.name}: ${member.role}`).join('\n')}\nRelationships:\n${arc.relationships.map(link => `- ${link}`).join('\n')}\nPhase: ${phase}`;
+  return `${header}\nTitle: ${arc.title}\nCentral conflict: ${arc.centralConflict}\nLocation: ${location}\nMembers:\n${arc.members.map(member => `- ${member.name}: ${member.role}`).join('\n')}\nRelationships:\n${arc.relationships.map(link => `- ${link}`).join('\n')}\nPhase: ${phase}${contract}`;
 }

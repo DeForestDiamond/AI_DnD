@@ -1,3 +1,4 @@
+import { hasConnectedArc } from '../../helpers/storyOptions.js';
 import { StoryOptions } from '../StoryOptions.jsx';
 import { useState } from 'react';
 import { PACING, ENVIRONMENTS } from '../../constants/encounters.js';
@@ -66,6 +67,7 @@ export function SettingsPanel({
   onExportDebug,
   onCopyDebug,
 }) {
+  const connectedArc = hasConnectedArc(character) ? character.arc : null;
   const [arcCustomOpen, setArcCustomOpen] = useState(false);
   const [revealedFor, setRevealedFor] = useState(null);
   const [newCampaignArmed, setNewCampaignArmed] = useState(false);
@@ -185,7 +187,7 @@ export function SettingsPanel({
 
         <div style={{fontSize:10,color:colors.textGhost,letterSpacing:0.5,marginBottom:3}}>STORY ARC</div>
         <div style={{fontSize:12,color:arcAntagonist?colors.textDim:colors.textFaint,fontStyle:'italic',marginBottom:6,lineHeight:1.35}}>
-          {arcAntagonist ? 'A hidden antagonist is in play.' : 'Open — no antagonist. The story drifts where you take it.'}
+          {connectedArc ? `${connectedArc.title} · ${connectedArc.status === 'completed' ? 'Completed' : 'Connected arc'}` : arcAntagonist ? 'A hidden antagonist is in play.' : 'Open — no antagonist. The story drifts where you take it.'}
         </div>
         {arcAntagonist && (
           <div style={{marginBottom:6}}>
@@ -203,7 +205,7 @@ export function SettingsPanel({
         <div style={{display:'flex',gap:6}}>
           <button onClick={onRollArc} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>🎲 {arcAntagonist?'Reroll':'Roll'}</button>
           <button onClick={()=>setArcCustomOpen(v=>!v)} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✎ Custom</button>
-          {arcAntagonist && <button onClick={onClearArc} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✕ Clear</button>}
+          {(connectedArc || arcAntagonist) && <button onClick={onClearArc} style={{...btn(false),flex:1,fontSize:11,padding:'4px 0'}}>✕ Clear</button>}
         </div>
         {arcCustomOpen && (
           <div style={{marginTop:6}}>

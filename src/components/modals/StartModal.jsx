@@ -1,3 +1,4 @@
+import { CONNECTED_ARCS } from '../../constants/connectedArcs.js';
 import { StoryOptions } from '../StoryOptions.jsx';
 import { useState } from 'react';
 import { colors, fonts, btn } from '../../styles/theme.js';
@@ -6,7 +7,7 @@ import { adventureDeityCount, DIVINE_POWER_OPTIONS } from '../../constants/adven
 
 // Fresh-campaign chooser. Situation Adventure is deliberately separate from the
 // classic random/antagonist generator: its premise owns the starting context.
-export function AdventureStartModal({ character, onChangeStoryOptions, onRandom, onSituationAdventure, onChooseAdventure, onManual, onChooseAntagonist, selectedModel = 'sonnet', onSelectModel, hasAnthropic = false, hasOpenAI = false, hasXAI = Boolean(import.meta.env.VITE_XAI_KEY), antagonists = [], defeatedAntagonists = [], adventures = [], completedAdventures = [] }) {
+export function AdventureStartModal({ character, onChangeStoryOptions, onRandom, onSituationAdventure, onChooseAdventure, onManual, onChooseAntagonist, onChooseArc, selectedModel = 'sonnet', onSelectModel, hasAnthropic = false, hasOpenAI = false, hasXAI = Boolean(import.meta.env.VITE_XAI_KEY), antagonists = [], defeatedAntagonists = [], adventures = [], completedAdventures = [] }) {
   const [mode, setMode] = useState(null);
   const [text, setText] = useState('');
   const [antagonist, setAntagonist] = useState('');
@@ -74,7 +75,7 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
       <div style={{background:colors.bgPanel,border:`1px solid ${colors.border}`,borderRadius:4,padding:24,maxWidth:640,width:'100%',maxHeight:'90vh',overflow:'auto'}}>
         <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:16,marginBottom:16,textAlign:'center'}}>🎲 How should this adventure begin?</div>
         <div style={{marginBottom:12}}><StoryOptions character={character} onChange={onChangeStoryOptions} /></div>
-        {mode === null ? (
+        {mode === null || (mode === 'arc' && character?.storyMode === 'continuous') ? (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             <div style={{background:colors.bgDark,border:`1px solid ${colors.borderDim}`,borderRadius:6,padding:12}}>
               <div style={{fontFamily:fonts.display,color:colors.gold,fontSize:11,marginBottom:8}}>Choose Dungeon Master</div>
@@ -96,6 +97,10 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
               <div style={{fontSize:28,marginBottom:6}}>📜</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Choose Adventure</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Pick a situation premise yourself. Its location, tone, and opening style are still rolled fresh.</div>
             </div>
+            {character?.storyMode !== 'continuous' && <button type="button" onClick={()=>setMode('arc')} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
+              <span style={{display:'block',fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Choose Arc</span>
+              <span style={{color:colors.textFaint,fontSize:11}}>Follow a trail through several connected antagonists.</span>
+            </button>}
             {character?.storyMode !== 'continuous' && <div onClick={()=>setMode('antagonist')} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
               <div style={{fontSize:28,marginBottom:6}}>👑</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Choose Antagonist</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Pick the arc foe yourself, then roll a fresh opening built around them.</div>
@@ -104,6 +109,14 @@ export function AdventureStartModal({ character, onChangeStoryOptions, onRandom,
               <div style={{fontSize:28,marginBottom:6}}>✍️</div><div style={{fontFamily:fonts.display,color:colors.gold,fontSize:13,marginBottom:4}}>Write My Own Opening</div>
               <div style={{fontSize:11,color:colors.textFaint,lineHeight:1.5}}>Describe where and how the story starts — pick up where you left off, or begin at a home base.</div>
             </div>
+          </div>
+        ) : mode === 'arc' ? (
+          <div style={{display:'grid',gap:10}}>
+            {CONNECTED_ARCS.map(arc => <button key={arc.title} type="button" onClick={()=>onChooseArc(arc)} style={card} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
+              <span style={{display:'block',color:colors.gold,fontFamily:fonts.display,fontSize:14,marginBottom:6}}>{arc.title}</span>
+              <span style={{color:colors.textDim,fontSize:12,lineHeight:1.5}}>{arc.premise}</span>
+            </button>)}
+            <button type="button" style={btn(false)} onClick={()=>setMode(null)}>← Back</button>
           </div>
         ) : mode === 'manual' ? (
           <div>
